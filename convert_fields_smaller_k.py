@@ -37,43 +37,47 @@ def main():
 
     # (4) save data[:,:,:k_max] in new variable of new fields file
 
-
-    t0 = 100
-
-    # (2) read in original fields file
-    fullpath_in = os.path.join(path_fields, str(t0)+'.nc')
-    rootgrp_in = nc.Dataset(fullpath_in, 'r')
-    field_keys = rootgrp_in.groups['fields'].variables.keys()
-    dims_keys = rootgrp_in.groups['fields'].dimensions.keys()
-    dims = rootgrp_in.groups['fields'].dimensions
-    nx = dims['nx'].size
-    ny = dims['ny'].size
-    nz = dims['nz'].size
-
-    print('reducing 3D output fields:')
-    print('>> from '+str(nz) + ' levels to '+str(k_max) + ' levels')
+    files = [name for name in os.listdir(path_fields) if name[-2:] == 'nc']
+    print(files)
     print('')
 
-    # (3)
-    nz_new = k_max
-    fullpath_out = os.path.join(path_out, str(t0)+'_k'+str(k_max)+'.nc')
-    if not os.path.exists(fullpath_out):
-        print('not existing')
-        create_file(fullpath_out, nx, ny, nz_new)
 
-        # (4)
-        for var in field_keys:
-            print(var)
-            data = rootgrp_in.groups['fields'].variables[var][:,:,:]
-            print(data.shape)
-            print('new data', data[:,:,:k_max].shape)
-            write_field(fullpath_out, var, data[:,:,:k_max])
-    else:
-        print('')
-        print('file '+fullpath_out + ' already exists! ')
+    for file in files:
+        t0 = file[:-3]
         print('')
 
-    rootgrp_in.close()
+        # (2) read in original fields file
+        fullpath_in = os.path.join(path_fields, file)
+        rootgrp_in = nc.Dataset(fullpath_in, 'r')
+        field_keys = rootgrp_in.groups['fields'].variables.keys()
+        dims_keys = rootgrp_in.groups['fields'].dimensions.keys()
+        dims = rootgrp_in.groups['fields'].dimensions
+        nx = dims['nx'].size
+        ny = dims['ny'].size
+        nz = dims['nz'].size
+
+        print('reducing 3D output fields:')
+        print('>> from '+str(nz) + ' levels to '+str(k_max) + ' levels')
+        print('')
+
+        # (3)
+        nz_new = k_max
+        fullpath_out = os.path.join(path_out, str(t0)+'_k'+str(k_max)+'.nc')
+        if not os.path.exists(fullpath_out):
+            print('t='+str(t0) + ' not existing')
+            create_file(fullpath_out, nx, ny, nz_new)
+
+            # (4)
+            for var in field_keys:
+                print(var)
+                data = rootgrp_in.groups['fields'].variables[var][:,:,:]
+                write_field(fullpath_out, var, data[:,:,:k_max])
+        else:
+            print('')
+            print('file '+fullpath_out + ' already exists! ')
+            print('')
+
+        rootgrp_in.close()
 
     return
 
