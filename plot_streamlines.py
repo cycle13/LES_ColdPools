@@ -33,7 +33,7 @@ def main():
         path_fields = os.path.join(path_in, 'fields')
     elif os.path.exists(os.path.join(path_in, 'fields_k120')):
         path_fields = os.path.join(path_in, 'fields_k120')
-    path_out = os.path.join(path_in, 'profiles')
+    path_out = os.path.join(path_in, 'streamlines')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
 
@@ -67,19 +67,20 @@ def main():
     nt = 0
     nx_ = 200
     vel = np.ndarray((2,nx_,ny,nz))
-    file = files[nt]
-    t0 = file[:-3]
-    print('t', t0)
-    vel[0,:,:,:] = read_in_netcdf_fields('u', os.path.join(path_fields, file))
-    vel[1,:,:,:] = read_in_netcdf_fields('v', os.path.join(path_fields, file))
-    vel_ = vel[:,:nx,:,:]
-    speed = np.sqrt(vel[0,:] * vel[0,:] + vel[1,:] * vel[1,:])
-    w = read_in_netcdf_fields('w', os.path.join(path_fields, file))
+    # file = files[nt]
+    for file in files[1:]:
+        t0 = file[:-3]
+        print('t', t0)
+        vel[0,:,:,:] = read_in_netcdf_fields('u', os.path.join(path_fields, file))
+        vel[1,:,:,:] = read_in_netcdf_fields('v', os.path.join(path_fields, file))
+        vel_ = vel[:,:nx,:,:]
+        speed = np.sqrt(vel[0,:] * vel[0,:] + vel[1,:] * vel[1,:])
+        w = read_in_netcdf_fields('w', os.path.join(path_fields, file))
 
 
-    k0 = 1
-    # plot_streamplot_xy(w, vel_, x_half, y_half, k0, t0)
-    plot_streamplot_xy_varythickness(w, vel, x_half, y_half, speed, k0, t0)
+        k0 = 1
+        plot_streamplot_xy(w, vel_, x_half, y_half, k0, t0, path_out)
+        plot_streamplot_xy_varythickness(w, vel, x_half, y_half, speed, k0, t0, path_out)
 
 
     # example_streamplot()
@@ -89,22 +90,20 @@ def main():
 
 
 
-def plot_streamplot_xy(w, vel, x_arr, y_arr, k0, t0):
+def plot_streamplot_xy(w, vel, x_arr, y_arr, k0, t0, path_out):
     # x_max = 100
     x_max = nx
     cm = plt.cm.get_cmap('bwr')
     plt.figure()
-    # plt.subplot(1,2,1)
-    # plt.imshow(w[:,:,k0].T)
-    # plt.contourf(x_arr, y_arr, w[:,:,k0].T, cmap = cm)
+
     # !!! only transposed field gives x- and y-coordinate in right order...!!!
     plt.contourf(x_arr, y_arr, w[:x_max,:,k0].T, cmap = cm)
     plt.streamplot(x_arr, y_arr, vel[0,:x_max,:,k0].T, vel[1,:x_max,:,k0].T,
                    density=1.5, linewidth=1.5)
-    #
-    # plt.xlabel('x [m]   (dx='+str(dx)+')')
-    # plt.ylabel('y [m]   (dy='+str(dy)+')')
-    # plt.title('t='+str(t0) + ', z='+str(dz*k0))
+
+    plt.xlabel('x [m]   (dx='+str(dx)+')')
+    plt.ylabel('y [m]   (dy='+str(dy)+')')
+    plt.title('t='+str(t0) + ', z='+str(dz*k0))
     plt.savefig('./streamlines_xy_t'+str(t0)+'_k'+str(k0)+'.png')
     plt.close()
     return
@@ -112,13 +111,13 @@ def plot_streamplot_xy(w, vel, x_arr, y_arr, k0, t0):
 
 
 
-def plot_streamplot_xy_varythickness(w, vel, x_arr, y_arr, speed, k0, t0):
+def plot_streamplot_xy_varythickness(w, vel, x_arr, y_arr, speed, k0, t0, path_out):
 
     plt.figure()
     lw = 5 * speed[:,:,k0] / speed[:,:,k0].max()
     plt.contourf(x_arr, y_arr, w[:,:,k0].T, alpha=0.5)
     plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
-                   color='k', density=1.5, linewidth=lw[:,:])
+                   color='k', density=1.5, linewidth=lw[:,:].T)
     plt.xlabel('x [m]   (dx='+str(dx)+')')
     plt.ylabel('y [m]   (dy='+str(dy)+')')
     plt.title('t='+str(t0) + ', z='+str(dz*k0))
