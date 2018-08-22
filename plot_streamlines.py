@@ -19,7 +19,6 @@ plt.rcParams['figure.titlesize'] = 35
 def main():
 
 
-    print('hello')
 
     # Parse information from the command line
     parser = argparse.ArgumentParser(prog='PyCLES')
@@ -52,44 +51,60 @@ def main():
     gw = nml['grid']['gw']
     # nx = 100
 
-    ''' auxiliary arrays (since no Grid.pyx)'''
-    x_half = np.empty((nx), dtype=np.double, order='c')
-    y_half = np.empty((ny), dtype=np.double, order='c')
-    z_half = np.empty((nz), dtype=np.double, order='c')
-    count = 0
-    for i in xrange(nx):
-        x_half[count] = (i + 0.5) * dx
-        count += 1
-    count = 0
-    for j in xrange(ny):
-        y_half[count] = (j + 0.5) * dy
-        count += 1
-    count = 0
-    for i in xrange(nz):
-        z_half[count] = (i + 0.5) * dz
-        count += 1
 
     ''' determine file range '''
     files = [name for name in os.listdir(path_fields) if name[-2:] == 'nc']
     files.sort(key=len)
+    print('files', files)
+    print('len', len(files[0]))
+    print('')
     if args.timemin:
         time_min = np.int(args.timemin)
     else:
-        time_min = np.int(files[0][:-3])
+        try:
+            time_min = np.int(files[0][:-3])
+        except:
+            time_min = 100
     if args.timemax:
         time_max = np.int(args.timemax)
     else:
-        time_max = np.int(files[-1][:-3])
-    files = [name for name in os.listdir(path_fields) if name[-2:] == 'nc'
+        try:
+            time_max = np.int(files[-1][:-3])
+        except:
+            time_max = 3000
+
+    if len(files[0])<7:     # 100.nc
+        files = [name for name in os.listdir(path_fields) if name[-2:] == 'nc'
              and np.int(name[:-3])>=time_min and np.int(name[:-3])<=time_max]
+        times = [np.int(name[:-3]) for name in files]
+    else:
+        # print(name, name[:-8])
+        files = [name for name in os.listdir(path_fields) if name[-2:] == 'nc'
+                 and np.int(name[:-8]) >= time_min and np.int(name[:-8]) <= time_max]
+        times = [np.int(name[:-8]) for name in files]
     files.sort(key=len)
+    times.sort()
     print('')
     print('files', files)
     print('')
+    print('times', times)
+    print('')
 
-
+    ''' --- set locations ---'''
     global ic_arr, jc_arr
-    if case_name == 'ColdPoolDry_double_3D':
+
+    if case_name == 'ColdPoolDry_double_2D':
+        rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx))
+        # zstar = nml['init']['h']
+        isep = 4 * irstar
+        ic1 = np.int(nx / 3)
+        ic2 = ic1 + isep
+        jc1 = np.int(ny / 2)
+        jc2 = jc1
+        ic_arr = [ic1, ic2]
+        jc_arr = [jc1, jc2]
+    elif case_name == 'ColdPoolDry_double_3D':
         rstar = 5000.0  # half of the width of initial cold-pools [m]
         irstar = np.int(np.round(rstar / dx))
         # zstar = nml['init']['h']
@@ -101,20 +116,38 @@ def main():
         jc2 = jc1 + jsep
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
-    # (b) double 2D
-    elif case_name == 'ColdPoolDry_double_2D':
-        rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
-        # zstar = nml['init']['h']
-        isep = 4 * irstar
-        ic1 = np.int(nx / 3)
-        ic2 = ic1 + isep
-        jc1 = np.int(ny / 2)
-        jc2 = jc1
-        ic_arr = [ic1, ic2]
-        jc_arr = [jc1, jc2]
+    elif case_name == 'ColdPoolDry_triple_3D':
+        d = np.int(np.round(ny / 2))
+        # dhalf = np.int(np.round(ny / 4))
+        a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
+        ic1 = np.int(np.round(a / 2)) + gw
+        ic2 = ic1
+        ic3 = ic1 + np.int(np.round(a))
+        jc1 = np.int(np.round(d / 2) + gw)
+        jc2 = jc1 + d
+        jc3 = jc1 + np.int(np.round(d / 2))
 
 
+    ''' --- auxiliary arrays (since no Grid.pyx) ---'''
+    # test file:
+    var = read_in_netcdf_fields('u', os.path.join(path_fields, files[0]))
+    [nx_,ny_,nz_] = var.shape
+
+    x_half = np.empty((nx_), dtype=np.double, order='c')
+    y_half = np.empty((ny_), dtype=np.double, order='c')
+    z_half = np.empty((nz_), dtype=np.double, order='c')
+    count = 0
+    for i in xrange(nx_):
+        x_half[count] = (i + 0.5) * dx
+        count += 1
+    count = 0
+    for j in xrange(ny_):
+        y_half[count] = (j + 0.5) * dy
+        count += 1
+    count = 0
+    for i in xrange(nz_):
+        z_half[count] = (i + 0.5) * dz
+        count += 1
 
     ''' --- call plotting functions --- '''
     if args.k0:
@@ -122,11 +155,9 @@ def main():
     else:
         k0 = 1
     nt = 0
-    nx_ = 200
-    vel = np.ndarray((2,nx_,ny,nz))
-    # file = files[nt]
-    for file in files:
-        t0 = np.int(file[:-3])
+    vel = np.ndarray((2,nx_,ny_,nz_))
+    for it, file in enumerate(files):
+        t0 = times[it]
         print('t', t0)
         vel[0,:,:,:] = read_in_netcdf_fields('u', os.path.join(path_fields, file))
         vel[1,:,:,:] = read_in_netcdf_fields('v', os.path.join(path_fields, file))
@@ -143,20 +174,24 @@ def main():
         dj = np.int(2*irstar)
         # plot_streamplot_xy_collision(w, vel, speed_h, x_half, y_half, i0, di, j0, dj, k0, t0, path_out)
         # plot_streamplot_xy_varythickness(w, vel, x_half, y_half, speed_h, k0, t0, path_out)
-        # ''' (b) yz-plane at collision point'''
-        # i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))  # at collision point
+
+        ''' (b) yz-plane at collision point'''
+        i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))  # at collision point
         # plot_streamplot_yz(w, vel, speed_yz, y_half, z_half, i0, t0, path_out, True)
-        # ''' (c) yz-plane at center of cold pool #1'''
-        # i0 = ic1    # through center of cold pool #1
+
+        ''' (c) yz-plane at center of cold pool #1'''
+        i0 = ic1    # through center of cold pool #1
         # plot_streamplot_yz(w, vel, speed_yz, y_half, z_half, i0, t0, path_out, True)
+
         ''' (d) xz-plane at center of cold pool #1'''
         j0 = jc1
-        plot_streamplot_xz(w, vel, speed_xz, y_half, z_half, j0, t0, path_out, True)
+        # plot_streamplot_xz(w, vel, speed_xz, x_half, z_half, j0, t0, path_out, True)
 
     return
 
 
 def plot_streamplot_xz(w, vel, speed, x_arr, z_arr, j0, t0, path_out, vary=False):
+    print(path_out)
     if t0 <= 100:
         plt.figure()
         plt.contourf(w[:, :, 1].T)
@@ -176,7 +211,6 @@ def plot_streamplot_xz(w, vel, speed, x_arr, z_arr, j0, t0, path_out, vary=False
     plt.colorbar(ax)
 
     if vary:
-        # lw = 2
         lw = 5 * speed[:, j0, :] / speed[:, j0, :].max()
         plt.streamplot(x_arr, z_arr, vel[0,:,j0,:].T, w_.T,
                        color='k', density = 1.5, linewidth=lw[:,:].T)
@@ -234,30 +268,12 @@ def plot_streamplot_yz(w, vel, speed, y_arr, z_arr, i0, t0, path_out, vary=True)
 
 def plot_streamplot_xy_collision(w, vel, speed, x_arr, y_arr, ic, di, jc, dj, k0, t0, path_out):
     cm_cont = plt.cm.get_cmap('bwr')
-    # cm_lines = plt.cm.get_cmap('PRGn')
-    # cm_lines = plt.cm.get_cmap('PuOr')
-    # cm_lines = plt.cm.get_cmap('BrBG')
     cm_lines = plt.cm.get_cmap('winter')
     # cm_lines = plt.cm.get_cmap('autumn')
 
     w_ = w[ic-di:ic+di+1, jc-dj:jc+dj+1, k0]
     wmax = np.maximum(np.abs(np.amin(w_)), np.abs(np.amax(w_)))
     levels = np.linspace(-wmax, wmax, 1e3)
-    # levels = np.linspace(np.amin(w), np.amax(w), 1e3)
-
-    # plt.figure(figsize=(6,12))
-    # ax = plt.contourf(x_arr[ic-di:ic+di+1], y_arr[jc-dj:jc+dj+1], w_.T,
-    #                   cmap=cm_cont, levels=levels)
-    # plt.colorbar(ax)
-    # plt.streamplot(x_arr[ic-di:ic+di+1], y_arr[jc-dj:jc+dj+1],
-    #                vel[0, ic-di:ic+di+1, jc-dj:jc+dj+1, k0].T, vel[1, ic-di:ic+di+1, jc-dj:jc+dj+1, k0].T,
-    #                density=1.5, linewidth=1.5)
-    #
-    # plt.xlabel('x [m]   (dx=' + str(dx) + ')')
-    # plt.ylabel('y [m]   (dy=' + str(dy) + ')')
-    # plt.title('t=' + str(t0) + ', z=' + str(dz * k0))
-    # plt.savefig(os.path.join(path_out, 'streamlines_xy_collision_t'+str(t0)+'_k'+str(k0)+'.png'))
-    # plt.close()
 
     #  Varying line width along a streamline
     lw = 5 * speed[ic-di:ic+di+1, jc-dj:jc+dj+1, k0] / speed[ic-di:ic+di+1, jc-dj:jc+dj+1, k0].max()
@@ -377,7 +393,7 @@ def example_streamplot():
 
 # ----------------------------------
 def read_in_netcdf_fields(variable_name, fullpath_in):
-    # print(fullpath_in)
+    print(fullpath_in)
     rootgrp = nc.Dataset(fullpath_in, 'r')
     var = rootgrp.groups['fields'].variables[variable_name]
     # shape = var.shape
