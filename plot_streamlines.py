@@ -6,12 +6,14 @@ import argparse
 import json as simplejson
 import os
 
-label_size = 12
-plt.rcParams['xtick.labelsize'] = label_size
-plt.rcParams['ytick.labelsize'] = label_size
+global tick_size, label_size
+tick_size = 12
+label_size = 21
+plt.rcParams['xtick.labelsize'] = tick_size
+plt.rcParams['ytick.labelsize'] = tick_size
 plt.rcParams['lines.linewidth'] = 1.5
 plt.rcParams['legend.fontsize'] = 8
-plt.rcParams['axes.labelsize'] = 21
+plt.rcParams['axes.labelsize'] = label_size
 # plt.rcParams['xtick.direction']='out'
 # plt.rcParams['ytick.direction']='out'
 # plt.rcParams['figure.titlesize'] = 35
@@ -129,7 +131,7 @@ def main():
         jc2 = jc1 + d
         jc3 = jc1 + np.int(np.round(d / 2))
 
-        sep = dhalf
+        isep = dhalf
 
 
     ''' --- auxiliary arrays (since no Grid.pyx) ---'''
@@ -177,7 +179,7 @@ def main():
         j0 = jc1
         dj = np.int(2*irstar)
         # plot_streamplot_xy_collision(w, vel, speed_h, x_half, y_half, i0, di, j0, dj, k0, t0, path_out)
-        # plot_streamplot_xy_varythickness(w, vel, x_half, y_half, speed_h, k0, t0, path_out)
+        plot_streamplot_xy_varythickness(w, vel, x_half, y_half, speed_h, k0, t0, path_out)
 
         ''' (b) yz-plane at collision point'''
         i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))  # at collision point
@@ -319,16 +321,27 @@ def plot_streamplot_xy_collision(w, vel, speed, x_arr, y_arr, ic, di, jc, dj, k0
 
 
 def plot_streamplot_xy_varythickness(w, vel, x_arr, y_arr, speed, k0, t0, path_out):
+    cm = plt.cm.get_cmap('bwr')
+    cm_lines = plt.cm.get_cmap('winter')
 
-    plt.figure(figsize=(12,10))
+    w_ = w[:, :, k0]
+    wmax = np.maximum(np.abs(np.amin(w_)), np.abs(np.amax(w_)))
+    levels = np.linspace(-wmax, wmax, 1e3)
+
+    fig, ax = plt.subplots(figsize=(16,10))
+    ax.set_aspect('equal')    # ax.set_aspect(1.0)
     lw = 5 * speed[:,:,k0] / speed[:,:,k0].max()
-    ax = plt.contourf(x_arr, y_arr, w[:,:,k0].T, alpha=0.5)
-    plt.colorbar(ax)
-    plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
-                   color='k', density=1.5, linewidth=lw[:,:].T)
+    ax1 = plt.contourf(x_arr, y_arr, w[:,:,k0].T, levels=levels, alpha=1., cmap = cm)
+    plt.colorbar(ax1, shrink=0.5)
+    # plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
+    #                color='k', density=1.5, linewidth=lw[:,:].T)
+    strm = plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
+                   color=vel[0,:,:,k0], cmap=cm_lines, density=1.5, linewidth=lw[:,:].T)
+    plt.colorbar(strm.lines, shrink=0.5)
     plt.xlabel('x [m]   (dx='+str(dx)+')')
     plt.ylabel('y [m]   (dy='+str(dy)+')')
-    plt.title('t='+str(t0) + ', z='+str(dz*k0))
+    plt.title('t='+str(t0) + ', z='+str(dz*k0), fontsize=label_size)
+
     plt.savefig(os.path.join(path_out, 'streamlines_xy_lw_t'+str(t0)+'_k'+str(k0)+'.png'))
     plt.close()
     return
