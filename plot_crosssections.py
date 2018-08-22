@@ -83,25 +83,26 @@ def main():
     # xc2 = Gr.x_half[ic1]  # center of cold-pool
     # yc2 = Gr.y_half[jc2]  # center of cold-pool
 
-    files pl= [name for name in os.listdir(path_fields) if name[-2:] == 'nc']
+    files = [name for name in os.listdir(path_fields) if name[-2:] == 'nc']
     files.sort(key=len)
     print('files', files)
 
-    ''' (a) compute horizontal convergence''''
-
-
+    # ''' (a) compute horizontal convergence''''
+    #
+    #
     ''' (b) plot profiles for w, s for all time-steps '''
     zrange = np.arange(0, 1)
     var_list = ['w', 's']
     # var_list = ['s']
     k0 = 0
-    # plot_y_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, path_fields)
+    i0 = ic1 + isep
+    plot_y_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, path_fields)
     i_collision = np.int(ic1 + np.round((ic2 - ic1) / 2))  # double 3D
-    # plot_x_crosssections(var_list, k0, i_collision, ic1, jc1, ic2, jc2, files, path_out, path_fields)
+    plot_x_crosssections(var_list, k0, i_collision, ic1, jc1, ic2, jc2, files, path_out, path_fields)
 
     ''' (c) plot profiles at different levels for collision time '''
     krange = [0, 2, 5,10]
-    # plot_y_crosssections_multilevel('w', i_collision, krange, ic_arr, jc_arr, files, path_out, path_fields)
+    plot_y_crosssections_multilevel('w', i_collision, krange, ic_arr, jc_arr, files, path_out, path_fields)
     t_max = 700
     krange = [0,2,3,4,5,6,8,10,12]#np.arange(0,13,2)
     print(krange)
@@ -125,7 +126,9 @@ def plot_x_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, 
         f1 = plt.figure(figsize=(6,12))
         ax1 = plt.subplot(3, 1, 1)
         ax2 = plt.subplot(3, 1, 2)
+        ax2.set_title('y-crossection through center of coldpool #1')
         ax3 = plt.subplot(3, 1, 3)
+        ax3.set_title('y-crossection through collision point')
         s0 = read_in_netcdf_fields('s', os.path.join(path_fields, '0.nc'))
         ax1.imshow(s0[:, :, k0].T)
         ax1.plot([0, 3*ic1], [jc1, jc1], 'k', linewidth=2)
@@ -154,12 +157,10 @@ def plot_x_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, 
         plt.ylabel('y')
         plt.subplot(3,1,2)
         plt.grid()
-        plt.title('y-crossection through center of coldpool #1')
         plt.xlabel('y')
         plt.ylabel(var_name)
         plt.subplot(3,1,3)
         plt.grid()
-        plt.title('y-crossection through collision point')
         plt.xlabel('y')
         plt.ylabel(var_name)
 
@@ -181,8 +182,11 @@ def plot_y_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, 
     for var_name in var_list:
         f1 = plt.figure(figsize=(6, 12))
         ax1 = plt.subplot(3, 1, 1)
+        ax1.set_title('entropy')
         ax2 = plt.subplot(3, 1, 2)
+        ax2.set_title('y-crossection through center of coldpool #1')
         ax3 = plt.subplot(3, 1, 3)
+        ax3.set_title('y-crossection through collision point')
         s0 = read_in_netcdf_fields('s', os.path.join(path_fields, '0.nc'))
         ax1.imshow(s0[:,:,k0].T)
         ax1.plot([ic1,ic1],[0,2*jc1], 'k', linewidth=2)
@@ -197,15 +201,12 @@ def plot_y_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, 
             ax3.plot(var[i0, :, k0], color=cm(count_color), label='t=' + str(file[:-3]))
 
         plt.subplot(3, 1, 1)
-        plt.title('entropy')
         plt.xlabel('x')
         plt.ylabel('y')
         plt.subplot(3, 1, 2)
-        plt.title('y-crossection through center of coldpool #1')
         plt.xlabel('y')
         plt.ylabel(var_name)
         plt.subplot(3, 1, 3)
-        plt.title('y-crossection through collision point')
         plt.xlabel('y')
         plt.ylabel(var_name)
         #
@@ -258,7 +259,11 @@ def plot_y_crosssections_multilevel(var_name, i0, krange, ic_arr, jc_arr, files,
         plt.subplot(nline, 1, n+2)
         plt.title('k='+str(k)+', z='+str(dz*k)+'m')
         plt.ylabel(var_name)
-
+        plt.xlabel('y')
+    plt.subplot(nline,1,nline)
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+                   fancybox=True, shadow=True, ncol=5)
+    plt.suptitle('w multilevel')
     plt.savefig(os.path.join(path_out, 'yz_multilevel_'+var_name+'.png'))
     plt.close()
     return
@@ -275,10 +280,12 @@ def plot_collision_max(var_name, i0, krange, t0, path_out, path_fields):
     plt.figure(figsize=(6,9))
     ax1 = plt.subplot(nline,1,1)
     ax2 = plt.subplot(nline,1,2)
+    ax2.set_title('t=' + str(t0) + 's')
 
     s0 = read_in_netcdf_fields('s', os.path.join(path_fields, '0.nc'))
     ax1.imshow(s0[:, :, 1].T)
     ax1.plot([i0, i0], [0, 2 * jc_arr[0]], 'k', linewidth=2)
+    ax1.set_title('s (t=0s)')
 
 
 
@@ -289,11 +296,9 @@ def plot_collision_max(var_name, i0, krange, t0, path_out, path_fields):
         ax2.plot(var[i0, :, k], color=cm(count_color), label='z=' + str(k*dz)+'m', linewidth=2)
     ax2.legend()
 
-    plt.subplot(nline,1,1)
-    plt.title('s (t=0s)')
+    # plt.subplot(nline,1,1)
     # plt.colorbar(ax1,shrink=0.5)
     plt.subplot(nline,1,2)
-    plt.title('t='+str(t0)+'s')
     plt.xlabel('x')
     plt.ylabel(var_name)
 
