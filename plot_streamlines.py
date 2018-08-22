@@ -14,7 +14,7 @@ plt.rcParams['legend.fontsize'] = 8
 plt.rcParams['axes.labelsize'] = 21
 # plt.rcParams['xtick.direction']='out'
 # plt.rcParams['ytick.direction']='out'
-plt.rcParams['figure.titlesize'] = 35
+# plt.rcParams['figure.titlesize'] = 35
 
 def main():
 
@@ -117,8 +117,10 @@ def main():
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
     elif case_name == 'ColdPoolDry_triple_3D':
+        rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx))
         d = np.int(np.round(ny / 2))
-        # dhalf = np.int(np.round(ny / 4))
+        dhalf = np.int(np.round(ny / 4))
         a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
         ic1 = np.int(np.round(a / 2)) + gw
         ic2 = ic1
@@ -126,6 +128,8 @@ def main():
         jc1 = np.int(np.round(d / 2) + gw)
         jc2 = jc1 + d
         jc3 = jc1 + np.int(np.round(d / 2))
+
+        sep = dhalf
 
 
     ''' --- auxiliary arrays (since no Grid.pyx) ---'''
