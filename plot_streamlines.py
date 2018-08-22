@@ -6,15 +6,15 @@ import argparse
 import json as simplejson
 import os
 
-label_size = 8
+label_size = 12
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
 plt.rcParams['lines.linewidth'] = 1.5
 plt.rcParams['legend.fontsize'] = 8
-plt.rcParams['axes.labelsize'] = 12
+plt.rcParams['axes.labelsize'] = 21
 # plt.rcParams['xtick.direction']='out'
 # plt.rcParams['ytick.direction']='out'
-# plt.rcParams['figure.titlesize'] = 35$
+plt.rcParams['figure.titlesize'] = 35
 
 def main():
 
@@ -25,6 +25,9 @@ def main():
     parser = argparse.ArgumentParser(prog='PyCLES')
     parser.add_argument("casename")
     parser.add_argument("path")
+    parser.add_argument("--timemin")
+    parser.add_argument("--timemax")
+    parser.add_argument("--k0")
     args = parser.parse_args()
 
     case_name = args.casename
@@ -37,6 +40,7 @@ def main():
     if not os.path.exists(path_out):
         os.mkdir(path_out)
 
+
     global nx, ny, nz, dx, dy, dz
     nml = simplejson.loads(open(os.path.join(path_in, case_name + '.in')).read())
     nx = nml['grid']['nx']
@@ -48,9 +52,10 @@ def main():
     gw = nml['grid']['gw']
     # nx = 100
 
-    # auxiliary since no Grid.pyx
+    ''' auxiliary arrays (since no Grid.pyx)'''
     x_half = np.empty((nx), dtype=np.double, order='c')
     y_half = np.empty((ny), dtype=np.double, order='c')
+    z_half = np.empty((nz), dtype=np.double, order='c')
     count = 0
     for i in xrange(nx):
         x_half[count] = (i + 0.5) * dx
@@ -59,69 +64,252 @@ def main():
     for j in xrange(ny):
         y_half[count] = (j + 0.5) * dy
         count += 1
+    count = 0
+    for i in xrange(nz):
+        z_half[count] = (i + 0.5) * dz
+        count += 1
 
+    ''' determine file range '''
     files = [name for name in os.listdir(path_fields) if name[-2:] == 'nc']
     files.sort(key=len)
+    if args.timemin:
+        time_min = np.int(args.timemin)
+    else:
+        time_min = np.int(files[0][:-3])
+    if args.timemax:
+        time_max = np.int(args.timemax)
+    else:
+        time_max = np.int(files[-1][:-3])
+    files = [name for name in os.listdir(path_fields) if name[-2:] == 'nc'
+             and np.int(name[:-3])>=time_min and np.int(name[:-3])<=time_max]
+    files.sort(key=len)
+    print('')
     print('files', files)
+    print('')
 
+
+    global ic_arr, jc_arr
+    if case_name == 'ColdPoolDry_double_3D':
+        rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx))
+        # zstar = nml['init']['h']
+        isep = 4 * irstar
+        jsep = 0
+        ic1 = np.int(np.round((nx + 2 * gw) / 3)) - gw
+        jc1 = np.int(np.round((ny + 2 * gw) / 2)) - gw
+        ic2 = ic1 + isep
+        jc2 = jc1 + jsep
+        ic_arr = [ic1, ic2]
+        jc_arr = [jc1, jc2]
+    # (b) double 2D
+    elif case_name == 'ColdPoolDry_double_2D':
+        rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx))
+        # zstar = nml['init']['h']
+        isep = 4 * irstar
+        ic1 = np.int(nx / 3)
+        ic2 = ic1 + isep
+        jc1 = np.int(ny / 2)
+        jc2 = jc1
+        ic_arr = [ic1, ic2]
+        jc_arr = [jc1, jc2]
+
+
+
+    ''' --- call plotting functions --- '''
+    if args.k0:
+        k0 = np.int(args.k0)
+    else:
+        k0 = 1
     nt = 0
     nx_ = 200
     vel = np.ndarray((2,nx_,ny,nz))
     # file = files[nt]
-    for file in files[1:]:
-        t0 = file[:-3]
+    for file in files:
+        t0 = np.int(file[:-3])
         print('t', t0)
         vel[0,:,:,:] = read_in_netcdf_fields('u', os.path.join(path_fields, file))
         vel[1,:,:,:] = read_in_netcdf_fields('v', os.path.join(path_fields, file))
-        vel_ = vel[:,:nx,:,:]
-        speed = np.sqrt(vel[0,:] * vel[0,:] + vel[1,:] * vel[1,:])
+        speed_h = np.sqrt(vel[0,:] * vel[0,:] + vel[1,:] * vel[1,:])
         w = read_in_netcdf_fields('w', os.path.join(path_fields, file))
+        speed_yz = np.sqrt(vel[1, :] * vel[1, :] + w * w)
+        speed_xz = np.sqrt(vel[0, :] * vel[0, :] + w * w)
 
 
-        k0 = 1
-        plot_streamplot_xy(w, vel_, x_half, y_half, k0, t0, path_out)
-        plot_streamplot_xy_varythickness(w, vel, x_half, y_half, speed, k0, t0, path_out)
+        ''' (a) xy-level '''
+        i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))
+        di = 15
+        j0 = jc1
+        dj = np.int(2*irstar)
+        # plot_streamplot_xy_collision(w, vel, speed_h, x_half, y_half, i0, di, j0, dj, k0, t0, path_out)
+        # plot_streamplot_xy_varythickness(w, vel, x_half, y_half, speed_h, k0, t0, path_out)
+        # ''' (b) yz-plane at collision point'''
+        # i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))  # at collision point
+        # plot_streamplot_yz(w, vel, speed_yz, y_half, z_half, i0, t0, path_out, True)
+        # ''' (c) yz-plane at center of cold pool #1'''
+        # i0 = ic1    # through center of cold pool #1
+        # plot_streamplot_yz(w, vel, speed_yz, y_half, z_half, i0, t0, path_out, True)
+        ''' (d) xz-plane at center of cold pool #1'''
+        j0 = jc1
+        plot_streamplot_xz(w, vel, speed_xz, y_half, z_half, j0, t0, path_out, True)
+
+    return
 
 
-    # example_streamplot()
+def plot_streamplot_xz(w, vel, speed, x_arr, z_arr, j0, t0, path_out, vary=False):
+    if t0 <= 100:
+        plt.figure()
+        plt.contourf(w[:, :, 1].T)
+        plt.plot([0, nx],[j0, j0], 'k')
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.savefig(os.path.join(path_out, 'streamlines_xz_check_i'+str(j0)+'.png'))
+        plt.close()
+
+    cm = plt.cm.get_cmap('bwr')
+    w_ = w[:, j0, :]
+    wmax = np.maximum(np.abs(np.amin(w_)), np.abs(np.amax(w_)))
+    levels = np.linspace(-wmax, wmax, 1e3)
+
+    plt.figure(figsize=(12, 10))
+    ax = plt.contourf(x_arr, z_arr, w_.T,cmap=cm, levels=levels)
+    plt.colorbar(ax)
+
+    if vary:
+        # lw = 2
+        lw = 5 * speed[:, j0, :] / speed[:, j0, :].max()
+        plt.streamplot(x_arr, z_arr, vel[0,:,j0,:].T, w_.T,
+                       color='k', density = 1.5, linewidth=lw[:,:].T)
+    else:
+        plt.streamplot(x_arr, z_arr, vel[0, :, j0, :].T, w_.T,
+                       color='k', density=1.5, linewidth=2)
+
+    plt.xlabel('x [m]   (dx=' + str(dx) + ')')
+    plt.ylabel('z [m]   (dz=' + str(dy) + ')')
+    plt.title('t=' + str(t0) + ' x=' + str(j0 * dy) + 'm')
+    plt.savefig(os.path.join(path_out, 'streamlines_xz_t' + str(t0) + '_i' + str(j0) + '.png'))
+    plt.close()
 
     return
 
 
 
+def plot_streamplot_yz(w, vel, speed, y_arr, z_arr, i0, t0, path_out, vary=True):
+    if t0 <= 100:
+        plt.figure()
+        plt.contourf(w[:,:,1].T)
+        plt.plot([i0,i0],[0,ny],'k')
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.savefig(os.path.join(path_out, 'streamlines_yz_check_i'+str(i0)+'.png'))
+        plt.close()
 
-def plot_streamplot_xy(w, vel, x_arr, y_arr, k0, t0, path_out):
-    # x_max = 100
-    x_max = nx
     cm = plt.cm.get_cmap('bwr')
-    plt.figure()
+    w_ = w[i0, :,:]
+    # levels = np.linspace(np.amin(w_), np.amax(w_), 1e3)
+    wmax = np.maximum(np.abs(np.amin(w_)), np.abs(np.amax(w_)))
+    levels = np.linspace(-wmax, wmax, 1e3)
 
-    # !!! only transposed field gives x- and y-coordinate in right order...!!!
-    plt.contourf(x_arr, y_arr, w[:x_max,:,k0].T, cmap = cm)
-    plt.streamplot(x_arr, y_arr, vel[0,:x_max,:,k0].T, vel[1,:x_max,:,k0].T,
-                   density=1.5, linewidth=1.5)
+    plt.figure(figsize=(12, 10))
+    ax = plt.contourf(y_arr, z_arr, w_.T,cmap=cm, levels=levels)
 
-    plt.xlabel('x [m]   (dx='+str(dx)+')')
-    plt.ylabel('y [m]   (dy='+str(dy)+')')
-    plt.title('t='+str(t0) + ', z='+str(dz*k0))
-    plt.savefig('./streamlines_xy_t'+str(t0)+'_k'+str(k0)+'.png')
+    plt.colorbar(ax)
+    if not vary:
+        plt.streamplot(y_arr, z_arr, vel[1,i0,:,:].T, w_.T, color='k', density=1.5, linewidth=1.5)
+    elif vary:
+        #  Varying line width along a streamline
+        lw = 5 * speed[i0,:,:] / speed[i0,:,:].max()
+        plt.streamplot(y_arr, z_arr, vel[1, i0, :, :].T, w_.T, color='k',
+                    density=1.5,
+                    linewidth = lw[:, :].T)
+
+    plt.xlabel('y [m]   (dy=' + str(dy) + ')')
+    plt.ylabel('z [m]   (dz=' + str(dy) + ')')
+    plt.title('t=' + str(t0)+ ' x='+str(i0*dx)+'m')
+    plt.savefig(os.path.join(path_out, 'streamlines_yz_i'+str(i0)+'_t'+str(t0)+'.png'))
     plt.close()
     return
 
 
 
+def plot_streamplot_xy_collision(w, vel, speed, x_arr, y_arr, ic, di, jc, dj, k0, t0, path_out):
+    cm_cont = plt.cm.get_cmap('bwr')
+    # cm_lines = plt.cm.get_cmap('PRGn')
+    # cm_lines = plt.cm.get_cmap('PuOr')
+    # cm_lines = plt.cm.get_cmap('BrBG')
+    cm_lines = plt.cm.get_cmap('winter')
+    # cm_lines = plt.cm.get_cmap('autumn')
+
+    w_ = w[ic-di:ic+di+1, jc-dj:jc+dj+1, k0]
+    wmax = np.maximum(np.abs(np.amin(w_)), np.abs(np.amax(w_)))
+    levels = np.linspace(-wmax, wmax, 1e3)
+    # levels = np.linspace(np.amin(w), np.amax(w), 1e3)
+
+    # plt.figure(figsize=(6,12))
+    # ax = plt.contourf(x_arr[ic-di:ic+di+1], y_arr[jc-dj:jc+dj+1], w_.T,
+    #                   cmap=cm_cont, levels=levels)
+    # plt.colorbar(ax)
+    # plt.streamplot(x_arr[ic-di:ic+di+1], y_arr[jc-dj:jc+dj+1],
+    #                vel[0, ic-di:ic+di+1, jc-dj:jc+dj+1, k0].T, vel[1, ic-di:ic+di+1, jc-dj:jc+dj+1, k0].T,
+    #                density=1.5, linewidth=1.5)
+    #
+    # plt.xlabel('x [m]   (dx=' + str(dx) + ')')
+    # plt.ylabel('y [m]   (dy=' + str(dy) + ')')
+    # plt.title('t=' + str(t0) + ', z=' + str(dz * k0))
+    # plt.savefig(os.path.join(path_out, 'streamlines_xy_collision_t'+str(t0)+'_k'+str(k0)+'.png'))
+    # plt.close()
+
+    #  Varying line width along a streamline
+    lw = 5 * speed[ic-di:ic+di+1, jc-dj:jc+dj+1, k0] / speed[ic-di:ic+di+1, jc-dj:jc+dj+1, k0].max()
+    plt.figure(figsize=(10, 12))
+    ax = plt.contourf(x_arr[ic - di:ic + di + 1], y_arr[jc - dj:jc + dj + 1], w_.T,
+                      cmap=cm_cont, levels=levels)
+    plt.colorbar(ax)
+    plt.streamplot(x_arr[ic - di:ic + di + 1], y_arr[jc - dj:jc + dj + 1],
+                   vel[0, ic - di:ic + di + 1, jc - dj:jc + dj + 1, k0].T,
+                   vel[1, ic - di:ic + di + 1, jc - dj:jc + dj + 1, k0].T,
+                   density=1.5, linewidth=lw[:,:].T, color='k')
+
+    plt.xlabel('x [m]   (dx=' + str(dx) + ')')
+    plt.ylabel('y [m]   (dy=' + str(dy) + ')')
+    plt.title('t=' + str(t0) + ', z=' + str(dz * k0))
+    plt.savefig(os.path.join(path_out, 'streamlines_xy_collision_lw_t' + str(t0) + '_k' + str(k0) + '.png'))
+    plt.close()
+
+    # Varying color along a streamline
+    fig = plt.figure(figsize=(12, 12))
+    lw = 5 * speed[ic - di:ic + di + 1, jc - dj:jc + dj + 1, k0] / \
+         speed[ic - di:ic + di + 1, jc - dj:jc + dj + 1, k0].max()
+    ax = plt.contourf(x_arr[ic - di:ic + di + 1], y_arr[jc - dj:jc + dj + 1], w_.T,
+                      cmap=cm_cont, levels=levels, alpha=1.)
+    plt.contourf(x_arr[ic - di:ic + di + 1], y_arr[jc - dj:jc + dj + 1], np.zeros((2*di+1,2*dj+1)).T,
+                      colors='w', alpha=0.5)
+    plt.colorbar(ax, shrink=0.5)
+    u = vel[0,ic-di:ic+di+1,jc-dj:jc+dj+1,k0].T
+    v = vel[1,ic-di:ic+di+1,jc-dj:jc+dj+1,k0].T
+    strm = plt.streamplot(x_arr[ic-di:ic+di+1], y_arr[jc-dj:jc+dj+1], u, v,
+                          color=u, cmap=cm_lines,
+                          linewidth=lw[:,:].T)
+    fig.colorbar(strm.lines, shrink=0.5)
+    plt.title('Varying Color')
+    plt.savefig(os.path.join(path_out, 'streamlines_xy_collision_col_t' + str(t0) + '_k' + str(k0) + '.png'))
+    plt.close()
+    return
+
+
 
 def plot_streamplot_xy_varythickness(w, vel, x_arr, y_arr, speed, k0, t0, path_out):
 
-    plt.figure()
+    plt.figure(figsize=(12,10))
     lw = 5 * speed[:,:,k0] / speed[:,:,k0].max()
-    plt.contourf(x_arr, y_arr, w[:,:,k0].T, alpha=0.5)
+    ax = plt.contourf(x_arr, y_arr, w[:,:,k0].T, alpha=0.5)
+    plt.colorbar(ax)
     plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
                    color='k', density=1.5, linewidth=lw[:,:].T)
     plt.xlabel('x [m]   (dx='+str(dx)+')')
     plt.ylabel('y [m]   (dy='+str(dy)+')')
     plt.title('t='+str(t0) + ', z='+str(dz*k0))
-    plt.savefig('./streamlines_xy_t'+str(t0)+'_k'+str(k0)+'_lw.png')
+    plt.savefig(os.path.join(path_out, 'streamlines_xy_lw_t'+str(t0)+'_k'+str(k0)+'.png'))
     plt.close()
     return
 
@@ -189,7 +377,7 @@ def example_streamplot():
 
 # ----------------------------------
 def read_in_netcdf_fields(variable_name, fullpath_in):
-    print(fullpath_in)
+    # print(fullpath_in)
     rootgrp = nc.Dataset(fullpath_in, 'r')
     var = rootgrp.groups['fields'].variables[variable_name]
     # shape = var.shape
