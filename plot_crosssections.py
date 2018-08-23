@@ -23,6 +23,8 @@ def main():
     parser = argparse.ArgumentParser(prog='PyCLES')
     parser.add_argument("casename")
     parser.add_argument("path")
+    parser.add_argument("--timemin")
+    parser.add_argument("--timemax")
     args = parser.parse_args()
 
     case_name = args.casename
@@ -76,16 +78,53 @@ def main():
         jc2 = jc1
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
+    elif case_name == 'ColdPoolDry_triple_3D':
+        rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx))
+        d = np.int(np.round(ny / 2))
+        dhalf = np.int(np.round(ny / 4))
+        a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
+        ic1 = np.int(np.round(a / 2))# + gw
+        ic2 = ic1
+        ic3 = ic1 + np.int(np.round(a))
+        jc1 = np.int(np.round(d / 2))# + gw
+        jc2 = jc1 + d
+        jc3 = jc1 + np.int(np.round(d / 2))
+        ic_arr = [ic1, ic2, ic3]
+        jc_arr = [jc1, jc2, jc3]
 
+        isep = dhalf
 
-    # xc1 = Gr.x_half[ic1]  # center of cold-pool
-    # yc1 = Gr.y_half[jc1]  # center of cold-pool
-    # xc2 = Gr.x_half[ic1]  # center of cold-pool
-    # yc2 = Gr.y_half[jc2]  # center of cold-pool
-
-    files = [name for name in os.listdir(path_fields) if name[-2:] == 'nc']
+    ''' determine file range '''
+    if args.timemax:
+        time_max = np.int(args.timemax)
+    else:
+        time_max = np.int(10000)
+    files = [name for name in os.listdir(path_fields) if name[-2:] == 'nc' and np.int(name[:-3])<=time_max]
     files.sort(key=len)
     print('files', files)
+
+    ''' --- auxiliary arrays (since no Grid.pyx) ---'''
+    # test file:
+    var = read_in_netcdf_fields('u', os.path.join(path_fields, files[0]))
+    [nx_, ny_, nz_] = var.shape
+
+    x_half = np.empty((nx_), dtype=np.double, order='c')
+    y_half = np.empty((ny_), dtype=np.double, order='c')
+    z_half = np.empty((nz_), dtype=np.double, order='c')
+    count = 0
+    for i in xrange(nx_):
+        x_half[count] = (i + 0.5) * dx
+        count += 1
+    count = 0
+    for j in xrange(ny_):
+        y_half[count] = (j + 0.5) * dy
+        count += 1
+    count = 0
+    for i in xrange(nz_):
+        z_half[count] = (i + 0.5) * dz
+        count += 1
+
 
     # ''' (a) compute horizontal convergence''''
     #
@@ -95,18 +134,24 @@ def main():
     var_list = ['w', 's']
     # var_list = ['s']
     k0 = 0
+    # -- 2D --
     i0 = ic1 + isep
-    plot_y_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, path_fields)
     i_collision = np.int(ic1 + np.round((ic2 - ic1) / 2))  # double 3D
-    plot_x_crosssections(var_list, k0, i_collision, ic1, jc1, ic2, jc2, files, path_out, path_fields)
+    # plot_y_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, path_fields)
 
-    ''' (c) plot profiles at different levels for collision time '''
-    krange = [0, 2, 5,10]
-    plot_y_crosssections_multilevel('w', i_collision, krange, ic_arr, jc_arr, files, path_out, path_fields)
-    t_max = 700
-    krange = [0,2,3,4,5,6,8,10,12]#np.arange(0,13,2)
-    print(krange)
-    plot_collision_max('w', i_collision, krange, t_max, path_out, path_fields)
+    # -- 2D --
+    j0 = np.int(jc1 + (ic2 - ic1) / 4)
+    # -- 3D --
+    j0 = np.int(jc1 + isep)
+    plot_x_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2, files, path_out, path_fields)
+    #
+    # ''' (c) plot profiles at different levels for collision time '''
+    # krange = [0, 2, 5,10]
+    # plot_y_crosssections_multilevel('w', i_collision, krange, ic_arr, jc_arr, files, path_out, path_fields)
+    # t_max = 700
+    # krange = [0,2,3,4,5,6,8,10,12]#np.arange(0,13,2)
+    # print(krange)
+    # plot_collision_max('w', i_collision, krange, t_max, path_out, path_fields)
 
 
     return
@@ -114,11 +159,11 @@ def main():
 
 # ----------------------------------
 
-def plot_x_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, path_fields):
+def plot_x_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2, files, path_out, path_fields):
     cm = plt.cm.get_cmap('coolwarm')
     # cm = plt.cm.get_cmap('viridis')
     # cm = plt.cm.get_cmap('viridis_r')
-    j0 = np.int(jc1 + (ic2 - ic1) / 4)
+
 
     for var_name in var_list:
         var_min1 = 9999.9
@@ -130,10 +175,10 @@ def plot_x_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, 
         ax3 = plt.subplot(3, 1, 3)
         ax3.set_title('y-crossection through collision point')
         s0 = read_in_netcdf_fields('s', os.path.join(path_fields, '0.nc'))
-        ax1.imshow(s0[:, :, k0].T)
-        ax1.plot([0, 3*ic1], [jc1, jc1], 'k', linewidth=2)
-        ax1.plot([0, 3*ic1], [j0, j0], 'k', linewidth=2)
-        ax1.plot([ic1, ic1], [0, 2 * jc1], 'k--', linewidth=1)
+        ax1.imshow(s0[:, :, k0].T, origin="lower")
+        ax1.plot([0, nx-1], [jc1, jc1], 'k', linewidth=2)
+        ax1.plot([0, nx-1], [j0, j0], 'k', linewidth=2)
+        ax1.plot([ic1, ic1], [0, ny-1], 'k--', linewidth=1)
         ax1.plot([ic2, ic2], [0, 2 * jc1], 'k--', linewidth=1)
         for file in files:
             var = read_in_netcdf_fields(var_name, os.path.join(path_fields,file))
@@ -171,6 +216,9 @@ def plot_x_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, 
         plt.savefig(os.path.join(path_out, 'xz_plane_' + var_name + '_k' + str(k0) + '.png'))
         plt.close()
     return
+
+
+
 
 
 def plot_y_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, path_fields):
