@@ -43,16 +43,18 @@ def main():
     irstar = np.int(np.round(rstar / dx))
     ic = np.int(np.round(a / 2))
     jc = np.int(np.round(d / 2))
-    ishift = 20
-    jshift = ishift
+    shift = 20
+    ishift = shift
+    jshift = shift
     id = irstar + ishift
-    jd = id
+    jd = irstar + jshift
     nx_ = 2 * id
     ny_ = 2 * jd
+
     print(ic,jc,id,jd)
 
     # t0 = 200
-    for t0 in np.arange(100,500,100):
+    for t0 in np.arange(100,1000,100):
         print('time: '+ str(t0))
 
         k0 = 5
@@ -60,12 +62,15 @@ def main():
         w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
         w_roll = np.roll(w[:, :, k0], [ishift, jshift], [0, 1])
         w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
+        icshift = id
+        jcshift = jd
 
         max = np.amax(w)
         plt.figure()
-        cax = plt.imshow(w[ic,:,:].T, cmap=cm_bwr, origin='lower', vmin=-max, vmax=max)
-        cbar = plt.colorbar(cax, ticks=np.arange(-np.floor(max),np.floor(max)+1))
+        cax = plt.imshow(w[ic,:,:100].T, cmap=cm_bwr, origin='lower', vmin=-max, vmax=max)
+        plt.colorbar(cax, ticks=np.arange(-np.floor(max),np.floor(max)+1))
         plt.savefig(os.path.join(path_out,'w_crosssection_t'+str(t0)+'.png'))
+        plt.close()
 
         plt.figure(figsize=(20,6))
         ax1 = plt.subplot(1,5,1)
@@ -75,7 +80,7 @@ def main():
         ax2 = plt.subplot(1,5,2)
         ax2.set_title('np.roll(w)')
         ax3 = plt.subplot(1,5,3)
-        ax3.set_title('np.roll(w)[:ic,:jc,k0]')
+        ax3.set_title('w_')
         ax4 = plt.subplot(1,5,4)
         ax4.set_title('masked array')
         ax5 = plt.subplot(1,5,5)
@@ -90,12 +95,12 @@ def main():
         ax2.plot([ic+id+ishift,ic+id+ishift],[0,ny-1], '--')
         ax2.plot([0,nx-1],[jc+jshift,jc+jshift])
         ax3.imshow(w_.T, cmap=cm_bwr, origin='lower', vmin=-max,vmax=max)
+        ax3.plot([icshift, icshift], [0, ny_ - 1])
+        ax3.plot([0, nx_-1], [jcshift, jcshift])
 
         perc = 90
         w_c = np.percentile(w_, perc)
-        # w_mask = np.ma.masked_less(w_, w_c)
         w_mask = np.ma.masked_less(w_, w_c)
-        print('...', w.shape, w_.shape, w_roll.shape, w_mask.mask.shape)
         if w_mask.mask.any():
             w_bin = np.asarray(
                 [np.int(w_mask.mask.reshape(nx_ * ny_)[i]) for i in range(nx_ * ny_)]).reshape(nx_, ny_)
@@ -126,50 +131,137 @@ def main():
     #     plt.suptitle('s masked on w='+str(w_c)+'m/s (z='+str(k0*dz)+')')
     #     plt.savefig(os.path.join(path_out, 's_masked_k'+str(k0)+'_thresh'+str(w_c)+'_t'+str(t0)+'.png'))
     #     plt.close()
-
-
-        # i = 0
-        # j = 0
-        # j = jc
-        # while (w_mask_r[i,j] and i<2*id-1):
-        #     i += 1
-
         del w_roll
 
-        # i = ic-id-ishift
+        ''' Rim based on outline '''
+        rim_test = np.zeros((nx_, ny_), dtype=np.int)
+        rim_test1 = np.zeros((nx_, ny_), dtype=np.int)
+        rim_test2 = np.zeros((nx_, ny_), dtype=np.int)
+        j = 0
+        while(j<ny_-1):
+            i = 0
+            while (w_mask.mask[i,j] and i<nx_-1):
+                i += 1
+            if i <= ic:
+                rim_test1[i,j] = 1
+                rim_test[i, j] = 1
+            i = nx_-1
+            while (w_mask.mask[i,j] and i>=0):
+                i -= 1
+            if i >= ic:
+                rim_test1[i, j] = 1
+                rim_test[i, j] = 1
+            j += 1
+
+        i = 0
+        while (i<nx_-1):
+            j = 0
+            while (w_mask.mask[i,j] and j<ny_-1):
+                j+=1
+            if j <= jc:
+                rim_test[i,j] = 1
+                rim_test2[i,j] = 1
+            j = ny_-1
+            while (w_mask.mask[i,j] and j>=0):
+                j-=1
+            if j >= jc:
+                rim_test[i, j] = 1
+                rim_test2[i,j] = 1
+            i+=1
 
 
+
+        ''' Rim based on number of neighbours '''
         # w_mask = True, if w<w_c
         # w_mask_r = True, if w>w_c
-        rim = np.zeros((nx_,ny_),dtype=np.int)
-        rim_r = np.zeros((nx_,ny_), dtype=np.int)
-        # print('limits: ', ic-id, ic+id, jc-jd, jc+jd, ishift, jshift)
-        # print(w_mask_r.mask.shape, nx_, ny_)
+        rim2 = np.zeros((nx_,ny_),dtype=np.int)
         for i in range(nx_):
             for j in range(ny_):
-                    if w_mask_r.mask[i,j]:
-                        a = np.count_nonzero(w_bin_r[i-1:i+2,j-1:j+2])
-                        if a > 4 and a < 9:
-                            rim[i,j] = 1
+                if w_mask_r.mask[i,j]:
+                    a = np.count_nonzero(w_bin_r[i-1:i+2,j-1:j+2])
+                    if a > 5 and a < 9:
+                        rim2[i,j] = 1
+        rim = np.zeros((nx_,ny_),dtype=np.int)
+        for i in range(nx_):
+            for j in range(jcshift+1):
+                if w_mask_r.mask[i,j]:
+                    a = np.count_nonzero(w_bin_r[i-1:i+2,j-1:j+2])
+                    if a > 5 and a < 9:
+                        rim[i,j] = 1
+                        a = np.count_nonzero(w_bin_r[i-1:i+2, j:j+3])
+                        if a<=5 or a>=9:
+                            break
+            for j in range(ny_-1,jcshift,-1):
+                if w_mask_r.mask[i,j]:
+                    a = np.count_nonzero(w_bin_r[i-1:i+2,j-1:j+2])
+                    if a > 5 and a < 9:
+                        rim[i,j] = 1
+                        a = np.count_nonzero(w_bin_r[i-1:i+2, j-2:j+1])
+                        if a <= 5 or a >= 9:
+                            break
+
 
         # i0 = 44
         # j0 = 27
         # i1 = i0
         # j1 = 10
-        plt.figure()
-        plt.subplot(1,3,1)
+        nx_plots = 4
+        ny_plots = 2
+        plt.figure(figsize=(24,8))
+        plt.subplot(ny_plots,nx_plots,1)
         plt.imshow(w_mask.T, cmap=cm_bwr, origin='lower', vmin=-max, vmax=max)
         plt.plot([nx_-1,nx_-1],[0,ny_-1],'r')
         plt.plot([0, nx_ - 1], [ny_-1, ny_ - 1], 'r')
         plt.title('w masked')
-        plt.subplot(1,3,2)
+        plt.subplot(ny_plots,nx_plots,2)
         plt.imshow(w_mask.mask.T, origin='lower')
         plt.title('mask')
-        plt.subplot(1,3,3)
-        plt.title('rim')
+        # plt.colorbar(shrink=0.5)
+        plt.subplot(ny_plots,nx_plots,3)
+        plt.title('rim - #neighbours')
+        plt.imshow(rim2.T, origin='lower')
+        plt.plot([0, nx_ - 1], [jcshift, jcshift], 'w')
+
+        plt.subplot(ny_plots,nx_plots,4)
+        plt.title('rim2 - #neighbours')
         plt.imshow(rim.T, origin='lower')
-        plt.colorbar()
+        plt.plot([0,nx_-1],[jcshift, jcshift],'w')
+
+        plt.subplot(ny_plots,nx_plots,5)
+        plt.title('rim')
+        imin = 15
+        imax = 75
+        plt.imshow(rim_test1[imin:imax,imin:imax].T, origin='lower')
+        ax = plt.gca()
+        ax.set_xticks(np.arange(-0.5, imax - imin - 0.5, 1), minor=True)
+        ax.set_yticks(np.arange(-0.5, imax - imin - 0.5, 1), minor=True)
+        ax.grid(which='minor', color='w', linewidth=0.2)#, linestyle='-', linewidth=2)
+        plt.subplot(ny_plots,nx_plots,6)
+        plt.title('rim y')
+        plt.imshow(rim_test2.T, origin='lower')
+        plt.subplot(ny_plots,nx_plots,7)
+        plt.title('rim - outermost')
+        plt.imshow(rim_test.T, origin='lower')
+
+        plt.subplot(ny_plots,nx_plots,8)
+        plt.title('rim - outermost vs #neighbours')
+        plt.imshow(rim_test.T, origin='lower')
+        plt.imshow(rim.T, origin='lower',alpha =0.5)
+        plt.plot([0, nx_ - 1], [jcshift, jcshift], 'w')
+
         plt.savefig(os.path.join(path_out, 'rim_searching_perc'+str(perc)+'_t0' + str(t0) + '.png'))
+        plt.close()
+
+        plt.figure()
+        imin = 20
+        imax = 60
+        plt.imshow(rim_test1[imin:imax, :].T, origin='lower')
+        # plt.grid()
+        ax = plt.gca()
+        # Minor ticks
+        ax.set_xticks(np.arange(-0.5, imax - imin - 0.5, 1), minor=True)
+        ax.grid(which='minor', color='w', linewidth=0.2)  # , linestyle='-', linewidth=2)
+        # plt.show()
 
 
     return
