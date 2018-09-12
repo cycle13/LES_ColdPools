@@ -33,6 +33,8 @@ def main():
     dz = nml['grid']['dz']
     gw = nml['grid']['gw']
 
+    cm_bwr = plt.cm.get_cmap('bwr')
+
     # define subdomain to scan
     # --- for triple coldpool ---
     d = np.int(np.round(ny / 2)) + gw
@@ -50,21 +52,21 @@ def main():
     print(ic,jc,id,jd)
 
     # t0 = 200
-    cm = plt.get_cmap('bwr')
     for t0 in np.arange(100,500,100):
         print('time: '+ str(t0))
 
-        k0 = 2
+        k0 = 5
 
         w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
-        w_roll = np.roll(w[:,:,k0],[ishift,jshift],[0,1])
-        w_ = w_roll[ic-id+ishift:ic+id+ishift, jc-jd+jshift:jc+jd+jshift]
+        w_roll = np.roll(w[:, :, k0], [ishift, jshift], [0, 1])
+        w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
 
-        # ic + ishift + id  = ic + id - ic + id = 2*id
-        # ic + ishift - id = ic + id - ic - id = 0
-
-        cm_bwr = plt.cm.get_cmap('bwr')
         max = np.amax(w)
+        plt.figure()
+        cax = plt.imshow(w[ic,:,:].T, cmap=cm_bwr, origin='lower', vmin=-max, vmax=max)
+        cbar = plt.colorbar(cax, ticks=np.arange(-np.floor(max),np.floor(max)+1))
+        plt.savefig(os.path.join(path_out,'w_crosssection_t'+str(t0)+'.png'))
+
         plt.figure(figsize=(20,6))
         ax1 = plt.subplot(1,5,1)
         ax1.set_title('w')
@@ -78,16 +80,19 @@ def main():
         ax4.set_title('masked array')
         ax5 = plt.subplot(1,5,5)
         ax5.set_title('mask')
-        ax1.imshow(w[:,:,k0].T, cmap=cm_bwr, origin='lower', vmin=-max, vmax=max)
+        cax = ax1.imshow(w[:,:,k0].T, cmap=cm_bwr, origin='lower', vmin=-max, vmax=max)
+        cbar = plt.colorbar(cax, ticks=np.arange(-np.floor(max), np.floor(max) + 1), shrink=0.5)
         ax1.plot([ic,ic],[0,ny-1])
         ax1.plot([0,nx-1],[jc,jc])
         ax2.imshow(w_roll.T, cmap=cm_bwr, origin='lower', vmin=-max,vmax=max)
         ax2.plot([ic+ishift,ic+ishift],[0,ny-1])
+        ax2.plot([ic-id+ishift,ic-id+ishift],[0,ny-1], '--')
+        ax2.plot([ic+id+ishift,ic+id+ishift],[0,ny-1], '--')
         ax2.plot([0,nx-1],[jc+jshift,jc+jshift])
         ax3.imshow(w_.T, cmap=cm_bwr, origin='lower', vmin=-max,vmax=max)
 
-
-        w_c = 5e-1
+        perc = 90
+        w_c = np.percentile(w_, perc)
         # w_mask = np.ma.masked_less(w_, w_c)
         w_mask = np.ma.masked_less(w_, w_c)
         print('...', w.shape, w_.shape, w_roll.shape, w_mask.mask.shape)
@@ -105,8 +110,8 @@ def main():
         ax4.imshow(w_mask.T, cmap=cm_bwr, origin='lower', vmin=-max,vmax=max)
         ax5.imshow(w_mask.mask.T, origin='lower', vmin=-max,vmax=max)
 
-        plt.suptitle('w masked on w='+str(w_c)+'m/s (z=' + str(k0 * dz) + ')')
-        plt.savefig(os.path.join(path_out, 'w_masked_k'+str(k0)+'_thresh'+str(w_c)+'_t'+str(t0)+'.png'))
+        plt.suptitle('w masked on '+str(perc)+'th percentile: w='+str(np.round(w_c,2))+'m/s (z=' + str(k0 * dz) + ')')
+        plt.savefig(os.path.join(path_out, 'w_masked_k'+str(k0)+'_perc'+str(perc)+'_t'+str(t0)+'.png'))
         plt.close()
 
     #     s = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0) + '.nc'))
@@ -131,23 +136,21 @@ def main():
 
         del w_roll
 
+        # i = ic-id-ishift
+
+
         # w_mask = True, if w<w_c
         # w_mask_r = True, if w>w_c
         rim = np.zeros((nx_,ny_),dtype=np.int)
         rim_r = np.zeros((nx_,ny_), dtype=np.int)
         # print('limits: ', ic-id, ic+id, jc-jd, jc+jd, ishift, jshift)
         # print(w_mask_r.mask.shape, nx_, ny_)
-        for i in range(ic - id - ishift, ic + id - ishift):
-            for j in range(jc - jd - jshift, jc + jd - jshift):
-                # print('i,j', i,j, w_mask_r.mask.shape)
-                if w_mask_r.mask[i,j]:
-                    a = np.count_nonzero(w_bin_r[i-1:i+2,j-1:j+2])
-                    print('first step', i, j, ic, jc)
-                    # print(w_bin_r[i-1:i+2,j-1:j+2], a)
-
-                    if a > 4 and a < 9:
-                        rim[i,j] = 1
-                        print('second step')
+        for i in range(nx_):
+            for j in range(ny_):
+                    if w_mask_r.mask[i,j]:
+                        a = np.count_nonzero(w_bin_r[i-1:i+2,j-1:j+2])
+                        if a > 4 and a < 9:
+                            rim[i,j] = 1
 
         # i0 = 44
         # j0 = 27
@@ -155,13 +158,18 @@ def main():
         # j1 = 10
         plt.figure()
         plt.subplot(1,3,1)
-        plt.imshow(w_mask.T, origin='lower')
+        plt.imshow(w_mask.T, cmap=cm_bwr, origin='lower', vmin=-max, vmax=max)
+        plt.plot([nx_-1,nx_-1],[0,ny_-1],'r')
+        plt.plot([0, nx_ - 1], [ny_-1, ny_ - 1], 'r')
+        plt.title('w masked')
         plt.subplot(1,3,2)
         plt.imshow(w_mask.mask.T, origin='lower')
+        plt.title('mask')
         plt.subplot(1,3,3)
+        plt.title('rim')
         plt.imshow(rim.T, origin='lower')
         plt.colorbar()
-        plt.savefig(os.path.join(path_out, 'rim_searching_test_t0' + str(t0) + '.png'))
+        plt.savefig(os.path.join(path_out, 'rim_searching_perc'+str(perc)+'_t0' + str(t0) + '.png'))
 
 
     return
