@@ -15,6 +15,7 @@ import os
 def main():
     path = '/Users/bettinameyer/polybox/ClimatePhysics/Copenhagen/Projects/LES_ColdPool/' \
            'triple_3D_noise/Out_CPDry_triple_dTh2K/'
+    # path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th3K/'
     path_fields = os.path.join(path, 'fields')
     path_out = os.path.join(path, 'figs_cp_rim')
     if not os.path.exists(path_out):
@@ -35,6 +36,7 @@ def main():
 
     cm_bwr = plt.cm.get_cmap('bwr')
     cm_vir = plt.cm.get_cmap('viridis')
+    cm_grey = plt.cm.get_cmap('gist_gray_r')
 
     # define subdomain to scan
     # --- for triple coldpool ---
@@ -45,23 +47,25 @@ def main():
     ic = np.int(np.round(a / 2))
     jc = np.int(np.round(d / 2))
     shift = 20
-    ishift = shift
-    jshift = shift
-    id = irstar + ishift
-    jd = irstar + jshift
+    id = irstar + shift
+    jd = irstar + shift
+    ishift = np.max(id-ic,0)
+    jshift = np.max(jd-jc,0)
     nx_ = 2 * id
     ny_ = 2 * jd
 
-    print(ic,jc,id,jd)
+    print('ic,jc,id,jc,nx_,ny_',ic,jc,id,jd,nx_,ny_)
 
     # (A) read in w-field
-    # (B) shift field (roll) and define partial domain where to look for cold pool
-    # (C)
+    #       - shift field (roll) and define partial domain where to look for cold pool
+    # (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)
+    # (C) Define rim of cold pool as the outline of the mask; based on number of neighbours
     for t0 in np.arange(600,700,100):
         print('time: '+ str(t0))
 
         k0 = 5
 
+        '''(A) read in w-field, shift domain and define partial domain '''
         w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
         w_roll = np.roll(w[:, :, k0], [ishift, jshift], [0, 1])
         w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
@@ -75,6 +79,7 @@ def main():
         plt.savefig(os.path.join(path_out,'w_crosssection_t'+str(t0)+'.png'))
         plt.close()
 
+        ''' (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)'''
         perc = 90
         w_c = np.percentile(w_, perc)
         w_mask = np.ma.masked_less(w_, w_c)
@@ -135,6 +140,7 @@ def main():
         #     plt.close()
         del w_roll
 
+        ''' (C) define outline of cold pool '''
         ''' Rim based on outline '''
         rim_test = np.zeros((nx_, ny_), dtype=np.int)
         rim_test1 = np.zeros((nx_, ny_), dtype=np.int)
@@ -177,7 +183,6 @@ def main():
         # w_mask = True, if w<w_c
         # w_mask_r = True, if w>w_c
         rim2 = np.zeros((nx_,ny_),dtype=np.int)
-
         for i in range(nx_):
             for j in range(ny_):
                 if w_mask_r.mask[i,j]:
@@ -185,7 +190,6 @@ def main():
                     if a > 5 and a < 9:
                         rim2[i,j] = 1
         rim = np.zeros((nx_,ny_),dtype=np.int)
-        # rim_list = np.zeros(shape=(np.int(1.5*(nx_+ny_)),2), dtype=np.int)
         rim_list = []
         rim_list_backup = []
         count = 0
@@ -197,11 +201,6 @@ def main():
                         rim[i,j] = 1
                         rim_list.append((i,j))
                         rim_list_backup.append((i,j))
-                        # print(rim_list_backup[count,:])
-                        # rim_list_backup[count,0] = i
-                        # rim_list_backup[count,1] = j
-                        # print('ij', i, j, rim_list_backup[count,0], rim_list_backup[count,1])
-
                         count += 1
                         a = np.count_nonzero(w_bin_r[i-1:i+2, j:j+3])
                         if a<=5 or a>=9:
@@ -216,14 +215,7 @@ def main():
                         a = np.count_nonzero(w_bin_r[i-1:i+2, j-2:j+1])
                         if a <= 5 or a >= 9:
                             break
-        print('rim arr:', type(rim_list), len(rim_list))
-        # print(rim_list[3], type(rim_list[3]))
-        # print('rim arr2:', type(rim_list_backup), rim_list_backup)
 
-        # i0 = 44
-        # j0 = 27
-        # i1 = i0
-        # j1 = 10
         nx_plots = 4
         ny_plots = 2
         plt.figure(figsize=(24,8))
@@ -247,14 +239,12 @@ def main():
         plt.plot([0,nx_-1],[jcshift, jcshift],'w')
 
         plt.subplot(ny_plots,nx_plots,5)
-        plt.title('rim')
-        imin = 15
-        imax = 75
-        plt.imshow(rim_test1[imin:imax,imin:imax].T, origin='lower')
+        plt.title('rim x')
+        plt.imshow(rim_test1.T, origin='lower')
         ax = plt.gca()
-        ax.set_xticks(np.arange(-0.5, imax - imin - 0.5, 1), minor=True)
-        ax.set_yticks(np.arange(-0.5, imax - imin - 0.5, 1), minor=True)
-        ax.grid(which='minor', color='w', linewidth=0.2)#, linestyle='-', linewidth=2)
+        # ax.set_xticks(np.arange(-0.5, imax - imin - 0.5, 1), minor=True)
+        # ax.set_yticks(np.arange(-0.5, imax - imin - 0.5, 1), minor=True)
+        # ax.grid(which='minor', color='w', linewidth=0.2)#, linestyle='-', linewidth=2)
         plt.subplot(ny_plots,nx_plots,6)
         plt.title('rim y')
         plt.imshow(rim_test2.T, origin='lower')
@@ -273,13 +263,6 @@ def main():
 
         del rim_test1, rim_test2
 
-        # plt.figure()
-        # plt.plot(rim_list[0][0], rim_list[0][1], 'o')
-        # plt.title(str(rim_list[0]))
-        # plt.show()
-
-
-
 
 
         ''' Polar Coordinates '''
@@ -289,7 +272,7 @@ def main():
         #   you can edit them, they work like the array object in JavaScript or PHP. You can add items,
         #   delete items from a list; but you can't do that to a tuple, tuples have a fixed size.
 
-        # nrim = len(rim_list)
+        nrim = len(rim_list)
         # print('dimensions', nrim, 1.6*(nx_+ny_))
         # rim_list_compl = []
         polar_list = []
@@ -393,57 +376,94 @@ def main():
             plt.plot(rim_list_backup[i][0]-icshift,rim_list_backup[i][1]-jcshift,
                      'x', color=cm_vir(float(i)/len(rim_list)))
         plt.plot(rim_list_backup[0][0]-icshift, rim_list_backup[0][1]-jcshift, 'ko')
-        plt.title('shifted before sort')
+        plt.title('shifted, before sort')
         plt.subplot(ny_plots, nx_plots, 7)
         for i in range(len(rim_list)):
             plt.plot(rim_list[i][0][0], rim_list[i][0][1], 'x', color=cm_vir(float(i)/len(rim_list)))
         plt.title('after sort (c=order)')
-
         plt.subplot(ny_plots, nx_plots, 8)
         for i in range(len(rim_list)):
             plt.plot(rim_list[i][0][0], rim_list[i][0][1],
                      'x', color=cm_vir(rim_list[i][1][1]/360))
         plt.title('after sort (c=angle)')
-        plt.savefig('./a_rim_list.png')
+        plt.savefig(os.path.join(path_out,'rim_list.png'))
         plt.close()
 
 
+
+
+
+        # average and interpolate for bins of 6 degrees
+        dphi = 6
+        n_phi = 360/dphi
+        # rim_list_int = []
+        # rim intp = (phi[deg], phi[rad], r(phi))
+        rim_intp = np.ndarray(shape=(3,n_phi), dtype=np.double)
+        angular_range = np.arange(0,361,dphi)
+        # angular_range = np.arange(0,13,dphi)
+        rim_intp[0,:] = angular_range[:-1]
+        rim_intp[1,:] = np.pi*rim_intp[0,:]/180
+        print('')
+        print('angles: ', angular_range, angular_range[-2])
+        print(rim_intp[0,:])
+        i = 0
+        for n,phi in enumerate(rim_intp[0,:]):
+            phi_ = rim_list[i][1][1]
+            r_aux = 0.0
+            count = 0
+            while (phi_ >= phi and phi_ < angular_range[n+1]):
+                print('n, phi', n, phi, phi_, angular_range[n+1], i, nrim)
+                r_aux += rim_list[i][1][0]
+                count += 1
+                i += 1
+                if i < nrim:
+                    phi_ = rim_list[i][1][1]
+                else:
+                    phi_ = angular_range[n+1]
+                    #i = 0   # causes the rest of n-, phi-loop to run through without entering the while-loop
+                    # >> could probably be done more efficiently
+                    break
+            print('end', phi, r_aux)
+            r_aux /= count
+            print(r_aux, count)
+            # rim_list.append((phi,r_aux))
+            rim_intp[2,n] = r_aux
+        print('')
+        print(rim_intp)
+        # print(rim_list_int[0:3])
+
         plt.figure(figsize=(12,5))
-        plt.subplot(1,3,1)
+        nx_plots = 4
+        plt.subplot(1, nx_plots, 1)
         for i in range(len(rim_list)):
             plt.plot(rim_list[i][1][1], rim_list[i][1][0], 'x', color=cm_vir(float(i) / len(rim_list)))
         plt.xlabel('th')
         plt.ylabel('r')
-        plt.subplot(1,3,2)
+        plt.title('rim list')
+        plt.subplot(1, nx_plots, 2)
         for i in range(len(rim_list)):
             plt.plot(rim_list[i][1][1], rim_list[i][0][0], 'x', color=cm_vir(float(i) / len(rim_list)))
         plt.xlabel('th')
         plt.ylabel('x')
-        plt.subplot(1,3,3)
+        plt.title('rim list')
+        plt.subplot(1, nx_plots, 3)
         plt.plot(polar_arr[:,3])
-        plt.savefig('./angles.png')
+        plt.subplot(1, nx_plots, 4)
+        plt.plot(rim_intp[0,:], rim_intp[2,:], '-o')
+        plt.title('rim interpolated')
+        plt.xlabel('th')
+        plt.ylabel('r')
+        plt.savefig(os.path.join(path_out, 'angles.png'))
         plt.close()
 
-        # # # average and interpolate for bins of 6 degrees
-        # # angular_range = np.arange(0,366,6)
-        # # angular_range = np.arange(0,13,6)
-        # # print('')
-        # # print('angles: ', angular_range)
-        # # rim_list_int = []
-        # # i = 0
-        # # for n,phi in enumerate(angular_range):
-        # #     phi_ = rim_list[i][1][1]
-        # #     print('n, phi', n, phi, phi_)
-        # #     r_aux = 0.0
-        # #     # count = 0
-        # #     # while (phi_ >= phi and phi_ < angular_range[n+1]):
-        # #     #     r_aux += rim_list[i][1][0]
-        # #     #     i += 1
-        # #     #     count += 1
-        # #     # r_aux /= count
-        # #     rim_list.append((phi,r_aux))
-        # # print('')
-        # # print(rim_list_int[0:3])
+
+        plt.figure()
+        ax = plt.subplot(111, projection='polar')
+        ax.plot(rim_intp[1,0:],rim_intp[2,0:],'-o')
+        plt.savefig(os.path.join(path_out, 'rim.png'))
+        plt.close()
+
+
 
 
 
