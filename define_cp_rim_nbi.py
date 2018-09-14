@@ -304,9 +304,6 @@ def main():
             plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], timerange)
 
 
-
-
-
     return
 
 # ----------------------------------
