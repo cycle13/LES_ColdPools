@@ -408,35 +408,19 @@ def main():
         plt.close()
 
 
-        plt.figure(figsize=(12,5))
-        plt.subplot(1,3,1)
-        for i in range(len(rim_list)):
-            plt.plot(rim_list[i][1][1], rim_list[i][1][0], 'x', color=cm_vir(float(i) / len(rim_list)))
-        plt.xlabel('th')
-        plt.ylabel('r')
-        plt.title('rim list')
-        plt.subplot(1,3,2)
-        for i in range(len(rim_list)):
-            plt.plot(rim_list[i][1][1], rim_list[i][0][0], 'x', color=cm_vir(float(i) / len(rim_list)))
-        plt.xlabel('th')
-        plt.ylabel('x')
-        plt.title('rim list')
-        plt.subplot(1,3,3)
-        plt.plot(polar_arr[:,3])
-        plt.title('polar arr')
-        plt.savefig(os.path.join(path_out,'angles.png'))
-        plt.close()
+
 
 
         # average and interpolate for bins of 6 degrees
-        dphi = 180
+        dphi = 6
         n_phi = 360/dphi
         # rim_list_int = []
-        # rim intp = (phi, r(phi))
-        rim_intp = np.ndarray(shape=(2,n_phi))
+        # rim intp = (phi[deg], phi[rad], r(phi))
+        rim_intp = np.ndarray(shape=(3,n_phi), dtype=np.double)
         angular_range = np.arange(0,361,dphi)
         # angular_range = np.arange(0,13,dphi)
         rim_intp[0,:] = angular_range[:-1]
+        rim_intp[1,:] = np.pi*rim_intp[0,:]/180
         print('')
         print('angles: ', angular_range, angular_range[-2])
         print(rim_intp[0,:])
@@ -455,16 +439,52 @@ def main():
                 else:
                     phi_ = angular_range[n+1]
                     #i = 0   # causes the rest of n-, phi-loop to run through without entering the while-loop
-                            # >> could probably be done more efficiently
+                    # >> could probably be done more efficiently
                     break
             print('end', phi, r_aux)
             r_aux /= count
             print(r_aux, count)
             # rim_list.append((phi,r_aux))
-            rim_intp[1,n] = r_aux
+            rim_intp[2,n] = r_aux
         print('')
         print(rim_intp)
         # print(rim_list_int[0:3])
+
+        plt.figure(figsize=(12, 5))
+        nx_plots = 4
+        plt.subplot(1, nx_plots, 1)
+        for i in range(len(rim_list)):
+            plt.plot(rim_list[i][1][1], rim_list[i][1][0], 'x', color=cm_vir(float(i) / len(rim_list)))
+        plt.xlabel('th')
+        plt.ylabel('r')
+        plt.title('rim list')
+        plt.subplot(1, nx_plots, 2)
+        for i in range(len(rim_list)):
+            plt.plot(rim_list[i][1][1], rim_list[i][0][0], 'x', color=cm_vir(float(i) / len(rim_list)))
+        plt.xlabel('th')
+        plt.ylabel('x')
+        plt.title('rim list')
+        plt.subplot(1, nx_plots, 3)
+        plt.plot(rim_intp[0,:],rim_intp[2,:],'-o')
+        plt.title('rim interpolated')
+        plt.xlabel('th')
+        plt.ylabel('r')
+
+        # plt.subplot((1, nx_plots, 4), projection='polar')
+
+        # ax.set_title("A line plot on a polar axis", va='bottom')
+        plt.savefig(os.path.join(path_out, 'angles.png'))
+        plt.close()
+
+
+        plt.figure()
+        ax = plt.subplot(111, projection='polar')
+        ax.plot(rim_intp[1,0:],rim_intp[2,0:],'-o')
+        plt.savefig(os.path.join(path_out, 'rim.png'))
+        plt.close()
+
+
+
 
 
 
