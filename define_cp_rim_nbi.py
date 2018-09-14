@@ -118,6 +118,7 @@ def main():
         w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
         icshift = id
         jcshift = jd
+        print('ishift', ishift, ic-id + ishift, ic+ id + ishift, icshift, jcshift)
 
         plot_yz_crosssection(w, ic, path_out, t0)
 
@@ -138,7 +139,7 @@ def main():
                 [np.int(w_mask_r.mask.reshape(nx_ * ny_)[i]) for i in range(nx_ * ny_)]).reshape(nx_, ny_)
 
         # plot_s(w, w_c, t0, k0, path_fields, path_out)
-        plot_w_field(w_c, perc, w, w_roll, w_, w_mask_r,
+        plot_w_field(w_c, perc, w, w_roll, w_, w_mask,
                      ishift, jshift, id, jd, ic, jc, icshift, jcshift,
                      k0, t0, gw, nx_, ny_)
         del w, w_roll
@@ -219,11 +220,10 @@ def main():
                         if a <= 5 or a >= 9:
                             break
 
-        plot_outlines(perc, w_mask, rim, rim2, rim_test, rim_test1, rim_test2,
+        plot_outlines(perc, w_mask_r, rim, rim2, rim_test, rim_test1, rim_test2,
                       jcshift, nx_, ny_, t0)
-        del w_mask
-        del rim_test, rim_test1, rim_test2
 
+        del rim_test, rim_test1, rim_test2
 
 
         ''' (D) Polar Coordinates & sort according to angle '''
@@ -235,19 +235,21 @@ def main():
         nrim = len(rim_list)
         for i, coord in enumerate(rim_list):
             rim_list[i] = (coord, (polar(coord[0]-icshift, coord[1]-jcshift)))
-            # # if rim already very close to subdomain (nx_,ny_), make domain larger
-            # if coord[0] >= nx_ - 3 or coord[1] >= ny_ - 3:
-            #     shift += 2
-            #     id = irstar + shift
-            #     jd = irstar + shift
-            #     ishift = np.max(id - ic, 0)
-            #     jshift = np.max(jd - jc, 0)
-            #     nx_ = 2 * id
-            #     ny_ = 2 * jd
+            # if rim already very close to subdomain (nx_,ny_), make domain larger
+            if coord[0] >= nx_ - 3 or coord[1] >= ny_ - 3:
+                print('!!! changing domain size', nx_, nx_+4)
+                shift += 5
+                id = irstar + shift
+                jd = irstar + shift
+                ishift = np.max(id - ic, 0)
+                jshift = np.max(jd - jc, 0)
+                nx_ = 2 * id
+                ny_ = 2 * jd
         # sort list according to angle
         rim_list.sort(key=lambda tup: tup[1][1])
-        plot_rim_list(rim, rim_list, rim_list_backup, icshift, jcshift, t0)
+        plot_rim_mask(w_, rim, rim_list, rim_list_backup, icshift, jcshift, nx_, ny_, t0)
         del rim_list_backup
+        del w_mask
 
 
         # average and interpolate for bins of 6 degrees
@@ -274,7 +276,7 @@ def main():
                     phi_ = rim_list[i][1][1]
                 else:
                     # phi_ = angular_range[n+1]
-                    #i = 0   # causes the rest of n-, phi-loop to run through without entering the while-loop
+                    i = 0   # causes the rest of n-, phi-loop to run through without entering the while-loop
                     # >> could probably be done more efficiently
                     break
             if count > 0:
@@ -402,20 +404,26 @@ def plot_angles(rim_list, rim_intp, t0):
 
 
 
-def plot_rim_list(rim, rim_list, rim_list_backup,
-                  icshift, jcshift, t0):
+def plot_rim_mask(w_mask, rim, rim_list, rim_list_backup,
+                  icshift, jcshift, nx_, ny_, t0):
+    max = np.amax(w_mask)
     nx_plots = 4
     ny_plots = 2
     plt.figure(figsize=(5*nx_plots, 6*ny_plots))
     plt.subplot(ny_plots, nx_plots, 1)
-    plt.imshow(rim.T, origin='lower')
-    plt.title('rim')
+    plt.imshow(w_mask.T, cmap=cm_bwr, origin='lower', vmin=-max, vmax=max)
+    plt.title('w')
     plt.subplot(ny_plots, nx_plots, 2)
+    plt.imshow(rim.T, origin='lower', cmap=cm_vir)
+    plt.title('rim')
+    plt.subplot(ny_plots, nx_plots, 3)
     plt.imshow(rim.T, origin='lower')
     for i in range(len(rim_list)):
-        plt.plot(rim_list_backup[i][0], rim_list_backup[i][1], 'rx', markersize=2)
+        plt.plot(rim_list_backup[i][0], rim_list_backup[i][1], 'yx', markersize=2)
     plt.title('rim + rim_list')
-    plt.subplot(ny_plots, nx_plots, 3)
+    plt.xlim([0, nx_ - 1])
+    plt.ylim([0, ny_ - 1])
+    plt.subplot(ny_plots, nx_plots, 4)
     plt.plot(rim_list_backup)
     plt.title('orange=y, blue=x')
     plt.subplot(ny_plots, nx_plots, 5)
