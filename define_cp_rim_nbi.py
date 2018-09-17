@@ -52,7 +52,7 @@ def main():
     if args.tmax:
         tmax = np.int(args.tmax)
     else:
-        tmax = 200
+        tmax = tmin + 100
     timerange = np.arange(tmin,tmax,100)
     nt = len(timerange)
 
@@ -106,7 +106,7 @@ def main():
     # - rim_vel_av 0 (r_av(t), U_av(t), dU_av/dt(t))
     rim_intp_all = np.ndarray(shape=(3, nt, n_phi), dtype=np.double)
     rim_vel = np.ndarray(shape=(5, nt, n_phi), dtype=np.double)
-    rim_vel_av = np.ndarray(shape=(2, nt))
+    rim_vel_av = np.ndarray(shape=(3, nt))
 
     for it,t0 in enumerate(timerange):
         if it > 0:
@@ -291,17 +291,22 @@ def main():
 
         ''' Compute radial velocity of rim '''
         rim_vel[0:3, it, :] = rim_intp_all[0:3, it, :]  # copy phi [deg + rad], r(phi)
-        if it > 0:
+        if it == 0:
+            rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2, it, :], 1.))
+            rim_vel_av[1, it] = 0.0
+        elif it > 0:
             # for n, phi in enumerate(rim_intp_all[0,it,:]):
             rim_vel[3, it, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :]) / dt
-            rim_vel_av[0, it] = np.average(np.ma.masked_greater(rim_intp_all[2,it,:],1.))
-            rim_vel_av[1, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]))
+            rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2,it,:],1.))
+            # rim_vel_av[0, it] = np.average(np.ma.masked_greater(rim_intp_all[2,it,:],1.))
+            rim_vel_av[1, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
 
             plot_cp_rim_velocity(rim_vel[:, 0:it+1, :], rim_vel_av, timerange)
-            plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], timerange)
-
+            plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], timerange[:it+1])
 
     return
+
+
 
 # ----------------------------------
 def plot_cp_rim_averages(rim_vel, rim_vel_av, timerange):
@@ -313,11 +318,11 @@ def plot_cp_rim_averages(rim_vel, rim_vel_av, timerange):
     plt.ylabel('r  [m]')
     plt.title('average radius')
 
-
     plt.subplot(122)
-    plt.plot(timerange[:nt], rim_vel_av[1,:],'-o')
+    plt.plot(timerange[:], rim_vel_av[1,:],'-o')
     plt.xlabel('t  [s]')
     plt.ylabel('U  [m/s]')
+    plt.grid()
     plt.title('average rim velocity')
 
     plt.savefig(os.path.join(path_out, 'rim_velocity_av.png'))
@@ -333,7 +338,8 @@ def plot_cp_rim_velocity(rim_vel, rim_vel_av, timerange):
         ax.plot(rim_vel[0, it, :], rim_vel[2, it, :],
                 label='t=' + str(t0) + 's', color=cm_vir(np.double(it) / nt))
     # plt.legend()
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.0), ncol=3, fontsize=12)
+    # plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.0), ncol=3, fontsize=12)
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
                    # fancybox=True, shadow=True, ncol=5)
     plt.xlabel('phi  [deg]')
     plt.ylabel('U(phi)  [m/s]')
@@ -352,13 +358,14 @@ def plot_cp_rim_velocity(rim_vel, rim_vel_av, timerange):
 
 def plot_cp_outline_alltimes(rim_intp_all, timerange):
     nt = rim_intp_all.shape[1]
-    plt.figure()
+    plt.figure(figsize=(12,10))
     ax = plt.subplot(111, projection='polar')
     for it, t0 in enumerate(timerange[0:nt]):
         ax.plot(rim_intp_all[1,it,:], rim_intp_all[2,it,:],'-o', label='t='+str(t0)+'s',
                 color = cm_vir(np.double(it)/nt))
-    plt.legend()
-    plt.suptitle('outline CP (all times)')
+    # plt.legend()
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
+    plt.suptitle('outline CP (all times)', fontsize=28)
     plt.savefig(os.path.join(path_out, 'rim_cp1_alltimes.png'))
     plt.close()
 

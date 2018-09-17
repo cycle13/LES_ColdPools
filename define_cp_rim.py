@@ -49,7 +49,7 @@ def main():
     if args.tmax:
         tmax = np.int(args.tmax)
     else:
-        tmax = 200
+        tmax = tmin + 100
     timerange = np.arange(tmin,tmax,100)
     nt = len(timerange)
 
@@ -93,15 +93,18 @@ def main():
     # (C) Define rim of cold pool as the outline of the mask; based on number of neighbours
 
     # define general arrays
-    k0 = 5          # level
+    if args.k0:
+        k0 = np.int(args.k0)
+    else:
+        k0 = 5          # level
     dphi = 6        # angular resolution for averaging of radius
     n_phi = 360 / dphi
     # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
     # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi), U(t,i_phi), dU(t, i_phi))
-    # - rim_vel_av 0 (r_av(t), U_av(t), dU_av/dt(t))
+    # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
     rim_intp_all = np.ndarray(shape=(3, nt, n_phi), dtype=np.double)
     rim_vel = np.ndarray(shape=(5, nt, n_phi), dtype=np.double)
-    rim_vel_av = np.ndarray(shape=(2, nt))
+    rim_vel_av = np.ndarray(shape=(3, nt))
 
     for it,t0 in enumerate(timerange):
         if it > 0:
@@ -137,7 +140,7 @@ def main():
                 [np.int(w_mask_r.mask.reshape(nx_ * ny_)[i]) for i in range(nx_ * ny_)]).reshape(nx_, ny_)
 
         # plot_s(w, w_c, t0, k0, path_fields, path_out)
-        plot_w_field(w_c, perc, w, w_roll, w_, w_mask_r,
+        plot_w_field(w_c, perc, w, w_roll, w_, w_mask,
                      ishift, jshift, id, jd, ic, jc, icshift, jcshift,
                      k0, t0, gw, nx_, ny_)
         del w, w_roll
@@ -231,12 +234,8 @@ def main():
         #   you can edit them, they work like the array object in JavaScript or PHP. You can add items,
         #   delete items from a list; but you can't do that to a tuple, tuples have a fixed size.
         nrim = len(rim_list)
-        # polar_arr = np.ndarray(shape=(len(rim_list),4))
         for i, coord in enumerate(rim_list):
             rim_list[i] = (coord, (polar(coord[0]-icshift, coord[1]-jcshift)))
-        #     polar_arr[i, 0:2] = np.asarray(rim_list[i])
-        #     polar_arr[i, 2:] = polar(coord[0] - icshift, coord[1] - jcshift)
-
         # test polar coordinate transformation
         test_polar_fct()
 
@@ -249,7 +248,8 @@ def main():
 
         # average and interpolate for bins of 6 degrees
         # rim_list_int = []
-        # rim intp = (phi[deg], phi[rad], r(phi))
+        # rim_intp = (phi[deg], phi[rad], r(phi))
+        # rim_intp_all = (phi[t,deg], phi[t,rad], r(t,phi))
         rim_intp = np.ndarray(shape=(3,n_phi), dtype=np.double)
         angular_range = np.arange(0,361,dphi)
         rim_intp[0,:] = angular_range[:-1]
@@ -262,7 +262,6 @@ def main():
             r_aux = 0.0
             count = 0
             while (phi_ >= phi and phi_ < angular_range[n+1]):
-                print('n, phi', n, phi, phi_, angular_range[n+1], i, nrim)
                 r_aux += rim_list[i][1][0]
                 count += 1
                 i += 1
@@ -275,7 +274,6 @@ def main():
                     break
             if count > 0:
                 r_aux /= count
-            print('end', phi, r_aux, count)
             # rim_list.append((phi,r_aux))
             rim_intp[2,n] = r_aux
             rim_intp_all[2,it,n] = r_aux
@@ -290,17 +288,22 @@ def main():
 
         ''' Compute radial velocity of rim '''
         rim_vel[0:3, it, :] = rim_intp_all[0:3, it, :]  # copy phi [deg + rad], r(phi)
-        if it > 0:
+
+        if it == 0:
+            rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2, it, :], 1.))
+            rim_vel_av[1, it] = 0.0
+        elif it > 0:
             # for n, phi in enumerate(rim_intp_all[0,it,:]):
             rim_vel[3, it, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :]) / dt
-            rim_vel_av[0, it] = np.average(np.ma.masked_greater(rim_intp_all[2,it,:],1.))
-            rim_vel_av[1, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]))
+            rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2,it,:],1.))
+            rim_vel_av[1, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
 
             plot_cp_rim_velocity(rim_vel[:, 0:it+1, :], rim_vel_av, timerange)
-            plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], timerange)
-
+            plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], timerange[:it+1])
 
     return
+
+
 
 # ----------------------------------
 def plot_cp_rim_averages(rim_vel, rim_vel_av, timerange):
@@ -312,11 +315,11 @@ def plot_cp_rim_averages(rim_vel, rim_vel_av, timerange):
     plt.ylabel('r  [m]')
     plt.title('average radius')
 
-
     plt.subplot(122)
-    plt.plot(timerange[:nt], rim_vel_av[1,:],'-o')
+    plt.plot(timerange[:], rim_vel_av[1,:],'-o')
     plt.xlabel('t  [s]')
     plt.ylabel('U  [m/s]')
+    plt.grid()
     plt.title('average rim velocity')
 
     plt.savefig(os.path.join(path_out, 'rim_velocity_av.png'))
@@ -332,7 +335,8 @@ def plot_cp_rim_velocity(rim_vel, rim_vel_av, timerange):
         ax.plot(rim_vel[0, it, :], rim_vel[2, it, :],
                 label='t=' + str(t0) + 's', color=cm_vir(np.double(it) / nt))
     # plt.legend()
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.0), ncol=3, fontsize=12)
+    # plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.0), ncol=3, fontsize=12)
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
                    # fancybox=True, shadow=True, ncol=5)
     plt.xlabel('phi  [deg]')
     plt.ylabel('U(phi)  [m/s]')
@@ -351,15 +355,18 @@ def plot_cp_rim_velocity(rim_vel, rim_vel_av, timerange):
 
 def plot_cp_outline_alltimes(rim_intp_all, timerange):
     nt = rim_intp_all.shape[1]
-    plt.figure()
+    plt.figure(figsize=(12,10))
     ax = plt.subplot(111, projection='polar')
     for it, t0 in enumerate(timerange[0:nt]):
         ax.plot(rim_intp_all[1,it,:], rim_intp_all[2,it,:],'-o', label='t='+str(t0)+'s',
                 color = cm_vir(np.double(it)/nt))
-    plt.legend()
-    plt.suptitle('outline CP (all times)')
+    # plt.legend()
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
+    plt.suptitle('outline CP (all times)', fontsize=28)
     plt.savefig(os.path.join(path_out, 'rim_cp1_alltimes.png'))
     plt.close()
+
+
 
     return
 
@@ -378,11 +385,7 @@ def plot_cp_outline(rim_intp, t0):
 
 
 def plot_angles(rim_list, rim_intp, t0):
-    plt.figure(figsize=(20,5))mask_aux = np.copy(w_bin_r)
-        plt.figure()
-        plt.imshow(mask_aux.T, origin='lower')
-        plt.subplot(1,2,)
-        plt.show()
+    plt.figure(figsize=(20,5))
     nx_plots = 4
     plt.subplot(1, nx_plots, 1)
     for i in range(len(rim_list)):
