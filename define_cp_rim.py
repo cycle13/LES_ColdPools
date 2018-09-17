@@ -102,9 +102,9 @@ def main():
     # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
     # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi), U(t,i_phi), dU(t, i_phi))
     # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
-    rim_intp_all = np.ndarray(shape=(3, nt, n_phi), dtype=np.double)
-    rim_vel = np.ndarray(shape=(5, nt, n_phi), dtype=np.double)
-    rim_vel_av = np.ndarray(shape=(3, nt))
+    rim_intp_all = np.zeros(shape=(3, nt, n_phi), dtype=np.double)
+    rim_vel = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
+    rim_vel_av = np.zeros(shape=(3, nt))
 
     for it,t0 in enumerate(timerange):
         if it > 0:
@@ -239,6 +239,17 @@ def main():
         # test polar coordinate transformation
         test_polar_fct()
 
+        # if rim already very close to subdomain (nx_,ny_), make domain larger
+        if coord[0] >= nx_ - 3 or coord[1] >= ny_ - 3:
+            print('!!! changing domain size', nx_, nx_+4)
+            shift += 5
+            id = irstar + shift
+            jd = irstar + shift
+            ishift = np.max(id - ic, 0)
+            jshift = np.max(jd - jc, 0)
+            nx_ = 2 * id
+            ny_ = 2 * jd
+
         # sort list according to angle
         rim_list.sort(key=lambda tup: tup[1][1])
         plot_rim_mask(w_, rim, rim_list, rim_list_backup, icshift, jcshift, nx_, ny_, t0)
@@ -273,10 +284,9 @@ def main():
                     # >> could probably be done more efficiently
                     break
             if count > 0:
-                r_aux /= count
+                rim_intp[2,n] = r_aux / count
+                rim_intp_all[2,it,n] = r_aux / count
             # rim_list.append((phi,r_aux))
-            rim_intp[2,n] = r_aux
-            rim_intp_all[2,it,n] = r_aux
         print('')
 
 
@@ -289,6 +299,7 @@ def main():
         ''' Compute radial velocity of rim '''
         rim_vel[0:3, it, :] = rim_intp_all[0:3, it, :]  # copy phi [deg + rad], r(phi)
 
+
         if it == 0:
             rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2, it, :], 1.))
             rim_vel_av[1, it] = 0.0
@@ -298,8 +309,9 @@ def main():
             rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2,it,:],1.))
             rim_vel_av[1, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
 
-            plot_cp_rim_velocity(rim_vel[:, 0:it+1, :], rim_vel_av, timerange)
             plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], timerange[:it+1])
+
+        plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av, timerange)
 
     return
 
@@ -330,23 +342,22 @@ def plot_cp_rim_averages(rim_vel, rim_vel_av, timerange):
 def plot_cp_rim_velocity(rim_vel, rim_vel_av, timerange):
     nt = rim_vel.shape[1]
     plt.figure(figsize=(12,5))
-    ax = plt.subplot(122)
-    for it, t0 in enumerate(timerange[0:nt]):
-        ax.plot(rim_vel[0, it, :], rim_vel[2, it, :],
-                label='t=' + str(t0) + 's', color=cm_vir(np.double(it) / nt))
-    # plt.legend()
-    # plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.0), ncol=3, fontsize=12)
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
-                   # fancybox=True, shadow=True, ncol=5)
-    plt.xlabel('phi  [deg]')
-    plt.ylabel('U(phi)  [m/s]')
-    plt.ylim([20,np.amax(rim_vel[2,:nt,:])+2])
-
     ax = plt.subplot(121, projection='polar')
     for it, t0 in enumerate(timerange[0:nt]):
-        ax.plot(rim_vel[1, it, :], rim_vel[2, it, :],
+        ax.plot(rim_vel[1, it, :], rim_vel[3, it, :],
                 label='t=' + str(t0) + 's', color=cm_vir(np.double(it) / nt))
-    ax.set_rmax(45.0)
+    # ax.set_rmax(45.0)
+
+    ax = plt.subplot(122)
+    for it, t0 in enumerate(timerange[0:nt]):
+        ax.plot(rim_vel[0, it, :], rim_vel[3, it, :],
+                label='t=' + str(t0) + 's', color=cm_vir(np.double(it) / nt))
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
+    # fancybox=True, shadow=True, ncol=5)
+    plt.xlabel('phi  [deg]')
+    plt.ylabel('U(phi)  [m/s]')
+    # plt.ylim([20,np.amax(rim_vel[2,:nt,:])+2])
+
     plt.suptitle('radial velocity of CP expansion (dr/dt)')
     plt.savefig(os.path.join(path_out, 'rim_velocity.png'))
     plt.close()
