@@ -70,6 +70,7 @@ def main():
 
     # define subdomain to scan
     # --- for triple coldpool ---
+    # d = np.int(np.round(ny / 2))      # nbi
     d = np.int(np.round(ny / 2)) + gw
     a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
     rstar = 5000.0  # half of the width of initial cold-pools [m]
@@ -111,6 +112,7 @@ def main():
 
         '''(A) read in w-field, shift domain and define partial domain '''
         w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
+        # w_roll = np.roll(np.roll(w[:, :, k0], ishift, axis=0), jshift, axis=1)    # nbi
         w_roll = np.roll(w[:, :, k0], [ishift, jshift], [0, 1])
         w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
         icshift = id
@@ -218,7 +220,7 @@ def main():
 
         plot_outlines(perc, w_mask, rim, rim2, rim_test, rim_test1, rim_test2,
                       jcshift, nx_, ny_, t0)
-        del w_mask
+
         del rim_test, rim_test1, rim_test2
 
 
@@ -235,59 +237,14 @@ def main():
         #     polar_arr[i, 0:2] = np.asarray(rim_list[i])
         #     polar_arr[i, 2:] = polar(coord[0] - icshift, coord[1] - jcshift)
 
-
         # test polar coordinate transformation
-        xarr = np.arange(-30,30,3)
-        plt.figure(figsize=(12,5))
-        plt.subplot(1,3,1)
-        plt.plot(1,0, 'o', label='10')
-        plt.plot(0,1, 'o', label='01')
-        plt.plot(-1,0, 'o', label='-10')
-        plt.plot(0,-1, 'o', label='0-1')
-        a = 0.707
-        plt.plot(a,a, 'o', label='al=45 d')
-        plt.plot(-a,a, 'o', label='al=45 d')
-        plt.plot(a,-a, 'o', label='al=45 d')
-        plt.plot(-a,-a, 'o', label='al=45 d')
-        plt.legend()
-
-        ax2 = plt.subplot(1,3,2)
-        r, th = polar(1,0)
-        plt.plot(th,r,'o')
-        r, th = polar(0,1)
-        plt.plot(th,r,'o')
-        r, th = polar(-1,0)
-        plt.plot(th,r,'o')
-        r, th = polar(0,-1)
-        plt.plot(th,r,'o')
-
-        r, th = polar(a,a)
-        plt.plot(th,r,'o')
-        r, th = polar(a,-a)
-        plt.plot(th,r,'o')
-        r, th = polar(-a,a)
-        plt.plot(th,r,'o')
-        r, th = polar(-a,-a)
-        plt.plot(th,r,'o')
-
-        ax2.set_xticks(np.arange(-90, 271, 90), minor=True)
-        ax2.grid(which='minor', color='k', linewidth=0.2)  # , linestyle='-', linewidth=2)
-
-        plt.subplot(1,3,3)
-        for i in xarr:
-            for j in xarr:
-                r, th = polar(i,j)
-                plt.plot(th,r,'o')
-        plt.savefig('./angles_test.png')
-        plt.close()
-
-
-
+        test_polar_fct()
 
         # sort list according to angle
         rim_list.sort(key=lambda tup: tup[1][1])
         plot_rim_mask(w_, rim, rim_list, rim_list_backup, icshift, jcshift, nx_, ny_, t0)
         del rim_list_backup
+        del w_mask
 
 
         # average and interpolate for bins of 6 degrees
@@ -406,6 +363,8 @@ def plot_cp_outline_alltimes(rim_intp_all, timerange):
 
     return
 
+
+
 def plot_cp_outline(rim_intp, t0):
     plt.figure()
     ax = plt.subplot(111, projection='polar')
@@ -419,7 +378,11 @@ def plot_cp_outline(rim_intp, t0):
 
 
 def plot_angles(rim_list, rim_intp, t0):
-    plt.figure(figsize=(20,5))
+    plt.figure(figsize=(20,5))mask_aux = np.copy(w_bin_r)
+        plt.figure()
+        plt.imshow(mask_aux.T, origin='lower')
+        plt.subplot(1,2,)
+        plt.show()
     nx_plots = 4
     plt.subplot(1, nx_plots, 1)
     for i in range(len(rim_list)):
@@ -627,6 +590,54 @@ def plot_yz_crosssection(w,ic,path_out,t0):
     plt.savefig(os.path.join(path_out, 'w_crosssection_t' + str(t0) + '.png'))
     plt.close()
 
+    return
+
+
+def test_polar_fct():
+    # test polar coordinate transformation
+    xarr = np.arange(-30, 30, 3)
+    plt.figure(figsize=(12, 5))
+    plt.subplot(1, 3, 1)
+    plt.plot(1, 0, 'o', label='10')
+    plt.plot(0, 1, 'o', label='01')
+    plt.plot(-1, 0, 'o', label='-10')
+    plt.plot(0, -1, 'o', label='0-1')
+    a = 0.707
+    plt.plot(a, a, 'o', label='al=45 d')
+    plt.plot(-a, a, 'o', label='al=45 d')
+    plt.plot(a, -a, 'o', label='al=45 d')
+    plt.plot(-a, -a, 'o', label='al=45 d')
+    plt.legend()
+
+    ax2 = plt.subplot(1, 3, 2)
+    r, th = polar(1, 0)
+    plt.plot(th, r, 'o')
+    r, th = polar(0, 1)
+    plt.plot(th, r, 'o')
+    r, th = polar(-1, 0)
+    plt.plot(th, r, 'o')
+    r, th = polar(0, -1)
+    plt.plot(th, r, 'o')
+
+    r, th = polar(a, a)
+    plt.plot(th, r, 'o')
+    r, th = polar(a, -a)
+    plt.plot(th, r, 'o')
+    r, th = polar(-a, a)
+    plt.plot(th, r, 'o')
+    r, th = polar(-a, -a)
+    plt.plot(th, r, 'o')
+
+    ax2.set_xticks(np.arange(-90, 271, 90), minor=True)
+    ax2.grid(which='minor', color='k', linewidth=0.2)  # , linestyle='-', linewidth=2)
+
+    plt.subplot(1, 3, 3)
+    for i in xarr:
+        for j in xarr:
+            r, th = polar(i, j)
+            plt.plot(th, r, 'o')
+    plt.savefig('./angles_test.png')
+    plt.close()
     return
 
 

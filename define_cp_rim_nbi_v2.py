@@ -139,11 +139,17 @@ def main():
         plot_w_field(w_c, perc, w, w_roll, w_, w_mask,
                      ishift, jshift, id, jd, ic, jc, icshift, jcshift,
                      k0, t0, dz, gw, nx_, ny_, ny, ny, path_out)
-        del w, w_roll, w_mask
+        del w, w_roll
 
         ''' (C) define outline of cold pool '''
-        rim = np.zeros((nx_, ny_), dtype=np.int)
+        rim_int = np.zeros((nx_, ny_), dtype=np.int)
         rim_aux = np.zeros((nx_, ny_), dtype=np.int)
+        # mask_aux = np.copy(w_bin_r)
+        # plt.figure()
+        # plt.imshow(mask_aux.T, origin='lower')
+        # plt.subplot(1,2,)
+        # plt.show()
+
         nx_2 = np.int(nx_/2)
         ny_2 = np.int(ny_/2)
         rim_list = []
@@ -162,7 +168,7 @@ def main():
                             if w_mask_r.mask[i,j]:
                                 a = np.count_nonzero(w_bin_r[i - 1:i + 2, j - 1:j + 2])
                                 if a > 5 and a < 9:
-                                    rim[i, j] = 1
+                                    rim_int[i, j] = 1
                                     rim_list.append((i, j))
                                     if j == jcshift:
                                         stop_flag = True
@@ -183,7 +189,9 @@ def main():
         # plt.savefig('./test_coverage.png')
         # plt.close()
 
-        plot_outlines(perc, w_mask_r, rim, rim_list, rim_aux, icshift, jcshift, nx_, ny_, t0, path_out)
+        plot_outlines(perc, w_mask, rim_int, rim_list, rim_aux, icshift, jcshift, nx_, ny_, t0, path_out)
+
+        del w_mask
 
     return
 

@@ -95,7 +95,10 @@ def main():
     # (C) Define rim of cold pool as the outline of the mask; based on number of neighbours
 
     # define general arrays
-    k0 = 5          # level
+    if args.k0:
+        k0 = np.int(args.k0)
+    else:
+        k0 = 5          # level
     dphi = 6        # angular resolution for averaging of radius
     n_phi = 360 / dphi
     # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
@@ -253,12 +256,9 @@ def main():
 
 
         # average and interpolate for bins of 6 degrees
-        # # rim_intp = (phi[deg], phi[rad], r(phi))
-        # rim_intp = np.ndarray(shape=(3,n_phi), dtype=np.double)
+        # rim_intp = (phi[deg], phi[rad], r(phi))
+        # rim_intp_all = (phi[t,deg], phi[t,rad], r(t,phi))
         angular_range = np.arange(0,361,dphi)
-        # rim_intp[0,:] = angular_range[:-1]
-        # rim_intp[1,:] = np.pi*rim_intp[0,:]/180
-        # rim_intp_all[0:2,it,:] = rim_intp[0:2,:]
         rim_intp_all[0,it,:] = angular_range[:-1]
         rim_intp_all[1,it,:] = np.pi*rim_intp_all[0,it,:]/180
         # print('')
@@ -268,7 +268,6 @@ def main():
             r_aux = 0.0
             count = 0
             while (phi_ >= phi and phi_ < angular_range[n+1]):
-                # print('n, phi', n, phi, phi_, angular_range[n+1], i, nrim)
                 r_aux += rim_list[i][1][0]
                 count += 1
                 i += 1
@@ -281,8 +280,6 @@ def main():
                     break
             if count > 0:
                 r_aux /= count
-            # print('end', phi, r_aux, count)
-            # rim_intp[2,n] = r_aux
             rim_intp_all[2,it,n] = r_aux
         print('')
 
