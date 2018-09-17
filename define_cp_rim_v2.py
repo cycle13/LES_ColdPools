@@ -5,9 +5,17 @@ import argparse
 import json as simplejson
 import os
 
-from define_cp_rim_plottingfct import plot_yz_crosssection, plot_w_field, plot_s, plot_outlines
+from define_cp_rim_plottingfct import set_colorbars
+from define_cp_rim_plottingfct import plot_yz_crosssection, plot_w_field, plot_s, \
+    plot_outlines, plot_rim_mask, plot_angles, plot_cp_outline_alltimes, \
+    plot_cp_rim_velocity, plot_cp_rim_averages
 
 def main():
+    cm_bwr = plt.cm.get_cmap('bwr')
+    cm_vir = plt.cm.get_cmap('viridis')
+    cm_grey = plt.cm.get_cmap('gist_gray_r')
+    set_colorbars(cm_bwr, cm_vir, cm_grey)
+
     parser = argparse.ArgumentParser(prog='PyCLES')
     parser.add_argument("--casename")
     parser.add_argument("--path")
@@ -72,7 +80,7 @@ def main():
     irstar = np.int(np.round(rstar / dx))
     ic = np.int(np.round(a / 2))
     jc = np.int(np.round(d / 2))
-    shift = 20
+    shift = 40
     id = irstar + shift
     jd = irstar + shift
     ishift = np.max(id-ic,0)
@@ -98,12 +106,12 @@ def main():
     # - rim_intp_int = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
     # rim_intp_out: outer rim of mask
     # - rim_intp_out = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
-    # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
+    # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi), r_int(t,i_phi)
     # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi), U(t,i_phi), dU(t, i_phi))
     # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
-    rim_intp_all = np.ndarray(shape=(3, nt, n_phi), dtype=np.double)
-    rim_vel = np.ndarray(shape=(5, nt, n_phi), dtype=np.double)
-    rim_vel_av = np.ndarray(shape=(3, nt))
+    rim_intp_all = np.zeros(shape=(4, nt, n_phi), dtype=np.double)
+    rim_vel = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
+    rim_vel_av = np.zeros(shape=(3, nt))
 
     for it,t0 in enumerate(timerange):
         if it > 0:
@@ -192,17 +200,15 @@ def main():
         ax.imshow(mask_aux.T, origin='lower')
         circle1 = plt.Circle((icshift,jcshift), np.sqrt(rmax2), fill=False, color='w')
         ax.add_artist(circle1)
-        print('CIRCLE')
         plt.title('mask_aux')
         plt.savefig('./test_mask_aux.png')
 
-        ''' (b) inner&outer rim '''
+        ''' (b) find inner&outer rim '''
         rim_int = np.zeros((nx_, ny_), dtype=np.int)
         rim_out = np.zeros((nx_, ny_), dtype=np.int)
         rim_aux = np.zeros((nx_, ny_), dtype=np.int)
-        nx_2 = np.int(nx_ / 2)
-        ny_2 = np.int(ny_ / 2)
-        rim_list = []
+        rim_list_int = []
+        rim_list_out = []
 
         di = 0
         dj = 0
@@ -210,21 +216,27 @@ def main():
         jmin = jcshift
         imax = icshift
         jmax = jcshift
-        while (mask_aux[icshift+di, jcshift]>0 or mask_aux[icshift-di, jcshift]>0):
+        while (mask_aux[icshift+di, jcshift]>0 and icshift+di<nx_):
             imin = np.minimum(icshift - di, imin)-1
+            di += 1
+        while (mask_aux[icshift - di, jcshift] > 0 and icshift - di >= 0):
             imax = np.maximum(icshift + di, imax)+1
             di += 1
-        while (mask_aux[icshift, jcshift+dj]>0 or mask_aux[icshift, jcshift-dj]>0):
+        while (mask_aux[jcshift, jcshift+dj]>0 and jcshift+dj<ny_):
             jmin = np.minimum(jcshift - dj, jmin)-1
+            dj += 1
+        while (mask_aux[jcshift, jcshift - dj] > 0 and jcshift - dj >= 0):
             jmax = np.maximum(jcshift + dj, jmax)+1
             dj += 1
         rmax2 = np.maximum(np.maximum(imax-icshift,icshift-imin),np.maximum(jmax-jcshift,jcshift-jmin))**2
-        print('... rmax', rmax2)
+        print('imin,etc', imin, imax, jmin, jmax)
+        plot_outlines(perc, w_mask, rim_int, rim_out, rim_list_out, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
+                      nx_, ny_, t0, path_out)
         for si in [-1, 1]:
             for sj in [-1, 1]:
-                for di in range(nx_2):
+                for di in range(imax):
                     i = icshift + si*di
-                    for dj in range(ny_2):
+                    for dj in range(jmax):
                         j = jcshift + sj*dj
                         r2 = di ** 2 + dj ** 2
                         if r2 <= rmax2:
@@ -234,21 +246,134 @@ def main():
                                 if a > 5 and a < 9:
                                     if np.sum(mask_aux[i-1:i+2,j-1:j+2]) > 9:
                                         rim_int[i, j] = 1
+                                        rim_list_int.append((i, j))
                                     else:
                                         rim_out[i,j] = 1
-                                        rim_list.append((i, j))
+                                        rim_list_out.append((i, j))
                                         # a = np.count_nonzero(w_bin_r[i - 1:i + 2, j - 1 + sj:j + 2 + sj])
                                         # if a <= 5 or a >= 9:
                                         #     print('breaking')
                                         #     break
 
-        plot_outlines(perc, w_mask, rim_int, rim_out, rim_list, rim_aux, rmax2, icshift, jcshift, nx_, ny_, t0, path_out)
+        plot_outlines(perc, w_mask, rim_int, rim_out, rim_list_out, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
+                      nx_, ny_, t0, path_out)
+        del mask_aux
+
+        ''' (D) Polar Coordinates & sort according to angle '''
+        # (1) find/define center of mass (here = (ic/jc))
+        # (2)
+        # Once you create a tuple, you cannot edit it, it is immutable. Lists on the other hand are mutable,
+        #   you can edit them, they work like the array object in JavaScript or PHP. You can add items,
+        #   delete items from a list; but you can't do that to a tuple, tuples have a fixed size.
+        nrim_out = len(rim_list_out)
+        nrim_int = len(rim_list_int)
+        for i, coord in enumerate(rim_list_out):
+            rim_list_out[i] = (coord, (polar(coord[0] - icshift, coord[1] - jcshift)))
+        for i, coord in enumerate(rim_list_int):
+            rim_list_int[i] = (coord, (polar(coord[0] - icshift, coord[1] - jcshift)))
+        # if rim already very close to subdomain (nx_,ny_), make domain larger
+        if coord[0] >= nx_ - 3 or coord[1] >= ny_ - 3:
+            print('!!! changing domain size', nx_, nx_ + 4)
+            shift += 10
+            id = irstar + shift
+            jd = irstar + shift
+            ishift = np.max(id - ic, 0)
+            jshift = np.max(jd - jc, 0)
+            nx_ = 2 * id
+            ny_ = 2 * jd
+
+        # sort list according to angle
+        rim_list_out.sort(key=lambda tup: tup[1][1])
+        rim_list_int.sort(key=lambda tup: tup[1][1])
+        plot_rim_mask(w_, w_mask, rim_out, rim_int, rim_list_out, rim_list_int, icshift, jcshift, nx_, ny_, t0, path_out)
+        del w_mask
+
+        # average and interpolate for bins of 6 degrees
+        angular_range = np.arange(0, 361, dphi)
+        # - rim_intp_all = (phi[t,deg], phi[t,rad], r_out(t,phi))
+        rim_intp_all[0, it, :] = angular_range[:-1]
+        rim_intp_all[1, it, :] = np.pi * rim_intp_all[0, it, :] / 180
+        print('')
+        i = 0
+        for n, phi in enumerate(rim_intp_all[0, it, :]):
+            phi_ = rim_list_out[i][1][1]
+            r_aux = 0.0
+            count = 0
+            while (phi_ >= phi and phi_ < angular_range[n + 1]):
+                r_aux += rim_list_out[i][1][0]
+                count += 1
+                i += 1
+                if i < nrim_out:
+                    phi_ = rim_list_out[i][1][1]
+                else:
+                    # phi_ = angular_range[n+1]
+                    i = 0  # causes the rest of n-, phi-loop to run through without entering the while-loop
+                    # >> could probably be done more efficiently
+                    break
+            if count > 0:
+                rim_intp_all[2, it, n] = dx*r_aux / count
+        i = 0
+        for n, phi in enumerate(rim_intp_all[0, it, :]):
+            phi_ = rim_list_int[i][1][1]
+            r_aux = 0.0
+            count = 0
+            while (phi_ >= phi and phi_ < angular_range[n + 1]):
+                r_aux += rim_list_int[i][1][0]
+                count += 1
+                i += 1
+                if i < nrim_int:
+                    phi_ = rim_list_int[i][1][1]
+                else:
+                    # phi_ = angular_range[n+1]
+                    i = 0  # causes the rest of n-, phi-loop to run through without entering the while-loop
+                    # >> could probably be done more efficiently
+                    break
+            if count > 0:
+                rim_intp_all[3, it, n] = dx*r_aux / count
+        print('')
 
 
+        # plot outline in polar coordinates r(theta)
+        plot_angles(rim_list_out, rim_list_int, rim_intp_all[:,it,:], t0, path_out)
+        plot_cp_outline_alltimes(rim_intp_all[:,0:it+1,:], timerange, dx, path_out)
+        del rim_list_out, rim_list_int
 
 
+        ''' Compute radial velocity of rim '''
+        rim_vel[0:3, it, :] = rim_intp_all[0:3, it, :]  # copy phi [deg + rad], r(phi)
 
 
+        if it == 0:
+            rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2, it, :], 1.))
+            rim_vel_av[1, it] = 0.0
+        elif it > 0:
+            # for n, phi in enumerate(rim_intp_all[0,it,:]):
+            rim_vel[3, it, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :])*dx / dt
+            rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2,it,:],1.))
+            rim_vel_av[1, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
+
+            plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], timerange[:it+1], path_out)
+
+        plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av, timerange, path_out)
+
+    return
+
+# ----------------------------------
+import math
+def polar(x, y):
+    """returns r, theta(degrees)
+    """
+    r = (x ** 2 + y ** 2) ** .5
+    if y == 0:
+        theta = 180 if x < 0 else 0
+    elif x == 0:
+        theta = 90 if y > 0 else 270
+    elif x > 0:
+        theta = math.degrees(math.atan(float(y) / x)) if y > 0 \
+            else 360 + math.degrees(math.atan(float(y) / x))
+    elif x < 0:
+        theta = 180 + math.degrees(math.atan(float(y) / x))
+    return r, theta
 # ----------------------------------
 
 def read_in_netcdf_fields(variable_name, fullpath_in):
