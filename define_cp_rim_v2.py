@@ -8,7 +8,7 @@ import os
 from define_cp_rim_plottingfct import set_colorbars
 from define_cp_rim_plottingfct import plot_yz_crosssection, plot_w_field, plot_s, \
     plot_outlines, plot_rim_mask, plot_angles, plot_cp_outline_alltimes, \
-    plot_cp_rim_velocity, plot_cp_rim_averages
+    plot_cp_rim_velocity, plot_cp_rim_averages, plot_rim_thickness
 
 def main():
     cm_bwr = plt.cm.get_cmap('bwr')
@@ -229,7 +229,6 @@ def main():
             jmax = np.maximum(jcshift + dj, jmax)+1
             dj += 1
         rmax2 = np.maximum(np.maximum(imax-icshift,icshift-imin),np.maximum(jmax-jcshift,jcshift-jmin))**2
-        print('imin,etc', imin, imax, jmin, jmax)
         plot_outlines(perc, w_mask, rim_int, rim_out, rim_list_out, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
                       nx_, ny_, t0, path_out)
         for si in [-1, 1]:
@@ -336,6 +335,7 @@ def main():
         # plot outline in polar coordinates r(theta)
         plot_angles(rim_list_out, rim_list_int, rim_intp_all[:,it,:], t0, path_out)
         plot_cp_outline_alltimes(rim_intp_all[:,0:it+1,:], timerange, dx, path_out)
+        plot_rim_thickness(rim_intp_all[:,0:it+1,:], timerange[:it+1], dx, path_out)
         del rim_list_out, rim_list_int
 
 
