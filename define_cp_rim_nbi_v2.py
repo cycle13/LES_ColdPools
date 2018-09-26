@@ -90,54 +90,54 @@ def main():
     # (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)
     # (C) Define rim of cold pool as the outline of the mask; based on number of neighbours
 
-    # # define general arrays
-    # if args.k0:
-    #     k0 = np.int(args.k0)
-    # else:
-    #     k0 = 5      # level
-    # dphi = 6        # angular resolution for averaging of radius
-    # n_phi = 360 / dphi
-    # # rim_intp_int: inner rim of mask
-    # # - rim_intp_int = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
-    # # rim_intp_out: outer rim of mask
-    # # - rim_intp_out = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
-    # # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi), U(t,i_phi), dU(t, i_phi))
-    # # - rim_vel_av 0 (r_av(t), U_av(t), dU_av/dt(t))
-    # rim_intp_out = np.ndarray(shape=(3, nt, n_phi), dtype=np.double)
-    # rim_vel = np.ndarray(shape=(5, nt, n_phi), dtype=np.double)
-    # rim_vel_av = np.ndarray(shape=(2, nt))
-    #
-    # for it,t0 in enumerate(timerange):
-    #     if it > 0:
-    #         dt = t0-timerange[it-1]
-    #     else:
-    #         dt = t0
-    #     print('time: '+ str(t0), '(dt='+str(dt)+')')
-    #
-    #     '''(A) read in w-field, shift domain and define partial domain '''
-    #     w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
-    #     w_roll = np.roll(np.roll(w[:, :, k0], ishift, axis=0), jshift, axis=1)
-    #     w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
-    #     icshift = id
-    #     jcshift = jd
-    #
-    #     plot_yz_crosssection(w, ic, path_out, t0)
-    #
-    #
-    #     ''' (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)'''
-    #     perc = 90
-    #     # ??? or use percentile of total field w: np.percentile(w, perc)
-    #     w_c = np.percentile(w_, perc)
-    #     # w_mask = True, if w<w_c
-    #     # w_mask_r = True, if w>w_c
-    #     w_mask = np.ma.masked_less(w_, w_c)
-    #     w_mask_r = np.ma.masked_where(w_ > w_c, w_)
-    #     if not w_mask_r.mask.any():
-    #         print('STOP (t='+str(t0)+')' )
-    #         continue
-    #     else:
-    #         w_bin_r = np.asarray(
-    #             [np.int(w_mask_r.mask.reshape(nx_ * ny_)[i]) for i in range(nx_ * ny_)]).reshape(nx_, ny_)
+    # define general arrays
+    if args.k0:
+        k0 = np.int(args.k0)
+    else:
+        k0 = 5      # level
+    dphi = 6        # angular resolution for averaging of radius
+    n_phi = 360 / dphi
+    # rim_intp_int: inner rim of mask
+    # - rim_intp_int = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
+    # rim_intp_out: outer rim of mask
+    # - rim_intp_out = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
+    # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi), U(t,i_phi), dU(t, i_phi))
+    # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
+    rim_intp_out = np.zeros(shape=(3, nt, n_phi), dtype=np.double)
+    rim_vel = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
+    rim_vel_av = np.zeros(shape=(2, nt))
+
+    for it,t0 in enumerate(timerange):
+        if it > 0:
+            dt = t0-timerange[it-1]
+        else:
+            dt = t0
+        print('time: '+ str(t0), '(dt='+str(dt)+')')
+
+        '''(A) read in w-field, shift domain and define partial domain '''
+        w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
+        w_roll = np.roll(np.roll(w[:, :, k0], ishift, axis=0), jshift, axis=1)
+        w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
+        icshift = id
+        jcshift = jd
+
+        plot_yz_crosssection(w, ic, path_out, t0)
+
+
+        ''' (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)'''
+        perc = 90
+        # ??? or use percentile of total field w: np.percentile(w, perc)
+        w_c = np.percentile(w_, perc)
+        # w_mask = True, if w<w_c
+        # w_mask_r = True, if w>w_c
+        w_mask = np.ma.masked_less(w_, w_c)
+        w_mask_r = np.ma.masked_where(w_ > w_c, w_)
+        if not w_mask_r.mask.any():
+            print('STOP (t='+str(t0)+')' )
+            continue
+        else:
+            w_bin_r = np.asarray(
+                [np.int(w_mask_r.mask.reshape(nx_ * ny_)[i]) for i in range(nx_ * ny_)]).reshape(nx_, ny_)
     #
     #     # plot_s(w, w_c, t0, k0, path_fields, path_out)
     #     plot_w_field(w_c, perc, w, w_roll, w_, w_mask,
