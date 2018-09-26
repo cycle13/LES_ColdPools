@@ -18,7 +18,7 @@ def set_colorbars(cm_bwr_, cm_vir_, cm_grey_):
 
 
 # ----------------------------------
-def plot_cp_rim_averages(rim_vel, rim_vel_av, timerange, path_out):
+def plot_cp_rim_averages(rim_vel, rim_vel_av, k0, timerange, path_out):
     nt = rim_vel.shape[1]
     plt.figure(figsize=(12, 5))
     plt.subplot(121)
@@ -33,12 +33,12 @@ def plot_cp_rim_averages(rim_vel, rim_vel_av, timerange, path_out):
     plt.ylabel('U  [m/s]')
     plt.title('average rim velocity')
 
-    plt.savefig(os.path.join(path_out, 'rim_velocity_av_v2.png'))
+    plt.savefig(os.path.join(path_out, 'rim_velocity_av_v2_k'+str(k0)+'.png'))
     plt.close()
     return
 
 
-def plot_cp_rim_velocity(rim_vel, rim_vel_av, timerange, path_out):
+def plot_cp_rim_velocity(rim_vel, rim_vel_av, k0, timerange, path_out):
     nt = rim_vel.shape[1]
     plt.figure(figsize=(12,5))
     ax = plt.subplot(121, projection='polar')
@@ -58,12 +58,12 @@ def plot_cp_rim_velocity(rim_vel, rim_vel_av, timerange, path_out):
     # plt.ylim([0,np.minimum(np.amax(rim_vel[3,:,:]),0.1)])
 
     plt.suptitle('radial velocity of CP expansion (dr/dt)')
-    plt.savefig(os.path.join(path_out, 'rim_velocity_v2.png'))
+    plt.savefig(os.path.join(path_out, 'rim_velocity_v2_k'+str(k0)+'.png'))
     plt.close()
     return
 
 
-def plot_rim_thickness(rim_intp_all, timerange, dx, path_out):
+def plot_rim_thickness(rim_intp_all, timerange, dx, k0, path_out):
     nt = rim_intp_all.shape[1]
     plt.figure(figsize=(12,6))
     # thickness = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]
@@ -84,12 +84,12 @@ def plot_rim_thickness(rim_intp_all, timerange, dx, path_out):
     plt.ylabel('average thickness D  [m] (dx=' + str(dx) + ')')
     plt.title('average rim thickness D')
 
-    plt.savefig(os.path.join(path_out, 'rim_cp1_thickness.png'))
+    plt.savefig(os.path.join(path_out, 'rim_cp1_thickness_k'+str(k0)+'.png'))
     plt.close()
     return
 
 
-def plot_cp_outline_alltimes(rim_intp_all, timerange, dx, path_out):
+def plot_cp_outline_alltimes(rim_intp_all, timerange, dx, k0, path_out):
     nt = rim_intp_all.shape[1]
     plt.figure(figsize=(12,10))
 
@@ -125,7 +125,7 @@ def plot_cp_outline_alltimes(rim_intp_all, timerange, dx, path_out):
     plt.xlabel('angle phi  [deg]')
     plt.ylabel('radius r  [m] (dx=' + str(dx) + ')')
     plt.suptitle('outline CP (inner)', fontsize=28)
-    plt.savefig(os.path.join(path_out, 'rim_cp1_alltimes_int_v2.png'))
+    plt.savefig(os.path.join(path_out, 'rim_cp1_alltimes_int_v2_k'+str(k0)+'.png'))
     plt.close()
 
 
@@ -195,7 +195,7 @@ def plot_angles(rim_list, rim_list_int, rim_intp, t0, path_out):
 
 
 def plot_rim_mask(w, w_mask, rim_out, rim_int, rim_list, rim_list_int,
-                  icshift, jcshift, nx_, ny_, t0, path_out):
+                  icshift, jcshift, nx_, ny_, t0, k0, path_out):
     max = np.amax(w)
     nx_plots = 3
     ny_plots = 2
@@ -224,7 +224,7 @@ def plot_rim_mask(w, w_mask, rim_out, rim_int, rim_list, rim_list_int,
                  'x', color=cm_vir(rim_list_int[i][1][1]/360))
     plt.title('inner: after sort (c=angle)')
     plt.suptitle('cold pool outline - t='+str(t0)+'s',fontsize=28)
-    plt.savefig(os.path.join(path_out,'rim_mask_t'+str(t0)+'s_v2.png'))
+    plt.savefig(os.path.join(path_out,'rim_mask_t'+str(t0)+'s_v2_k'+str(k0)+'.png'))
     plt.close()
 
     return
