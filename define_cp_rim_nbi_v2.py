@@ -75,7 +75,7 @@ def main():
     irstar = np.int(np.round(rstar / dx))
     ic = np.int(np.round(a / 2))
     jc = np.int(np.round(d / 2))
-    shift = 20
+    shift = 40
     id = irstar + shift
     jd = irstar + shift
     ishift = np.max(id - ic, 0)
@@ -327,6 +327,35 @@ def main():
             if count > 0:
                 rim_intp_all[3, it, n] = dx * r_aux / count
         print('')
+
+
+        # plot outline in polar coordinates r(theta)
+        plot_angles(rim_list_out, rim_list_int, rim_intp_all[:,it,:], t0, path_out)
+        plot_cp_outline_alltimes(rim_intp_all[:,0:it+1,:], timerange, dx, path_out)
+
+        rim_intp_all[4,:,:] = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]
+
+        plot_rim_thickness(rim_intp_all[:,0:it+1,:], timerange[:it+1], dx, path_out)
+        del rim_list_out, rim_list_int
+
+
+        ''' Compute radial velocity of rim '''
+        rim_vel[0:3, it, :] = rim_intp_all[0:3, it, :]  # copy phi [deg + rad], r(phi)
+
+
+        if it == 0:
+            rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2, it, :], 1.))
+            rim_vel_av[1, it] = 0.0
+        elif it > 0:
+            # for n, phi in enumerate(rim_intp_all[0,it,:]):
+            rim_vel[3, it, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :])*dx / dt
+            rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2,it,:],1.))
+            rim_vel_av[1, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
+
+            plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], timerange[:it+1], path_out)
+
+        plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av, timerange, path_out)
+
     return
 
 # ----------------------------------
