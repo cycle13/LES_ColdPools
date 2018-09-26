@@ -2,12 +2,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-global cm_bwr, cm_grey, cm_vir
-cm_bwr = plt.cm.get_cmap('bwr')
-cm_vir = plt.cm.get_cmap('jet')
-cm_grey = plt.cm.get_cmap('gist_gray_r')
+# global cm_bwr, cm_grey, cm_vir
+# cm_bwr = plt.cm.get_cmap('bwr')
+# cm_vir = plt.cm.get_cmap('viridis')
+# cm_grey = plt.cm.get_cmap('gist_gray_r')
+
+def set_colorbars(cm_bwr_, cm_vir_, cm_grey_):
+
+    global cm_bwr, cm_grey, cm_vir
+    cm_bwr = cm_bwr_
+    cm_grey = cm_grey_
+    cm_vir = cm_vir_
+    return
+
+
+
 # ----------------------------------
-def plot_cp_rim_averages(rim_vel, rim_vel_av, timerange):
+def plot_cp_rim_averages(rim_vel, rim_vel_av, timerange, path_out):
     nt = rim_vel.shape[1]
     plt.figure(figsize=(12, 5))
     plt.subplot(121)
@@ -16,141 +27,211 @@ def plot_cp_rim_averages(rim_vel, rim_vel_av, timerange):
     plt.ylabel('r  [m]')
     plt.title('average radius')
 
-
     plt.subplot(122)
     plt.plot(timerange[:nt], rim_vel_av[1,:],'-o')
     plt.xlabel('t  [s]')
     plt.ylabel('U  [m/s]')
     plt.title('average rim velocity')
 
-    plt.savefig(os.path.join(path_out, 'rim_velocity_av.png'))
+    plt.savefig(os.path.join(path_out, 'rim_velocity_av_v2.png'))
     plt.close()
     return
 
 
-def plot_cp_rim_velocity(rim_vel, rim_vel_av, timerange):
+def plot_cp_rim_velocity(rim_vel, rim_vel_av, timerange, path_out):
     nt = rim_vel.shape[1]
     plt.figure(figsize=(12,5))
+    ax = plt.subplot(121, projection='polar')
+    for it, t0 in enumerate(timerange[0:nt]):
+        ax.plot(rim_vel[1, it, :], rim_vel[3, it, :],
+                label='t=' + str(t0) + 's', color=cm_vir(np.double(it) / nt))
+    # ax.set_rmax(np.minimum(np.amax(rim_vel[3,:,:]),0.1))
+
     ax = plt.subplot(122)
     for it, t0 in enumerate(timerange[0:nt]):
-        ax.plot(rim_vel[0, it, :], rim_vel[2, it, :],
+        ax.plot(rim_vel[0, it, :], rim_vel[3, it, :], '-', linewidth=2,
                 label='t=' + str(t0) + 's', color=cm_vir(np.double(it) / nt))
-    # plt.legend()
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.0), ncol=3, fontsize=12)
-                   # fancybox=True, shadow=True, ncol=5)
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
+    # fancybox=True, shadow=True, ncol=5)
     plt.xlabel('phi  [deg]')
     plt.ylabel('U(phi)  [m/s]')
-    plt.ylim([20,np.amax(rim_vel[2,:nt,:])+2])
+    # plt.ylim([0,np.minimum(np.amax(rim_vel[3,:,:]),0.1)])
+
+    plt.suptitle('radial velocity of CP expansion (dr/dt)')
+    plt.savefig(os.path.join(path_out, 'rim_velocity_v2.png'))
+    plt.close()
+    return
+
+
+def plot_rim_thickness(rim_intp_all, timerange, dx, path_out):
+    nt = rim_intp_all.shape[1]
+    plt.figure(figsize=(12,6))
+    # thickness = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]
+    thickness = rim_intp_all[4, :, :]
+    th_av = np.average(thickness[:,:],axis=1)
+    ax = plt.subplot(122)
+    for it, t0 in enumerate(timerange[0:nt]):
+        ax.plot(rim_intp_all[1,it,:],thickness[it,:], label='t='+str(t0)+'s',
+                color = cm_vir(np.double(it)/nt))
+    plt.ylim([100,2000])
+    plt.xlabel('angle phi  [deg]')
+    plt.ylabel('thickness D  [dx=' + str(dx) + ']')
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
+    plt.title('rim thickness')
+    ax = plt.subplot(121)
+    ax.plot(timerange, th_av, '-o')
+    plt.xlabel('time')
+    plt.ylabel('average thickness D  [dx=' + str(dx) + ']')
+    plt.title('average thickness D  [m]')
+
+    plt.savefig(os.path.join(path_out, 'rim_cp1_thickness.png'))
+    plt.close()
+    return
+
+
+def plot_cp_outline_alltimes(rim_intp_all, timerange, dx, path_out):
+    nt = rim_intp_all.shape[1]
+    plt.figure(figsize=(12,10))
 
     ax = plt.subplot(121, projection='polar')
     for it, t0 in enumerate(timerange[0:nt]):
-        ax.plot(rim_vel[1, it, :], rim_vel[2, it, :],
-                label='t=' + str(t0) + 's', color=cm_vir(np.double(it) / nt))
-    ax.set_rmax(45.0)
-    plt.suptitle('radial velocity of CP expansion (dr/dt)')
-    plt.savefig(os.path.join(path_out, 'rim_velocity.png'))
-    plt.close()
-    return
-
-
-def plot_cp_outline_alltimes(rim_intp_all, timerange):
-    nt = rim_intp_all.shape[1]
-    plt.figure()
-    ax = plt.subplot(111, projection='polar')
-    for it, t0 in enumerate(timerange[0:nt]):
         ax.plot(rim_intp_all[1,it,:], rim_intp_all[2,it,:],'-o', label='t='+str(t0)+'s',
                 color = cm_vir(np.double(it)/nt))
-    plt.legend()
-    plt.suptitle('outline CP (all times)')
-    plt.savefig(os.path.join(path_out, 'rim_cp1_alltimes.png'))
+    # plt.legend()
+    # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
+
+    ax = plt.subplot(122)
+    for it, t0 in enumerate(timerange[0:nt]):
+        ax.plot(rim_intp_all[1,it,:], rim_intp_all[2,it,:], '-o', label='t='+str(t0)+'s',
+                color = cm_vir(np.double(it)/nt))
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
+    plt.xlabel('angle phi  [deg]')
+    plt.ylabel('radius r  [dx='+str(dx)+']')
+    plt.suptitle('outline CP (outer)', fontsize=28)
+    plt.savefig(os.path.join(path_out, 'rim_cp1_alltimes_v2.png'))
     plt.close()
+
+    plt.figure(figsize=(12,10))
+    ax = plt.subplot(121, projection='polar')
+    for it, t0 in enumerate(timerange[0:nt]):
+        ax.plot(rim_intp_all[1,it,:], rim_intp_all[3,it,:],'-o', label='t='+str(t0)+'s',
+                color = cm_vir(np.double(it)/nt))
+
+    ax = plt.subplot(122)
+    for it, t0 in enumerate(timerange[0:nt]):
+        ax.plot(rim_intp_all[1,it,:], rim_intp_all[3,it,:], '-o', label='t='+str(t0)+'s',
+                color = cm_vir(np.double(it)/nt))
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
+    plt.xlabel('angle phi  [deg]')
+    plt.ylabel('radius r  [dx='+str(dx)+']')
+    plt.suptitle('outline CP (inner)', fontsize=28)
+    plt.savefig(os.path.join(path_out, 'rim_cp1_alltimes_int_v2.png'))
+    plt.close()
+
+
+
+
+
+
 
     return
 
 
-
-
-def plot_angles(rim_list, rim_intp, t0):
-    plt.figure(figsize=(20,5))
+def plot_angles(rim_list, rim_list_int, rim_intp, t0, path_out):
+    plt.figure(figsize=(20,10))
     nx_plots = 4
-    plt.subplot(1, nx_plots, 1)
+    ny_plots = 2
+    plt.subplot(ny_plots, nx_plots, 1)
     for i in range(len(rim_list)):
         plt.plot(rim_list[i][1][1], rim_list[i][1][0], 'x', color=cm_vir(float(i) / len(rim_list)))
     plt.xlabel('th')
     plt.ylabel('r')
     plt.title('rim list')
-    plt.subplot(1, nx_plots, 2)
+
+    plt.subplot(ny_plots, nx_plots, 2)
     for i in range(len(rim_list)):
         plt.plot(rim_list[i][1][1], rim_list[i][0][0], 'x', color=cm_vir(float(i) / len(rim_list)))
     plt.xlabel('th')
     plt.ylabel('x')
     plt.title('rim list')
-    plt.subplot(1, nx_plots, 3)
+
+    plt.subplot(ny_plots, nx_plots, 3)
     plt.plot(rim_intp[0,:], rim_intp[2,:], '-o')
     plt.title('rim interpolated')
     plt.xlabel('th')
     plt.ylabel('r')
 
-    plt.subplot(144, projection='polar')
+    plt.subplot(244, projection='polar')
     plt.plot(rim_intp[1, :], rim_intp[2, :], '-o')
 
+    plt.subplot(ny_plots, nx_plots, 5)
+    for i in range(len(rim_list_int)):
+        plt.plot(rim_list_int[i][1][1], rim_list_int[i][1][0], 'x', color=cm_vir(float(i) / len(rim_list_int)))
+    plt.xlabel('th')
+    plt.ylabel('r')
+    plt.title('rim list')
+
+    plt.subplot(ny_plots, nx_plots, 6)
+    for i in range(len(rim_list_int)):
+        plt.plot(rim_list_int[i][1][1], rim_list_int[i][0][0], 'x', color=cm_vir(float(i) / len(rim_list_int)))
+    plt.xlabel('th')
+    plt.ylabel('x')
+    plt.title('rim list')
+
+    plt.subplot(ny_plots, nx_plots, 7)
+    plt.plot(rim_intp[0,:], rim_intp[3 ,:], '-o')
+    plt.title('rim interpolated')
+    plt.xlabel('th')
+    plt.ylabel('r')
+
+    plt.subplot(248, projection='polar')
+    plt.plot(rim_intp[1, :], rim_intp[3, :], '-o')
+
     plt.suptitle('t='+str(t0)+'s', fontsize=28)
-    plt.savefig(os.path.join(path_out, 'angles_t'+str(t0)+'s.png'))
+    plt.savefig(os.path.join(path_out, 'angles_t'+str(t0)+'s_v2.png'))
     plt.close()
     return
 
 
 
-def plot_rim_mask(w_mask, rim, rim_list, rim_list_backup,
-                  icshift, jcshift, nx_, ny_, t0):
-    max = np.amax(w_mask)
-    nx_plots = 4
+def plot_rim_mask(w, w_mask, rim_out, rim_int, rim_list, rim_list_int,
+                  icshift, jcshift, nx_, ny_, t0, path_out):
+    max = np.amax(w)
+    nx_plots = 3
     ny_plots = 2
     plt.figure(figsize=(5*nx_plots, 6*ny_plots))
     plt.subplot(ny_plots, nx_plots, 1)
-    plt.imshow(w_mask.T, cmap=cm_bwr, origin='lower', vmin=-max, vmax=max)
+    plt.imshow(w.T, cmap=cm_bwr, origin='lower', vmin=-max, vmax=max)
     plt.title('w')
     plt.subplot(ny_plots, nx_plots, 2)
-    plt.imshow(rim.T, origin='lower', cmap=cm_vir)
-    plt.title('rim')
+    plt.imshow(rim_out.T, origin='lower', cmap=cm_vir)
+    plt.title('rim out')
     plt.subplot(ny_plots, nx_plots, 3)
-    plt.imshow(rim.T, origin='lower')
-    for i in range(len(rim_list)):
-        plt.plot(rim_list_backup[i][0], rim_list_backup[i][1], 'yx', markersize=2)
-    plt.title('rim + rim_list')
-    plt.xlim([0, nx_ - 1])
-    plt.ylim([0, ny_ - 1])
-    plt.subplot(ny_plots, nx_plots, 4)
-    plt.plot(rim_list_backup)
-    plt.title('orange=y, blue=x')
-    plt.subplot(ny_plots, nx_plots, 5)
-    for i in range(len(rim_list_backup)):
-        plt.plot(rim_list_backup[i][0],rim_list_backup[i][1], 'x', color=cm_vir(float(i)/len(rim_list)))
-    plt.plot(rim_list_backup[0][0], rim_list_backup[0][1], 'ko')
-    plt.title('before sort')
-    plt.subplot(ny_plots, nx_plots, 6)
-    for i in range(len(rim_list_backup)):
-        plt.plot(rim_list_backup[i][0]-icshift,rim_list_backup[i][1]-jcshift,
-                 'x', color=cm_vir(float(i)/len(rim_list)))
-    plt.plot(rim_list_backup[0][0]-icshift, rim_list_backup[0][1]-jcshift, 'ko')
-    plt.title('shifted, before sort')
-    plt.subplot(ny_plots, nx_plots, 7)
-    for i in range(len(rim_list)):
-        plt.plot(rim_list[i][0][0], rim_list[i][0][1], 'x', color=cm_vir(float(i)/len(rim_list)))
-    plt.title('after sort (c=order)')
-    plt.subplot(ny_plots, nx_plots, 8)
     for i in range(len(rim_list)):
         plt.plot(rim_list[i][0][0], rim_list[i][0][1],
                  'x', color=cm_vir(rim_list[i][1][1]/360))
-    plt.title('after sort (c=angle)')
+    plt.title('outer: after sort (c=angle)')
+
+    plt.subplot(ny_plots, nx_plots, 4)
+    plt.imshow(w_mask.T, cmap=cm_bwr, origin='lower', vmin=-max, vmax=max)
+    plt.title('w mask')
+    plt.subplot(ny_plots, nx_plots, 5)
+    plt.imshow(rim_int.T, origin='lower', cmap=cm_vir)
+    plt.title('rim int')
+    plt.subplot(ny_plots, nx_plots, 6)
+    for i in range(len(rim_list_int)):
+        plt.plot(rim_list_int[i][0][0], rim_list_int[i][0][1],
+                 'x', color=cm_vir(rim_list_int[i][1][1]/360))
+    plt.title('inner: after sort (c=angle)')
     plt.suptitle('cold pool outline - t='+str(t0)+'s',fontsize=28)
-    plt.savefig(os.path.join(path_out,'rim_mask_t'+str(t0)+'s.png'))
+    plt.savefig(os.path.join(path_out,'rim_mask_t'+str(t0)+'s_v2.png'))
     plt.close()
 
     return
 
 
-def plot_outlines(perc, w_mask, rim, rim_list, rim_aux, icshift, jcshift, nx_, ny_, t0, path_out):
+def plot_outlines(perc, w_mask, rim_int, rim_out, rim_list, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
+                  nx_, ny_, t0, path_out):
     max = np.amax(w_mask)
     nx_plots = 5
     ny_plots = 2
@@ -163,10 +244,16 @@ def plot_outlines(perc, w_mask, rim, rim_list, rim_aux, icshift, jcshift, nx_, n
     plt.xlim([0, nx_-1])
     plt.ylim([0, ny_-1])
 
-    plt.subplot(ny_plots,nx_plots,2)
+    ax = plt.subplot(ny_plots,nx_plots,2)
     plt.imshow(w_mask.mask.T, origin='lower', cmap=cm_grey, interpolation='nearest')
+    circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='y', linewidth=2)
+    ax.add_artist(circle1)
+    plt.plot([nx_ - 1, nx_ - 1], [jmin, jmin], 'r', linewidth=2)
+    plt.plot([nx_ - 1, nx_ - 1], [jmax, jmax], 'r', linewidth=2)
+    plt.plot([imin, imin], [ny_ - 1, ny_ - 1], 'r', linewidth=2)
+    plt.plot([imax, imax], [ny_ - 1, ny_ - 1], 'r', linewidth=2)
+    plt.xlim([-20,150])
     plt.title('mask')
-    # plt.colorbar(shrink=0.5)
 
     plt.subplot(ny_plots, nx_plots, 3)
     plt.imshow(rim_aux.T, origin='lower', cmap=cm_grey)
@@ -175,28 +262,39 @@ def plot_outlines(perc, w_mask, rim, rim_list, rim_aux, icshift, jcshift, nx_, n
     plt.subplot(ny_plots,nx_plots,4)
     plt.title('rim int')
     plt.plot([0,nx_-1],[jcshift, jcshift],'b')
-    plt.imshow(rim.T, origin='lower', cmap=cm_grey)
-    for tup in rim_list[-2:]:
-        plt.plot(tup[0], tup[1],'xr')
+    plt.imshow(rim_int.T, origin='lower', cmap=cm_grey)
     plt.xlim([0, nx_ - 1])
     plt.ylim([0, ny_ - 1])
 
     plt.subplot(ny_plots,nx_plots,5)
     plt.title('mask + rim int')
     plt.imshow(w_mask.mask.T, origin='lower', cmap=cm_vir)
-    plt.imshow(rim.T, origin='lower', cmap=cm_grey, alpha=0.5)
+    plt.imshow(rim_int.T, origin='lower', cmap=cm_grey, alpha=0.5)
     plt.plot([icshift,icshift],[0,ny_-1], 'k')
     plt.plot([0,nx_-1],[jcshift,jcshift],'k')
     plt.xlim([0, nx_ - 1])
     plt.ylim([0, ny_ - 1])
 
+
     # plt.subplot(ny_plots,nx_plots,6)
 
-    # plt.subplot(ny_plots,nx_plots,7)
+    plt.subplot(ny_plots,nx_plots,9)
+    plt.title('rim out')
+    plt.plot([0, nx_ - 1], [jcshift, jcshift], 'b')
+    plt.imshow(rim_out.T, origin='lower', cmap=cm_grey)
+    plt.xlim([0, nx_ - 1])
+    plt.ylim([0, ny_ - 1])
+    # for tup in rim_list[-2:]:
+    #     plt.plot(tup[0], tup[1],'xr')
 
-    #
-
-
+    plt.subplot(ny_plots,nx_plots,10)
+    plt.title('mask + rim int')
+    plt.imshow(w_mask.mask.T, origin='lower', cmap=cm_vir)
+    plt.imshow(rim_out.T, origin='lower', cmap=cm_grey, alpha=0.5)
+    plt.plot([icshift,icshift],[0,ny_-1], 'k')
+    plt.plot([0,nx_-1],[jcshift,jcshift],'k')
+    plt.xlim([0, nx_ - 1])
+    plt.ylim([0, ny_ - 1])
 
     plt.savefig(os.path.join(path_out, 'rim_searching_perc'+str(perc)+'_t' + str(t0) + '_v2.png'))
     plt.close()
@@ -259,7 +357,7 @@ def plot_w_field(w_c, perc, w, w_roll, w_, w_mask,
 
     plt.suptitle(
         'w masked on ' + str(perc) + 'th percentile: w=' + str(np.round(w_c, 2)) + 'm/s (z=' + str(k0 * dz) + ')')
-    plt.savefig(os.path.join(path_out, 'w_masked_k' + str(k0) + '_perc' + str(perc) + '_t' + str(t0) + '.png'))
+    plt.savefig(os.path.join(path_out, 'w_masked_k' + str(k0) + '_perc' + str(perc) + '_t' + str(t0) + '_v2.png'))
     plt.close()
     return
 

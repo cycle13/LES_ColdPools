@@ -106,10 +106,11 @@ def main():
     # - rim_intp_int = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
     # rim_intp_out: outer rim of mask
     # - rim_intp_out = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
-    # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi), r_int(t,i_phi)
+    # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi), r_int(t,i_phi), D(t,i_phi))
+    #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
     # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi), U(t,i_phi), dU(t, i_phi))
     # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
-    rim_intp_all = np.zeros(shape=(4, nt, n_phi), dtype=np.double)
+    rim_intp_all = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
     rim_vel = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
     rim_vel_av = np.zeros(shape=(3, nt))
 
@@ -335,6 +336,9 @@ def main():
         # plot outline in polar coordinates r(theta)
         plot_angles(rim_list_out, rim_list_int, rim_intp_all[:,it,:], t0, path_out)
         plot_cp_outline_alltimes(rim_intp_all[:,0:it+1,:], timerange, dx, path_out)
+
+        rim_intp_all[4,:,:] = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]
+
         plot_rim_thickness(rim_intp_all[:,0:it+1,:], timerange[:it+1], dx, path_out)
         del rim_list_out, rim_list_int
 

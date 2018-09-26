@@ -5,7 +5,7 @@ import argparse
 import json as simplejson
 import os
 
-from define_cp_rim_plottingfct import plot_yz_crosssection, plot_w_field, plot_s, plot_outlines
+from define_cp_rim_plottingfct import plot_yz_crosssection, plot_w_field, plot_s, plot_outlines, plot_rim_mask
 
 def main():
     parser = argparse.ArgumentParser(prog='PyCLES')
@@ -44,8 +44,8 @@ def main():
     if args.tmax:
         tmax = np.int(args.tmax)
     else:
-        tmax = 200
-    timerange = np.arange(tmin, tmax, 100)
+        tmax = tmin + 100
+    timerange = np.arange(tmin,tmax,100)
     nt = len(timerange)
 
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
@@ -150,16 +150,16 @@ def main():
         # plt.subplot(1,2,)
         # plt.show()
 
-        nx_2 = np.int(nx_/2)
-        ny_2 = np.int(ny_/2)
+        ''' (a) inner rim '''
+        nx_2 = np.int(nx_ / 2)
+        ny_2 = np.int(ny_ / 2)
         rim_list = []
-        # plt.figure()
-        for si in [-1,1]:
-            for sj in [-1,1]:
+        for si in [-1, 1]:
+            for sj in [-1, 1]:
                 stop_flag = False
-                for i in range(icshift,nx_2 + si*nx_2,si):
+                for i in range(icshift, nx_2 + si * nx_2, si):
                     if not stop_flag:
-                        for j in range(jcshift,ny_2 + sj*ny_2, sj):
+                        for j in range(jcshift, ny_2 + sj * ny_2, sj):
                             if i==70:
                                 print(i,j)
                             if i == 70:
