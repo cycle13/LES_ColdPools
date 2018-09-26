@@ -97,13 +97,11 @@ def main():
         k0 = 5      # level
     dphi = 6        # angular resolution for averaging of radius
     n_phi = 360 / dphi
-    # rim_intp_int: inner rim of mask
-    # - rim_intp_int = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
-    # rim_intp_out: outer rim of mask
-    # - rim_intp_out = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
+    # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi), r_int(t,i_phi), D(t,i_phi))
+    #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
     # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi), U(t,i_phi), dU(t, i_phi))
     # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
-    rim_intp_out = np.zeros(shape=(3, nt, n_phi), dtype=np.double)
+    rim_intp_all = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
     rim_vel = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
     rim_vel_av = np.zeros(shape=(2, nt))
 
@@ -286,6 +284,49 @@ def main():
         del w_mask
         del rim_out, rim_int
 
+        # average and interpolate for bins of 6 degrees
+        angular_range = np.arange(0, 361, dphi)
+        # - rim_intp_all = (phi[t,deg], phi[t,rad], r_out(t,phi))
+        rim_intp_all[0, it, :] = angular_range[:-1]
+        rim_intp_all[1, it, :] = np.pi * rim_intp_all[0, it, :] / 180
+        print('')
+        i = 0
+        for n, phi in enumerate(rim_intp_all[0, it, :]):
+            phi_ = rim_list_out[i][1][1]
+            r_aux = 0.0
+            count = 0
+            while (phi_ >= phi and phi_ < angular_range[n + 1]):
+                r_aux += rim_list_out[i][1][0]
+                count += 1
+                i += 1
+                if i < nrim_out:
+                    phi_ = rim_list_out[i][1][1]
+                else:
+                    # phi_ = angular_range[n+1]
+                    i = 0  # causes the rest of n-, phi-loop to run through without entering the while-loop
+                    # >> could probably be done more efficiently
+                    break
+            if count > 0:
+                rim_intp_all[2, it, n] = dx * r_aux / count
+        i = 0
+        for n, phi in enumerate(rim_intp_all[0, it, :]):
+            phi_ = rim_list_int[i][1][1]
+            r_aux = 0.0
+            count = 0
+            while (phi_ >= phi and phi_ < angular_range[n + 1]):
+                r_aux += rim_list_int[i][1][0]
+                count += 1
+                i += 1
+                if i < nrim_int:
+                    phi_ = rim_list_int[i][1][1]
+                else:
+                    # phi_ = angular_range[n+1]
+                    i = 0  # causes the rest of n-, phi-loop to run through without entering the while-loop
+                    # >> could probably be done more efficiently
+                    break
+            if count > 0:
+                rim_intp_all[3, it, n] = dx * r_aux / count
+        print('')
     return
 
 # ----------------------------------
