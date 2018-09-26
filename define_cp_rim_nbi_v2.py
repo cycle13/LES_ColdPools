@@ -97,12 +97,12 @@ def main():
         k0 = 5      # level
     dphi = 6        # angular resolution for averaging of radius
     n_phi = 360 / dphi
-    # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi), r_int(t,i_phi), D(t,i_phi))
+    # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], r_int(t,i_phi)[m], D(t,i_phi)[m])
     #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
-    # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi), U(t,i_phi), dU(t, i_phi))
+    # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], U(t,i_phi), dU(t, i_phi))
     # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
     rim_intp_all = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
-    rim_vel = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
+    rim_vel = np.zeros(shape=(4, nt, n_phi), dtype=np.double)
     rim_vel_av = np.zeros(shape=(2, nt))
 
     for it,t0 in enumerate(timerange):
@@ -333,7 +333,7 @@ def main():
         plot_angles(rim_list_out, rim_list_int, rim_intp_all[:,it,:], t0, path_out)
         plot_cp_outline_alltimes(rim_intp_all[:,0:it+1,:], timerange, dx, path_out)
 
-        rim_intp_all[4,:,:] = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]
+        rim_intp_all[4,:,:] = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]     # rim thickness
 
         plot_rim_thickness(rim_intp_all[:,0:it+1,:], timerange[:it+1], dx, path_out)
         del rim_list_out, rim_list_int
@@ -348,7 +348,7 @@ def main():
             rim_vel_av[1, it] = 0.0
         elif it > 0:
             # for n, phi in enumerate(rim_intp_all[0,it,:]):
-            rim_vel[3, it, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :])*dx / dt
+            rim_vel[3, it, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :]) / dt
             rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2,it,:],1.))
             rim_vel_av[1, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
 
@@ -380,7 +380,7 @@ def read_in_netcdf_fields(variable_name, fullpath_in):
     # print(fullpath_in)
     rootgrp = nc.Dataset(fullpath_in, 'r')
     var = rootgrp.groups['fields'].variables[variable_name]
-    data = var[:,:,:]
+    data = var[:, :, :]
     rootgrp.close()
     return data
 
