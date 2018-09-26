@@ -69,20 +69,22 @@ def plot_rim_thickness(rim_intp_all, timerange, dx, k0, path_out):
     # thickness = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]
     thickness = rim_intp_all[4, :, :]
     th_av = np.average(thickness[:,:],axis=1)
-    ax = plt.subplot(122)
-    for it, t0 in enumerate(timerange[0:nt]):
-        ax.plot(rim_intp_all[1,it,:],thickness[it,:], label='t='+str(t0)+'s',
-                color = cm_vir(np.double(it)/nt))
-    plt.ylim([100,2000])
-    plt.xlabel('angle phi  [deg]')
-    plt.ylabel('thickness D  [m] (dx=' + str(dx) + ')')
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
-    plt.title('rim thickness')
+
     ax = plt.subplot(121)
     ax.plot(timerange, th_av, '-o')
     plt.xlabel('time')
     plt.ylabel('average thickness D  [m] (dx=' + str(dx) + ')')
     plt.title('average rim thickness D')
+
+    ax = plt.subplot(122)
+    for it, t0 in enumerate(timerange[0:nt]):
+        ax.plot(rim_intp_all[1,it,:],thickness[it,:], label='t='+str(t0)+'s',
+                color = cm_vir(np.double(it)/nt))
+    plt.ylim([100,1000])
+    plt.xlabel('angle phi  [deg]')
+    plt.ylabel('thickness D  [m] (dx=' + str(dx) + ')')
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
+    plt.title('rim thickness')
 
     plt.savefig(os.path.join(path_out, 'rim_cp1_thickness_k'+str(k0)+'.png'))
     plt.close()
