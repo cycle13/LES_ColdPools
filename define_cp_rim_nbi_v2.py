@@ -228,39 +228,31 @@ def main():
                       nx_, ny_, t0, path_out)
         for si in [-1, 1]:
             for sj in [-1, 1]:
-                stop_flag = False
-    #             for i in range(icshift, nx_2 + si * nx_2, si):
-    #                 if not stop_flag:
-    #                     for j in range(jcshift, ny_2 + sj * ny_2, sj):
-    #                         if i==70:
-    #                             print(i,j)
-    #                         if i == 70:
-    #                             print('yes')
-    #                         rim_aux[i,j] = 1
-    #                         if w_mask_r.mask[i,j]:
-    #                             a = np.count_nonzero(w_bin_r[i - 1:i + 2, j - 1:j + 2])
-    #                             if a > 5 and a < 9:
-    #                                 rim_int[i, j] = 1
-    #                                 rim_list.append((i, j))
-    #                                 if j == jcshift:
-    #                                     stop_flag = True
+                for di in range(imax):
+                    i = icshift + si*di
+                    for dj in range(jmax):
+                        j = jcshift + sj*dj
+                        r2 = di ** 2 + dj ** 2
+                        if r2 <= rmax2:
+                            rim_aux[i,j] = 1
+                            if w_mask_r.mask[i,j]:
+                                a = np.count_nonzero(w_bin_r[i - 1:i + 2, j - 1:j + 2])
+                                if a > 5 and a < 9:
+                                    if np.sum(mask_aux[i-1:i+2,j-1:j+2]) > 9:
+                                        rim_int[i, j] = 1
+                                        rim_list_int.append((i, j))
+                                    else:
+                                        rim_out[i,j] = 1
+                                        rim_list_out.append((i, j))
     #                                 a = np.count_nonzero(w_bin_r[i - 1:i + 2, j-1+sj:j+2+sj])
-    #                                 if i==70:
-    #                                     print(i,j,'a(i=70,j+1)',a)
     #                                 if a <= 5 or a >= 9:
     #                                     print('breaking')
     #                                     break
-    #
-    #     print('')
-    #     print('icshift, jcshicft', icshift, jcshift)
-    #     print(rim_list)
-    #
-    #
-    #     # plt.xlim([0,nx])
-    #     # plt.ylim([0,ny])
-    #     # plt.savefig('./test_coverage.png')
-    #     # plt.close()
-    #
+
+    plot_outlines(perc, w_mask, rim_int, rim_out, rim_list_out, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
+                  nx_, ny_, t0, path_out)
+    del mask_aux
+
     #     plot_outlines(perc, w_mask, rim_int, rim_list, rim_aux, icshift, jcshift, nx_, ny_, t0, path_out)
     #
     #     del w_mask
