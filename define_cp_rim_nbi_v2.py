@@ -254,12 +254,56 @@ def main():
     del mask_aux
 
     #     plot_outlines(perc, w_mask, rim_int, rim_list, rim_aux, icshift, jcshift, nx_, ny_, t0, path_out)
-    #
-    #     del w_mask
-    #
-    # return
 
+    ''' (D) Polar Coordinates & sort according to angle '''
+    # (1) find/define center of mass (here = (ic/jc))
+    # (2)
+    # Once you create a tuple, you cannot edit it, it is immutable. Lists on the other hand are mutable,
+    #   you can edit them, they work like the array object in JavaScript or PHP. You can add items,
+    #   delete items from a list; but you can't do that to a tuple, tuples have a fixed size.
+    nrim_out = len(rim_list_out)
+    nrim_int = len(rim_list_int)
+    for i, coord in enumerate(rim_list_out):
+        rim_list_out[i] = (coord, (polar(coord[0] - icshift, coord[1] - jcshift)))
+    for i, coord in enumerate(rim_list_int):
+        rim_list_int[i] = (coord, (polar(coord[0] - icshift, coord[1] - jcshift)))
+    # if rim already very close to subdomain (nx_,ny_), make domain larger
+    if coord[0] >= nx_ - 3 or coord[1] >= ny_ - 3:
+        print('!!! changing domain size', nx_, nx_ + 4)
+        shift += 10
+        id = irstar + shift
+        jd = irstar + shift
+        ishift = np.max(id - ic, 0)
+        jshift = np.max(jd - jc, 0)
+        nx_ = 2 * id
+        ny_ = 2 * jd
 
+    # sort list according to angle
+    rim_list_out.sort(key=lambda tup: tup[1][1])
+    rim_list_int.sort(key=lambda tup: tup[1][1])
+    plot_rim_mask(w_, w_mask, rim_out, rim_int, rim_list_out, rim_list_int, icshift, jcshift, nx_, ny_, t0, path_out)
+
+    del w_mask
+    del rim_out, rim_int
+
+    return
+
+# ----------------------------------
+import math
+def polar(x, y):
+    """returns r, theta(degrees)
+    """
+    r = (x ** 2 + y ** 2) ** .5
+    if y == 0:
+        theta = 180 if x < 0 else 0
+    elif x == 0:
+        theta = 90 if y > 0 else 270
+    elif x > 0:
+        theta = math.degrees(math.atan(float(y) / x)) if y > 0 \
+            else 360 + math.degrees(math.atan(float(y) / x))
+    elif x < 0:
+        theta = 180 + math.degrees(math.atan(float(y) / x))
+    return r, theta
 # ----------------------------------
 
 def read_in_netcdf_fields(variable_name, fullpath_in):
