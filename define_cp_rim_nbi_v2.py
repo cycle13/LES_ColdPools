@@ -65,7 +65,7 @@ def main():
     cm_bwr = plt.cm.get_cmap('bwr')
     cm_vir = plt.cm.get_cmap('jet')
     cm_grey = plt.cm.get_cmap('gist_gray_r')
-    # set_colorbars(cm_bwr, cm_vir, cm_grey)
+    set_colorbars(cm_bwr, cm_vir, cm_grey)      # to set colorbars as global functions in define_cp_rim_plottingfct.py
 
     # define subdomain to scan
     # --- for triple coldpool ---
