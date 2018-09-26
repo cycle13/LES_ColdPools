@@ -147,8 +147,6 @@ def main():
         del w, w_roll
 
         ''' (C) define outline of cold pool '''
-        rim_int = np.zeros((nx_, ny_), dtype=np.int)
-        rim_aux = np.zeros((nx_, ny_), dtype=np.int)
 
         mask_aux = np.array(w_bin_r, copy=True)
 
@@ -200,10 +198,34 @@ def main():
         plt.title('mask_aux')
         plt.savefig('./test_mask_aux.png')
 
-        ''' (a) inner rim '''
-        nx_2 = np.int(nx_ / 2)
-        ny_2 = np.int(ny_ / 2)
-        rim_list = []
+        ''' (b) find inner & outer rim '''
+        rim_int = np.zeros((nx_, ny_), dtype=np.int)
+        rim_out = np.zeros((nx_, ny_), dtype=np.int)
+        rim_aux = np.zeros((nx_, ny_), dtype=np.int)
+        rim_list_int = []
+        rim_list_out = []
+
+        di = 0
+        dj = 0
+        imin = icshift
+        jmin = jcshift
+        imax = icshift
+        jmax = jcshift
+        while (mask_aux[icshift+di, jcshift]>0 and icshift+di<nx_):
+            imin = np.minimum(icshift - di, imin)-1
+            di += 1
+        while (mask_aux[icshift - di, jcshift] > 0 and icshift - di >= 0):
+            imax = np.maximum(icshift + di, imax)+1
+            di += 1
+        while (mask_aux[jcshift, jcshift+dj]>0 and jcshift+dj<ny_):
+            jmin = np.minimum(jcshift - dj, jmin)-1
+            dj += 1
+        while (mask_aux[jcshift, jcshift - dj] > 0 and jcshift - dj >= 0):
+            jmax = np.maximum(jcshift + dj, jmax)+1
+            dj += 1
+        rmax2 = np.maximum(np.maximum(imax-icshift,icshift-imin),np.maximum(jmax-jcshift,jcshift-jmin))**2
+        plot_outlines(perc, w_mask, rim_int, rim_out, rim_list_out, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
+                      nx_, ny_, t0, path_out)
         for si in [-1, 1]:
             for sj in [-1, 1]:
                 stop_flag = False
