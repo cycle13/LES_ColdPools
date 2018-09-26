@@ -138,29 +138,73 @@ def main():
         else:
             w_bin_r = np.asarray(
                 [np.int(w_mask_r.mask.reshape(nx_ * ny_)[i]) for i in range(nx_ * ny_)]).reshape(nx_, ny_)
-    #
-    #     # plot_s(w, w_c, t0, k0, path_fields, path_out)
-    #     plot_w_field(w_c, perc, w, w_roll, w_, w_mask,
-    #                  ishift, jshift, id, jd, ic, jc, icshift, jcshift,
-    #                  k0, t0, dz, gw, nx_, ny_, ny, ny, path_out)
-    #     del w, w_roll
-    #
-    #     ''' (C) define outline of cold pool '''
-    #     rim_int = np.zeros((nx_, ny_), dtype=np.int)
-    #     rim_aux = np.zeros((nx_, ny_), dtype=np.int)
-    #     # mask_aux = np.copy(w_bin_r)
-    #     # plt.figure()
-    #     # plt.imshow(mask_aux.T, origin='lower')
-    #     # plt.subplot(1,2,)
-    #     # plt.show()
-    #
-    #     ''' (a) inner rim '''
-    #     nx_2 = np.int(nx_ / 2)
-    #     ny_2 = np.int(ny_ / 2)
-    #     rim_list = []
-    #     for si in [-1, 1]:
-    #         for sj in [-1, 1]:
-    #             stop_flag = False
+
+        # plot_s(w, w_c, t0, k0, path_fields, path_out)
+        plot_w_field(w_c, perc, w, w_roll, w_, w_mask,
+                     ishift, jshift, id, jd, ic, jc, icshift, jcshift,
+                     k0, t0, dz, gw, nx_, ny_, ny, ny, path_out)
+        del w, w_roll
+
+        ''' (C) define outline of cold pool '''
+        rim_int = np.zeros((nx_, ny_), dtype=np.int)
+        rim_aux = np.zeros((nx_, ny_), dtype=np.int)
+
+        mask_aux = np.array(w_bin_r, copy=True)
+
+        ''' (a) fill interior of mask '''
+        imin = icshift
+        imax = icshift
+        jmin = jcshift
+        jmax = jcshift
+        di = 0
+        dj = 0
+        while (w_mask.mask[icshift+di, jcshift] or w_mask.mask[icshift-di, jcshift]):
+            imin = np.minimum(icshift - di, imin)-1
+            imax = np.maximum(icshift + di, imax)+1
+            di += 1
+        while (w_mask.mask[icshift, jcshift+dj] or w_mask.mask[icshift, jcshift-dj]):
+            jmin = np.minimum(jcshift - dj, jmin)-1
+            jmax = np.maximum(jcshift + dj, jmax)+1
+            dj += 1
+        rmax2 = np.maximum(np.maximum(imax-icshift,icshift-imin),np.maximum(jmax-jcshift,jcshift-jmin))**2
+
+        di = 0
+        while (icshift - di > imin or icshift + di < imax):
+            dj = 0
+            r2 = di ** 2 + dj ** 2
+            while (r2 <= rmax2):
+                for si in [-1, 1]:
+                    for sj in [-1, 1]:
+                        r2 = di ** 2 + dj ** 2
+                        if w_mask.mask[icshift+si*di,jcshift+sj*dj]:
+                            mask_aux[icshift + si * di, jcshift + sj * dj] = 2
+                dj += 1
+            di += 1
+
+        plt.figure()
+        plt.subplot(131)
+        plt.contourf(w_mask.mask.T, origin='lower')
+        plt.colorbar()
+        plt.title('w_mask')
+        ax = plt.subplot(132)
+        ax.imshow(w_mask.mask.T, origin='lower')
+        plt.plot([imin, imin], [0, ny_ - 1], 'w', linewidth=1)
+        plt.plot([imax, imax], [0, ny_ - 1], 'w', linewidth=1)
+        plt.title('w mask')
+        ax = plt.subplot(133)
+        ax.imshow(mask_aux.T, origin='lower')
+        circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
+        ax.add_artist(circle1)
+        plt.title('mask_aux')
+        plt.savefig('./test_mask_aux.png')
+
+        ''' (a) inner rim '''
+        nx_2 = np.int(nx_ / 2)
+        ny_2 = np.int(ny_ / 2)
+        rim_list = []
+        for si in [-1, 1]:
+            for sj in [-1, 1]:
+                stop_flag = False
     #             for i in range(icshift, nx_2 + si * nx_2, si):
     #                 if not stop_flag:
     #                     for j in range(jcshift, ny_2 + sj * ny_2, sj):
