@@ -120,6 +120,7 @@ def main():
         w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
         icshift = id
         jcshift = jd
+        print('...', w.shape, w_roll.shape, w_.shape)
 
         plot_yz_crosssection(w, ic, path_out, t0)
 
@@ -158,6 +159,7 @@ def main():
         jmax = jcshift
         di = 0
         dj = 0
+        print('....', w_mask.shape)
         while (w_mask.mask[icshift+di, jcshift] or w_mask.mask[icshift-di, jcshift]):
             imin = np.minimum(icshift - di, imin)-1
             imax = np.maximum(icshift + di, imax)+1
