@@ -102,6 +102,8 @@ def main():
         shift = 40
         id = irstar + shift
         jd = irstar + shift
+        ishift = np.max(id - ic, 0)
+        jshift = np.max(jd - jc, 0)
         nx_ = 2 * id
         ny_ = 2 * jd
 
