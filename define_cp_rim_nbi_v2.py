@@ -147,26 +147,26 @@ def main():
             plot_yz_crosssection(w, ic, path_out, t0)
 
 
-    #     ''' (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)'''
-    #     perc = 90
-    #     # ??? or use percentile of total field w: np.percentile(w, perc)
-    #     w_c = np.percentile(w_, perc)
-    #     # w_mask = True, if w<w_c
-    #     # w_mask_r = True, if w>w_c
-    #     w_mask = np.ma.masked_less(w_, w_c)
-    #     w_mask_r = np.ma.masked_where(w_ > w_c, w_)
-    #     if not w_mask_r.mask.any():
-    #         print('STOP (t='+str(t0)+')' )
-    #         continue
-    #     else:
-    #         w_bin_r = np.asarray(
-    #             [np.int(w_mask_r.mask.reshape(nx_ * ny_)[i]) for i in range(nx_ * ny_)]).reshape(nx_, ny_)
-    #
-    #     # plot_s(w, w_c, t0, k0, path_fields, path_out)
-    #     plot_w_field(w_c, perc, w, w_roll, w_, w_mask,
-    #                  ishift, jshift, id, jd, ic, jc, icshift, jcshift,
-    #                  k0, t0, dz, gw, nx_, ny_, ny, ny, path_out)
-    #     del w, w_roll
+        ''' (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)'''
+        perc = 90
+        # ??? or use percentile of total field w: np.percentile(w, perc)
+        w_c = np.percentile(w_, perc)
+        # w_mask = True, if w<w_c
+        # w_mask_r = True, if w>w_c
+        w_mask = np.ma.masked_less(w_, w_c)
+        w_mask_r = np.ma.masked_where(w_ > w_c, w_)
+        if not w_mask_r.mask.any():
+            print('STOP (t='+str(t0)+')' )
+            continue
+        else:
+            w_bin_r = np.asarray(
+                [np.int(w_mask_r.mask.reshape(nx_ * ny_)[i]) for i in range(nx_ * ny_)]).reshape(nx_, ny_)
+
+        # plot_s(w, w_c, t0, k0, path_fields, path_out)
+        plot_w_field(w_c, perc, w, w_roll, w_, w_mask,
+                     ishift, jshift, id, jd, ic, jc, icshift, jcshift,
+                     k0, t0, dz, gw, nx_, ny_, ny, ny, path_out)
+        del w, w_roll
     #
     #     ''' (C) define outline of cold pool '''
     #
