@@ -107,10 +107,10 @@ def main():
 
     print('ic,jc,id,jc,nx_,ny_', ic, jc, id, jd, nx_, ny_)
 
-    (A) read in w-field
-          - shift field (roll) and define partial domain where to look for cold pool
-    (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)
-    (C) Define rim of cold pool as the outline of the mask; based on number of neighbours
+    # (A) read in w-field
+    #       - shift field (roll) and define partial domain where to look for cold pool
+    # (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)
+    # (C) Define rim of cold pool as the outline of the mask; based on number of neighbours
 
     # define general arrays
     if args.k0:
