@@ -97,6 +97,11 @@ def main():
         # jc2 = jc1 + jsep
         ic = ic1
         jc = jc1
+        shift = 40
+        id = irstar + shift
+        jd = irstar + shift
+        nx_ = 2 * id
+        ny_ = 2 * jd
 
     print('ic,jc,id,jc,nx_,ny_', ic, jc, id, jd, nx_, ny_)
 
