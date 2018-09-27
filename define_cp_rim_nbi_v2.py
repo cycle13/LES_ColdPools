@@ -70,6 +70,7 @@ def main():
     # define subdomain to scan
     # --- for triple coldpool ---
     if case_name == 'ColdPoolDry_triple_3D':
+        flag = 'triple'
         d = np.int(np.round(ny / 2))
         a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
         try:
@@ -87,6 +88,7 @@ def main():
         nx_ = 2 * id
         ny_ = 2 * jd
     elif case_name == 'ColdPoolDry_double_3D':
+        flag = 'double'
         rstar = 5000.0
         irstar = np.int(np.round(rstar / dx))
         isep = 4*irstar
@@ -105,43 +107,44 @@ def main():
 
     print('ic,jc,id,jc,nx_,ny_', ic, jc, id, jd, nx_, ny_)
 
-    # (A) read in w-field
-    #       - shift field (roll) and define partial domain where to look for cold pool
-    # (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)
-    # (C) Define rim of cold pool as the outline of the mask; based on number of neighbours
+    (A) read in w-field
+          - shift field (roll) and define partial domain where to look for cold pool
+    (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)
+    (C) Define rim of cold pool as the outline of the mask; based on number of neighbours
 
-    # # define general arrays
-    # if args.k0:
-    #     k0 = np.int(args.k0)
-    # else:
-    #     k0 = 5      # level
-    # dphi = 6        # angular resolution for averaging of radius
-    # n_phi = 360 / dphi
-    # # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], r_int(t,i_phi)[m], D(t,i_phi)[m])
-    # #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
-    # # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], U(t,i_phi)[m/s], dU(t, i_phi)[m/s**2])
-    # # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
-    # rim_intp_all = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
-    # rim_vel = np.zeros(shape=(4, nt, n_phi), dtype=np.double)
-    # rim_vel_av = np.zeros(shape=(2, nt))
-    #
-    # for it,t0 in enumerate(timerange):
-    #     if it > 0:
-    #         dt = t0-timerange[it-1]
-    #     else:
-    #         dt = t0
-    #     print('time: '+ str(t0), '(dt='+str(dt)+')')
-    #
-    #     '''(A) read in w-field, shift domain and define partial domain '''
-    #     w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
-    #     w_roll = np.roll(np.roll(w[:, :, k0], ishift, axis=0), jshift, axis=1)
-    #     w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
-    #     icshift = id
-    #     jcshift = jd
-    #
-    #     plot_yz_crosssection(w, ic, path_out, t0)
-    #
-    #
+    # define general arrays
+    if args.k0:
+        k0 = np.int(args.k0)
+    else:
+        k0 = 5      # level
+    dphi = 6        # angular resolution for averaging of radius
+    n_phi = 360 / dphi
+    # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], r_int(t,i_phi)[m], D(t,i_phi)[m])
+    #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
+    # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], U(t,i_phi)[m/s], dU(t, i_phi)[m/s**2])
+    # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
+    rim_intp_all = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
+    rim_vel = np.zeros(shape=(4, nt, n_phi), dtype=np.double)
+    rim_vel_av = np.zeros(shape=(2, nt))
+
+    for it,t0 in enumerate(timerange):
+        if it > 0:
+            dt = t0-timerange[it-1]
+        else:
+            dt = t0
+        print('time: '+ str(t0), '(dt='+str(dt)+')')
+
+        '''(A) read in w-field, shift domain and define partial domain '''
+        w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
+        w_roll = np.roll(np.roll(w[:, :, k0], ishift, axis=0), jshift, axis=1)
+        w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
+        icshift = id
+        jcshift = jd
+
+        if flag == 'triple':
+            plot_yz_crosssection(w, ic, path_out, t0)
+
+
     #     ''' (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)'''
     #     perc = 90
     #     # ??? or use percentile of total field w: np.percentile(w, perc)
