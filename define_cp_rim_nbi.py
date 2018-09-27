@@ -82,12 +82,12 @@ def main():
     shift = 20
     id = irstar + shift
     jd = irstar + shift
-    ishift = np.max(id-ic,0)
-    jshift = np.max(jd-jc,0)
+    ishift = np.max(id - ic, 0)
+    jshift = np.max(jd - jc, 0)
     nx_ = 2 * id
     ny_ = 2 * jd
 
-    print('ic,jc,id,jc,nx_,ny_',ic,jc,id,jd,nx_,ny_)
+    print('ic,jc,id,jc,nx_,ny_', ic, jc, id, jd, nx_, ny_)
 
     # (A) read in w-field
     #       - shift field (roll) and define partial domain where to look for cold pool
@@ -99,7 +99,7 @@ def main():
         k0 = np.int(args.k0)
     else:
         k0 = 5          # level
-    dphi = 6        # angular resolution for averaging of radius
+    dphi = 6            # angular resolution for averaging of radius
     n_phi = 360 / dphi
     # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
     # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi), U(t,i_phi), dU(t, i_phi))

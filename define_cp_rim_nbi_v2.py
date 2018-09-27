@@ -69,19 +69,32 @@ def main():
 
     # define subdomain to scan
     # --- for triple coldpool ---
-    d = np.int(np.round(ny / 2))
-    a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
-    rstar = 5000.0  # half of the width of initial cold-pools [m]
-    irstar = np.int(np.round(rstar / dx))
-    ic = np.int(np.round(a / 2))
-    jc = np.int(np.round(d / 2))
-    shift = 40
-    id = irstar + shift
-    jd = irstar + shift
-    ishift = np.max(id - ic, 0)
-    jshift = np.max(jd - jc, 0)
-    nx_ = 2 * id
-    ny_ = 2 * jd
+    if case_name == 'ColdPoolDry_triple_3D':
+        d = np.int(np.round(ny / 2))
+        a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx))
+        ic = np.int(np.round(a / 2))
+        jc = np.int(np.round(d / 2))
+        shift = 40
+        id = irstar + shift
+        jd = irstar + shift
+        ishift = np.max(id - ic, 0)
+        jshift = np.max(jd - jc, 0)
+        nx_ = 2 * id
+        ny_ = 2 * jd
+    elif case_name == 'ColdPoolDry_double_3D':
+        rstar = 5000.0
+        irstar = np.int(np.round(rstar / dx))
+        isep = 4*irstar
+        jsep = 0
+        ic1 = np.int(nx / 3)
+        jc1 = np.int(ny / 2)
+        ic2 = ic1 + isep
+        jc2 = jc1 + jsep
 
     print('ic,jc,id,jc,nx_,ny_', ic, jc, id, jd, nx_, ny_)
 

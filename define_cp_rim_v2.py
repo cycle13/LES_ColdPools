@@ -11,11 +11,6 @@ from define_cp_rim_plottingfct import plot_yz_crosssection, plot_w_field, plot_s
     plot_cp_rim_velocity, plot_cp_rim_averages, plot_rim_thickness
 
 def main():
-    cm_bwr = plt.cm.get_cmap('bwr')
-    cm_vir = plt.cm.get_cmap('viridis')
-    cm_grey = plt.cm.get_cmap('gist_gray_r')
-    set_colorbars(cm_bwr, cm_vir, cm_grey)
-
     parser = argparse.ArgumentParser(prog='PyCLES')
     parser.add_argument("--casename")
     parser.add_argument("--path")
@@ -29,7 +24,7 @@ def main():
         path = args.path
     else:
         path = '/Users/bettinameyer/polybox/ClimatePhysics/Copenhagen/Projects/LES_ColdPool/' \
-           'triple_3D_noise/Out_CPDry_triple_dTh2K/'
+                'triple_3D_noise/Out_CPDry_triple_dTh2K/'
         # path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th3K/'
     if os.path.exists(os.path.join(path, 'fields')):
         path_fields = os.path.join(path, 'fields')
@@ -70,6 +65,7 @@ def main():
     cm_bwr = plt.cm.get_cmap('bwr')
     cm_vir = plt.cm.get_cmap('viridis')
     cm_grey = plt.cm.get_cmap('gist_gray_r')
+    set_colorbars(cm_bwr, cm_vir, cm_grey)      # to set colorbars as global functions in define_cp_rim_plottingfct.py
 
     # define subdomain to scan
     # --- for triple coldpool ---
@@ -83,12 +79,12 @@ def main():
     shift = 40
     id = irstar + shift
     jd = irstar + shift
-    ishift = np.max(id-ic,0)
-    jshift = np.max(jd-jc,0)
+    ishift = np.max(id - ic, 0)
+    jshift = np.max(jd - jc, 0)
     nx_ = 2 * id
     ny_ = 2 * jd
 
-    print('ic,jc,id,jc,nx_,ny_',ic,jc,id,jd,nx_,ny_)
+    print('ic,jc,id,jc,nx_,ny_', ic, jc, id, jd, nx_, ny_)
 
     # (A) read in w-field
     #       - shift field (roll) and define partial domain where to look for cold pool
@@ -102,13 +98,9 @@ def main():
         k0 = 5      # level
     dphi = 6        # angular resolution for averaging of radius
     n_phi = 360 / dphi
-    # rim_intp_int: inner rim of mask
-    # - rim_intp_int = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
-    # rim_intp_out: outer rim of mask
-    # - rim_intp_out = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
-    # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi), r_int(t,i_phi), D(t,i_phi))
+    # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], r_int(t,i_phi)[m], D(t,i_phi)[m])
     #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
-    # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi), U(t,i_phi), dU(t, i_phi))
+    # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], U(t,i_phi)[m/s], dU(t, i_phi)[m/s**2])
     # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
     rim_intp_all = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
     rim_vel = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
@@ -183,7 +175,7 @@ def main():
                     for sj in [-1, 1]:
                         r2 = di ** 2 + dj ** 2
                         if w_mask.mask[icshift+si*di,jcshift+sj*dj]:
-                            mask_aux[icshift+si*di,jcshift+sj*dj] = 2
+                            mask_aux[icshift + si * di, jcshift + sj * dj] = 2
                 dj += 1
             di += 1
 
@@ -199,12 +191,12 @@ def main():
         plt.title('w mask')
         ax = plt.subplot(133)
         ax.imshow(mask_aux.T, origin='lower')
-        circle1 = plt.Circle((icshift,jcshift), np.sqrt(rmax2), fill=False, color='w')
+        circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
         ax.add_artist(circle1)
         plt.title('mask_aux')
         plt.savefig('./test_mask_aux.png')
 
-        ''' (b) find inner&outer rim '''
+        ''' (b) find inner & outer rim '''
         rim_int = np.zeros((nx_, ny_), dtype=np.int)
         rim_out = np.zeros((nx_, ny_), dtype=np.int)
         rim_aux = np.zeros((nx_, ny_), dtype=np.int)
@@ -285,8 +277,11 @@ def main():
         # sort list according to angle
         rim_list_out.sort(key=lambda tup: tup[1][1])
         rim_list_int.sort(key=lambda tup: tup[1][1])
-        plot_rim_mask(w_, w_mask, rim_out, rim_int, rim_list_out, rim_list_int, icshift, jcshift, nx_, ny_, t0, path_out)
+        plot_rim_mask(w_, w_mask, rim_out, rim_int, rim_list_out, rim_list_int, icshift, jcshift, nx_, ny_,
+                      t0, k0, path_out)
+
         del w_mask
+        del rim_out, rim_int
 
         # average and interpolate for bins of 6 degrees
         angular_range = np.arange(0, 361, dphi)
@@ -311,7 +306,7 @@ def main():
                     # >> could probably be done more efficiently
                     break
             if count > 0:
-                rim_intp_all[2, it, n] = dx*r_aux / count
+                rim_intp_all[2, it, n] = dx * r_aux / count
         i = 0
         for n, phi in enumerate(rim_intp_all[0, it, :]):
             phi_ = rim_list_int[i][1][1]
@@ -329,17 +324,17 @@ def main():
                     # >> could probably be done more efficiently
                     break
             if count > 0:
-                rim_intp_all[3, it, n] = dx*r_aux / count
+                rim_intp_all[3, it, n] = dx * r_aux / count
         print('')
 
 
         # plot outline in polar coordinates r(theta)
         plot_angles(rim_list_out, rim_list_int, rim_intp_all[:,it,:], t0, path_out)
-        plot_cp_outline_alltimes(rim_intp_all[:,0:it+1,:], timerange, dx, path_out)
+        plot_cp_outline_alltimes(rim_intp_all[:,0:it+1,:], timerange, dx, k0, path_out)
 
-        rim_intp_all[4,:,:] = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]
+        rim_intp_all[4,:,:] = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]     # rim thickness
 
-        plot_rim_thickness(rim_intp_all[:,0:it+1,:], timerange[:it+1], dx, path_out)
+        plot_rim_thickness(rim_intp_all[:,0:it+1,:], timerange[:it+1], dx, k0, path_out)
         del rim_list_out, rim_list_int
 
 
@@ -352,13 +347,15 @@ def main():
             rim_vel_av[1, it] = 0.0
         elif it > 0:
             # for n, phi in enumerate(rim_intp_all[0,it,:]):
-            rim_vel[3, it, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :])*dx / dt
+            rim_vel[3, it, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :]) / dt
+            rim_vel[4, it, :] = (rim_vel[3, it, :] - rim_vel[3, it-1, :]) / dt
             rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2,it,:],1.))
             rim_vel_av[1, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
+            rim_vel_av[2, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[4,it,:]).data)
 
-            plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], timerange[:it+1], path_out)
+            plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], timerange[:it+1], k0, path_out)
 
-        plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av, timerange, path_out)
+        plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av, k0, timerange, path_out)
 
     return
 

@@ -26,7 +26,7 @@ def main():
         path = args.path
     else:
         path = '/Users/bettinameyer/polybox/ClimatePhysics/Copenhagen/Projects/LES_ColdPool/' \
-           'triple_3D_noise/Out_CPDry_triple_dTh2K/'
+                'triple_3D_noise/Out_CPDry_triple_dTh2K/'
         # path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th3K/'
     if os.path.exists(os.path.join(path, 'fields')):
         path_fields = os.path.join(path, 'fields')
@@ -85,7 +85,7 @@ def main():
     nx_ = 2 * id
     ny_ = 2 * jd
 
-    print('ic,jc,id,jc,nx_,ny_',ic,jc,id,jd,nx_,ny_)
+    print('ic,jc,id,jc,nx_,ny_', ic, jc, id, jd, nx_, ny_)
 
     # (A) read in w-field
     #       - shift field (roll) and define partial domain where to look for cold pool
@@ -96,7 +96,7 @@ def main():
     if args.k0:
         k0 = np.int(args.k0)
     else:
-        k0 = 5          # level
+        k0 = 5      # level
     dphi = 6        # angular resolution for averaging of radius
     n_phi = 360 / dphi
     # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
