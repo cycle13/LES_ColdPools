@@ -167,28 +167,28 @@ def main():
                      ishift, jshift, id, jd, ic, jc, icshift, jcshift,
                      k0, t0, dz, gw, nx_, ny_, ny, ny, path_out)
         del w, w_roll
-    #
-    #     ''' (C) define outline of cold pool '''
-    #
-    #     mask_aux = np.array(w_bin_r, copy=True)
-    #
-    #     ''' (a) fill interior of mask '''
-    #     imin = icshift
-    #     imax = icshift
-    #     jmin = jcshift
-    #     jmax = jcshift
-    #     di = 0
-    #     dj = 0
-    #     while (w_mask.mask[icshift+di, jcshift] or w_mask.mask[icshift-di, jcshift]):
-    #         imin = np.minimum(icshift - di, imin)-1
-    #         imax = np.maximum(icshift + di, imax)+1
-    #         di += 1
-    #     while (w_mask.mask[icshift, jcshift+dj] or w_mask.mask[icshift, jcshift-dj]):
-    #         jmin = np.minimum(jcshift - dj, jmin)-1
-    #         jmax = np.maximum(jcshift + dj, jmax)+1
-    #         dj += 1
-    #     rmax2 = np.maximum(np.maximum(imax-icshift,icshift-imin),np.maximum(jmax-jcshift,jcshift-jmin))**2
-    #
+
+        ''' (C) define outline of cold pool '''
+
+        mask_aux = np.array(w_bin_r, copy=True)
+
+        ''' (a) fill interior of mask '''
+        imin = icshift
+        imax = icshift
+        jmin = jcshift
+        jmax = jcshift
+        di = 0
+        dj = 0
+        while (w_mask.mask[icshift+di, jcshift] or w_mask.mask[icshift-di, jcshift]):
+            imin = np.minimum(icshift - di, imin)-1
+            imax = np.maximum(icshift + di, imax)+1
+            di += 1
+        while (w_mask.mask[icshift, jcshift+dj] or w_mask.mask[icshift, jcshift-dj]):
+            jmin = np.minimum(jcshift - dj, jmin)-1
+            jmax = np.maximum(jcshift + dj, jmax)+1
+            dj += 1
+        rmax2 = np.maximum(np.maximum(imax-icshift,icshift-imin),np.maximum(jmax-jcshift,jcshift-jmin))**2
+
     #     di = 0
     #     while (icshift - di > imin or icshift + di < imax):
     #         dj = 0
