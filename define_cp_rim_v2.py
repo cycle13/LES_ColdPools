@@ -11,12 +11,35 @@ from define_cp_rim_plottingfct import plot_yz_crosssection, plot_w_field, plot_s
     plot_cp_rim_velocity, plot_cp_rim_averages, plot_rim_thickness
 
 def main():
-    parser = argparse.ArgumentParser(prog='PyCLES')
+    """
+    Find inner and outer rim of mask based on a threshold (usually 95th percentile) of the vertical velocity.
+    The rim is found by number of neighbours and filling interior of mask
+
+    :param --path: The full path to the files
+    :param --casename: casename
+    :param --tmin: minimum time taken into account
+    :param --tmax: maximum time taken into account
+    :param --k0: level, at which the mask is computed
+
+    :return: figures
+
+
+    Details:
+
+    1. read in w-field, shift field (roll) and define partial domain where to look for cold pool
+    2. mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)
+    3. Define rim of cold pool as the outline of the mask; based on number of neighbours
+    """
+
+
+    parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("--casename")
     parser.add_argument("--path")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
-    parser.add_argument("--k0")
+    # parser.add_argument("--k0", nargs = '+', type = int)
+    parser.add_argument("--kmin")
+    parser.add_argument("--kmax")
     args = parser.parse_args()
 
     global path_fields, path_out
@@ -47,9 +70,23 @@ def main():
     if args.tmax:
         tmax = np.int(args.tmax)
     else:
-        tmax = tmin + 100
-    timerange = np.arange(tmin,tmax,100)
+        tmax = tmin
+    timerange = np.arange(tmin,tmax + 100,100)
     nt = len(timerange)
+
+    # if args.k0:
+    #     k0 = np.int(args.k0)
+    # else:
+    #     k0 = 5  # level
+    if args.kmin:
+        kmin = np.int(args.kmin)
+    else:
+        kmin = 5
+    if args.kmax:
+        kmax = np.int(args.kmax)
+    else:
+        kmax = 5
+    krange = np.arange(kmin, kmax+1, 1)
 
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
     global nx, ny, nz, dx, dy, dz
@@ -68,34 +105,53 @@ def main():
     set_colorbars(cm_bwr, cm_vir, cm_grey)      # to set colorbars as global functions in define_cp_rim_plottingfct.py
 
     # define subdomain to scan
-    # --- for triple coldpool ---
-    # d = np.int(np.round(ny / 2))      # nbi
-    d = np.int(np.round(ny / 2)) + gw
-    a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
-    rstar = 5000.0  # half of the width of initial cold-pools [m]
-    irstar = np.int(np.round(rstar / dx))
-    ic = np.int(np.round(a / 2))
-    jc = np.int(np.round(d / 2))
-    shift = 40
-    id = irstar + shift
-    jd = irstar + shift
-    ishift = np.max(id - ic, 0)
-    jshift = np.max(jd - jc, 0)
-    nx_ = 2 * id
-    ny_ = 2 * jd
+    global nx_, ny_
+    if case_name == 'ColdPoolDry_triple_3D':
+        flag = 'triple'
+        # d = np.int(np.round(ny / 2))      # nbi
+        d = np.int(np.round(ny / 2)) + gw
+        a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx))
+        ic = np.int(np.round(a / 2))
+        jc = np.int(np.round(d / 2))
+        shift = 40
+        id = irstar + shift
+        jd = irstar + shift
+        ishift = np.max(id - ic, 0)
+        jshift = np.max(jd - jc, 0)
+        nx_ = 2 * id
+        ny_ = 2 * jd
+    elif case_name == 'ColdPoolDry_double_3D':
+        flag = 'double'
+        rstar = 5000.0
+        irstar = np.int(np.round(rstar / dx))
+        isep = 4*irstar
+        jsep = 0
+        ic1 = np.int(nx / 3)
+        jc1 = np.int(ny / 2)
+        # ic2 = ic1 + isep
+        # jc2 = jc1 + jsep
+        ic = ic1
+        jc = jc1
+        shift = 40
+        id = irstar + shift
+        jd = irstar + shift
+        ishift = np.max(id - ic, 0)
+        jshift = np.max(jd - jc, 0)
+        nx_ = 2 * id
+        ny_ = 2 * jd
 
     print('ic,jc,id,jc,nx_,ny_', ic, jc, id, jd, nx_, ny_)
 
-    # (A) read in w-field
-    #       - shift field (roll) and define partial domain where to look for cold pool
-    # (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)
-    # (C) Define rim of cold pool as the outline of the mask; based on number of neighbours
+
+    # create output files
+    # create_statistics_file()
 
     # define general arrays
-    if args.k0:
-        k0 = np.int(args.k0)
-    else:
-        k0 = 5      # level
     dphi = 6        # angular resolution for averaging of radius
     n_phi = 360 / dphi
     # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], r_int(t,i_phi)[m], D(t,i_phi)[m])
@@ -113,8 +169,19 @@ def main():
             dt = t0
         print('time: '+ str(t0), '(dt='+str(dt)+')')
 
+        # percentile for threshold
+        # ??? or use percentile of total field w: np.percentile(w, perc)
+        perc = 90
+
+        ''' create mask file for time step t0'''
+        mask_file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
+        create_mask_file(mask_file_name, path_out)
+
         '''(A) read in w-field, shift domain and define partial domain '''
         w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
+
+        for k0 in krange:
+            pass
         # w_roll = np.roll(np.roll(w[:, :, k0], ishift, axis=0), jshift, axis=1)    # nbi
         w_roll = np.roll(w[:, :, k0], [ishift, jshift], [0, 1])
         w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
@@ -125,8 +192,6 @@ def main():
 
 
         ''' (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)'''
-        perc = 90
-        # ??? or use percentile of total field w: np.percentile(w, perc)
         w_c = np.percentile(w_, perc)
         # w_mask = True, if w<w_c
         # w_mask_r = True, if w>w_c
@@ -138,6 +203,9 @@ def main():
         else:
             w_bin_r = np.asarray(
                 [np.int(w_mask_r.mask.reshape(nx_ * ny_)[i]) for i in range(nx_ * ny_)]).reshape(nx_, ny_)
+
+        ''' create mask output file '''
+        dump_mask(w_mask_r.mask, perc, path_out, t0, k0)
 
         # plot_s(w, w_c, t0, k0, path_fields, path_out)
         plot_w_field(w_c, perc, w, w_roll, w_, w_mask,
@@ -362,7 +430,10 @@ def main():
 # ----------------------------------
 import math
 def polar(x, y):
-    """returns r, theta(degrees)
+    """
+    :param x: x-coordinate
+    :param y: y-coordinate
+    :return: polar coordinates r, theta(degrees)
     """
     r = (x ** 2 + y ** 2) ** .5
     if y == 0:
@@ -376,6 +447,189 @@ def polar(x, y):
         theta = 180 + math.degrees(math.atan(float(y) / x))
     return r, theta
 # ----------------------------------
+
+def create_statistics_file(path, file_name, time, nx, ny, nz):
+    print('create output file: ' + path + ', ' + file_name)
+    print('')
+    # print('create', nz)
+    # print('')
+    rootgrp = nc.Dataset(os.path.join(path, file_name), 'w', format='NETCDF4')
+    # dimgrp = rootgrp.createGroup('dims')
+    #
+    # ts_grp = rootgrp.createGroup('time')
+    # ts_grp.createDimension('nt', len(time) - 1)
+    # var = ts_grp.createVariable('t', 'f8', ('nt'))
+    # for i in range(len(time) - 1):
+    #     var[i] = time[i + 1]
+    #
+    # fields_grp = rootgrp.createGroup('fields')
+    # fields_grp.createDimension('nx', nx)
+    # fields_grp.createDimension('ny', ny)
+    # fields_grp.createDimension('nz', nz)
+    #
+    # rootgrp.close()
+
+    return
+
+def create_mask_file(file_name, path):
+    print('-------- create mask file --------')
+    # file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(time) + '.nc'
+    rootgrp = nc.Dataset(os.path.join(path, file_name), 'w', format='NETCDF4')
+    mask_grp = rootgrp.createGroup('mask')
+    mask_grp.createDimension('nx', nx_)
+    mask_grp.createDimension('ny', ny_)
+    # mask_grp.createDimension('nz', nz)
+    rootgrp.close()
+    print('')
+    return
+
+def dump_mask(file_name, data, perc, path, time, k0):
+
+    # # file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(time) + '.nc'
+    # rootgrp = nc.Dataset(os.path.join(path, file_name), 'w', format='NETCDF4')
+    # print('!!!', data.shape, nx_, ny_, nz, str(k0))
+    # # mask_grp.createVariable('mask', 'f8', ('nx', 'ny', 'nz'))
+    # var = mask_grp.createVariable('k'+ str(k0), 'f8', ('nx', 'ny'))
+    # var[:,:] = data[:,:]
+    # print(var.shape, data.shape)
+    #
+
+    # rootgrp = nc.Dataset(path, 'r+')
+    # if group_name == 'error':
+    #     var = rootgrp.groups['error'].createVariable(var_name, 'f8', ('nz'))
+    #     var[:] = data_[:]
+    #
+    # elif group_name == 'profiles':
+    #     var = rootgrp.groups['profiles'].createVariable(var_name, 'f8', ('nz'))
+    #     var[:] = data_[:]
+    #
+    # elif group_name == 'fields':
+    #     var = rootgrp.groups['fields'].createVariable(var_name, 'f8', ('nx', 'ny', 'nz'))
+    #     var[:,:,:] = data_[:,:,:]
+    #
+    # rootgrp.close()
+    print('')
+    return
+
+#     # ----------------------------------------------------------------------
+#     def dump_error_file(self, path, file_name, time, comp_range, nvar, nz_,
+#                         ql_mean_field, cf_field,
+#                         ql_mean_comp, cf_comp,
+#                         error_ql, rel_error_ql,
+#                         error_cf, rel_error_cf):
+#         print('---------- dump error ---------- ')
+#         N_comp = max(comp_range)
+#
+#         rootgrp = nc.Dataset(os.path.join(path, file_name), 'w', format = 'NETCDF4')
+#         prof_grp = rootgrp.createGroup('profiles')
+#         prof_grp.createDimension('nz', nz_)
+#         prof_grp.createDimension('Ncomp', N_comp)
+#         var = prof_grp.createVariable('zrange', 'f8', ('nz'))
+#         var[:] = np.asarray(self.zrange)[:]
+#         var = prof_grp.createVariable('krange', 'f8', ('nz'))
+#         var[:] = np.asarray(self.krange)[:]
+#
+#         # var = prof_grp.createVariable('ql_mean_pdf', 'f8', ('nz'))
+#         # var[:] = ql_mean_comp[:]
+#         var = prof_grp.createVariable('ql_mean_field', 'f8', ('nz'))
+#         var[:] = ql_mean_field[:]
+#         # var = prof_grp.createVariable('cf_pdf', 'f8', ('nz'))
+#         # var[:] = cf_comp[:]
+#         var = prof_grp.createVariable('cf_field', 'f8', ('nz'))
+#         var[:] = cf_field[:]
+#
+#         var = prof_grp.createVariable('ql_mean_pdf', 'f8', ('nz', 'Ncomp'))
+#         var[:] = ql_mean_comp[:,:]
+#         var = prof_grp.createVariable('cf_pdf', 'f8', ('nz', 'Ncomp'))
+#         var[:] = cf_comp[:,:]
+#
+#         error_grp = rootgrp.createGroup('error')
+#         error_grp.createDimension('nz', nz_)
+#         error_grp.createDimension('Ncomp', N_comp)
+#         var = error_grp.createVariable('error_ql', 'f8', ('nz', 'Ncomp'))
+#         var[:,:] = error_ql[:,:]
+#         var = error_grp.createVariable('rel_error_ql', 'f8', ('nz', 'Ncomp'))
+#         var[:,:] = rel_error_ql[:,:]
+#         var = error_grp.createVariable('error_cf', 'f8', ('nz', 'Ncomp'))
+#         var[:,:] = error_cf[:,:]
+#         var = error_grp.createVariable('rel_error_cf', 'f8', ('nz', 'Ncomp'))
+#         var[:,:] = rel_error_cf[:,:]
+#
+#         rootgrp.close()
+#         return
+#
+#
+#     def create_statistics_file(self, path, file_name, time, ncomp, nvar, nz_):
+#         print('create statistics file: '+ path+', '+ file_name)
+#         # ncomp: number of Gaussian components in EM
+#         # nvar: number of variables of multi-variate Gaussian components
+#         rootgrp = nc.Dataset(os.path.join(path,file_name), 'w', format='NETCDF4')
+#         dimgrp = rootgrp.createGroup('dims')
+#         ts_grp = rootgrp.createGroup('time')
+#         ts_grp.createDimension('nt',len(time)-1)
+#         means_grp = rootgrp.createGroup('means')
+#         means_grp.createDimension('nz', nz_)
+#         means_grp.createDimension('ncomp', ncomp)
+#         means_grp.createDimension('nvar', nvar)
+#         cov_grp = rootgrp.createGroup('covariances')
+#         cov_grp.createDimension('nz', nz_)
+#         cov_grp.createDimension('ncomp', ncomp)
+#         cov_grp.createDimension('nvar', nvar)
+#         weights_grp = rootgrp.createGroup('weights')
+#         weights_grp.createDimension('nz', nz_)
+#         weights_grp.createDimension('ncomp', ncomp)
+#         error_grp = rootgrp.createGroup('error')
+#         error_grp.createDimension('nz', nz_)
+#
+#         var = ts_grp.createVariable('t','f8',('nt'))
+#         for i in range(len(time)-1):
+#             var[i] = time[i+1]
+#         z_grp = rootgrp.createGroup('profiles')
+#         z_grp.createDimension('nz', nz_)
+#         var = z_grp.createVariable('z', 'f8', ('nz'))
+#         for i in range(nz_):
+#             var[i] = self.zrange[i]
+#         var = z_grp.createVariable('k', 'f8', ('nz'))
+#         for i in range(nz_):
+#             var[i] = self.krange[i]
+#         rootgrp.close()
+#         return
+#
+#
+# def dump_variable(path, group_name, data_, var_name, ncomp, nvar, nz_):
+#     print('-------- dump variable --------', var_name, group_name, path)
+#     # print('dump variable', path, group_name, var_name, data_.shape, ncomp, nvar)
+#     rootgrp = nc.Dataset(path, 'r+')
+#     if group_name == 'means':
+#         # rootgrp = nc.Dataset(path, 'r+')
+#         var = rootgrp.groups['means'].createVariable(var_name, 'f8', ('nz', 'ncomp', 'nvar'))
+#         # var = nc.Dataset(path, 'r+').groups['means'].createVariable(var_name, 'f8', ('nz', 'ncomp', 'nvar'))
+#         # var = nc.Dataset(path, 'r+').groups['means'].createVariable(var_name, 'f8', ('nz', 'ncomp', 'nvar'))[:,:,:]
+#         var[:,:,:] = data_[:,:,:]
+#
+#     elif group_name == 'covariances':
+#         var = rootgrp.groups['covariances'].createVariable(var_name, 'f8', ('nz', 'ncomp', 'nvar', 'nvar'))
+#         var[:,:,:,:] = data_[:,:,:,:]
+#
+#     elif group_name == 'weights':
+#         var = rootgrp.groups['weights'].createVariable(var_name, 'f8', ('nz', 'ncomp'))
+#         var[:,:] = data_[:,:]
+#
+#     elif group_name == 'error':
+#         var = rootgrp.groups['error'].createVariable(var_name, 'f8', ('nz'))
+#         var[:] = data_[:]
+#
+#     elif group_name == 'profiles':
+#         var = rootgrp.groups['profiles'].createVariable(var_name, 'f8', ('nz'))
+#         var[:] = data_[:]
+#
+#     # # write_field(path, group_name, data, var_name)
+#     # # print('--------')
+#     rootgrp.close()
+#     print('')
+#     return
+
+#----------------------------------------------------------------------
 
 def read_in_netcdf_fields(variable_name, fullpath_in):
     # print(fullpath_in)
