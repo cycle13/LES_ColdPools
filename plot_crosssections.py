@@ -100,7 +100,7 @@ def main():
     if args.timemin:
         time_min = np.int(args.timemin)
     else:
-        time_min = np.int(0)
+        time_min = np.int(100)
     if args.timemax:
         time_max = np.int(args.timemax)
     else:

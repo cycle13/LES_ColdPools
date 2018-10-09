@@ -233,7 +233,7 @@ def plot_rim_mask(w, w_mask, rim_out, rim_int, rim_list, rim_list_int,
 
 
 def plot_outlines(perc, w_mask, rim_int, rim_out, rim_list, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
-                  nx_, ny_, t0, path_out):
+                  nx_, ny_, k0, t0, path_out):
     max = np.amax(w_mask)
     nx_plots = 5
     ny_plots = 2
@@ -277,9 +277,6 @@ def plot_outlines(perc, w_mask, rim_int, rim_out, rim_list, rim_aux, rmax2, icsh
     plt.xlim([0, nx_ - 1])
     plt.ylim([0, ny_ - 1])
 
-
-    # plt.subplot(ny_plots,nx_plots,6)
-
     plt.subplot(ny_plots,nx_plots,9)
     plt.title('rim out')
     plt.plot([0, nx_ - 1], [jcshift, jcshift], 'b')
@@ -298,7 +295,7 @@ def plot_outlines(perc, w_mask, rim_int, rim_out, rim_list, rim_aux, rmax2, icsh
     plt.xlim([0, nx_ - 1])
     plt.ylim([0, ny_ - 1])
 
-    plt.savefig(os.path.join(path_out, 'rim_searching_perc'+str(perc)+'_t' + str(t0) + '_v2.png'))
+    plt.savefig(os.path.join(path_out, 'rim_searching_k'+str(k0)+'_perc'+str(perc)+'_t' + str(t0) + '_v2.png'))
     plt.close()
     return
 

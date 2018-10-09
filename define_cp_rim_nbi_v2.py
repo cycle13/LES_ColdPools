@@ -11,7 +11,7 @@ from define_cp_rim_plottingfct import plot_yz_crosssection, plot_w_field, plot_s
     plot_cp_rim_velocity, plot_cp_rim_averages, plot_rim_thickness
 
 def main():
-    parser = argparse.ArgumentParser(prog='PyCLES')
+    parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("--casename")
     parser.add_argument("--path")
     parser.add_argument("--tmin")
@@ -189,43 +189,43 @@ def main():
             dj += 1
         rmax2 = np.maximum(np.maximum(imax-icshift,icshift-imin),np.maximum(jmax-jcshift,jcshift-jmin))**2
 
-    #     di = 0
-    #     while (icshift - di > imin or icshift + di < imax):
-    #         dj = 0
-    #         r2 = di ** 2 + dj ** 2
-    #         while (r2 <= rmax2):
-    #             for si in [-1, 1]:
-    #                 for sj in [-1, 1]:
-    #                     r2 = di ** 2 + dj ** 2
-    #                     if w_mask.mask[icshift+si*di,jcshift+sj*dj]:
-    #                         mask_aux[icshift + si * di, jcshift + sj * dj] = 2
-    #             dj += 1
-    #         di += 1
-    #
-    #     plt.figure()
-    #     plt.subplot(131)
-    #     plt.contourf(w_mask.mask.T, origin='lower')
-    #     plt.colorbar()
-    #     plt.title('w_mask')
-    #     ax = plt.subplot(132)
-    #     ax.imshow(w_mask.mask.T, origin='lower')
-    #     plt.plot([imin, imin], [0, ny_ - 1], 'w', linewidth=1)
-    #     plt.plot([imax, imax], [0, ny_ - 1], 'w', linewidth=1)
-    #     plt.title('w mask')
-    #     ax = plt.subplot(133)
-    #     ax.imshow(mask_aux.T, origin='lower')
-    #     circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
-    #     ax.add_artist(circle1)
-    #     plt.title('mask_aux')
-    #     plt.savefig('./test_mask_aux.png')
-    #
-    #     ''' (b) find inner & outer rim '''
-    #     rim_int = np.zeros((nx_, ny_), dtype=np.int)
-    #     rim_out = np.zeros((nx_, ny_), dtype=np.int)
-    #     rim_aux = np.zeros((nx_, ny_), dtype=np.int)
-    #     rim_list_int = []
-    #     rim_list_out = []
-    #
+        di = 0
+        while (icshift - di > imin or icshift + di < imax):
+            dj = 0
+            r2 = di ** 2 + dj ** 2
+            while (r2 <= rmax2):
+                for si in [-1, 1]:
+                    for sj in [-1, 1]:
+                        r2 = di ** 2 + dj ** 2
+                        if w_mask.mask[icshift+si*di,jcshift+sj*dj]:
+                            mask_aux[icshift + si * di, jcshift + sj * dj] = 2
+                dj += 1
+            di += 1
+
+        plt.figure()
+        plt.subplot(131)
+        plt.contourf(w_mask.mask.T, origin='lower')
+        plt.colorbar()
+        plt.title('w_mask')
+        ax = plt.subplot(132)
+        ax.imshow(w_mask.mask.T, origin='lower')
+        plt.plot([imin, imin], [0, ny_ - 1], 'w', linewidth=1)
+        plt.plot([imax, imax], [0, ny_ - 1], 'w', linewidth=1)
+        plt.title('w mask')
+        ax = plt.subplot(133)
+        ax.imshow(mask_aux.T, origin='lower')
+        circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
+        ax.add_artist(circle1)
+        plt.title('mask_aux')
+        plt.savefig('./test_mask_aux.png')
+
+        ''' (b) find inner & outer rim '''
+        rim_int = np.zeros((nx_, ny_), dtype=np.int)
+        rim_out = np.zeros((nx_, ny_), dtype=np.int)
+        rim_aux = np.zeros((nx_, ny_), dtype=np.int)
+        rim_list_int = []
+        rim_list_out = []
+
     #     di = 0
     #     dj = 0
     #     imin = icshift
@@ -245,8 +245,8 @@ def main():
     #         jmax = np.maximum(jcshift + dj, jmax)+1
     #         dj += 1
     #     rmax2 = np.maximum(np.maximum(imax-icshift,icshift-imin),np.maximum(jmax-jcshift,jcshift-jmin))**2
-    #     plot_outlines(perc, w_mask, rim_int, rim_out, rim_list_out, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
-    #                   nx_, ny_, t0, path_out)
+    #     #plot_outlines(perc, w_mask, rim_int, rim_out, rim_list_out, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
+    #     #              nx_, ny_, k0, t0, path_out)
     #     for si in [-1, 1]:
     #         for sj in [-1, 1]:
     #             for di in range(imax):
@@ -271,10 +271,9 @@ def main():
     #                                     #     break
     #
     #     plot_outlines(perc, w_mask, rim_int, rim_out, rim_list_out, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
-    #                   nx_, ny_, t0, path_out)
+    #                   nx_, ny_, k0, t0, path_out)
     #     del mask_aux
     #
-    # #     plot_outlines(perc, w_mask, rim_int, rim_list, rim_aux, icshift, jcshift, nx_, ny_, t0, path_out)
     #
     #     ''' (D) Polar Coordinates & sort according to angle '''
     #     # (1) find/define center of mass (here = (ic/jc))
