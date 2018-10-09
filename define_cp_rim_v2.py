@@ -147,7 +147,8 @@ def main():
         ny_ = 2 * jd
 
     print('ic,jc,id,jc,nx_,ny_', ic, jc, id, jd, nx_, ny_)
-
+    # percentile for threshold
+    perc = 95  # tested for triple 3D, t=400s
 
     # define general arrays
     dphi = 6        # angular resolution for averaging of radius
@@ -160,6 +161,10 @@ def main():
     rim_vel = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
     rim_vel_av = np.zeros(shape=(3, nt))
 
+    # create statistics file
+    stats_file_name = 'rimstats_perc' + str(perc) + 'th.nc'
+    create_statistics_file(stats_file_name, path_out, n_phi, nt, timerange, nk, krange)
+
     for it,t0 in enumerate(timerange):
         if it > 0:
             dt = t0-timerange[it-1]
@@ -167,12 +172,12 @@ def main():
             dt = t0
         print('time: '+ str(t0), '(dt='+str(dt)+')')
 
-        # percentile for threshold
-        perc = 95   # tested for triple 3D, t=400s
-
         ''' create mask file for time step t0'''
         mask_file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
         create_mask_file(mask_file_name, path_out, nk, krange)
+        # stats_file_name = 'rimstats_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
+        # create_statistics_file(stats_file_name, path_out, nk, krange)
+
 
         '''(A) read in w-field, shift domain and define partial domain '''
         w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
@@ -200,9 +205,6 @@ def main():
             else:
                 w_bin_r = np.asarray(
                     [np.int(w_mask_r.mask.reshape(nx_ * ny_)[i]) for i in range(nx_ * ny_)]).reshape(nx_, ny_)
-
-            # ''' create mask output file '''
-            # dump_mask(w_mask_r.mask, mask_file_name, path_out, k0, ik)
 
             # plot_s(w, w_c, t0, k0, path_fields, path_out)
             plot_w_field(w_c, perc, w, w_roll, w_, w_mask,
@@ -318,83 +320,90 @@ def main():
             # ''' dump mask and rim '''
             dump_mask(w_mask_r.mask, rim_int, rim_out, mask_file_name, path_out, k0, ik)
 
-            # ''' (D) Polar Coordinates & sort according to angle '''
-            # # (1) find/define center of mass (here = (ic/jc))
-            # # (2)
-            # # Once you create a tuple, you cannot edit it, it is immutable. Lists on the other hand are mutable,
-            # #   you can edit them, they work like the array object in JavaScript or PHP. You can add items,
-            # #   delete items from a list; but you can't do that to a tuple, tuples have a fixed size.
-            # nrim_out = len(rim_list_out)
-            # nrim_int = len(rim_list_int)
-            # for i, coord in enumerate(rim_list_out):
-            #     rim_list_out[i] = (coord, (polar(coord[0] - icshift, coord[1] - jcshift)))
-            # for i, coord in enumerate(rim_list_int):
-            #     rim_list_int[i] = (coord, (polar(coord[0] - icshift, coord[1] - jcshift)))
-            # # if rim already very close to subdomain (nx_,ny_), make domain larger
-            # if coord[0] >= nx_ - 3 or coord[1] >= ny_ - 3:
-            #     print('!!! changing domain size', nx_, nx_ + 4)
-            #     shift += 10
-            #     id = irstar + shift
-            #     jd = irstar + shift
-            #     ishift = np.max(id - ic, 0)
-            #     jshift = np.max(jd - jc, 0)
-            #     nx_ = 2 * id
-            #     ny_ = 2 * jd
-            #
-            # # sort list according to angle
-            # rim_list_out.sort(key=lambda tup: tup[1][1])
-            # rim_list_int.sort(key=lambda tup: tup[1][1])
-            # plot_rim_mask(w_, w_mask, rim_out, rim_int, rim_list_out, rim_list_int, icshift, jcshift, nx_, ny_,
-            #               t0, k0, path_out)
-            #
-            # del w_mask
-            # del rim_out, rim_int
-            #
-            # # average and interpolate for bins of 6 degrees
-            # angular_range = np.arange(0, 361, dphi)
-            # # - rim_intp_all = (phi[t,deg], phi[t,rad], r_out(t,phi))
-            # rim_intp_all[0, it, :] = angular_range[:-1]
-            # rim_intp_all[1, it, :] = np.pi * rim_intp_all[0, it, :] / 180
-            # print('')
-            # i = 0
-            # for n, phi in enumerate(rim_intp_all[0, it, :]):
-            #     phi_ = rim_list_out[i][1][1]
-            #     r_aux = 0.0
-            #     count = 0
-            #     while (phi_ >= phi and phi_ < angular_range[n + 1]):
-            #         r_aux += rim_list_out[i][1][0]
-            #         count += 1
-            #         i += 1
-            #         if i < nrim_out:
-            #             phi_ = rim_list_out[i][1][1]
-            #         else:
-            #             # phi_ = angular_range[n+1]
-            #             i = 0  # causes the rest of n-, phi-loop to run through without entering the while-loop
-            #             # >> could probably be done more efficiently
-            #             break
-            #     if count > 0:
-            #         rim_intp_all[2, it, n] = dx * r_aux / count
-            # i = 0
-            # for n, phi in enumerate(rim_intp_all[0, it, :]):
-            #     phi_ = rim_list_int[i][1][1]
-            #     r_aux = 0.0
-            #     count = 0
-            #     while (phi_ >= phi and phi_ < angular_range[n + 1]):
-            #         r_aux += rim_list_int[i][1][0]
-            #         count += 1
-            #         i += 1
-            #         if i < nrim_int:
-            #             phi_ = rim_list_int[i][1][1]
-            #         else:
-            #             # phi_ = angular_range[n+1]
-            #             i = 0  # causes the rest of n-, phi-loop to run through without entering the while-loop
-            #             # >> could probably be done more efficiently
-            #             break
-            #     if count > 0:
-            #         rim_intp_all[3, it, n] = dx * r_aux / count
-            # print('')
-            #
-            #
+            ''' (D) Polar Coordinates & sort according to angle '''
+            # (1) find/define center of mass (here = (ic/jc))
+            # (2)
+            # Once you create a tuple, you cannot edit it, it is immutable. Lists on the other hand are mutable,
+            #   you can edit them, they work like the array object in JavaScript or PHP. You can add items,
+            #   delete items from a list; but you can't do that to a tuple, tuples have a fixed size.
+            nrim_out = len(rim_list_out)
+            nrim_int = len(rim_list_int)
+            for i, coord in enumerate(rim_list_out):
+                rim_list_out[i] = (coord, (polar(coord[0] - icshift, coord[1] - jcshift)))
+            for i, coord in enumerate(rim_list_int):
+                rim_list_int[i] = (coord, (polar(coord[0] - icshift, coord[1] - jcshift)))
+            # if rim already very close to subdomain (nx_,ny_), make domain larger
+            if coord[0] >= nx_ - 3 or coord[1] >= ny_ - 3:
+                print('!!! changing domain size', nx_, nx_ + 4)
+                shift += 10
+                id = irstar + shift
+                jd = irstar + shift
+                ishift = np.max(id - ic, 0)
+                jshift = np.max(jd - jc, 0)
+                nx_ = 2 * id
+                ny_ = 2 * jd
+
+            # sort list according to angle
+            rim_list_out.sort(key=lambda tup: tup[1][1])
+            rim_list_int.sort(key=lambda tup: tup[1][1])
+            plot_rim_mask(w_, w_mask, rim_out, rim_int, rim_list_out, rim_list_int, icshift, jcshift, nx_, ny_,
+                          t0, k0, path_out)
+
+            del w_mask
+            del rim_out, rim_int
+
+            # average and interpolate for bins of 6 degrees
+            angular_range = np.arange(0, 361, dphi)
+            # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], r_int(t,i_phi)[m], D(t,i_phi)[m])
+            #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
+            # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], U(t,i_phi)[m/s], dU(t, i_phi)[m/s**2])
+            # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
+            rim_intp_all[0, it, :] = angular_range[:-1]
+            rim_intp_all[1, it, :] = np.pi * rim_intp_all[0, it, :] / 180
+            print('')
+            i = 0
+            for n, phi in enumerate(rim_intp_all[0, it, :]):
+                phi_ = rim_list_out[i][1][1]
+                r_aux = 0.0
+                count = 0
+                while (phi_ >= phi and phi_ < angular_range[n + 1]):
+                    r_aux += rim_list_out[i][1][0]
+                    count += 1
+                    i += 1
+                    if i < nrim_out:
+                        phi_ = rim_list_out[i][1][1]
+                    else:
+                        # phi_ = angular_range[n+1]
+                        i = 0  # causes the rest of n-, phi-loop to run through without entering the while-loop
+                        # >> could probably be done more efficiently
+                        break
+                if count > 0:
+                    rim_intp_all[2, it, n] = dx * r_aux / count
+            i = 0
+            for n, phi in enumerate(rim_intp_all[0, it, :]):
+                phi_ = rim_list_int[i][1][1]
+                r_aux = 0.0
+                count = 0
+                while (phi_ >= phi and phi_ < angular_range[n + 1]):
+                    r_aux += rim_list_int[i][1][0]
+                    count += 1
+                    i += 1
+                    if i < nrim_int:
+                        phi_ = rim_list_int[i][1][1]
+                    else:
+                        # phi_ = angular_range[n+1]
+                        i = 0  # causes the rest of n-, phi-loop to run through without entering the while-loop
+                        # >> could probably be done more efficiently
+                        break
+                if count > 0:
+                    rim_intp_all[3, it, n] = dx * r_aux / count
+            print('')
+
+            # dump statistics
+            # dump_statistics_file(rim_intp_all, stats_file_name, path_out)
+            dump_statistics_file(rim_intp_all[:,it,:], rim_vel[:,it,:], angular_range[:-1], stats_file_name, path_out, k0, ik, t0, it)
+
+
             # # plot outline in polar coordinates r(theta)
             # plot_angles(rim_list_out, rim_list_int, rim_intp_all[:,it,:], t0, path_out)
             # plot_cp_outline_alltimes(rim_intp_all[:,0:it+1,:], timerange, dx, k0, path_out)
@@ -447,25 +456,143 @@ def polar(x, y):
     return r, theta
 # ----------------------------------
 
-def create_rim_file(file_name, path, time, nx, ny, nz):
-    print('create output file: ' + path + ', ' + file_name)
+# def create_statistics_file(file_name, path, n_phi, nt, timerange, nk, krange):
+#     # output list with coordinates of rim points; mean velocity, radius etc.
+#
+#     print('-------- create statistics file -------- ' )
+#     print(path + ', ' + file_name)
+#     print('')
+#     rootgrp = nc.Dataset(os.path.join(path, file_name), 'w', format='NETCDF4')
+#     # # dimgrp = rootgrp.createGroup('dims')
+#     ts_grp = rootgrp.createGroup('time')
+#     ts_grp.createDimension('nt', nt)
+#     var = ts_grp.createVariable('time', 'f8', ('nt'))
+#     var[:] = timerange
+#
+#     # fields_grp = rootgrp.createGroup('fields')
+#     # fields_grp.createDimension('nx', nx)
+#     # fields_grp.createDimension('ny', ny)
+#     # fields_grp.createDimension('nz', nz)
+#
+#     stats_grp = rootgrp.createGroup('stats')
+#     stats_grp.createDimension('nt', nt)
+#     stats_grp.createDimension('nphi', n_phi)    # number of segments
+#     stats_grp.createVariable('r_out', 'f8', ('nt', 'nphi'))
+#     stats_grp.createVariable('r_int', 'f8', ('nt', 'nphi'))
+#     stats_grp.createVariable('D', 'f8', ('nt', 'nphi'))     # thickness of rim
+#
+#     pol_grp = rootgrp.createGroup('angles')
+#     pol_grp.createDimension('nphi', n_phi)
+#     var = pol_grp.createVariable('degree', 'f8', ('nphi'))
+#     var = pol_grp.createVariable('radian', 'f8', ('nphi'))
+#
+#     prof_grp = rootgrp.createGroup('profiles')
+#     prof_grp.createDimension('nz', nk)
+#     var = prof_grp.createVariable('k_dumped', 'f8', ('nz'))
+#     var[:] = np.zeros(nk)
+#     var = prof_grp.createVariable('krange', 'f8', ('nz'))
+#     var[:] = krange[:]
+#     var = prof_grp.createVariable('zrange', 'f8', ('nz'))
+#     var[:] = krange[:] * dz
+#
+#     rootgrp.close()
+#
+#     return
+
+# def dump_statistics_file(rim_intp_all, file_name, path):
+#     # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], r_int(t,i_phi)[m], D(t,i_phi)[m])
+#     #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
+#     # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], U(t,i_phi)[m/s], dU(t, i_phi)[m/s**2])
+#     # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
+#     rootgrp = nc.Dataset(os.path.join(path, file_name), 'r+', format='NETCDF4')
+#
+#     prof_grp = rootgrp.createGroup('profiles')
+#     var = levels_grp.variables['k_dumped']
+#     var[ik] = 1
+#
+#     rootgrp.close()
+#     return
+
+def create_statistics_file(file_name, path, n_phi, nt, timerange, nk, krange):
+    # output list with coordinates of rim points; mean velocity, radius etc.
+
+    print('-------- create statistics file -------- ' )
+    print(path + ', ' + file_name)
     print('')
     rootgrp = nc.Dataset(os.path.join(path, file_name), 'w', format='NETCDF4')
-    # dimgrp = rootgrp.createGroup('dims')
-    #
-    # ts_grp = rootgrp.createGroup('time')
-    # ts_grp.createDimension('nt', len(time) - 1)
-    # var = ts_grp.createVariable('t', 'f8', ('nt'))
-    # for i in range(len(time) - 1):
-    #     var[i] = time[i + 1]
-    #
-    # fields_grp = rootgrp.createGroup('fields')
-    # fields_grp.createDimension('nx', nx)
-    # fields_grp.createDimension('ny', ny)
-    # fields_grp.createDimension('nz', nz)
-    #
+    # # dimgrp = rootgrp.createGroup('dims')
+    ts_grp = rootgrp.createGroup('time')
+    ts_grp.createDimension('nt', nt)
+    var = ts_grp.createVariable('time', 'f8', ('nt'))
+    var[:] = timerange
+
+    ts_grp = rootgrp.createGroup('timeseries')
+    ts_grp.createDimension('nt', nt)
+    ts_grp.createDimension('nz', nk)
+    ts_grp.createVariable('r_av', 'f8', ('nt', 'nz'))
+    ts_grp.createVariable('U_av', 'f8', ('nt', 'nz'))
+    ts_grp.createVariable('dU_av', 'f8', ('nt', 'nz'))
+
+    stats_grp = rootgrp.createGroup('stats')
+    stats_grp.createDimension('nt', nt)
+    stats_grp.createDimension('nz', nk)
+    stats_grp.createDimension('nphi', n_phi)    # number of segments
+    stats_grp.createVariable('r_out', 'f8', ('nt', 'nphi'))
+    stats_grp.createVariable('r_int', 'f8', ('nt', 'nphi'))
+    stats_grp.createVariable('D', 'f8', ('nt', 'nphi'))     # thickness of rim
+    stats_grp.createVariable('U', 'f8', ('nt', 'nphi'))     # velocity of outer rim
+    stats_grp.createVariable('dU', 'f8', ('nt', 'nphi'))    # change of rim velocity with time ('acceleration of rim')
+
+    pol_grp = rootgrp.createGroup('angles')
+    pol_grp.createDimension('nphi', n_phi)
+    var = pol_grp.createVariable('degree', 'f8', ('nphi'))
+    var = pol_grp.createVariable('radian', 'f8', ('nphi'))
+
+    prof_grp = rootgrp.createGroup('profiles')
+    prof_grp.createDimension('nz', nk)
+    var = prof_grp.createVariable('k_dumped', 'f8', ('nz'))
+    var[:] = np.zeros(nk)
+    var = prof_grp.createVariable('krange', 'f8', ('nz'))
+    var[:] = krange[:]
+    var = prof_grp.createVariable('zrange', 'f8', ('nz'))
+    var[:] = krange[:] * dz
+
     rootgrp.close()
 
+    return
+
+
+def dump_statistics_file(rim_intp_all, rim_vel, angles, file_name, path, k0, ik, t0, it):
+    # - rim_intp_all = (phi(i_phi)[deg], phi(i_phi)[rad], r_out(i_phi)[m], r_int(i_phi)[m], D(i_phi)[m])
+    #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
+    # - rim_vel = (phi(i_phi)[deg], phi(i_phi)[rad], r_out(i_phi)[m], U(i_phi)[m/s], dU(i_phi)[m/s**2])
+    # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
+    rootgrp = nc.Dataset(os.path.join(path, file_name), 'r+', format='NETCDF4')
+
+    stats_grp = rootgrp.groups['stats']
+    var = stats_grp.variables['r_out']
+    var[it,:] = rim_intp_all[2,:]
+    var = stats_grp.variables['r_int']
+    var[it,:] = rim_intp_all[3,:]
+    var = stats_grp.variables['D']
+    var[it,:] = rim_intp_all[4,:]
+    var = stats_grp.variables['U']
+    var[it,:] = rim_vel[3,:]
+    var = stats_grp.variables['dU']
+    var[it,:] = rim_vel[4,:]
+
+
+    pol_grp = rootgrp.groups['angles']
+    var = pol_grp.variables['degree']
+    var[:] = angles[:]
+    var = pol_grp.variables['radian']
+    var[:] = np.pi / 180 * angles[:]
+
+    prof_grp = rootgrp.groups['profiles']
+    var = prof_grp.variables['k_dumped']
+    var[ik] = 1
+
+    rootgrp.close()
     return
 
 def create_mask_file(file_name, path, nk, krange):
