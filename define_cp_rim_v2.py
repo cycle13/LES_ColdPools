@@ -401,7 +401,7 @@ def main():
 
             # dump statistics
             # dump_statistics_file(rim_intp_all, stats_file_name, path_out)
-            dump_statistics_file(rim_intp_all[:,it,:], rim_vel[:,it,:], angular_range[:-1], stats_file_name, path_out, k0, ik, t0, it)
+            dump_statistics_file(rim_intp_all[:,it,:], rim_vel[:,it,:], rim_vel_av[:,it], angular_range[:-1], stats_file_name, path_out, k0, ik, t0, it)
 
 
             # # plot outline in polar coordinates r(theta)
@@ -537,11 +537,11 @@ def create_statistics_file(file_name, path, n_phi, nt, timerange, nk, krange):
     stats_grp.createDimension('nt', nt)
     stats_grp.createDimension('nz', nk)
     stats_grp.createDimension('nphi', n_phi)    # number of segments
-    stats_grp.createVariable('r_out', 'f8', ('nt', 'nphi'))
-    stats_grp.createVariable('r_int', 'f8', ('nt', 'nphi'))
-    stats_grp.createVariable('D', 'f8', ('nt', 'nphi'))     # thickness of rim
-    stats_grp.createVariable('U', 'f8', ('nt', 'nphi'))     # velocity of outer rim
-    stats_grp.createVariable('dU', 'f8', ('nt', 'nphi'))    # change of rim velocity with time ('acceleration of rim')
+    stats_grp.createVariable('r_out', 'f8', ('nt', 'nz', 'nphi'))
+    stats_grp.createVariable('r_int', 'f8', ('nt', 'nz', 'nphi'))
+    stats_grp.createVariable('D', 'f8', ('nt', 'nz', 'nphi'))     # thickness of rim
+    stats_grp.createVariable('U', 'f8', ('nt', 'nz', 'nphi'))     # velocity of outer rim
+    stats_grp.createVariable('dU', 'f8', ('nt', 'nz', 'nphi'))    # change of rim velocity with time ('acceleration of rim')
 
     pol_grp = rootgrp.createGroup('angles')
     pol_grp.createDimension('nphi', n_phi)
@@ -562,24 +562,32 @@ def create_statistics_file(file_name, path, n_phi, nt, timerange, nk, krange):
     return
 
 
-def dump_statistics_file(rim_intp_all, rim_vel, angles, file_name, path, k0, ik, t0, it):
+def dump_statistics_file(rim_intp_all, rim_vel, rim_vel_av, angles, file_name, path, k0, ik, t0, it):
     # - rim_intp_all = (phi(i_phi)[deg], phi(i_phi)[rad], r_out(i_phi)[m], r_int(i_phi)[m], D(i_phi)[m])
     #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
     # - rim_vel = (phi(i_phi)[deg], phi(i_phi)[rad], r_out(i_phi)[m], U(i_phi)[m/s], dU(i_phi)[m/s**2])
     # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
     rootgrp = nc.Dataset(os.path.join(path, file_name), 'r+', format='NETCDF4')
 
+    ts_grp = rootgrp.groups['timeseries']
+    var = ts_grp.variables['r_av']
+    var[it,ik] = rim_vel_av[0]
+    var = ts_grp.variables['U_av']
+    var[it,ik] = rim_vel_av[1]
+    var = ts_grp.variables['dU_av']
+    var[it,ik] = rim_vel_av[2]
+
     stats_grp = rootgrp.groups['stats']
     var = stats_grp.variables['r_out']
-    var[it,:] = rim_intp_all[2,:]
+    var[it,ik,:] = rim_intp_all[2,:]
     var = stats_grp.variables['r_int']
-    var[it,:] = rim_intp_all[3,:]
+    var[it,ik,:] = rim_intp_all[3,:]
     var = stats_grp.variables['D']
-    var[it,:] = rim_intp_all[4,:]
+    var[it,ik,:] = rim_intp_all[4,:]
     var = stats_grp.variables['U']
-    var[it,:] = rim_vel[3,:]
+    var[it,ik,:] = rim_vel[3,:]
     var = stats_grp.variables['dU']
-    var[it,:] = rim_vel[4,:]
+    var[it,ik,:] = rim_vel[4,:]
 
 
     pol_grp = rootgrp.groups['angles']
