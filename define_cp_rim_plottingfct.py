@@ -18,7 +18,7 @@ def set_colorbars(cm_bwr_, cm_vir_, cm_grey_):
 
 
 # ----------------------------------
-def plot_cp_rim_averages(rim_vel, rim_vel_av, k0, timerange, path_out):
+def plot_cp_rim_averages(rim_vel, rim_vel_av, perc, timerange, k0, path_out):
     nt = rim_vel.shape[1]
     plt.figure(figsize=(12, 5))
     plt.subplot(121)
@@ -38,7 +38,7 @@ def plot_cp_rim_averages(rim_vel, rim_vel_av, k0, timerange, path_out):
     return
 
 
-def plot_cp_rim_velocity(rim_vel, rim_vel_av, k0, timerange, path_out):
+def plot_cp_rim_velocity(rim_vel, rim_vel_av, k0, perc, timerange, path_out):
     nt = rim_vel.shape[1]
     plt.figure(figsize=(12,5))
     ax = plt.subplot(121, projection='polar')
@@ -63,7 +63,7 @@ def plot_cp_rim_velocity(rim_vel, rim_vel_av, k0, timerange, path_out):
     return
 
 
-def plot_rim_thickness(rim_intp_all, timerange, dx, k0, path_out):
+def plot_rim_thickness(rim_intp_all, perc, timerange, dx, k0, path_out):
     nt = rim_intp_all.shape[1]
     plt.figure(figsize=(12,6))
     # thickness = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]
@@ -91,7 +91,7 @@ def plot_rim_thickness(rim_intp_all, timerange, dx, k0, path_out):
     return
 
 
-def plot_cp_outline_alltimes(rim_intp_all, timerange, dx, k0, path_out):
+def plot_cp_outline_alltimes(rim_intp_all, perc, timerange, dx, k0, path_out):
     nt = rim_intp_all.shape[1]
     plt.figure(figsize=(12,10))
 
@@ -110,7 +110,7 @@ def plot_cp_outline_alltimes(rim_intp_all, timerange, dx, k0, path_out):
     plt.xlabel('angle phi  [deg]')
     plt.ylabel('radius r  [m] (dx='+str(dx)+')')
     plt.suptitle('outline CP (outer)', fontsize=28)
-    plt.savefig(os.path.join(path_out, 'rim_cp1_alltimes_v2.png'))
+    plt.savefig(os.path.join(path_out, 'rim_cp1_alltimes_out_w'+str(perc)+'_k'+str(k0)+'.png'))
     plt.close()
 
     plt.figure(figsize=(12,10))
@@ -127,7 +127,7 @@ def plot_cp_outline_alltimes(rim_intp_all, timerange, dx, k0, path_out):
     plt.xlabel('angle phi  [deg]')
     plt.ylabel('radius r  [m] (dx=' + str(dx) + ')')
     plt.suptitle('outline CP (inner)', fontsize=28)
-    plt.savefig(os.path.join(path_out, 'rim_cp1_alltimes_int_v2_k'+str(k0)+'.png'))
+    plt.savefig(os.path.join(path_out, 'rim_cp1_alltimes_int_w'+str(perc)+'_k'+str(k0)+'.png'))
     plt.close()
 
 
@@ -233,7 +233,7 @@ def plot_rim_mask(w, w_mask, rim_out, rim_int, rim_list, rim_list_int,
 
 
 def plot_outlines(perc, w_mask, rim_int, rim_out, rim_list, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
-                  nx_, ny_, k0, t0, path_out):
+                  nx_, ny_, t0, path_out):
     max = np.amax(w_mask)
     nx_plots = 5
     ny_plots = 2
@@ -295,7 +295,7 @@ def plot_outlines(perc, w_mask, rim_int, rim_out, rim_list, rim_aux, rmax2, icsh
     plt.xlim([0, nx_ - 1])
     plt.ylim([0, ny_ - 1])
 
-    plt.savefig(os.path.join(path_out, 'rim_searching_k'+str(k0)+'_perc'+str(perc)+'_t' + str(t0) + '_v2.png'))
+    plt.savefig(os.path.join(path_out, 'rim_searching_perc'+str(perc)+'_t' + str(t0) + '_v2.png'))
     plt.close()
     return
 
@@ -342,12 +342,13 @@ def plot_w_field(w_c, perc, w, w_roll, w_, w_mask,
     ax1.plot([0, nx - 1], [jc, jc], 'r')
     ax1.plot([0, nx - 1], [jc + gw, jc + gw], 'r--')
     ax2.imshow(w_roll.T, cmap=cm_bwr, origin='lower', vmin=-max, vmax=max)
-    ax2.plot([ic + ishift, ic + ishift], [0, ny - 1])
-    ax2.plot([ic - id + ishift, ic - id + ishift], [0, ny - 1], '--')
+    ax2.plot([ic + ishift, ic + ishift], [0, ny - 1], label='ic+ishift')
+    ax2.plot([ic - id + ishift, ic - id + ishift], [0, ny - 1], '--', label='ic-id+ishift')
     ax2.plot([ic + id + ishift, ic + id + ishift], [0, ny - 1], '--')
     ax2.plot([0, nx - 1], [jc + jshift, jc + jshift])
     ax2.plot([0, nx - 1], [jc + jshift - jd, jc + jshift - jd], 'k--')
     ax2.plot([0, nx - 1], [jc + jshift + jd, jc + jshift + jd], 'k--')
+    ax2.legend()
     ax3.imshow(w_.T, cmap=cm_bwr, origin='lower', vmin=-max, vmax=max)
     ax3.plot([icshift, icshift], [0, ny_ - 1])
     ax3.plot([0, nx_ - 1], [jcshift, jcshift])
@@ -355,7 +356,8 @@ def plot_w_field(w_c, perc, w, w_roll, w_, w_mask,
     ax5.imshow(w_mask.mask.T, origin='lower', vmin=-max, vmax=max)
 
     plt.suptitle(
-        'w masked on ' + str(perc) + 'th percentile: w=' + str(np.round(w_c, 2)) + 'm/s (z=' + str(k0 * dz) + ')')
+        'w masked on ' + str(perc) + 'th percentile: w_c=' + str(np.round(w_c, 2)) + 'm/s (z=' +
+        str(k0 * dz) + ' , t='+str(t0)+')')
     plt.savefig(os.path.join(path_out, 'w_masked_k' + str(k0) + '_perc' + str(perc) + '_t' + str(t0) + '_v2.png'))
     plt.close()
     return
