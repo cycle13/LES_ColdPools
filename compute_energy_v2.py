@@ -69,19 +69,6 @@ def main():
     timerange = np.arange(tmin, tmax + 100, 100)
     nt = len(timerange)
 
-    # # define subdomain to scan
-    # # --- for triple coldpool ---
-    # d = np.int(np.round(ny / 2))
-    # a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
-    # rstar = 5000.0  # half of the width of initial cold-pools [m]
-    # irstar = np.int(np.round(rstar / dx))
-    # # ic = np.int(np.round(a / 2))
-    # # jc = np.int(np.round(d / 2))
-    # id = irstar + 10
-    # jd = id
-    # nx_ = 2*id
-    # ny_ = 2*jd
-
     ''' (A) Potential Energy (PE) '''
     ''' (A1) for LES gravity current '''
     # 1. read in initial s-field
@@ -117,8 +104,14 @@ def main():
     mask = rootgrp.groups['fields'].variables['mask'][:,:,:]
     # make sure that only non-zero values in krange if nc-files contain this level
     contr = rootgrp.groups['profiles'].variables['k_dumped'][:]
-    krange = contr * rootgrp.groups['profiles'].variables['krange'][:]
-    zrange = contr * rootgrp.groups['profiles'].variables['zrange'][:]
+    zrange_ = rootgrp.groups['profiles'].variables['zrange'][:]
+    krange_ = rootgrp.groups['profiles'].variables['krange'][:]
+    nk_ = np.int(np.sum(contr))
+    krange = np.zeros(nk_)
+    zrange = np.zeros(nk_)
+    krange[:] = krange_[0:nk_]
+    zrange[:] = zrange_[0:nk_]
+    print('contr', contr, np.sum(contr))
     del contr
 
     [nx_, ny_, nk] = mask.shape
@@ -129,15 +122,16 @@ def main():
     rootgrp.close()
     print('')
     print('read in: ' + os.path.join(path_in, mask_file_name))
-    print(nx_, ny_, nk, len(krange))
+    print(nx_, ny_, nk, nk_, len(krange))
     print('krange', krange)
+
     print('ic,jc', ic, jc, 'shifts', ishift, jshift)
     print('')
 
 
 
-    KEd = np.zeros(nk, dtype=np.double)     # kinetic energy density per level
-    KE = np.zeros(nk, dtype=np.double)      # kinetic energy per level
+    KEd = np.zeros(nk_, dtype=np.double)     # kinetic energy density per level
+    KE = np.zeros(nk_, dtype=np.double)      # kinetic energy per level
     for ik, k0 in enumerate(krange):
         print('k='+str(k0))
         plt.figure()
@@ -150,11 +144,12 @@ def main():
     KE_tot = np.sum(KE)
 
     plt.figure()
-    plt.plot(zrange, KE, '-o')
-    plt.xlabel('z  [m]')
-    plt.ylabel('KE')
-
+    plt.plot(KE, zrange, '-o')
+    plt.xlabel('KE')
+    plt.ylabel('z  [m]')
+    plt.title('Kinetic energy in cold pool rim (KE tot: '+str(KE_tot)+'J)')
     plt.savefig(os.path.join(path_out, 'KE_levels_t'+str(t0)+'.png'))
+    plt.close()
 
 
     return
@@ -219,6 +214,7 @@ def compute_KE(mask_, k0, t0, path, path_in):
     plt.contourf(w_mask[:, :].T, cmap=cm_bwr, vmin=-max, vmax=max)
     plt.colorbar()
     plt.savefig(os.path.join(path_out, 'mask2_k' + str(k0) + '.png'))
+    plt.close()
 
     u2 = u_mask*u_mask
     v2 = v_mask*v_mask

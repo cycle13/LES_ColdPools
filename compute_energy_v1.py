@@ -64,9 +64,6 @@ def main():
     # 4. integrate: KE = 0.5*sum_i(rho_i*dV*v_i**2) from center (ic,jc) to rim
     compute_KE(ic, jc, id, jd, irstar, path, path_fields)
 
-
-
-
     return
 
 
