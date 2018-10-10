@@ -18,7 +18,7 @@ def set_colorbars(cm_bwr_, cm_vir_, cm_grey_):
 
 
 # ----------------------------------
-def plot_cp_rim_averages(rim_vel, rim_vel_av, perc, timerange, k0, path_out):
+def plot_cp_rim_averages(rim_vel, rim_vel_av, perc, k0, timerange, path_out):
     nt = rim_vel.shape[1]
     plt.figure(figsize=(12, 5))
     plt.subplot(121)
@@ -38,7 +38,7 @@ def plot_cp_rim_averages(rim_vel, rim_vel_av, perc, timerange, k0, path_out):
     return
 
 
-def plot_cp_rim_velocity(rim_vel, rim_vel_av, k0, perc, timerange, path_out):
+def plot_cp_rim_velocity(rim_vel, rim_vel_av, perc, k0, timerange, path_out):
     nt = rim_vel.shape[1]
     plt.figure(figsize=(12,5))
     ax = plt.subplot(121, projection='polar')
@@ -63,7 +63,7 @@ def plot_cp_rim_velocity(rim_vel, rim_vel_av, k0, perc, timerange, path_out):
     return
 
 
-def plot_rim_thickness(rim_intp_all, perc, timerange, dx, k0, path_out):
+def plot_cp_rim_thickness(rim_intp_all, perc, k0, timerange, dx, path_out):
     nt = rim_intp_all.shape[1]
     plt.figure(figsize=(12,6))
     # thickness = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]
@@ -91,7 +91,7 @@ def plot_rim_thickness(rim_intp_all, perc, timerange, dx, k0, path_out):
     return
 
 
-def plot_cp_outline_alltimes(rim_intp_all, perc, timerange, dx, k0, path_out):
+def plot_cp_outline_alltimes(rim_intp_all, perc, k0, timerange, dx, path_out):
     nt = rim_intp_all.shape[1]
     plt.figure(figsize=(12,10))
 
@@ -129,12 +129,6 @@ def plot_cp_outline_alltimes(rim_intp_all, perc, timerange, dx, k0, path_out):
     plt.suptitle('outline CP (inner)', fontsize=28)
     plt.savefig(os.path.join(path_out, 'rim_cp1_alltimes_int_w'+str(perc)+'_k'+str(k0)+'.png'))
     plt.close()
-
-
-
-
-
-
 
     return
 
