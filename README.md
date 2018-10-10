@@ -25,7 +25,9 @@ OUTPUT:
     - profiles:
         - krange[k], zrange[k] (k=kmin..kmax)
         - k_dumped[k] \in {0,1} (0=not dumped, 1=dumped) 
-        
+ 
+ 
+(1c) `define_cp_rim_v3.py`: like v2 but with changes to boundaries to improve performance     
 
 define_cp_rim_plottingfct.py
 
