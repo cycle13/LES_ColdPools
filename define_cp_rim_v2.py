@@ -5,6 +5,9 @@ import argparse
 import json as simplejson
 import os
 
+# todo
+# - problems for mask output, if domain size changes
+
 from define_cp_rim_plottingfct import set_colorbars
 from define_cp_rim_plottingfct import plot_yz_crosssection, plot_w_field, plot_s, \
     plot_outlines, plot_rim_mask, plot_angles, plot_cp_outline_alltimes, \
@@ -38,7 +41,6 @@ def main():
     3. rim_outer(x,y,k)
      (x=[0..nx_-1], y=[0..ny_-1], k=[kmin..kmax])
     """
-
 
     parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("--casename")
@@ -82,7 +84,7 @@ def main():
         tmax = np.int(args.tmax)
     else:
         tmax = tmin
-    timerange = np.arange(tmin,tmax + 100,100)
+    timerange = np.arange(tmin, tmax + 100, 100)
     nt = len(timerange)
 
     # if args.k0:
@@ -185,7 +187,7 @@ def main():
 
         ''' create mask file for time step t0'''
         mask_file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
-        create_mask_file(mask_file_name, path_stats, nk, krange)
+        create_mask_file(mask_file_name, path_stats, nk, krange, ic, jc)
         # stats_file_name = 'rimstats_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
         # create_statistics_file(stats_file_name, path_stats, nk, krange)
 
@@ -548,14 +550,18 @@ def create_statistics_file(file_name, path, n_phi, nt, timerange, nk, krange):
     ts_grp = rootgrp.createGroup('time')
     ts_grp.createDimension('nt', nt)
     var = ts_grp.createVariable('time', 'f8', ('nt'))
+    var.units = "s"
     var[:] = timerange
 
     ts_grp = rootgrp.createGroup('timeseries')
     ts_grp.createDimension('nt', nt)
     ts_grp.createDimension('nz', nk)
-    ts_grp.createVariable('r_av', 'f8', ('nt', 'nz'))
-    ts_grp.createVariable('U_av', 'f8', ('nt', 'nz'))
-    ts_grp.createVariable('dU_av', 'f8', ('nt', 'nz'))
+    var = ts_grp.createVariable('r_av', 'f8', ('nt', 'nz'))
+    var.units = "m"
+    var = ts_grp.createVariable('U_av', 'f8', ('nt', 'nz'))
+    var.units = "m/s"
+    var = ts_grp.createVariable('dU_av', 'f8', ('nt', 'nz'))
+    var.units = "m/s^2"
 
     stats_grp = rootgrp.createGroup('stats')
     stats_grp.createDimension('nt', nt)
@@ -563,23 +569,31 @@ def create_statistics_file(file_name, path, n_phi, nt, timerange, nk, krange):
     stats_grp.createDimension('nphi', n_phi)    # number of segments
     stats_grp.createVariable('r_out', 'f8', ('nt', 'nz', 'nphi'))
     stats_grp.createVariable('r_int', 'f8', ('nt', 'nz', 'nphi'))
-    stats_grp.createVariable('D', 'f8', ('nt', 'nz', 'nphi'))     # thickness of rim
-    stats_grp.createVariable('U', 'f8', ('nt', 'nz', 'nphi'))     # velocity of outer rim
-    stats_grp.createVariable('dU', 'f8', ('nt', 'nz', 'nphi'))    # change of rim velocity with time ('acceleration of rim')
+    var = stats_grp.createVariable('D', 'f8', ('nt', 'nz', 'nphi'))     # thickness of rim
+    var.units = "m"
+    var = stats_grp.createVariable('U', 'f8', ('nt', 'nz', 'nphi'))     # velocity of outer rim
+    var.units = "m/s"
+    var = stats_grp.createVariable('dU', 'f8', ('nt', 'nz', 'nphi'))    # change of rim velocity with time ('acceleration of rim')
+    var.units = "m/s^2"
 
     pol_grp = rootgrp.createGroup('angles')
     pol_grp.createDimension('nphi', n_phi)
-    var = pol_grp.createVariable('degree', 'f8', ('nphi'))
-    var = pol_grp.createVariable('radian', 'f8', ('nphi'))
+    var = pol_grp.createVariable('phi_deg', 'f8', ('nphi'))
+    var.units = "degrees"
+    var = pol_grp.createVariable('phi_rad', 'f8', ('nphi'))
+    var.units = "radian"
 
     prof_grp = rootgrp.createGroup('profiles')
     prof_grp.createDimension('nz', nk)
     var = prof_grp.createVariable('k_dumped', 'f8', ('nz'))
     var[:] = np.zeros(nk)
+    var.description = "0:level not dumped, 1:level dumped"
     var = prof_grp.createVariable('krange', 'f8', ('nz'))
     var[:] = krange[:]
+    var.units = "-"
     var = prof_grp.createVariable('zrange', 'f8', ('nz'))
     var[:] = krange[:] * dz
+    var.units = "m"
 
     rootgrp.close()
 
@@ -615,9 +629,9 @@ def dump_statistics_file(rim_intp_all, rim_vel, rim_vel_av, angles, file_name, p
 
 
     pol_grp = rootgrp.groups['angles']
-    var = pol_grp.variables['degree']
+    var = pol_grp.variables['phi_deg']
     var[:] = angles[:]
-    var = pol_grp.variables['radian']
+    var = pol_grp.variables['phi_rad']
     var[:] = np.pi / 180 * angles[:]
 
     prof_grp = rootgrp.groups['profiles']
@@ -627,10 +641,13 @@ def dump_statistics_file(rim_intp_all, rim_vel, rim_vel_av, angles, file_name, p
     rootgrp.close()
     return
 
-def create_mask_file(file_name, path, nk, krange):
+def create_mask_file(file_name, path, nk, krange, ic, jc):
     print('-------- create mask file --------', nx_, ny_, nk)
     # file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(time) + '.nc'
     rootgrp = nc.Dataset(os.path.join(path, file_name), 'w', format='NETCDF4')
+
+    # descr_grp = rootgrp.createGroup('description')
+    # descr_grp.createVariable
 
     mask_grp = rootgrp.createGroup('fields')
     mask_grp.createDimension('nx', nx_)
@@ -644,10 +661,13 @@ def create_mask_file(file_name, path, nk, krange):
     levels_grp.createDimension('nz', nk)
     var = levels_grp.createVariable('k_dumped', 'f8', ('nz'))
     var[:] = np.zeros(nk)
+    var.description = "0:level not dumped, 1:level dumped"
     var = levels_grp.createVariable('krange', 'f8', ('nz'))
     var[:] = krange[:]
+    var.units = "-"
     var = levels_grp.createVariable('zrange', 'f8', ('nz'))
     var[:] = krange[:] * dz
+    var.units = "m"
     rootgrp.close()
     print('')
     return
