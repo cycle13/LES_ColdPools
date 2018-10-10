@@ -8,7 +8,7 @@ import os
 from define_cp_rim_plottingfct import set_colorbars
 from define_cp_rim_plottingfct import plot_yz_crosssection, plot_w_field, plot_s, \
     plot_outlines, plot_rim_mask, plot_angles, plot_cp_outline_alltimes, \
-    plot_cp_rim_velocity, plot_cp_rim_averages, plot_rim_thickness
+    plot_cp_rim_velocity, plot_cp_rim_averages, plot_cp_rim_thickness
 
 def main():
     """
@@ -225,7 +225,6 @@ def main():
             del w_roll
 
             ''' (C) define outline of cold pool '''
-
             mask_aux = np.array(w_bin_r, copy=True)
 
             ''' (a) fill interior of mask '''
@@ -253,6 +252,7 @@ def main():
             i = 0
             while (icshift - i >= imin-1 or icshift + i < imax):
             # while (icshift - i >= 0 or icshift + i < nx_):
+            # while (icshift - i > imin or icshift + i < imax): # older version
                 j = 0
                 r2 = i ** 2 + j ** 2
                 while (r2 <= rmax2):
@@ -315,11 +315,11 @@ def main():
             #               nx_, ny_, k0, t0, path_out)
             for si in [-1, 1]:
                 for sj in [-1, 1]:
-                    for i in range(imax):
-                        i = icshift + si*i
-                        for j in range(jmax):
-                            j = jcshift + sj*j
-                            r2 = i ** 2 + j ** 2
+                    for di in range(imax):
+                        i = icshift + si*di
+                        for dj in range(jmax):
+                            j = jcshift + sj*dj
+                            r2 = di ** 2 + dj ** 2
                             if r2 <= rmax2:
                                 rim_aux[i,j] = 1
                                 if w_mask_r.mask[i,j]:
@@ -423,16 +423,17 @@ def main():
 
             # dump statistics
             # dump_statistics_file(rim_intp_all, stats_file_name, path_stats)
-            dump_statistics_file(rim_intp_all[:,it,:], rim_vel[:,it,:], rim_vel_av[:,it], angular_range[:-1], stats_file_name, path_stats, k0, ik, t0, it)
+            dump_statistics_file(rim_intp_all[:,it,:], rim_vel[:,it,:], rim_vel_av[:,it], angular_range[:-1],
+                                 stats_file_name, path_stats, k0, ik, t0, it)
 
 
             # plot outline in polar coordinates r(theta)
             plot_angles(rim_list_out, rim_list_int, rim_intp_all[:,it,:], t0, path_out)
-            plot_cp_outline_alltimes(rim_intp_all[:,0:it+1,:], timerange, dx, k0, path_out)
+            plot_cp_outline_alltimes(rim_intp_all[:,0:it+1,:], perc, k0, timerange, dx, path_out)
 
             rim_intp_all[4,:,:] = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]     # rim thickness
 
-            plot_rim_thickness(rim_intp_all[:,0:it+1,:], timerange[:it+1], dx, k0, path_out)
+            plot_cp_rim_thickness(rim_intp_all[:,0:it+1,:], perc, k0, timerange[:it+1], dx, path_out)
             del rim_list_out, rim_list_int
 
 
@@ -451,9 +452,9 @@ def main():
                 rim_vel_av[1, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
                 rim_vel_av[2, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[4,it,:]).data)
 
-                plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], timerange[:it+1], k0, path_out)
+                plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], perc, k0, timerange[:it+1], path_out)
 
-            plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av, k0, timerange, path_out)
+            plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av, perc, k0, timerange, path_out)
 
     return
 
