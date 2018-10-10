@@ -200,7 +200,8 @@ def main():
             icshift = id
             jcshift = jd
 
-            # plot_yz_crosssection(w, ic, path_out, t0)
+            # if flag == 'triple':
+            #     plot_yz_crosssection(w, ic, path_out, t0)
 
 
             ''' (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)'''
@@ -228,51 +229,61 @@ def main():
             mask_aux = np.array(w_bin_r, copy=True)
 
             ''' (a) fill interior of mask '''
+            # (imin, imax, jmin, jmax) enclose inner circle of cold pool
             imin = icshift
             imax = icshift
             jmin = jcshift
             jmax = jcshift
-            di = 0
-            dj = 0
-            while (w_mask.mask[icshift+di, jcshift] or w_mask.mask[icshift-di, jcshift]):
-                imin = np.minimum(icshift - di, imin)-1
-                imax = np.maximum(icshift + di, imax)+1
-                di += 1
-            while (w_mask.mask[icshift, jcshift+dj] or w_mask.mask[icshift, jcshift-dj]):
-                jmin = np.minimum(jcshift - dj, jmin)-1
-                jmax = np.maximum(jcshift + dj, jmax)+1
-                dj += 1
+            i = 0
+            j = 0
+            while (w_mask.mask[icshift+i, jcshift] or w_mask.mask[icshift-i, jcshift]):
+                imin = np.minimum(icshift - i, imin)-1
+                imax = np.maximum(icshift + i, imax)+1
+                i += 1
+            while (w_mask.mask[icshift, jcshift+j] or w_mask.mask[icshift, jcshift-j]):
+                jmin = np.minimum(jcshift - j, jmin)-1
+                jmax = np.maximum(jcshift + j, jmax)+1
+                j += 1
             rmax2 = np.maximum(np.maximum(imax-icshift,icshift-imin),np.maximum(jmax-jcshift,jcshift-jmin))**2
+            print('rmax2', rmax2, np.sqrt(rmax2))
+            print('imin, imax, jmin, jmax', imin, imax, jmin, jmax)
+            print('icshift, jcshift', icshift, jcshift)
 
-            di = 0
-            while (icshift - di > imin or icshift + di < imax):
-                dj = 0
-                r2 = di ** 2 + dj ** 2
+            # fill interior of cold pool (within inner rim)
+            i = 0
+            while (icshift - i >= imin-1 or icshift + i < imax):
+            # while (icshift - i >= 0 or icshift + i < nx_):
+                j = 0
+                r2 = i ** 2 + j ** 2
                 while (r2 <= rmax2):
                     for si in [-1, 1]:
                         for sj in [-1, 1]:
-                            r2 = di ** 2 + dj ** 2
-                            if w_mask.mask[icshift+si*di,jcshift+sj*dj]:
-                                mask_aux[icshift + si * di, jcshift + sj * dj] = 2
-                    dj += 1
-                di += 1
+                            r2 = i ** 2 + j ** 2
+                            if w_mask.mask[icshift+si*i,jcshift+sj*j]:
+                                mask_aux[icshift + si * i, jcshift + sj * j] = 2
+                    j += 1
+                i += 1
 
             # plt.figure()
             # plt.subplot(131)
             # plt.contourf(w_mask.mask.T, origin='lower')
             # plt.colorbar()
-            # plt.title('w_mask')
+            # plt.title('w_mask.mask')
             # ax = plt.subplot(132)
             # ax.imshow(w_mask.mask.T, origin='lower')
             # plt.plot([imin, imin], [0, ny_ - 1], 'w', linewidth=1)
             # plt.plot([imax, imax], [0, ny_ - 1], 'w', linewidth=1)
-            # plt.title('w mask')
+            # circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
+            # ax.add_artist(circle1)
+            # plt.title('w_mask.mask')
             # ax = plt.subplot(133)
             # ax.imshow(mask_aux.T, origin='lower')
             # circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
             # ax.add_artist(circle1)
+            # plt.plot(icshift,jcshift,'ow',markersize=5)
             # plt.title('mask_aux')
-            # plt.savefig('./test_mask_aux.png')
+            # plt.savefig(os.path.join(path_out,'test_mask_aux_t'+str(t0)+'.png'))
+            # plt.close()
 
             ''' (b) find inner & outer rim '''
             rim_int = np.zeros((nx_, ny_), dtype=np.int)
@@ -281,34 +292,34 @@ def main():
             rim_list_int = []
             rim_list_out = []
 
-            di = 0
-            dj = 0
+            i = 0
+            j = 0
             imin = icshift
             jmin = jcshift
             imax = icshift
             jmax = jcshift
-            while (mask_aux[icshift+di, jcshift]>0 and icshift+di<nx_):
-                imin = np.minimum(icshift - di, imin)-1
-                di += 1
-            while (mask_aux[icshift - di, jcshift] > 0 and icshift - di >= 0):
-                imax = np.maximum(icshift + di, imax)+1
-                di += 1
-            while (mask_aux[jcshift, jcshift+dj]>0 and jcshift+dj<ny_):
-                jmin = np.minimum(jcshift - dj, jmin)-1
-                dj += 1
-            while (mask_aux[jcshift, jcshift - dj] > 0 and jcshift - dj >= 0):
-                jmax = np.maximum(jcshift + dj, jmax)+1
-                dj += 1
+            while (mask_aux[icshift+i, jcshift]>0 and icshift+i<nx_):
+                imin = np.minimum(icshift - i, imin)-1
+                i += 1
+            while (mask_aux[icshift - i, jcshift] > 0 and icshift - i >= 0):
+                imax = np.maximum(icshift + i, imax)+1
+                i += 1
+            while (mask_aux[jcshift, jcshift+j]>0 and jcshift+j<ny_):
+                jmin = np.minimum(jcshift - j, jmin)-1
+                j += 1
+            while (mask_aux[jcshift, jcshift - j] > 0 and jcshift - j >= 0):
+                jmax = np.maximum(jcshift + j, jmax)+1
+                j += 1
             rmax2 = np.maximum(np.maximum(imax-icshift,icshift-imin),np.maximum(jmax-jcshift,jcshift-jmin))**2
             # plot_outlines(perc, w_mask, rim_int, rim_out, rim_list_out, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
             #               nx_, ny_, k0, t0, path_out)
             for si in [-1, 1]:
                 for sj in [-1, 1]:
-                    for di in range(imax):
-                        i = icshift + si*di
-                        for dj in range(jmax):
-                            j = jcshift + sj*dj
-                            r2 = di ** 2 + dj ** 2
+                    for i in range(imax):
+                        i = icshift + si*i
+                        for j in range(jmax):
+                            j = jcshift + sj*j
+                            r2 = i ** 2 + j ** 2
                             if r2 <= rmax2:
                                 rim_aux[i,j] = 1
                                 if w_mask_r.mask[i,j]:
@@ -446,7 +457,7 @@ def main():
 
     return
 
-# ----------------------------------
+# ----------------------------------------------------------------------
 import math
 def polar(x, y):
     """
@@ -465,7 +476,8 @@ def polar(x, y):
     elif x < 0:
         theta = 180 + math.degrees(math.atan(float(y) / x))
     return r, theta
-# ----------------------------------
+
+# ----------------------------------------------------------------------
 
 # def create_statistics_file(file_name, path, n_phi, nt, timerange, nk, krange):
 #     # output list with coordinates of rim points; mean velocity, radius etc.
@@ -656,8 +668,7 @@ def dump_mask(mask, rim_int, rim_out, file_name, path, k0, ik):
     print('')
     return
 
-
-#     # ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 #
 #     def create_statistics_file(self, path, file_name, time, ncomp, nvar, nz_):
 #         print('create statistics file: '+ path+', '+ file_name)
