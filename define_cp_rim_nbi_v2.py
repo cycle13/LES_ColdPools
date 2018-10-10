@@ -56,7 +56,7 @@ def main():
     else:
         # path = '/Users/bettinameyer/polybox/ClimatePhysics/Copenhagen/Projects/LES_ColdPool/' \
         #        'triple_3D_noise/Out_CPDry_triple_dTh2K/'
-        path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th3K/'
+        path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th3K/run1/'
     if os.path.exists(os.path.join(path, 'fields')):
         path_fields = os.path.join(path, 'fields')
     elif os.path.exists(os.path.join(path, 'fields_k120')):

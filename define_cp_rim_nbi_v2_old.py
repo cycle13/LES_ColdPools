@@ -8,9 +8,12 @@ import os
 from define_cp_rim_plottingfct import set_colorbars
 from define_cp_rim_plottingfct import plot_yz_crosssection, plot_w_field, plot_s, \
     plot_outlines, plot_rim_mask, plot_angles, plot_cp_outline_alltimes, \
-    plot_cp_rim_velocity, plot_cp_rim_averages, plot_rim_thickness
+    plot_cp_rim_velocity, plot_cp_rim_averages, plot_cp_rim_thickness
 
 def main():
+    print('')
+    print('RUNNING OLD')
+    print('')
     parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("--casename")
     parser.add_argument("--path")
@@ -25,7 +28,7 @@ def main():
     else:
         # path = '/Users/bettinameyer/polybox/ClimatePhysics/Copenhagen/Projects/LES_ColdPool/' \
         #        'triple_3D_noise/Out_CPDry_triple_dTh2K/'
-        path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th3K/'
+        path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th3K/run1/'
     if os.path.exists(os.path.join(path, 'fields')):
         path_fields = os.path.join(path, 'fields')
     elif os.path.exists(os.path.join(path, 'fields_k120')):
@@ -365,7 +368,7 @@ def main():
 
         rim_intp_all[4,:,:] = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]     # rim thickness
 
-        plot_rim_thickness(rim_intp_all[:,0:it+1,:], perc, timerange[:it+1], dx, k0, path_out)
+        plot_cp_rim_thickness(rim_intp_all[:,0:it+1,:], perc, k0, timerange[:it+1], dx, path_out)
         del rim_list_out, rim_list_int
 
 
@@ -382,9 +385,9 @@ def main():
             rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2,it,:],1.))
             rim_vel_av[1, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
 
-            plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], perc, timerange[:it+1], k0, path_out)
+            plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], perc, k0, timerange[:it+1], path_out)
 
-        plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av, k0, perc, timerange, path_out)
+        plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av, perc, k0, timerange, path_out)
 
         print('')
     return
