@@ -233,7 +233,7 @@ def plot_rim_mask(w, w_mask, rim_out, rim_int, rim_list, rim_list_int,
 
 
 def plot_outlines(perc, w_mask, rim_int, rim_out, rim_list, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
-                  nx_, ny_, t0, path_out):
+                  nx_, ny_, k0, t0, path_out):
     max = np.amax(w_mask)
     nx_plots = 5
     ny_plots = 2
