@@ -21,7 +21,8 @@ def main():
     :param --tmax: maximum time taken into account
     :param --k0: level, at which the mask is computed
 
-    :return: figures
+    :return: figures in repository 'figs_cp_rim'; 2D field output with mask, inner and outer rim at levels k=[kmin..kmax]; statistics with cold pool radius, rim velocity
+
 
 
     Details:
@@ -29,6 +30,13 @@ def main():
     1. read in w-field, shift field (roll) and define partial domain where to look for cold pool
     2. mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)
     3. Define rim of cold pool as the outline of the mask; based on number of neighbours
+
+    Output 3D fields:
+
+    1. mask(x,y,k)
+    2. rim_inner(x,y,k)
+    3. rim_outer(x,y,k)
+     (x=[0..nx_-1], y=[0..ny_-1], k=[kmin..kmax])
     """
 
 
@@ -42,7 +50,7 @@ def main():
     parser.add_argument("--kmax")
     args = parser.parse_args()
 
-    global path_fields, path_out
+    global path_fields, path_out, path_stats
     if args.path:
         path = args.path
     else:
@@ -56,6 +64,9 @@ def main():
     path_out = os.path.join(path, 'figs_cp_rim')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
+    path_stats = os.path.join(path, 'fields_cp_rim')
+    if not os.path.exists(path_stats):
+        os.mkdir(path_stats)
 
     global case_name
     if args.casename:
@@ -163,7 +174,7 @@ def main():
 
     # create statistics file
     stats_file_name = 'rimstats_perc' + str(perc) + 'th.nc'
-    create_statistics_file(stats_file_name, path_out, n_phi, nt, timerange, nk, krange)
+    create_statistics_file(stats_file_name, path_stats, n_phi, nt, timerange, nk, krange)
 
     for it,t0 in enumerate(timerange):
         if it > 0:
@@ -174,9 +185,9 @@ def main():
 
         ''' create mask file for time step t0'''
         mask_file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
-        create_mask_file(mask_file_name, path_out, nk, krange)
+        create_mask_file(mask_file_name, path_stats, nk, krange)
         # stats_file_name = 'rimstats_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
-        # create_statistics_file(stats_file_name, path_out, nk, krange)
+        # create_statistics_file(stats_file_name, path_stats, nk, krange)
 
 
         '''(A) read in w-field, shift domain and define partial domain '''
@@ -318,7 +329,7 @@ def main():
                           nx_, ny_, k0, t0, path_out)
             del mask_aux
             # ''' dump mask and rim '''
-            dump_mask(w_mask_r.mask, rim_int, rim_out, mask_file_name, path_out, k0, ik)
+            dump_mask(w_mask_r.mask, rim_int, rim_out, mask_file_name, path_stats, k0, ik)
 
             ''' (D) Polar Coordinates & sort according to angle '''
             # (1) find/define center of mass (here = (ic/jc))
@@ -400,8 +411,8 @@ def main():
             print('')
 
             # dump statistics
-            # dump_statistics_file(rim_intp_all, stats_file_name, path_out)
-            dump_statistics_file(rim_intp_all[:,it,:], rim_vel[:,it,:], rim_vel_av[:,it], angular_range[:-1], stats_file_name, path_out, k0, ik, t0, it)
+            # dump_statistics_file(rim_intp_all, stats_file_name, path_stats)
+            dump_statistics_file(rim_intp_all[:,it,:], rim_vel[:,it,:], rim_vel_av[:,it], angular_range[:-1], stats_file_name, path_stats, k0, ik, t0, it)
 
 
             # plot outline in polar coordinates r(theta)
