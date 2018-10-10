@@ -24,15 +24,31 @@ def main():
     parser.add_argument("--kmax")
     args = parser.parse_args()
 
-    path = '/Users/bettinameyer/polybox/ClimatePhysics/Copenhagen/Projects/LES_ColdPool/' \
-           'triple_3D_noise/Out_CPDry_triple_dTh2K/'
+    global cm_bwr, cm_grey, cm_vir
+    cm_bwr = plt.cm.get_cmap('bwr')
+    cm_vir = plt.cm.get_cmap('viridis')
+    cm_grey = plt.cm.get_cmap('gist_gray_r')
+
+    global path_in, path_out, path_stats
+    if args.path:
+        path = args.path
+    else:
+        path = '/Users/bettinameyer/polybox/ClimatePhysics/Copenhagen/Projects/LES_ColdPool/' \
+                'triple_3D_noise/Out_CPDry_triple_dTh2K/'
+        # path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th3K/'
+    path_in = os.path.join(path, 'fields_cp_rim')
     path_fields = os.path.join(path, 'fields')
-    # path_in = os.path.join(path, 'fields/0.nc')
+    path_out = os.path.join(path, 'figs_energy')
+    if not os.path.exists(path_out):
+        os.mkdir(path_out)
 
     global case_name
-    case_name = 'ColdPoolDry_triple_3D'
+    if args.casename:
+        case_name = args.casename
+    else:
+        case_name = 'ColdPoolDry_triple_3D'
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
-    global nx, ny, nz, dx, dy, dz
+    global nx, ny, nz, dx, dy, dz, dV
     nx = nml['grid']['nx']
     ny = nml['grid']['ny']
     nz = nml['grid']['nz']
@@ -40,19 +56,31 @@ def main():
     dy = nml['grid']['dy']
     dz = nml['grid']['dz']
     gw = nml['grid']['gw']
+    dV = dx * dy * dz
 
-    # define subdomain to scan
-    # --- for triple coldpool ---
-    d = np.int(np.round(ny / 2))
-    a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
-    rstar = 5000.0  # half of the width of initial cold-pools [m]
-    irstar = np.int(np.round(rstar / dx))
-    ic = np.int(np.round(a / 2))
-    jc = np.int(np.round(d / 2))
-    id = irstar + 10
-    jd = id
-    nx_ = 2*id
-    ny_ = 2*jd
+    if args.tmin:
+        tmin = np.int(args.tmin)
+    else:
+        tmin = 100
+    if args.tmax:
+        tmax = np.int(args.tmax)
+    else:
+        tmax = tmin
+    timerange = np.arange(tmin, tmax + 100, 100)
+    nt = len(timerange)
+
+    # # define subdomain to scan
+    # # --- for triple coldpool ---
+    # d = np.int(np.round(ny / 2))
+    # a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
+    # rstar = 5000.0  # half of the width of initial cold-pools [m]
+    # irstar = np.int(np.round(rstar / dx))
+    # # ic = np.int(np.round(a / 2))
+    # # jc = np.int(np.round(d / 2))
+    # id = irstar + 10
+    # jd = id
+    # nx_ = 2*id
+    # ny_ = 2*jd
 
     ''' (A) Potential Energy (PE) '''
     ''' (A1) for LES gravity current '''
@@ -66,94 +94,167 @@ def main():
     ''' (B) Kinetic Energy (KE) '''
     # 1. read in velocity fields
     # 2. read in reference rho
-    # 3. define rim of cold pool
-    # define_cp_rim()
+    # 3. read in mask cold pool rim (from: define_cp_rim.py)
     # 4. integrate: KE = 0.5*sum_i(rho_i*dV*v_i**2) from center (ic,jc) to rim
-    compute_KE(ic, jc, id, jd, irstar, path, path_fields)
 
-    return
+    perc = 95
 
-
-
-
-
-def compute_KE(ic,jc,id,jd,irstar, path, path_in):
-    files = [name for name in os.listdir(path_in) if name[-2:] == 'nc']
-    times = [np.int(name[:-3]) for name in files]
-    files.sort(key=len)
-    times.sort()
-    nt = len(files)
-
-    k_max = 20
-    krange = np.arange(0,20)
-
-    KE = np.zeros((nt))
-    KEd = np.zeros((nt))
-
-    ishift = id - irstar
-    jshift = jd - irstar
-    th_w = 5e-1
-
+    # READ IN density profile
     rootgrp = nc.Dataset(os.path.join(path, 'Stats.' + case_name + '.nc'))
     rho0 = rootgrp.groups['reference'].variables['rho0'][:]
     rho_unit = rootgrp.groups['reference'].variables['rho0'].units
     # z_half = rootgrp.groups['reference'].variables['z'][:]
     rootgrp.close()
-    dV = dx*dy*dz
 
-    for it,t0 in enumerate(times):
+    # for it,t0 in enumerate(times):
+    #     pass
+    t0 = tmin
 
-        u = read_in_netcdf_fields('u', os.path.join(path_in,str(t0)+'.nc'))
-        v = read_in_netcdf_fields('v', os.path.join(path_in,str(t0)+'.nc'))
-        w = read_in_netcdf_fields('w', os.path.join(path_in,str(t0)+'.nc'))
+    # READ IN mask file from cold pool rim definition
+    global nx_, ny_, nk, ic, jc, ishift, jshift
+    mask_file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
+    rootgrp = nc.Dataset(os.path.join(path_in, mask_file_name), 'r')
+    mask = rootgrp.groups['fields'].variables['mask'][:,:,:]
+    # make sure that only non-zero values in krange if nc-files contain this level
+    contr = rootgrp.groups['profiles'].variables['k_dumped'][:]
+    krange = contr * rootgrp.groups['profiles'].variables['krange'][:]
+    zrange = contr * rootgrp.groups['profiles'].variables['zrange'][:]
+    del contr
 
-        # define mask
-        u_ = np.roll(u[:, :, :k_max], [ishift, jshift],
-                     [0, 1])[ic + ishift - id:ic + ishift + id, jc + jshift - jd:jc + jshift + jd]
-        v_ = np.roll(v[:, :, :k_max], [ishift, jshift],
-                     [0, 1])[ic + ishift - id:ic + ishift + id, jc + jshift - jd:jc + jshift + jd]
-        w_roll = np.roll(w[:, :, :k_max], [ishift, jshift], [0, 1])
-        w_ = w_roll[ic + ishift - id:ic + ishift + id, jc + jshift - jd:jc + jshift + jd]
+    [nx_, ny_, nk] = mask.shape
+    ic = np.int(rootgrp.groups['description'].variables['ic'][:])
+    jc = np.int(rootgrp.groups['description'].variables['jc'][:])
+    ishift = np.int(rootgrp.groups['description'].variables['ishift'][:])
+    jshift = np.int(rootgrp.groups['description'].variables['jshift'][:])
+    rootgrp.close()
+    print('')
+    print('read in: ' + os.path.join(path_in, mask_file_name))
+    print(nx_, ny_, nk, len(krange))
+    print('krange', krange)
+    print('ic,jc', ic, jc, 'shifts', ishift, jshift)
+    print('')
 
-        w_mask = np.ma.masked_where(w_ <= th_w, w_)
-        u_mask = np.ma.masked_where(w_ <= th_w, u_)
-        v_mask = np.ma.masked_where(w_ <= th_w, v_)
 
-        u2 = u_mask*u_mask
-        v2 = v_mask*v_mask
-        w2 = w_mask*w_mask
-        del u, v, w
 
-        # KE ~ v**2 = (u**2 + v**2 + w**2)
-        KEd[it] = 0.5*np.sum(u2+v2+w2)
+    KEd = np.zeros(nk, dtype=np.double)     # kinetic energy density per level
+    KE = np.zeros(nk, dtype=np.double)      # kinetic energy per level
+    for ik, k0 in enumerate(krange):
+        print('k='+str(k0))
+        plt.figure()
+        plt.contourf(mask[:,:,ik].T)
+        plt.colorbar()
+        plt.savefig(os.path.join(path_out, 'mask_k'+str(k0)+'.png'))
 
-        # for k0 in krange:
-        for k0 in [0]:
-            KE[it] += rho0[k0] * dV * np.sum(u2[:,:,k0] + v2[:,:,k0] + w2[:,:,k0])
-        KE[it] = 0.5 * KE[it]
+        KEd[ik] = compute_KE(mask[:,:,ik], np.int(k0), t0, path, path_fields)
+        KE[ik] = 0.5 * rho0[np.int(k0)] * dV * KEd[ik]
+    KE_tot = np.sum(KE)
 
-        print('t0', t0, KEd[it], KE[it])
+    plt.figure()
+    plt.plot(zrange, KE, '-o')
+    plt.xlabel('z  [m]')
+    plt.ylabel('KE')
 
-    plt.figure(figsize=(12,6))
-    ax1 = plt.subplot(1,2,1)
-    ax2 = plt.subplot(1,2,2)
-    ax1.set_title('KE density')
-    ax2.set_title('KE')
-    ax1.plot(times[1:],KEd[1:])
-    ax2.plot(times[1:],KE[1:])
-    ax1.grid()
-    ax2.grid()
-    ax1.set_xlabel('time [s]')
-    ax2.set_xlabel('time [s]')
-    ax1.set_ylabel('KE density [J/kg]')
-    ax2.set_ylabel('KE [J]')
-    plt.suptitle('kinetic energy in rim (w>0.5m/s)')
-
-    plt.savefig(os.path.join(path,'KE_density.png'))
-    plt.close()
+    plt.savefig(os.path.join(path_out, 'KE_levels_t'+str(t0)+'.png'))
 
 
     return
+
+
+
+
+
+def compute_KE(mask_, k0, t0, path, path_in):
+    # k_max = 20
+
+    # ishift = id - irstar
+    # jshift = jd - irstar
+    # th_w = 5e-1
+
+    id = np.int(nx_ / 2)
+    jd = np.int(ny_ / 2)
+
+    u = read_in_netcdf_fields('u', os.path.join(path_in,str(t0)+'.nc'))
+    v = read_in_netcdf_fields('v', os.path.join(path_in,str(t0)+'.nc'))
+    w = read_in_netcdf_fields('w', os.path.join(path_in,str(t0)+'.nc'))
+
+    # define mask
+    u_ = np.roll(np.roll(u[:, :, k0], ishift, axis=0), jshift, axis=1)[ic + ishift - id:ic + ishift + id, jc + jshift - jd:jc + jshift + jd]
+    v_ = np.roll(np.roll(v[:, :, k0], ishift, axis=0), jshift, axis=1)[ic + ishift - id:ic + ishift + id, jc + jshift - jd:jc + jshift + jd]
+    w_roll = np.roll(np.roll(w[:, :,k0], ishift, axis=0), jshift, axis=1)    # nbi
+    # w_roll = np.roll(w[:, :, k0], [ishift, jshift], [0, 1])     # on Laptop gives the same as above
+    w_ = w_roll[ic + ishift - id:ic + ishift + id, jc + jshift - jd:jc + jshift + jd]
+
+    w_mask = np.ma.masked_where(mask_==0, w_)
+    # w_mask = np.ma.masked_where(w_ <= th_w, w_)
+    u_mask = np.ma.masked_where(mask_==0, u_)
+    v_mask = np.ma.masked_where(mask_==0, v_)
+
+    plt.figure(figsize=(16,6))
+    plt.subplot(2, 4, 2)
+    max = np.maximum(np.abs(np.amin(u_)), np.amax(u_))
+    plt.contourf(u_[:, :].T, cmap=cm_bwr, vmin=-max, vmax=max)
+    plt.colorbar()
+    plt.subplot(2, 4, 3)
+    max = np.maximum(np.abs(np.amin(v_)), np.amax(v_))
+    plt.contourf(v_[:, :].T, cmap=cm_bwr, vmin=-max, vmax=max)
+    plt.colorbar()
+    plt.subplot(2, 4, 4)
+    max = np.maximum(np.abs(np.amin(w_)), np.amax(w_))
+    plt.contourf(w_[:, :].T, cmap=cm_bwr, vmin=-max, vmax=max)
+    plt.colorbar()
+
+    plt.subplot(2,4,5)
+    plt.contourf(mask_[:, :].T)
+    plt.colorbar()
+    plt.subplot(2,4,6)
+    max = np.maximum(np.abs(np.amin(u_)), np.amax(u_))
+    plt.contourf(u_mask[:, :].T, cmap=cm_bwr, vmin=-max, vmax=max)
+    plt.colorbar()
+    plt.subplot(2,4,7)
+    max = np.maximum(np.abs(np.amin(v_)), np.amax(v_))
+    plt.contourf(v_mask[:, :].T, cmap=cm_bwr, vmin=-max, vmax=max)
+    plt.colorbar()
+    plt.subplot(2,4,8)
+    max = np.maximum(np.abs(np.amin(w_)), np.amax(w_))
+    plt.contourf(w_mask[:, :].T, cmap=cm_bwr, vmin=-max, vmax=max)
+    plt.colorbar()
+    plt.savefig(os.path.join(path_out, 'mask2_k' + str(k0) + '.png'))
+
+    u2 = u_mask*u_mask
+    v2 = v_mask*v_mask
+    w2 = w_mask*w_mask
+    del u, v, w
+
+    # KE ~ v**2 = (u**2 + v**2 + w**2)
+    KEd = 0.5*np.sum(u2+v2+w2)
+
+    #     # for k0 in krange:
+    #     for k0 in [0]:
+    #         KE[it] += rho0[k0] * dV * np.sum(u2[:,:,k0] + v2[:,:,k0] + w2[:,:,k0])
+    #     KE[it] = 0.5 * KE[it]
+    #
+    #     print('t0', t0, KEd[it], KE[it])
+    #
+    # plt.figure(figsize=(12,6))
+    # ax1 = plt.subplot(1,2,1)
+    # ax2 = plt.subplot(1,2,2)
+    # ax1.set_title('KE density')
+    # ax2.set_title('KE')
+    # ax1.plot(times[1:],KEd[1:])
+    # ax2.plot(times[1:],KE[1:])
+    # ax1.grid()
+    # ax2.grid()
+    # ax1.set_xlabel('time [s]')
+    # ax2.set_xlabel('time [s]')
+    # ax1.set_ylabel('KE density [J/kg]')
+    # ax2.set_ylabel('KE [J]')
+    # plt.suptitle('kinetic energy in rim (w>0.5m/s)')
+    #
+    # plt.savefig(os.path.join(path,'KE_density.png'))
+    # plt.close()
+
+
+    return KEd
 
 
 def compute_PE(ic,jc,id,jd,nx_,ny_,case_name,path,path_fields):

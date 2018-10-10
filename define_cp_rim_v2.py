@@ -187,7 +187,7 @@ def main():
 
         ''' create mask file for time step t0'''
         mask_file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
-        create_mask_file(mask_file_name, path_stats, nk, krange, ic, jc)
+        create_mask_file(mask_file_name, path_stats, nk, krange, ic, jc, ishift, jshift)
         # stats_file_name = 'rimstats_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
         # create_statistics_file(stats_file_name, path_stats, nk, krange)
 
@@ -196,6 +196,7 @@ def main():
         w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
 
         for ik,k0 in enumerate(krange):
+            print('level: k=' + str(k0), '(z=' + str(k0*dz) + 'm)')
             # w_roll = np.roll(np.roll(w[:, :, k0], ishift, axis=0), jshift, axis=1)    # nbi
             w_roll = np.roll(w[:, :, k0], [ishift, jshift], [0, 1])
             w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
@@ -641,13 +642,20 @@ def dump_statistics_file(rim_intp_all, rim_vel, rim_vel_av, angles, file_name, p
     rootgrp.close()
     return
 
-def create_mask_file(file_name, path, nk, krange, ic, jc):
-    print('-------- create mask file --------', nx_, ny_, nk)
+def create_mask_file(file_name, path, nk, krange, ic, jc, ishift, jshift):
+    print('-------- create mask file --------')
     # file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(time) + '.nc'
     rootgrp = nc.Dataset(os.path.join(path, file_name), 'w', format='NETCDF4')
 
-    # descr_grp = rootgrp.createGroup('description')
-    # descr_grp.createVariable
+    descr_grp = rootgrp.createGroup('description')
+    var = descr_grp.createVariable('ic', 'f8', )
+    var[:] = ic
+    var = descr_grp.createVariable('jc', 'f8', )
+    var[:] = jc
+    var = descr_grp.createVariable('ishift', 'f8', )
+    var[:] = ishift
+    var = descr_grp.createVariable('jshift', 'f8', )
+    var[:] = jshift
 
     mask_grp = rootgrp.createGroup('fields')
     mask_grp.createDimension('nx', nx_)
@@ -690,76 +698,7 @@ def dump_mask(mask, rim_int, rim_out, file_name, path, k0, ik):
     return
 
 # ----------------------------------------------------------------------
-#
-#     def create_statistics_file(self, path, file_name, time, ncomp, nvar, nz_):
-#         print('create statistics file: '+ path+', '+ file_name)
-#         # ncomp: number of Gaussian components in EM
-#         # nvar: number of variables of multi-variate Gaussian components
-#         rootgrp = nc.Dataset(os.path.join(path,file_name), 'w', format='NETCDF4')
-#         dimgrp = rootgrp.createGroup('dims')
-#         ts_grp = rootgrp.createGroup('time')
-#         ts_grp.createDimension('nt',len(time)-1)
-#         means_grp = rootgrp.createGroup('means')
-#         means_grp.createDimension('nz', nz_)
-#         means_grp.createDimension('ncomp', ncomp)
-#         means_grp.createDimension('nvar', nvar)
-#         cov_grp = rootgrp.createGroup('covariances')
-#         cov_grp.createDimension('nz', nz_)
-#         cov_grp.createDimension('ncomp', ncomp)
-#         cov_grp.createDimension('nvar', nvar)
-#         weights_grp = rootgrp.createGroup('weights')
-#         weights_grp.createDimension('nz', nz_)
-#         weights_grp.createDimension('ncomp', ncomp)
-#         error_grp = rootgrp.createGroup('error')
-#         error_grp.createDimension('nz', nz_)
-#
-#         var = ts_grp.createVariable('t','f8',('nt'))
-#         for i in range(len(time)-1):
-#             var[i] = time[i+1]
-#         z_grp = rootgrp.createGroup('profiles')
-#         z_grp.createDimension('nz', nz_)
-#         var = z_grp.createVariable('z', 'f8', ('nz'))
-#         for i in range(nz_):
-#             var[i] = self.zrange[i]
-#         var = z_grp.createVariable('k', 'f8', ('nz'))
-#         for i in range(nz_):
-#             var[i] = self.krange[i]
-#         rootgrp.close()
-#         return
-#
-#
-# def dump_variable(path, group_name, data_, var_name, ncomp, nvar, nz_):
-#     print('-------- dump variable --------', var_name, group_name, path)
-#     # print('dump variable', path, group_name, var_name, data_.shape, ncomp, nvar)
-#     rootgrp = nc.Dataset(path, 'r+')
-#     if group_name == 'means':
-#         # rootgrp = nc.Dataset(path, 'r+')
-#         var = rootgrp.groups['means'].createVariable(var_name, 'f8', ('nz', 'ncomp', 'nvar'))
-#         # var = nc.Dataset(path, 'r+').groups['means'].createVariable(var_name, 'f8', ('nz', 'ncomp', 'nvar'))
-#         # var = nc.Dataset(path, 'r+').groups['means'].createVariable(var_name, 'f8', ('nz', 'ncomp', 'nvar'))[:,:,:]
-#         var[:,:,:] = data_[:,:,:]
-#
-#     elif group_name == 'covariances':
-#         var = rootgrp.groups['covariances'].createVariable(var_name, 'f8', ('nz', 'ncomp', 'nvar', 'nvar'))
-#         var[:,:,:,:] = data_[:,:,:,:]
-#
-#     elif group_name == 'weights':
-#         var = rootgrp.groups['weights'].createVariable(var_name, 'f8', ('nz', 'ncomp'))
-#         var[:,:] = data_[:,:]
-#
-#     elif group_name == 'error':
-#         var = rootgrp.groups['error'].createVariable(var_name, 'f8', ('nz'))
-#         var[:] = data_[:]
-#
-#     elif group_name == 'profiles':
-#         var = rootgrp.groups['profiles'].createVariable(var_name, 'f8', ('nz'))
-#         var[:] = data_[:]
-#
-#     # # write_field(path, group_name, data, var_name)
-#     # # print('--------')
-#     rootgrp.close()
-#     print('')
-#     return
+
 
 #----------------------------------------------------------------------
 
