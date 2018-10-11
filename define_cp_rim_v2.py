@@ -132,7 +132,7 @@ def main():
         irstar = np.int(np.round(rstar / dx))
         ic = np.int(np.round(a / 2))
         jc = np.int(np.round(d / 2))
-        shift = 40
+        shift = 60
         id = irstar + shift
         jd = irstar + shift
         ishift = np.max(id - ic, 0)
@@ -209,7 +209,8 @@ def main():
 
             ''' (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)'''
             # Note:  no difference if percentile of total field w or subdomain w_
-            w_c = np.percentile(w_, perc)
+            # w_c = np.percentile(w_, perc)
+            w_c = np.percentile(w, perc)
             # w_mask = True, if w<w_c
             # w_mask_r = True, if w>w_c
             w_mask = np.ma.masked_less(w_, w_c)
