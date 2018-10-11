@@ -5,17 +5,17 @@
 # Cold Pools
 
 **(1) Definition of Cold Pool rim**
->> Define rim of cold pool by a threshold (usually 95th percentile) of the vertical velocity
+> Define rim of cold pool by a threshold (usually 95th percentile) of the vertical velocity
 
-(1a) `define_cp_rim.py`: 
-Find outer rim of mask based on number of neighbours
-INPUT: [--casename CASENAME] [--path PATH] [--tmin TMIN] [--tmax TMAX] [--k0 K0]
+(1a) `define_cp_rim.py` [--casename CASENAME] [--path PATH] [--tmin TMIN] [--tmax TMAX] [--k0 K0] 
+> Find outer rim of mask based on number of neighbours
 
 OUTPUT:
-  - figures in ``PATH/figs_cp_rim``
+figures in ``PATH/figs_cp_rim``
 
-(1b) `define_cp_rim_v2.py`: Find inner and outer rim of mask based on number of neighbours and filling interior of mask
-INPUT: [--casename CASENAME] [--path PATH] [--tmin TMIN] [--tmax TMAX] [--kmin KMIN] [--kmax KMAX]
+(1b) `define_cp_rim_v2.py` [--casename CASENAME] [--path PATH] [--tmin TMIN] [--tmax TMAX] [--kmin KMIN] [--kmax KMAX]
+ 
+> Find inner and outer rim of mask based on number of neighbours and filling interior of mask 
 
 OUTPUT:
 - figures in ``PATH/figs_cp_rim``  
@@ -27,9 +27,13 @@ OUTPUT:
         - k_dumped[k] \in {0,1} (0=not dumped, 1=dumped) 
  
  
-(1c) `define_cp_rim_v3.py`: like v2 but with changes to boundaries to improve performance     
+(1c) `define_cp_rim_v3.py`: 
+> like v2 but with changes to boundaries to improve performance     
 
-define_cp_rim_plottingfct.py
+
+PLOTTING
+
+`define_cp_rim_plottingfct.py`
 
 
 Details:
@@ -40,33 +44,27 @@ INPUT: [--casename CASENAME] [--path PATH] [--tmin TMIN] [--tmax TMAX] [--k0 K0]
 3. Define rim of cold pool as the outline of the mask; based on number of neighbours
 
 
-**HOW TO USE:**
+**(2) Compute Energy Budget**
 
-`CloudClosure.py`:
+> (a) compute kinetic energy (KE)
+>
+> KE ~ v^2 = (u^2 + v^2 + w^2)
+>
+> (b) compute potential energy (PE) by integrating over anomaly
+>
+> PE = \int dz g * (th_anomaly(z) - th_env(z)) * z
 
-_input:_ reads in nc-files with 3D field output, computes (1) the bivariate Gaussian from maximum likelihood estimation and (2) the empirical PDF from Kernel Density Estimation (KDE)
+(2a) ```compute_pot_energy_v1.py```
+> compute KE and PE in area that is defined by masked on w 
+(same idea as for definition of CP rim, but freshly computed)
 
-_output:_ PDF parameters for Gaussian PDF
+(2b) ```compute_pot_energy_v2.py```
+> compute KE and PE in area that is defined by mask, 
+computed in definition of CP rim (read in file)
 
+***module ``compute_KE.py``***
 
-
-
-**Kernel Density Estimation**
-The principle behind nearest _neighbor methods_ is to find a predefined number of training samples closest in distance to the new point, and predict the label from these.
-
-The implemented Kernel Density algorithm uses the Ball Tree or KD Tree for efficient queries
-
-- *Kernel Density Estimation*: `from sklearn.neighbors import KernelDensity`
-`class sklearn.neighbors.KernelDensity(bandwidth=1.0, algorithm='auto', kernel='gaussian', metric='euclidean', atol=0, rtol=0, breadth_first=True, leaf_size=40, metric_params=None)`
-- parameters:
-    - kernel = 'gaussian' (‘gaussian’|’tophat’|’epanechnikov’|’exponential’|’linear’|’cosine’; default is 'gaussian')
-    - bandwith = number (controlls "smoothness" of estimation)
-- methods:
-    - `KernelDensity.fit(data)`
-    - `KernelDensity.fit(data).score_samples()`:  Evaluate the density model on the data.
-    - `KernelDensity.fit(data).score(data)`:          total log probability
-    - `KernelDensity.fit(data).sample(data)`: generate random variables from model
-
+***module ``compute_PE.py``*** 
 
 
 
