@@ -23,8 +23,8 @@ def main():
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
     # parser.add_argument("--k0", nargs = '+', type = int)
-    parser.add_argument("--kmin")
-    parser.add_argument("--kmax")
+    # parser.add_argument("--kmin")
+    # parser.add_argument("--kmax")
     args = parser.parse_args()
 
     global cm_bwr, cm_grey, cm_vir
@@ -38,7 +38,7 @@ def main():
     else:
         path = '/Users/bettinameyer/polybox/ClimatePhysics/Copenhagen/Projects/LES_ColdPool/' \
                 'triple_3D_noise/Out_CPDry_triple_dTh2K/'
-        # path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th3K/'
+        # path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th3K/run1/'
     path_in = os.path.join(path, 'fields_cp_rim')
     path_fields = os.path.join(path, 'fields')
     path_out = os.path.join(path, 'figs_energy')
@@ -127,21 +127,158 @@ def main():
 
 
 
+
+
+    ''' compute Energies in mask '''
+    compute_energies_in_mask(rho0, rho_unit, z_half, perc, nt, timerange)
+    #
+    # kmax = 21
+    #
+    # # KEd_all = np.zeros((nt, kmax), dtype=np.double)  # kinetic energy density per level
+    # KE_all = np.zeros((nt, kmax), dtype=np.double)  # kinetic energy per level
+    # # PEd_all = np.zeros((nt, kmax), dtype=np.double)  # kinetic energy density per level
+    # PE_all = np.zeros((nt, kmax), dtype=np.double)  # kinetic energy per level
+    # PE_all_SD = np.zeros((nt, kmax), dtype=np.double)  # kinetic energy per level
+    #
+    # for it,t0 in enumerate(timerange):
+    #     print('------ time: ' + str(t0) + '------')
+    #     # t0 = tmin
+    #
+    #     # READ IN mask file from cold pool rim definition
+    #     mask_file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
+    #     rootgrp = nc.Dataset(os.path.join(path_in, mask_file_name), 'r')
+    #     mask = rootgrp.groups['fields'].variables['mask'][:,:,:]
+    #     # make sure that only non-zero values in krange if nc-files contain this level
+    #     contr = rootgrp.groups['profiles'].variables['k_dumped'][:]
+    #     zrange_ = rootgrp.groups['profiles'].variables['zrange'][:]
+    #     krange_ = rootgrp.groups['profiles'].variables['krange'][:]
+    #     nk_ = np.int(np.sum(contr))
+    #     krange = np.zeros(nk_)
+    #     zrange = np.zeros(nk_)
+    #     krange[:] = krange_[0:nk_]
+    #     zrange[:] = zrange_[0:nk_]
+    #     del contr
+    #     [nx_, ny_, nk] = mask.shape
+    #     ic = np.int(rootgrp.groups['description'].variables['ic'][:])
+    #     jc = np.int(rootgrp.groups['description'].variables['jc'][:])
+    #     ishift = np.int(rootgrp.groups['description'].variables['ishift'][:])
+    #     jshift = np.int(rootgrp.groups['description'].variables['jshift'][:])
+    #     rootgrp.close()
+    #
+    #     id = np.int(nx_ / 2)
+    #     jd = np.int(ny_ / 2)
+    #     print('')
+    #     print('read in: ' + os.path.join(path_in, mask_file_name))
+    #     print(nx_, ny_, nk, nk_, len(krange))
+    #     print('')
+    #
+    #
+    #
+    #     ''' COMPUTE PE '''
+    #     PE, PEd, PE_tot, PEd_tot = compute_PE(mask, rho0, rho_unit, z_half, krange, t0)
+    #     PE_all[it, :] = PE[:]
+    #     plt.figure()
+    #     plt.plot(PE, zrange_, '-o')
+    #     plt.xlabel('PE')
+    #     plt.ylabel('z  [m]')
+    #     plt.title('Potential energy in cold pool rim (PE tot: '+str(PE_tot)+'J)')
+    #     plt.savefig(os.path.join(path_out, 'PE_levels_t'+str(t0)+'.png'))
+    #     plt.close()
+    #
+    #     plt.figure()
+    #     for it_,t0_ in enumerate(timerange[0:it+1]):
+    #         plt.plot(PE_all[it_,:], z_half[:kmax], '-o', label='t='+str(t0_)+'s')
+    #     plt.xlabel('PE')
+    #     plt.ylabel('z  [m]')
+    #     plt.legend(loc='best')
+    #     plt.title('Potential energy in cold pool rim (PE tot: '+str(PE_tot)+'J)')
+    #     plt.savefig(os.path.join(path_out, 'PE_levels_alltimes.png'))
+    #     plt.close()
+    #
+    #
+    #     ''' COMPUTE PE subdomain '''
+    #     PE, PEd, PE_tot, PEd_tot = compute_PE_subdomain(rho0, rho_unit, z_half, krange, t0)
+    #     PE_all_SD[it, :] = PE[:]
+    #     plt.figure()
+    #     plt.plot(PE, zrange_, '-o')
+    #     plt.xlabel('PE')
+    #     plt.ylabel('z  [m]')
+    #     plt.title('Potential energy in cold pool rim (PE tot: ' + str(PE_tot) + 'J)')
+    #     plt.savefig(os.path.join(path_out, 'PE_levels_t' + str(t0) + '_subdomain.png'))
+    #     plt.close()
+    #
+    #     plt.figure()
+    #     for it_, t0_ in enumerate(timerange[0:it + 1]):
+    #         plt.plot(PE_all_SD[it_, :], z_half[:kmax], '-o', label='t=' + str(t0_) + 's')
+    #     plt.xlabel('PE')
+    #     plt.ylabel('z  [m]')
+    #     plt.legend(loc='best')
+    #     plt.title('Potential energy in subdomain (PE tot: ' + str(PE_tot) + 'J)')
+    #     plt.savefig(os.path.join(path_out, 'PE_levels_alltimes_subdomain.png'))
+    #     plt.close()
+    #
+    #
+    #     ''' COMPUTE KE '''
+    #     KEd = np.zeros(nk_, dtype=np.double)     # kinetic energy density per level
+    #     KE = np.zeros(nk, dtype=np.double)      # kinetic energy per level
+    #     for ik, k0 in enumerate(krange):
+    #         print('k='+str(k0))
+    #
+    #         # plt.figure()
+    #         # plt.contourf(mask[:,:,ik].T)
+    #         # plt.colorbar()
+    #         # plt.savefig(os.path.join(path_out, 'mask_k'+str(k0)+'.png'))
+    #
+    #         KEd[ik] = compute_KE(mask[:,:,ik], np.int(k0), t0, path, path_fields)
+    #         KE[ik] = 0.5 * rho0[np.int(k0)] * dV * KEd[ik]
+    #         KE_all[it,ik] = KE[ik]
+    #     KE_tot = np.sum(KE)
+    #
+    #     plt.figure()
+    #     plt.plot(KE, zrange_, '-o')
+    #     plt.xlabel('KE')
+    #     plt.ylabel('z  [m]')
+    #     plt.title('Kinetic energy in cold pool rim (KE tot: '+str(KE_tot)+'J)')
+    #     plt.savefig(os.path.join(path_out, 'KE_levels_t'+str(t0)+'.png'))
+    #     plt.close()
+    #
+    #     plt.figure()
+    #     for it_,t0_ in enumerate(timerange[0:it+1]):
+    #         plt.plot(KE_all[it_,:], z_half[:kmax], '-o', label='t='+str(t0_)+'s')
+    #     plt.xlabel('KE')
+    #     plt.ylabel('z  [m]')
+    #     plt.legend(loc='best')
+    #     plt.title('Kinetic energy in cold pool rim (KE tot: '+str(KE_tot)+'J)')
+    #     plt.savefig(os.path.join(path_out, 'KE_levels_alltimes.png'))
+    #     plt.close()
+    #
+    #     print('')
+
+
+    return
+
+
+
+def compute_energies_in_mask(rho0, rho_unit, z_half, perc, nt, timerange):
+    print('')
+    print(''' compute Energies in mask ''')
+    print('')
     kmax = 21
+
     # KEd_all = np.zeros((nt, kmax), dtype=np.double)  # kinetic energy density per level
     KE_all = np.zeros((nt, kmax), dtype=np.double)  # kinetic energy per level
     # PEd_all = np.zeros((nt, kmax), dtype=np.double)  # kinetic energy density per level
     PE_all = np.zeros((nt, kmax), dtype=np.double)  # kinetic energy per level
     PE_all_SD = np.zeros((nt, kmax), dtype=np.double)  # kinetic energy per level
 
-    for it,t0 in enumerate(timerange):
+    for it, t0 in enumerate(timerange):
         print('------ time: ' + str(t0) + '------')
         # t0 = tmin
 
         # READ IN mask file from cold pool rim definition
         mask_file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
         rootgrp = nc.Dataset(os.path.join(path_in, mask_file_name), 'r')
-        mask = rootgrp.groups['fields'].variables['mask'][:,:,:]
+        mask = rootgrp.groups['fields'].variables['mask'][:, :, :]
         # make sure that only non-zero values in krange if nc-files contain this level
         contr = rootgrp.groups['profiles'].variables['k_dumped'][:]
         zrange_ = rootgrp.groups['profiles'].variables['zrange'][:]
@@ -166,8 +303,6 @@ def main():
         print(nx_, ny_, nk, nk_, len(krange))
         print('')
 
-
-
         ''' COMPUTE PE '''
         PE, PEd, PE_tot, PEd_tot = compute_PE(mask, rho0, rho_unit, z_half, krange, t0)
         PE_all[it, :] = PE[:]
@@ -175,20 +310,19 @@ def main():
         plt.plot(PE, zrange_, '-o')
         plt.xlabel('PE')
         plt.ylabel('z  [m]')
-        plt.title('Potential energy in cold pool rim (PE tot: '+str(PE_tot)+'J)')
-        plt.savefig(os.path.join(path_out, 'PE_levels_t'+str(t0)+'.png'))
+        plt.title('Potential energy in cold pool rim (PE tot: ' + str(PE_tot) + 'J)')
+        plt.savefig(os.path.join(path_out, 'PE_levels_t' + str(t0) + '.png'))
         plt.close()
 
         plt.figure()
-        for it_,t0_ in enumerate(timerange[0:it+1]):
-            plt.plot(PE_all[it_,:], z_half[:kmax], '-o', label='t='+str(t0_)+'s')
+        for it_, t0_ in enumerate(timerange[0:it + 1]):
+            plt.plot(PE_all[it_, :], z_half[:kmax], '-o', label='t=' + str(t0_) + 's')
         plt.xlabel('PE')
         plt.ylabel('z  [m]')
         plt.legend(loc='best')
-        plt.title('Potential energy in cold pool rim (PE tot: '+str(PE_tot)+'J)')
+        plt.title('Potential energy in cold pool rim (PE tot: ' + str(PE_tot) + 'J)')
         plt.savefig(os.path.join(path_out, 'PE_levels_alltimes.png'))
         plt.close()
-
 
         ''' COMPUTE PE subdomain '''
         PE, PEd, PE_tot, PEd_tot = compute_PE_subdomain(rho0, rho_unit, z_half, krange, t0)
@@ -211,55 +345,50 @@ def main():
         plt.savefig(os.path.join(path_out, 'PE_levels_alltimes_subdomain.png'))
         plt.close()
 
-
         ''' COMPUTE KE '''
-        KEd = np.zeros(nk_, dtype=np.double)     # kinetic energy density per level
-        KE = np.zeros(nk, dtype=np.double)      # kinetic energy per level
+        KEd = np.zeros(nk_, dtype=np.double)  # kinetic energy density per level
+        KE = np.zeros(nk, dtype=np.double)  # kinetic energy per level
         for ik, k0 in enumerate(krange):
-            print('k='+str(k0))
+            print('k=' + str(k0))
 
             # plt.figure()
             # plt.contourf(mask[:,:,ik].T)
             # plt.colorbar()
             # plt.savefig(os.path.join(path_out, 'mask_k'+str(k0)+'.png'))
 
-            KEd[ik] = compute_KE(mask[:,:,ik], np.int(k0), t0, path, path_fields)
+            KEd[ik] = compute_KE(mask[:, :, ik], np.int(k0), t0)
             KE[ik] = 0.5 * rho0[np.int(k0)] * dV * KEd[ik]
-            KE_all[it,ik] = KE[ik]
+            KE_all[it, ik] = KE[ik]
         KE_tot = np.sum(KE)
 
         plt.figure()
         plt.plot(KE, zrange_, '-o')
         plt.xlabel('KE')
         plt.ylabel('z  [m]')
-        plt.title('Kinetic energy in cold pool rim (KE tot: '+str(KE_tot)+'J)')
-        plt.savefig(os.path.join(path_out, 'KE_levels_t'+str(t0)+'.png'))
+        plt.title('Kinetic energy in cold pool rim (KE tot: ' + str(KE_tot) + 'J)')
+        plt.savefig(os.path.join(path_out, 'KE_levels_t' + str(t0) + '.png'))
         plt.close()
 
         plt.figure()
-        for it_,t0_ in enumerate(timerange[0:it+1]):
-            plt.plot(KE_all[it_,:], z_half[:kmax], '-o', label='t='+str(t0_)+'s')
+        for it_, t0_ in enumerate(timerange[0:it + 1]):
+            plt.plot(KE_all[it_, :], z_half[:kmax], '-o', label='t=' + str(t0_) + 's')
         plt.xlabel('KE')
         plt.ylabel('z  [m]')
         plt.legend(loc='best')
-        plt.title('Kinetic energy in cold pool rim (KE tot: '+str(KE_tot)+'J)')
+        plt.title('Kinetic energy in cold pool rim (KE tot: ' + str(KE_tot) + 'J)')
         plt.savefig(os.path.join(path_out, 'KE_levels_alltimes.png'))
         plt.close()
 
         print('')
-
-
     return
 
 
 
+def compute_KE(mask_, k0, t0):
 
-
-def compute_KE(mask_, k0, t0, path, path_in):
-
-    u = read_in_netcdf_fields('u', os.path.join(path_in,str(t0)+'.nc'))
-    v = read_in_netcdf_fields('v', os.path.join(path_in,str(t0)+'.nc'))
-    w = read_in_netcdf_fields('w', os.path.join(path_in,str(t0)+'.nc'))
+    u = read_in_netcdf_fields('u', os.path.join(path_fields,str(t0)+'.nc'))
+    v = read_in_netcdf_fields('v', os.path.join(path_fields,str(t0)+'.nc'))
+    w = read_in_netcdf_fields('w', os.path.join(path_fields,str(t0)+'.nc'))
 
     # define mask
     u_ = np.roll(np.roll(u[:, :, k0], ishift, axis=0), jshift, axis=1)[ic + ishift - id:ic + ishift + id, jc + jshift - jd:jc + jshift + jd]
@@ -287,7 +416,7 @@ def compute_KE(mask_, k0, t0, path, path_in):
     plt.colorbar()
 
     plt.subplot(2,4,5)
-    plt.contourf(mask_[:, :].T)
+    plt.imshow(mask_[:, :].T, origin = 'lower')
     plt.colorbar()
     plt.subplot(2,4,6)
     max = np.maximum(np.abs(np.amin(u_)), np.amax(u_))
@@ -301,7 +430,7 @@ def compute_KE(mask_, k0, t0, path, path_in):
     max = np.maximum(np.abs(np.amin(w_)), np.amax(w_))
     plt.contourf(w_mask[:, :].T, cmap=cm_bwr, vmin=-max, vmax=max)
     plt.colorbar()
-    plt.savefig(os.path.join(path_out, 'mask2_k' + str(k0) + '.png'))
+    plt.savefig(os.path.join(path_out, 'mask2_t' + str(t0) + '_k' + str(k0) + '.png'))
     plt.close()
 
     u2 = u_mask*u_mask
@@ -331,7 +460,7 @@ def compute_KE(mask_, k0, t0, path, path_in):
     # ax1.set_ylabel('KE density [J/kg]')
     # ax2.set_ylabel('KE [J]')
     # plt.suptitle('kinetic energy in rim (w>0.5m/s)')
-    # plt.savefig(os.path.join(path,'KE_density.png'))
+    # plt.savefig(os.path.join(path_out,'KE_density.png'))
     # plt.close()
     return KEd
 

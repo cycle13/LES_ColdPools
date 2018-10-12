@@ -21,7 +21,8 @@ def main():
     :param --tmax: maximum time taken into account
     :param --k0: level, at which the mask is computed
 
-    :return: figures
+    :return: figures in repository 'figs_cp_rim'; 2D field output with mask, inner and outer rim at levels k=[kmin..kmax]; statistics with cold pool radius, rim velocity
+
 
 
     Details:
@@ -42,7 +43,7 @@ def main():
     parser.add_argument("--kmax")
     args = parser.parse_args()
 
-    global path_fields, path_out
+    global path_fields, path_out, path_stats
     if args.path:
         path = args.path
     else:
@@ -56,6 +57,9 @@ def main():
     path_out = os.path.join(path, 'figs_cp_rim')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
+    path_stats = os.path.join(path, 'fields_cp_rim')
+    if not os.path.exists(path_stats):
+        os.mkdir(path_stats)
 
     global case_name
     if args.casename:
