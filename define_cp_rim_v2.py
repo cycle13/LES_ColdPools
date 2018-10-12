@@ -17,7 +17,6 @@ def main():
     """
     Find inner and outer rim of mask based on a threshold (usually 95th percentile) of the vertical velocity.
     The rim is found by number of neighbours and filling interior of mask
-
     :param --path: The full path to the files
     :param --casename: casename
     :param --tmin: minimum time taken into account
@@ -25,8 +24,6 @@ def main():
     :param --k0: level, at which the mask is computed
 
     :return: figures in repository 'figs_cp_rim'; 2D field output with mask, inner and outer rim at levels k=[kmin..kmax]; statistics with cold pool radius, rim velocity
-
-
 
     Details:
 
@@ -255,8 +252,8 @@ def main():
             # fill interior of cold pool (within inner rim)
             i = 0
             while (icshift - i >= imin-1 or icshift + i < imax):
-            # while (icshift - i >= 0 or icshift + i < nx_):
-            # while (icshift - i > imin or icshift + i < imax): # older version
+                # while (icshift - i >= 0 or icshift + i < nx_):
+                # while (icshift - i > imin or icshift + i < imax): # older version
                 j = 0
                 r2 = i ** 2 + j ** 2
                 while (r2 <= rmax2):
@@ -354,10 +351,10 @@ def main():
             #   delete items from a list; but you can't do that to a tuple, tuples have a fixed size.
             nrim_out = len(rim_list_out)
             nrim_int = len(rim_list_int)
-            for i, coord in enumerate(rim_list_out):
-                rim_list_out[i] = (coord, (polar(coord[0] - icshift, coord[1] - jcshift)))
             for i, coord in enumerate(rim_list_int):
                 rim_list_int[i] = (coord, (polar(coord[0] - icshift, coord[1] - jcshift)))
+            for i, coord in enumerate(rim_list_out):
+                rim_list_out[i] = (coord, (polar(coord[0] - icshift, coord[1] - jcshift)))
             # if rim already very close to subdomain (nx_,ny_), make domain larger
             if coord[0] >= nx_ - 3 or coord[1] >= ny_ - 3:
                 print('!!! changing domain size', nx_, nx_ + 4)
