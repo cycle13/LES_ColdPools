@@ -16,7 +16,7 @@ plt.rcParams['lines.linewidth'] = 1.
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='PyCLES')
+    parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("--casename")
     parser.add_argument("--path")
     parser.add_argument("--tmin")

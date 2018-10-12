@@ -11,46 +11,18 @@ from define_cp_rim_plottingfct import plot_yz_crosssection, plot_w_field, plot_s
     plot_cp_rim_velocity, plot_cp_rim_averages, plot_cp_rim_thickness
 
 def main():
-    """
-    Find inner and outer rim of mask based on a threshold (usually 95th percentile) of the vertical velocity.
-    The rim is found by number of neighbours and filling interior of mask
-
-    :param --path: The full path to the files
-    :param --casename: casename
-    :param --tmin: minimum time taken into account
-    :param --tmax: maximum time taken into account
-    :param --k0: level, at which the mask is computed
-
-    :return: figures in repository 'figs_cp_rim'; 2D field output with mask, inner and outer rim at levels k=[kmin..kmax]; statistics with cold pool radius, rim velocity
-
-
-
-    Details:
-
-    1. read in w-field, shift field (roll) and define partial domain where to look for cold pool
-    2. mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)
-    3. Define rim of cold pool as the outline of the mask; based on number of neighbours
-
-    Output 3D fields:
-
-    1. mask(x,y,k)
-    2. rim_inner(x,y,k)
-    3. rim_outer(x,y,k)
-     (x=[0..nx_-1], y=[0..ny_-1], k=[kmin..kmax])
-    """
-
-
+    print('')
+    print('RUNNING OLD')
+    print('')
     parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("--casename")
     parser.add_argument("--path")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
-    # parser.add_argument("--k0", nargs = '+', type = int)
-    parser.add_argument("--kmin")
-    parser.add_argument("--kmax")
+    parser.add_argument("--k0")
     args = parser.parse_args()
 
-    global path_fields, path_out, path_stats
+    global path_fields, path_out
     if args.path:
         path = args.path
     else:
@@ -64,9 +36,6 @@ def main():
     path_out = os.path.join(path, 'figs_cp_rim')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
-    path_stats = os.path.join(path, 'fields_cp_rim')
-    if not os.path.exists(path_stats):
-        os.mkdir(path_stats)
 
     global case_name
     if args.casename:
@@ -81,24 +50,9 @@ def main():
     if args.tmax:
         tmax = np.int(args.tmax)
     else:
-        tmax = tmin
-    timerange = np.arange(tmin,tmax + 100,100)
+        tmax = tmin + 100
+    timerange = np.arange(tmin,tmax,100)
     nt = len(timerange)
-
-    # if args.k0:
-    #     k0 = np.int(args.k0)
-    # else:
-    #     k0 = 5  # level
-    if args.kmin:
-        kmin = np.int(args.kmin)
-    else:
-        kmin = 5
-    if args.kmax:
-        kmax = np.int(args.kmax)
-    else:
-        kmax = 5
-    krange = np.arange(kmin, kmax+1, 1)
-    nk = len(krange)
 
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
     global nx, ny, nz, dx, dy, dz
@@ -117,7 +71,7 @@ def main():
     set_colorbars(cm_bwr, cm_vir, cm_grey)      # to set colorbars as global functions in define_cp_rim_plottingfct.py
 
     # define subdomain to scan
-    global nx_, ny_
+    # --- for triple coldpool ---
     if case_name == 'ColdPoolDry_triple_3D':
         flag = 'triple'
         d = np.int(np.round(ny / 2))
@@ -157,8 +111,6 @@ def main():
         ny_ = 2 * jd
 
     print('ic,jc,id,jc,nx_,ny_', ic, jc, id, jd, nx_, ny_)
-    # percentile for threshold
-    perc = 95  # tested for triple 3D, t=400s
 
     # (A) read in w-field
     #       - shift field (roll) and define partial domain where to look for cold pool
