@@ -99,7 +99,7 @@ def main():
 
 #----------------------------------------------------------------------
 def plot_hist(data, perc_range, t0):
-    n_bins = 50
+    n_bins = 1e2
     min = np.amin(data)
     max = np.amax(data)
     bins = np.linspace(min, max, n_bins)
@@ -109,18 +109,18 @@ def plot_hist(data, perc_range, t0):
     for i,p in enumerate(perc_range):
         perc[i] = np.percentile(data[:,:,:kmax], p)
 
-    max_hist = 1e7
-    plt.figure(figsize=(12,10))
+    fig, axes = plt.subplots(2,1, sharex=True, figsize=(12,10))
     plt.subplot(211)
-    plt.hist(data[:,:,:kmax].flatten())
+    n, bins, patches = plt.hist(data[:,:,:kmax].flatten(), bins)
+    max_hist = np.amax(n)
+    print('n', np.amax(n), n.shape)
     # n, bins, patches = plt.hist(data, bins, normed=False, facecolor='red', alpha=0.4, label='w')
     for i,p in enumerate(perc_range):
-        plt.plot([perc[i], perc[i]], [0, max_hist], 'k', linewidth=3, label=str(p)+'th percentile')
-    plt.xlabel('w  [m/s]')
-    # plt.legend(loc='best')
+        plt.plot([perc[i], perc[i]], [0, max_hist], 'k', linewidth=1, label=str(p)+'th percentile')
 
     # histogram on log scale.
     # Use non-equal bin sizes, such that they look equal on log scale.
+    n_bins = 50
     bins_pos = np.linspace(0,max,n_bins)
     logbins = np.logspace(np.log10(bins_pos[1]), np.log10(bins_pos[-1]), len(bins_pos))
     plt.subplot(212)
@@ -131,50 +131,13 @@ def plot_hist(data, perc_range, t0):
         plt.plot([perc[i], perc[i]], [0, max_hist], 'k', linewidth=3, label=str(p)+'th percentile')
     plt.legend(loc='right')#, bbox_to_anchor=(0, 0))
 
+    plt.xlabel('w  [m/s]')
+    plt.suptitle('Histogram of w' + '   (t=' + str(t0) + ')')
     plt.savefig(os.path.join(path_out, 'hist_w_t' + str(t0) + '.png'))
     plt.close()
 
     return
 
-def plot_hist_(data, data_env, data_up, xname_, xname_env, xname_up, z_, time_, case_name, path_, file_name):
-    print('')
-    print('-- plotting histogram: --')
-
-    n_bins = 50
-
-    yname = 'PDF'
-    min = np.amin(data)
-    max = np.amax(data)
-    bins = np.linspace(min, max, n_bins)
-
-    p8 = np.percentile(data, 80)
-    p9 = np.percentile(data, 90)
-    print('percentile: ', p8 ,p9)
-    n, bins, patches = plt.hist(data_up, bins, normed=False, facecolor='red', alpha=0.4, label='updraft')
-    # print('n',n)
-    # print(bins)
-    # print(patches)
-
-    plt.figure()
-    plt.hist(data, bins, normed=False, label='total')
-    plt.hist(data_env, bins, normed=False, facecolor='green', alpha=0.9, label='environment')
-    plt.hist(data_up, bins, normed=False, facecolor='red', alpha=0.4, label='updraft')
-    if case_name == 'Bomex':
-        max_hist = 2e3
-    elif case_name[0:8] == 'TRMM_LBA':
-        max_hist =  4e3
-    else:
-        max_hist = 2e3
-    plt.plot([p8, p8], [0, max_hist], 'k', linewidth=3, label='80th percentile')
-    plt.plot([p9, p9], [0, max_hist], 'k', linewidth=3, label='90th percentile')
-    plt.legend()
-    plt.xlabel(xname_ + ' + ' + xname_env + ' + ' + xname_up)
-    plt.ylabel(yname)
-    plt.title('Histogram of ' + xname_ + ', ' + xname_env + ' and ' + xname_up
-              + '   (z=' + str(z_) + ', t=' + str(time_) + ')')
-    plt.savefig(os.path.join(path_, '_' + file_name))
-    plt.close()
-    return
 
 # ----------------------------------
 
