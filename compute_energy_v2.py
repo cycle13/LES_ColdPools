@@ -14,6 +14,20 @@ import os
 # compute potential temperature by integrating over anomaly
 #   PE = \int dz g * (th_anomaly(z) - th_env(z)) * z
 
+# ''' (A) Potential Energy (PE) '''
+# ''' (A1) for LES gravity current '''
+# 1. read in initial s-field
+# 2. convert entropy to potential temperature
+# 3. ??? convert potential temperature to density
+# 4. define background profile (here: take profile at any point outside the anomaly region)
+# 5. integrate
+# compute_PE(ic,jc,id,jd,nx_,ny_,case_name,path,path_fields)
+
+# ''' (B) Kinetic Energy (KE) '''
+# 1. read in velocity fields
+# 2. read in reference rho
+# 3. read in mask cold pool rim (from: define_cp_rim.py)
+# 4. integrate: KE = 0.5*sum_i(rho_i*dV*v_i**2) from center (ic,jc) to rim
 
 def main():
 
@@ -74,21 +88,6 @@ def main():
     timerange = np.arange(tmin, tmax + 100, 100)
     nt = len(timerange)
 
-    ''' (A) Potential Energy (PE) '''
-    ''' (A1) for LES gravity current '''
-    # 1. read in initial s-field
-    # 2. convert entropy to potential temperature
-    # 3. ??? convert potential temperature to density
-    # 4. define background profile (here: take profile at any point outside the anomaly region)
-    # 5. integrate
-    # compute_PE(ic,jc,id,jd,nx_,ny_,case_name,path,path_fields)
-
-    ''' (B) Kinetic Energy (KE) '''
-    # 1. read in velocity fields
-    # 2. read in reference rho
-    # 3. read in mask cold pool rim (from: define_cp_rim.py)
-    # 4. integrate: KE = 0.5*sum_i(rho_i*dV*v_i**2) from center (ic,jc) to rim
-
     perc = 95
     global nx_, ny_, nz_, nk
     # nx_, ny_: horizontal dimensions of subdomain on which rim was computed (from mask)
@@ -110,6 +109,10 @@ def main():
     r_av = rootgrp.groups['timeseries'].variables['r_av'][:,:]
     U_av = rootgrp.groups['timeseries'].variables['U_av'][:,:]
     rootgrp.close()
+
+
+
+
 
     ''' compute initial PE '''
     # mask_file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(np.int(timerange[0])) + '.nc'
@@ -151,17 +154,18 @@ def main():
         ''' (a) kinetic Energy (KE) '''
         # subtract radial velocity of rim (read in) >> make stats-file k-dependent
 
-
         u = read_in_netcdf_fields('u', os.path.join(path_fields, str(t0) + '.nc'))
         v = read_in_netcdf_fields('v', os.path.join(path_fields, str(t0) + '.nc'))
         w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
+        s = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0) + '.nc'))
 
         # subdomain >> consider crosssection in yz-plane
         i0 = id
         u_ = np.roll(np.roll(u[:, :, :], ishift, axis=0), jshift, axis=1)[i0,jc + jshift - jd:jc + jshift + jd, :nz_]
         v_ = np.roll(np.roll(v[:, :, :], ishift, axis=0), jshift, axis=1)[i0,jc + jshift - jd:jc + jshift + jd, :nz_]
         w_ = np.roll(np.roll(w[:, :, :], ishift, axis=0), jshift, axis=1)[i0,jc + jshift - jd:jc + jshift + jd, :nz_]
-        del u, v, w
+        s_ = np.roll(np.roll(s[:, :, :], ishift, axis=0), jshift, axis=1)[i0,jc + jshift - jd:jc + jshift + jd, :nz_]
+        del u, v, w, s
 
         u2 = u_ * u_
         v2 = v_ * v_
@@ -174,29 +178,29 @@ def main():
                 KE[j,k] = 0.5 * rho0[k] * dV * KEd[j,k]
         del u2, v2, w2
 
-    #     plt.figure()
-    #     print(path_out)
-    #     plt.subplot(1,2,1)
-    #     plt.imshow(KEd.T, origin='lower')
-    #     plt.title('KE density')
-    #     plt.subplot(1,2,2)
-    #     plt.imshow(KE.T, origin='lower')
-    #     plt.title('KE')
-    #     plt.savefig(os.path.join(path_out, 'KE_field_ic_t'+str(t0)+'.png'))
-    #     plt.close()
-    #
-    #     plt.figure(figsize=(12,6))
-    #     print(path_out)
-    #     plt.subplot(1,2,1)
-    #     plt.contourf(KEd.T)
-    #     plt.title('KE density')
-    #     plt.colorbar(shrink=0.5)
-    #     plt.subplot(1,2,2)
-    #     plt.contourf(KE.T)
-    #     plt.title('KE')
-    #     plt.colorbar(shrink=0.5)
-    #     plt.savefig(os.path.join(path_out, 'KE_contfig_ic_t'+str(t0)+'.png'))
-    #     plt.close()
+        # plt.figure()
+        # print(path_out)
+        # plt.subplot(1,2,1)
+        # plt.imshow(KEd.T, origin='lower')
+        # plt.title('KE density')
+        # plt.subplot(1,2,2)
+        # plt.imshow(KE.T, origin='lower')
+        # plt.title('KE')
+        # plt.savefig(os.path.join(path_out, 'KE_field_ic_t'+str(t0)+'.png'))
+        # plt.close()
+        #
+        # plt.figure(figsize=(12,6))
+        # print(path_out)
+        # plt.subplot(1,2,1)
+        # plt.contourf(KEd.T)
+        # plt.title('KE density')
+        # plt.colorbar(shrink=0.5)
+        # plt.subplot(1,2,2)
+        # plt.contourf(KE.T)
+        # plt.title('KE')
+        # plt.colorbar(shrink=0.5)
+        # plt.savefig(os.path.join(path_out, 'KE_contfig_ic_t'+str(t0)+'.png'))
+        # plt.close()
 
 
 
@@ -333,14 +337,37 @@ def main():
         # plt.close()
 
 
-    #     ''' (b) Potential Energy (PE) '''
-    #
-    #     ''' (c) Vorticity '''
-    #     vort_yz = np.zeros((ny_,kmax))
-    #     del u_, v_, w_
-    #
-    # ''' compute Energies in mask '''
-    # # compute_energies_in_mask(rho0, rho_unit, z_half, perc, nt, timerange)
+        ''' (b) Potential Energy (PE) '''
+
+
+        ''' (c) Vorticity '''
+        vort_yz = np.zeros((ny_,kmax+1))
+        print('vorticity')
+        print(vort_yz.shape)
+        print(krange)
+        for j in range(1,ny_-1):
+            for ik,k in enumerate(krange[1:-1]):
+                # print('ik', ik, k)
+                k = np.int(k)
+                vort_yz[j,ik+1] = (w_[j+1,k] - w_[j-1,k]) / (2*dy) - (v_[j,k+1] - v_[j,k-1]) / (2*dz)
+
+        fig, axes = plt.subplots(2, 1, sharex=True, figsize=(12, 10))
+        ax1 = plt.subplot(211)
+        ax1.imshow(s_[:,:nk].T, origin='lower')
+        ax1.set_title('s')
+        ax2 = plt.subplot(212)
+        ax2.imshow(vort_yz.T, origin='lower')
+        ax2.set_xlabel('y  (dy='+str(dy)+')')
+        ax2.set_ylabel('z  (dz='+str(dz)+')')
+        plt.suptitle('x-component of vorticity (t=' + str(t0) + 's)')
+        # plt.colorbar(shrink=0.5)
+        plt.savefig(os.path.join(path_out, 'vort_field_t'+str(t0)+'.png'))
+        plt.close()
+
+        del u_, v_, w_
+
+    ''' compute Energies in mask '''
+    # compute_energies_in_mask(rho0, rho_unit, z_half, perc, nt, timerange)
 
 
 
