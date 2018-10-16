@@ -26,8 +26,8 @@ def main():
     parser = argparse.ArgumentParser(prog='PyCLES')
     parser.add_argument("casename")
     parser.add_argument("path")
-    parser.add_argument("--timemin")
-    parser.add_argument("--timemax")
+    parser.add_argument("--tmin")
+    parser.add_argument("--tmax")
     parser.add_argument("--k0")
     args = parser.parse_args()
 
@@ -60,15 +60,15 @@ def main():
     print('files', files)
     print('len', len(files[0]))
     print('')
-    if args.timemin:
-        time_min = np.int(args.timemin)
+    if args.tmin:
+        time_min = np.int(args.tmin)
     else:
         try:
             time_min = np.int(files[0][:-3])
         except:
             time_min = 100
-    if args.timemax:
-        time_max = np.int(args.timemax)
+    if args.tmax:
+        time_max = np.int(args.tmax)
     else:
         try:
             time_max = np.int(files[-1][:-3])
@@ -198,16 +198,16 @@ def main():
         for k0 in krange:
             plot_streamplot_xy_collision(cont_var_name, cont_var, vel, speed_h, x_half, y_half, i0, di, j0, dj, k0, t0, path_out)
         # # plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel, x_half, y_half, speed_h, k0, t0, path_out)
-        #
-        # ''' (b) yz-plane at collision point'''
-        # # --- 2D ---
-        # i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))  # at collision point
-        # # plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed_yz, y_half, z_half, i0, t0, path_out, True)
-        #
-        # ''' (c) yz-plane at center of cold pool #1'''
-        # i0 = ic1    # through center of cold pool #1
-        # # plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed_yz, y_half, z_half, i0, t0, path_out, True)
-        #
+
+        ''' (b) yz-plane at collision point'''
+        # --- 2D ---
+        i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))  # at collision point
+        plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed_yz, y_half, z_half, i0, t0, path_out, True)
+
+        ''' (c) yz-plane at center of cold pool #1'''
+        i0 = ic1    # through center of cold pool #1
+        plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed_yz, y_half, z_half, i0, t0, path_out, True)
+
         # ''' (d) xz-plane at center of cold pool #1'''
         # # --- 2D ---
         # j0 = jc1
