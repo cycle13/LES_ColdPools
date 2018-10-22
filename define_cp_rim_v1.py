@@ -80,8 +80,8 @@ def main():
     shift = 20
     id = irstar + shift
     jd = irstar + shift
-    ishift = np.max(id-ic,0)
-    jshift = np.max(jd-jc,0)
+    ishift = np.max(id - ic, 0)
+    jshift = np.max(jd - jc, 0)
     nx_ = 2 * id
     ny_ = 2 * jd
 
@@ -310,7 +310,6 @@ def main():
             rim_vel_av[1, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
 
             plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], timerange[:it+1])
-
         plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av, timerange)
 
     return

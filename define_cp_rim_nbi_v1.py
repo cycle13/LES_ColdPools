@@ -98,15 +98,15 @@ def main():
     if args.k0:
         k0 = np.int(args.k0)
     else:
-        k0 = 5          # level
-    dphi = 6            # angular resolution for averaging of radius
+        k0 = 5      # level
+    dphi = 6        # angular resolution for averaging of radius
     n_phi = 360 / dphi
     # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi))
     # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r(t,i_phi), U(t,i_phi), dU(t, i_phi))
-    # - rim_vel_av 0 (r_av(t), U_av(t), dU_av/dt(t))
-    rim_intp_all = np.ndarray(shape=(3, nt, n_phi), dtype=np.double)
-    rim_vel = np.ndarray(shape=(5, nt, n_phi), dtype=np.double)
-    rim_vel_av = np.ndarray(shape=(3, nt))
+    # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
+    rim_intp_all = np.zeros(shape=(3, nt, n_phi), dtype=np.double)
+    rim_vel = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
+    rim_vel_av = np.zeros(shape=(3, nt))
 
     for it,t0 in enumerate(timerange):
         if it > 0:
@@ -279,8 +279,7 @@ def main():
                     # >> could probably be done more efficiently
                     break
             if count > 0:
-                r_aux /= count
-            rim_intp_all[2,it,n] = r_aux
+                rim_intp_all[2,it,n] = r_aux / count
         print('')
 
 
@@ -301,8 +300,8 @@ def main():
             # rim_vel_av[0, it] = np.average(np.ma.masked_greater(rim_intp_all[2,it,:],1.))
             rim_vel_av[1, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
 
-            plot_cp_rim_velocity(rim_vel[:, 0:it+1, :], rim_vel_av, timerange)
             plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], timerange[:it+1])
+            plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av, timerange)
 
     return
 
