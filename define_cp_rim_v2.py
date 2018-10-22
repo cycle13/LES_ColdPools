@@ -156,9 +156,11 @@ def main():
         nx_ = 2 * id
         ny_ = 2 * jd
 
-    print('ic,jc,id,jc,nx_,ny_', ic, jc, id, jd, nx_, ny_)
+    print('ic,jc,id,jc', ic, jc, id, jd)
+    print('nx_,ny_', nx_, ny_)
     # percentile for threshold
-    perc = 95  # tested for triple 3D, t=400s
+    perc = 95  # tested for triple 3D, dTh=3K, t=400s
+    # perc = 98  # tested for triple 3D, dTh=10K, t=100-400s
 
     # define general arrays
     dphi = 6        # angular resolution for averaging of radius
@@ -180,7 +182,7 @@ def main():
             dt = t0-timerange[it-1]
         else:
             dt = t0
-        print('time: '+ str(t0), '(dt='+str(dt)+')')
+        print('--- time: '+ str(t0), '(dt='+str(dt)+') ---')
 
         ''' create mask file for time step t0'''
         mask_file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
@@ -193,7 +195,7 @@ def main():
         w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
 
         for ik,k0 in enumerate(krange):
-            print('level: k=' + str(k0), '(z=' + str(k0*dz) + 'm)')
+            print('level: k=' + str(k0), '(z=' + str(k0 * dz) + 'm)')
             # w_roll = np.roll(np.roll(w[:, :, k0], ishift, axis=0), jshift, axis=1)    # nbi
             w_roll = np.roll(w[:, :, k0], [ishift, jshift], [0, 1])
             w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
@@ -265,26 +267,6 @@ def main():
                     j += 1
                 i += 1
 
-            # plt.figure()
-            # plt.subplot(131)
-            # plt.contourf(w_mask.mask.T, origin='lower')
-            # plt.colorbar()
-            # plt.title('w_mask.mask')
-            # ax = plt.subplot(132)
-            # ax.imshow(w_mask.mask.T, origin='lower')
-            # plt.plot([imin, imin], [0, ny_ - 1], 'w', linewidth=1)
-            # plt.plot([imax, imax], [0, ny_ - 1], 'w', linewidth=1)
-            # circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
-            # ax.add_artist(circle1)
-            # plt.title('w_mask.mask')
-            # ax = plt.subplot(133)
-            # ax.imshow(mask_aux.T, origin='lower')
-            # circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
-            # ax.add_artist(circle1)
-            # plt.plot(icshift,jcshift,'ow',markersize=5)
-            # plt.title('mask_aux')
-            # plt.savefig(os.path.join(path_out,'test_mask_aux_t'+str(t0)+'.png'))
-            # plt.close()
 
             ''' (b) find inner & outer rim '''
             rim_int = np.zeros((nx_, ny_), dtype=np.int)
@@ -293,6 +275,9 @@ def main():
             rim_list_int = []
             rim_list_out = []
 
+
+
+            # find radius of circle that encloses whole cp rim (rmax2 >= rim)
             i = 0
             j = 0
             imin = icshift
@@ -314,6 +299,28 @@ def main():
             rmax2 = np.maximum(np.maximum(imax-icshift,icshift-imin),np.maximum(jmax-jcshift,jcshift-jmin))**2
             # plot_outlines(perc, w_mask, rim_int, rim_out, rim_list_out, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
             #               nx_, ny_, k0, t0, path_out)
+
+            # plt.figure()
+            # plt.subplot(131)
+            # plt.contourf(w_mask.mask.T, origin='lower')
+            # plt.colorbar()
+            # plt.title('w_mask.mask')
+            # ax = plt.subplot(132)
+            # ax.imshow(w_mask.mask.T, origin='lower')
+            # plt.plot([imin, imin], [0, ny_ - 1], 'w', linewidth=1)
+            # plt.plot([imax, imax], [0, ny_ - 1], 'w', linewidth=1)
+            # circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
+            # ax.add_artist(circle1)
+            # plt.title('w_mask.mask')
+            # ax = plt.subplot(133)
+            # ax.imshow(mask_aux.T, origin='lower')
+            # circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
+            # ax.add_artist(circle1)
+            # plt.plot(icshift,jcshift,'ow',markersize=5)
+            # plt.title('mask_aux')
+            # plt.savefig(os.path.join(path_out,'test_mask_aux_t'+str(t0)+'.png'))
+            # plt.close()
+
             for si in [-1, 1]:
                 for sj in [-1, 1]:
                     for di in range(imax):
@@ -322,11 +329,13 @@ def main():
                             j = jcshift + sj*dj
                             r2 = di ** 2 + dj ** 2
                             if r2 <= rmax2:
-                                rim_aux[i,j] = 1
+                                rim_aux[i,j] = 1        # just to see which pixels where tested
                                 if w_mask_r.mask[i,j]:
                                     a = np.count_nonzero(w_bin_r[i - 1:i + 2, j - 1:j + 2])
-                                    if a > 5 and a < 9:
-                                        if np.sum(mask_aux[i-1:i+2,j-1:j+2]) > 9:
+                                    if a > 5 and a < 9:     # btw 4-8 neighbouring pixels belong to rim
+                                        if np.sum(mask_aux[i - 1:i + 2, j - 1:j + 2]) > 9:   # since pts (i,j) in mask_aux but not in rim = 2
+                                            # !! some of the points of the interior can have a sum that is lower than 9,
+                                            # e.g. bcs all 4 neighbouring pixels belong to the rim and not the interior or mas_aux
                                             rim_int[i, j] = 1
                                             rim_list_int.append((i, j))
                                         else:
@@ -342,6 +351,7 @@ def main():
             del mask_aux
             # ''' dump mask and rim '''
             dump_mask(w_mask_r.mask, rim_int, rim_out, mask_file_name, path_stats, k0, ik)
+
 
             ''' (D) Polar Coordinates & sort according to angle '''
             # (1) find/define center of mass (here = (ic/jc))
@@ -363,13 +373,17 @@ def main():
                 jd = irstar + shift
                 ishift = np.max(id - ic, 0)
                 jshift = np.max(jd - jc, 0)
-                nx_ = 2 * id
-                ny_ = 2 * jd
+                if 2 * id <= nx and 2 * jd <= ny:
+                    nx_ = 2 * id
+                    ny_ = 2 * jd
+                else:
+                    print('!!! reached domain size')
 
             # sort list according to angle
             rim_list_out.sort(key=lambda tup: tup[1][1])
             rim_list_int.sort(key=lambda tup: tup[1][1])
-            plot_rim_mask(w_, w_mask, rim_out, rim_int, rim_list_out, rim_list_int, icshift, jcshift, nx_, ny_,
+            plot_rim_mask(w_, w_mask, rim_out, rim_int, rim_list_out, rim_list_int,
+                          icshift, jcshift, nx_, ny_,
                           t0, k0, path_out)
 
             del w_mask
@@ -420,6 +434,7 @@ def main():
                         break
                 if count > 0:
                     rim_intp_all[3, it, n] = dx * r_aux / count
+            rim_intp_all[4, :, :] = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]    # rim thickness
             print('')
 
             # dump statistics
@@ -432,7 +447,6 @@ def main():
             plot_angles(rim_list_out, rim_list_int, rim_intp_all[:,it,:], t0, path_out)
             plot_cp_outline_alltimes(rim_intp_all[:,0:it+1,:], perc, k0, timerange, dx, path_out)
 
-            rim_intp_all[4,:,:] = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]     # rim thickness
 
             plot_cp_rim_thickness(rim_intp_all[:,0:it+1,:], perc, k0, timerange[:it+1], dx, path_out)
             del rim_list_out, rim_list_int
@@ -456,6 +470,7 @@ def main():
                 plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], perc, k0, timerange[:it+1], path_out)
 
             plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av, perc, k0, timerange, path_out)
+            print('')
 
     return
 
@@ -640,6 +655,7 @@ def dump_statistics_file(rim_intp_all, rim_vel, rim_vel_av, angles, file_name, p
     rootgrp.close()
     return
 
+
 def create_mask_file(file_name, path, nk, krange, ic, jc, ishift, jshift):
     print('-------- create mask file --------')
     # file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(time) + '.nc'
@@ -696,9 +712,6 @@ def dump_mask(mask, rim_int, rim_out, file_name, path, k0, ik):
     return
 
 # ----------------------------------------------------------------------
-
-
-#----------------------------------------------------------------------
 
 def read_in_netcdf_fields(variable_name, fullpath_in):
     # print(fullpath_in)

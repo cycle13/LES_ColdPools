@@ -5,6 +5,9 @@ import argparse
 import json as simplejson
 import os
 
+# todo
+# - problems for mask output, if domain size changes
+
 from define_cp_rim_plottingfct import set_colorbars
 from define_cp_rim_plottingfct import plot_yz_crosssection, plot_w_field, plot_s, \
     plot_outlines, plot_rim_mask, plot_angles, plot_cp_outline_alltimes, \
@@ -14,7 +17,6 @@ def main():
     """
     Find inner and outer rim of mask based on a threshold (usually 95th percentile) of the vertical velocity.
     The rim is found by number of neighbours and filling interior of mask
-
     :param --path: The full path to the files
     :param --casename: casename
     :param --tmin: minimum time taken into account
@@ -22,8 +24,6 @@ def main():
     :param --k0: level, at which the mask is computed
 
     :return: figures in repository 'figs_cp_rim'; 2D field output with mask, inner and outer rim at levels k=[kmin..kmax]; statistics with cold pool radius, rim velocity
-
-
 
     Details:
 
@@ -38,7 +38,6 @@ def main():
     3. rim_outer(x,y,k)
      (x=[0..nx_-1], y=[0..ny_-1], k=[kmin..kmax])
     """
-
 
     parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("--casename")
@@ -56,7 +55,8 @@ def main():
     else:
         # path = '/Users/bettinameyer/polybox/ClimatePhysics/Copenhagen/Projects/LES_ColdPool/' \
         #        'triple_3D_noise/Out_CPDry_triple_dTh2K/'
-        path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th3K/run1/'
+        path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th3K/'
+        path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th10K/'
     if os.path.exists(os.path.join(path, 'fields')):
         path_fields = os.path.join(path, 'fields')
     elif os.path.exists(os.path.join(path, 'fields_k120')):
@@ -82,7 +82,7 @@ def main():
         tmax = np.int(args.tmax)
     else:
         tmax = tmin
-    timerange = np.arange(tmin,tmax + 100,100)
+    timerange = np.arange(tmin, tmax + 100, 100)
     nt = len(timerange)
 
     # if args.k0:
@@ -120,7 +120,7 @@ def main():
     global nx_, ny_
     if case_name == 'ColdPoolDry_triple_3D':
         flag = 'triple'
-        d = np.int(np.round(ny / 2))
+        d = np.int(np.round( (ny+gw) / 2))
         a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
         try:
             rstar = nml['init']['r']
@@ -129,7 +129,7 @@ def main():
         irstar = np.int(np.round(rstar / dx))
         ic = np.int(np.round(a / 2))
         jc = np.int(np.round(d / 2))
-        shift = 40
+        shift = 60
         id = irstar + shift
         jd = irstar + shift
         ishift = np.max(id - ic, 0)
@@ -156,9 +156,12 @@ def main():
         nx_ = 2 * id
         ny_ = 2 * jd
 
-    print('ic,jc,id,jc,nx_,ny_', ic, jc, id, jd, nx_, ny_)
+    print('ic,jc,id,jc', ic, jc, id, jd)
+    print('nx_,ny_', nx_, ny_)
+    print('shift, ishift, jshift', shift, ishift, jshift)
     # percentile for threshold
-    perc = 95  # tested for triple 3D, t=400s
+    # perc = 95     # tested for triple 3D, dTh=3K, t=400s
+    perc = 98       # tested for triple 3D, dTh=10K, t=100-400s
 
 
     # (A) read in w-field
@@ -174,36 +177,38 @@ def main():
     # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], U(t,i_phi)[m/s], dU(t, i_phi)[m/s**2])
     # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
     rim_intp_all = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
-    rim_vel = np.zeros(shape=(4, nt, n_phi), dtype=np.double)
-    rim_vel_av = np.zeros(shape=(2, nt))
+    rim_vel = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
+    rim_vel_av = np.zeros(shape=(3, nt))
 
     # create statistics file
     stats_file_name = 'rimstats_perc' + str(perc) + 'th.nc'
-    create_statistics_file(stats_file_name, path_out, n_phi, nt, timerange, nk, krange)
+    create_statistics_file(stats_file_name, path_stats, n_phi, nt, timerange, nk, krange)
 
     for it,t0 in enumerate(timerange):
         if it > 0:
             dt = t0-timerange[it-1]
         else:
             dt = t0
-        print('time: '+ str(t0), '(dt='+str(dt)+')')
+        print('--- time: '+ str(t0), '(dt='+str(dt)+') ---')
         print('nx_, ny_', nx_, ny_, 'id, jd', id, jd, shift)
 
         ''' create mask file for time step t0'''
         mask_file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
-        create_mask_file(mask_file_name, path_out, nk, krange)
+        create_mask_file(mask_file_name, path_stats, nk, krange, ic, jc, ishift, jshift)
         # stats_file_name = 'rimstats_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
-        # create_statistics_file(stats_file_name, path_out, nk, krange)
+        # create_statistics_file(stats_file_name, path_stats, nk, krange)
 
 
         '''(A) read in w-field, shift domain and define partial domain '''
         w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
 
         for ik,k0 in enumerate(krange):
+            print('level: k=' + str(k0), '(z=' + str(k0 * dz) + 'm)')
             w_roll = np.roll(np.roll(w[:, :, k0], ishift, axis=0), jshift, axis=1)
             w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
-            icshift = id
+            icshift = id -1
             jcshift = jd
+            print('icshift', icshift, ic + ishift)
 
             if flag == 'triple':
                 plot_yz_crosssection(w, ic, path_out, t0)
@@ -211,7 +216,8 @@ def main():
 
             ''' (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)'''
             # Note:  no difference if percentile of total field w or subdomain w_
-            w_c = np.percentile(w_, perc)
+            # w_c = np.percentile(w_, perc)
+            w_c = np.percentile(w, perc)
             # w_mask = True, if w<w_c
             # w_mask_r = True, if w>w_c
             w_mask = np.ma.masked_less(w_, w_c)
@@ -230,35 +236,38 @@ def main():
             del w_roll
 
             ''' (C) define outline of cold pool '''
-
             mask_aux = np.array(w_bin_r, copy=True)
 
             ''' (a) fill interior of mask '''
             # (imin, imax, jmin, jmax) enclose inner circle of cold pool
-            imin = icshift
-            imax = icshift
-            jmin = jcshift
-            jmax = jcshift
+            imin1 = icshift
+            imax1 = icshift
+            jmin1 = jcshift
+            jmax1 = jcshift
             i = 0
             j = 0
-            while (w_mask.mask[icshift+di, jcshift] or w_mask.mask[icshift-di, jcshift]):
-                imin = np.minimum(icshift - di, imin)-1
-                imax = np.maximum(icshift + di, imax)+1
-                di += 1
-            while (w_mask.mask[icshift, jcshift+dj] or w_mask.mask[icshift, jcshift-dj]):
-                jmin = np.minimum(jcshift - dj, jmin)-1
-                jmax = np.maximum(jcshift + dj, jmax)+1
-                dj += 1
-            rmax2 = np.maximum(np.maximum(imax-icshift,icshift-imin),np.maximum(jmax-jcshift,jcshift-jmin))**2
-            print('rmax2', rmax2, np.sqrt(rmax2))
-            print('imin, imax, jmin, jmax', imin, imax, jmin, jmax)
+            while (w_mask.mask[icshift+i, jcshift] or w_mask.mask[icshift-i, jcshift]):
+                imin1 = np.minimum(icshift - i, imin1)-1
+                imax1 = np.maximum(icshift + i, imax1)+1
+                i += 1
+            while (w_mask.mask[icshift, jcshift+j] or w_mask.mask[icshift, jcshift-j]):
+                jmin1 = np.minimum(jcshift - j, jmin1)-1
+                jmax1 = np.maximum(jcshift + j, jmax1)+1
+                j += 1
+            rmax2_int = (3+ np.maximum(np.maximum(imax1-icshift,icshift-imin1),
+                                   np.maximum(jmax1-jcshift,jcshift-jmin1)) )**2
+            print('rmax2', rmax2_int, np.sqrt(rmax2_int))
+            print('imin, imax, jmin, jmax', imin1, imax1, jmin1, jmax1)
             print('icshift, jcshift', icshift, jcshift)
 
+            # fill interior of cold pool (within inner rim)
             i = 0
-            while (icshift - i > imin or icshift + i < imax):
+            while (icshift - i >= imin1-1 or icshift + i < imax1):
+                # while (icshift - i >= 0 or icshift + i < nx_):
+                # while (icshift - i > imin or icshift + i < imax): # older version
                 j = 0
                 r2 = i ** 2 + j ** 2
-                while (r2 <= rmax2):
+                while (r2 <= rmax2_int):
                     for si in [-1, 1]:
                         for sj in [-1, 1]:
                             r2 = i ** 2 + j ** 2
@@ -267,26 +276,7 @@ def main():
                     j += 1
                 i += 1
 
-            plt.figure()
-            plt.subplot(131)
-            plt.contourf(w_mask.mask.T, origin='lower')
-            plt.colorbar()
-            plt.title('w_mask.mask')
-            ax = plt.subplot(132)
-            ax.imshow(w_mask.mask.T, origin='lower')
-            plt.plot([imin, imin], [0, ny_ - 1], 'w', linewidth=1)
-            plt.plot([imax, imax], [0, ny_ - 1], 'w', linewidth=1)
-            circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
-            ax.add_artist(circle1)
-            plt.title('w_mask.mask')
-            ax = plt.subplot(133)
-            ax.imshow(mask_aux.T, origin='lower')
-            circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
-            ax.add_artist(circle1)
-            plt.plot(icshift,jcshift,'ow',markersize=5)
-            plt.title('mask_aux')
-            plt.savefig(os.path.join(path_out,'test_mask_aux_t'+str(t0)+'.png'))
-            plt.close()
+
 
             ''' (b) find inner & outer rim '''
             rim_int = np.zeros((nx_, ny_), dtype=np.int)
@@ -295,6 +285,9 @@ def main():
             rim_list_int = []
             rim_list_out = []
 
+
+
+            # find radius of circle that encloses whole cp rim (rmax2 >= rim)
             i = 0
             j = 0
             imin = icshift
@@ -316,34 +309,69 @@ def main():
             rmax2 = np.maximum(np.maximum(imax-icshift,icshift-imin),np.maximum(jmax-jcshift,jcshift-jmin))**2
             # plot_outlines(perc, w_mask, rim_int, rim_out, rim_list_out, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
             #               nx_, ny_, k0, t0, path_out)
+
+            plt.figure()
+            plt.subplot(131)
+            plt.imshow(w_mask.mask.T, origin='lower')
+            plt.colorbar(shrink=0.3)
+            plt.title('w_mask.mask')
+            ax = plt.subplot(132)
+            ax.imshow(mask_aux.T, origin='lower')
+            plt.colorbar(shrink=0.3)
+            plt.plot([imin1, imin1], [0, ny_ - 1], 'w', linewidth=1)
+            plt.plot([imax1, imax1], [0, ny_ - 1], 'w', linewidth=1)
+            circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2_int), fill=False, color='w')
+            ax.add_artist(circle1)
+            plt.tight_layout()
+            plt.title('mask_aux, (before)')
+            ax = plt.subplot(133)
+            plt.imshow(mask_aux.T, origin='lower')
+            plt.colorbar(shrink=0.3)
+            plt.plot([imin, imin], [0, ny_ - 1], 'w', linewidth=1)
+            plt.plot([imax, imax], [0, ny_ - 1], 'w', linewidth=1)
+            circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
+            ax.add_artist(circle1)
+            plt.plot(icshift, jcshift, 'ow', markersize=5)
+            plt.tight_layout()
+            plt.title('mask_aux (after)')
+            plt.savefig(os.path.join(path_out, 'test_mask_aux_t' + str(t0) + '.png'))
+            plt.close()
+
             for si in [-1, 1]:
                 for sj in [-1, 1]:
-                    for i in range(imax):
-                        i = icshift + si*i
-                        for j in range(jmax):
-                            j = jcshift + sj*j
-                            r2 = i ** 2 + j ** 2
+                    for di in range(imax):
+                        i = icshift + si*di
+                        for dj in range(jmax):
+                            j = jcshift + sj*dj
+                            r2 = di ** 2 + dj ** 2
                             if r2 <= rmax2:
-                                rim_aux[i,j] = 1
-                                if w_mask_r.mask[i,j]:
+                                rim_aux[i,j] = 1        # just to see which pixels where tested
+                                if w_mask_r.mask[i,j] and r2 > rmax2_int:       # outer rim
                                     a = np.count_nonzero(w_bin_r[i - 1:i + 2, j - 1:j + 2])
-                                    if a > 5 and a < 9:
-                                        if np.sum(mask_aux[i-1:i+2,j-1:j+2]) > 9:
-                                            rim_int[i, j] = 1
-                                            rim_list_int.append((i, j))
-                                        else:
-                                            rim_out[i,j] = 1
-                                            rim_list_out.append((i, j))
-                                            # a = np.count_nonzero(w_bin_r[i - 1:i + 2, j - 1 + sj:j + 2 + sj])
-                                            # if a <= 5 or a >= 9:
-                                            #     print('breaking')
-                                            #     break
+                                    if a > 5 and a < 9:     # btw 4-8 neighbouring pixels belong to rim
+                                        rim_out[i,j] = 1
+                                        rim_list_out.append((i,j))
+                                elif w_mask_r.mask[i,j]:
+                                    a = np.count_nonzero(w_bin_r[i - 1:i + 2, j - 1:j + 2])
+                                    if a > 5 and a < 9:  # btw 4-8 neighbouring pixels belong to rim
+                                        rim_int[i, j] = 1
+                                        rim_list_int.append((i, j))
+                                        # if np.sum(mask_aux[i-1:i+2,j-1:j+2]) > 9:
+                                        #     rim_int[i, j] = 1
+                                        #     rim_list_int.append((i, j))
+                                        # else:
+                                        #     rim_out[i,j] = 1
+                                        #     rim_list_out.append((i, j))
+                                        #     # a = np.count_nonzero(w_bin_r[i - 1:i + 2, j - 1 + sj:j + 2 + sj])
+                                        #     # if a <= 5 or a >= 9:
+                                        #     #     print('breaking')
+                                        #     #     break
 
-            plot_outlines(perc, w_mask, rim_int, rim_out, rim_list_out, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
+            plot_outlines(perc, w_mask, rim_int, rim_out, rim_list_out, rim_aux, rmax2_int, icshift, jcshift, imin, imax, jmin, jmax,
                           nx_, ny_, k0, t0, path_out)
             del mask_aux
             # ''' dump mask and rim '''
-            dump_mask(w_mask_r.mask, rim_int, rim_out, mask_file_name, path_out, k0, ik)
+            dump_mask(w_mask_r.mask, rim_int, rim_out, mask_file_name, path_stats, k0, ik)
 
 
             ''' (D) Polar Coordinates & sort according to angle '''
@@ -361,13 +389,13 @@ def main():
             # if rim already very close to subdomain (nx_,ny_), make domain larger
             print('rim size: ', coord[0], coord[1], 'domain size nx_, ny_', nx_, ny_)
             if coord[0] >= nx_ - 5 or coord[1] >= ny_ - 5:
-                print('!!! changing domain size', nx_, nx_+10)
+                print('!!! changing domain size', nx_, nx_ +10)
                 shift += 10
                 id = irstar + shift
                 jd = irstar + shift
                 ishift = np.max(id - ic, 0)
                 jshift = np.max(jd - jc, 0)
-                if 2*id <= nx and 2*jd <= ny:
+                if 2 * id <= nx and 2 * jd <= ny:
                     nx_ = 2 * id
                     ny_ = 2 * jd
                 else:
@@ -385,7 +413,10 @@ def main():
 
             # average and interpolate for bins of 6 degrees
             angular_range = np.arange(0, 361, dphi)
-            # - rim_intp_all = (phi[t,deg], phi[t,rad], r_out(t,phi))
+            # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], r_int(t,i_phi)[m], D(t,i_phi)[m])
+            #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
+            # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], U(t,i_phi)[m/s], dU(t, i_phi)[m/s**2])
+            # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
             rim_intp_all[0, it, :] = angular_range[:-1]
             rim_intp_all[1, it, :] = np.pi * rim_intp_all[0, it, :] / 180
             print('')
@@ -425,14 +456,19 @@ def main():
                         break
                 if count > 0:
                     rim_intp_all[3, it, n] = dx * r_aux / count
+            rim_intp_all[4, :, :] = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]    # rim thickness
             print('')
+
+            # dump statistics
+            # dump_statistics_file(rim_intp_all, stats_file_name, path_stats)
+            dump_statistics_file(rim_intp_all[:,it,:], rim_vel[:,it,:], rim_vel_av[:,it], angular_range[:-1],
+                                 stats_file_name, path_stats, k0, ik, t0, it)
 
 
             # plot outline in polar coordinates r(theta)
             plot_angles(rim_list_out, rim_list_int, rim_intp_all[:,it,:], t0, path_out)
-            plot_cp_outline_alltimes(rim_intp_all[:,0:it+1,:], perc, timerange, dx, k0, path_out)
+            plot_cp_outline_alltimes(rim_intp_all[:,0:it+1,:], perc, k0, timerange, dx, path_out)
 
-            rim_intp_all[4,:,:] = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]     # rim thickness
 
             plot_cp_rim_thickness(rim_intp_all[:,0:it+1,:], perc, k0, timerange[:it+1], dx, path_out)
             del rim_list_out, rim_list_int
@@ -448,14 +484,16 @@ def main():
             elif it > 0:
                 # for n, phi in enumerate(rim_intp_all[0,it,:]):
                 rim_vel[3, it, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :]) / dt
+                rim_vel[4, it, :] = (rim_vel[3, it, :] - rim_vel[3, it-1, :]) / dt
                 rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2,it,:],1.))
                 rim_vel_av[1, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
+                rim_vel_av[2, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[4,it,:]).data)
 
                 plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], perc, k0, timerange[:it+1], path_out)
 
             plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av, perc, k0, timerange, path_out)
-
             print('')
+
     return
 
 # ----------------------------------------------------------------------
@@ -490,14 +528,18 @@ def create_statistics_file(file_name, path, n_phi, nt, timerange, nk, krange):
     ts_grp = rootgrp.createGroup('time')
     ts_grp.createDimension('nt', nt)
     var = ts_grp.createVariable('time', 'f8', ('nt'))
+    var.units = "s"
     var[:] = timerange
 
     ts_grp = rootgrp.createGroup('timeseries')
     ts_grp.createDimension('nt', nt)
     ts_grp.createDimension('nz', nk)
-    ts_grp.createVariable('r_av', 'f8', ('nt', 'nz'))
-    ts_grp.createVariable('U_av', 'f8', ('nt', 'nz'))
-    ts_grp.createVariable('dU_av', 'f8', ('nt', 'nz'))
+    var = ts_grp.createVariable('r_av', 'f8', ('nt', 'nz'))
+    var.units = "m"
+    var = ts_grp.createVariable('U_av', 'f8', ('nt', 'nz'))
+    var.units = "m/s"
+    var = ts_grp.createVariable('dU_av', 'f8', ('nt', 'nz'))
+    var.units = "m/s^2"
 
     stats_grp = rootgrp.createGroup('stats')
     stats_grp.createDimension('nt', nt)
@@ -505,23 +547,31 @@ def create_statistics_file(file_name, path, n_phi, nt, timerange, nk, krange):
     stats_grp.createDimension('nphi', n_phi)    # number of segments
     stats_grp.createVariable('r_out', 'f8', ('nt', 'nz', 'nphi'))
     stats_grp.createVariable('r_int', 'f8', ('nt', 'nz', 'nphi'))
-    stats_grp.createVariable('D', 'f8', ('nt', 'nz', 'nphi'))     # thickness of rim
-    stats_grp.createVariable('U', 'f8', ('nt', 'nz', 'nphi'))     # velocity of outer rim
-    stats_grp.createVariable('dU', 'f8', ('nt', 'nz', 'nphi'))    # change of rim velocity with time ('acceleration of rim')
+    var = stats_grp.createVariable('D', 'f8', ('nt', 'nz', 'nphi'))     # thickness of rim
+    var.units = "m"
+    var = stats_grp.createVariable('U', 'f8', ('nt', 'nz', 'nphi'))     # velocity of outer rim
+    var.units = "m/s"
+    var = stats_grp.createVariable('dU', 'f8', ('nt', 'nz', 'nphi'))    # change of rim velocity with time ('acceleration of rim')
+    var.units = "m/s^2"
 
     pol_grp = rootgrp.createGroup('angles')
     pol_grp.createDimension('nphi', n_phi)
-    var = pol_grp.createVariable('degree', 'f8', ('nphi'))
-    var = pol_grp.createVariable('radian', 'f8', ('nphi'))
+    var = pol_grp.createVariable('phi_deg', 'f8', ('nphi'))
+    var.units = "degrees"
+    var = pol_grp.createVariable('phi_rad', 'f8', ('nphi'))
+    var.units = "radian"
 
     prof_grp = rootgrp.createGroup('profiles')
     prof_grp.createDimension('nz', nk)
     var = prof_grp.createVariable('k_dumped', 'f8', ('nz'))
     var[:] = np.zeros(nk)
+    var.description = "0:level not dumped, 1:level dumped"
     var = prof_grp.createVariable('krange', 'f8', ('nz'))
     var[:] = krange[:]
+    var.units = "-"
     var = prof_grp.createVariable('zrange', 'f8', ('nz'))
     var[:] = krange[:] * dz
+    var.units = "m"
 
     rootgrp.close()
 
@@ -557,9 +607,9 @@ def dump_statistics_file(rim_intp_all, rim_vel, rim_vel_av, angles, file_name, p
 
 
     pol_grp = rootgrp.groups['angles']
-    var = pol_grp.variables['degree']
+    var = pol_grp.variables['phi_deg']
     var[:] = angles[:]
-    var = pol_grp.variables['radian']
+    var = pol_grp.variables['phi_rad']
     var[:] = np.pi / 180 * angles[:]
 
     prof_grp = rootgrp.groups['profiles']
@@ -569,10 +619,21 @@ def dump_statistics_file(rim_intp_all, rim_vel, rim_vel_av, angles, file_name, p
     rootgrp.close()
     return
 
-def create_mask_file(file_name, path, nk, krange):
-    print('-------- create mask file --------', nx_, ny_, nk)
+
+def create_mask_file(file_name, path, nk, krange, ic, jc, ishift, jshift):
+    print('-------- create mask file --------')
     # file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(time) + '.nc'
     rootgrp = nc.Dataset(os.path.join(path, file_name), 'w', format='NETCDF4')
+
+    descr_grp = rootgrp.createGroup('description')
+    var = descr_grp.createVariable('ic', 'f8', )
+    var[:] = ic
+    var = descr_grp.createVariable('jc', 'f8', )
+    var[:] = jc
+    var = descr_grp.createVariable('ishift', 'f8', )
+    var[:] = ishift
+    var = descr_grp.createVariable('jshift', 'f8', )
+    var[:] = jshift
 
     mask_grp = rootgrp.createGroup('fields')
     mask_grp.createDimension('nx', nx_)
@@ -586,10 +647,13 @@ def create_mask_file(file_name, path, nk, krange):
     levels_grp.createDimension('nz', nk)
     var = levels_grp.createVariable('k_dumped', 'f8', ('nz'))
     var[:] = np.zeros(nk)
+    var.description = "0:level not dumped, 1:level dumped"
     var = levels_grp.createVariable('krange', 'f8', ('nz'))
     var[:] = krange[:]
+    var.units = "-"
     var = levels_grp.createVariable('zrange', 'f8', ('nz'))
     var[:] = krange[:] * dz
+    var.units = "m"
     rootgrp.close()
     print('')
     return
