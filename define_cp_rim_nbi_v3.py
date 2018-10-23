@@ -409,7 +409,7 @@ def main():
         rim_list_int.sort(key=lambda tup: tup[1][1])
         plot_rim_mask(w_, w_mask, rim_out, rim_int, rim_list_out, rim_list_int,
                       icshift, jcshift, nx_, ny_,
-                      t0, k0, path_out)
+                      t0, k0, perc, path_out)
 
         del w_mask
         del rim_out, rim_int
