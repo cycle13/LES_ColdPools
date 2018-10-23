@@ -5,7 +5,8 @@ import argparse
 import json as simplejson
 import os
 
-from define_cp_rim_plottingfct import set_colorbars
+from define_cp_rim_plottingfct_vorticity import set_colorbars
+from define_cp_rim_plottingfct_vorticity import plot_vorticity, plot_histogram
 
 def main():
     parser = argparse.ArgumentParser(prog='LES_CP')
@@ -29,10 +30,10 @@ def main():
         path_fields = os.path.join(path, 'fields')
     elif os.path.exists(os.path.join(path, 'fields_k120')):
         path_fields = os.path.join(path, 'fields_k120')
-    path_out = os.path.join(path, 'figs_cp_rim')
+    path_out = os.path.join(path, 'figs_cp_rim_vort')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
-    path_stats = os.path.join(path, 'fields_cp_rim')
+    path_stats = os.path.join(path, 'fields_cp_rim_vort')
     if not os.path.exists(path_stats):
         os.mkdir(path_stats)
 
@@ -62,6 +63,7 @@ def main():
     else:
         kmax = 5
     krange = np.arange(kmin, kmax + 1, 1)
+    global nk
     nk = len(krange)
 
     # percentile for threshold
@@ -69,7 +71,7 @@ def main():
         perc = args.perc
     else:
         # perc = 95     # tested for triple 3D, dTh=3K, t=400s
-        perc = 98       # tested for triple 3D, dTh=10K, t=100-400s
+        perc = 50       # tested for triple 3D, dTh=10K, t=100-400s
 
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
     global nx, ny, nz, dx, dy, dz, gw
@@ -89,7 +91,7 @@ def main():
 
     # define subdomain to scan
     nx_half, ny_half = define_geometry(case_name, nml)
-    icshift = nx_half
+    icshift = nx_half -1
     jcshift = ny_half
 
     # define general arrays
@@ -125,37 +127,72 @@ def main():
 
 
         # reading in file; selecting subdomain
+        v = read_in_netcdf_fields('v', os.path.join(path_fields, str(t0) + '.nc'))
+        v_roll = np.roll(np.roll(v[:, :, :], ishift, axis=0), jshift, axis=1)
+        v_ = v_roll[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
         w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
         w_roll = np.roll(np.roll(w[:, :, :], ishift, axis=0), jshift, axis=1)
         w_ = w_roll[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
-        del w
+        del v, w
 
-        for ik,k0 in enumerate(krange):
-            print('level: k=' + str(k0), '(z=' + str(k0 * dz) + 'm)')
+        # computing vorticity
+        vort_yz = compute_vorticity(v_, w_, np.arange(0,nz))
+        plot_vorticity(v_[ic,:,:], w_[ic,:,:], vort_yz[ic,:,:], t0, path_out)
+        plot_histogram(vort_yz, 'vort_yz', np.arange(50,100,10), t0, path_out)
+        vort_yz = compute_vorticity(v_, w_, krange)
+        del v_, v_roll, w_, w_roll
 
-            # ''' (b) find inner & outer rim '''
-            rim_int = np.zeros((nx_, ny_), dtype=np.int)
-            rim_out = np.zeros((nx_, ny_), dtype=np.int)
+        # threshold for vorticity
+        vort_c = np.percentile(vort_yz, perc)
 
-            # ''' dump mask and rim '''
-            '''_____ '''
-            mask = np.zeros((nx_, ny_))
-            dump_mask(mask, rim_int, rim_out, mask_file_name, path_stats, k0, ik)
-            '''_____ '''
+        # for ik,k0 in enumerate(krange):
+        #     print('level: k=' + str(k0), '(z=' + str(k0 * dz) + 'm)', ik)
+        #
+        #
+        #     # mask 2D vorticity field and turn mask from boolean into integer
+        #     vort_mask = np.ma.masked_where(vort_yz[:,ik], vort_c)
+        #     print('shapes', vort_mask.mask.shape, vort_mask.data.shape, vort_yz[:,ik])
+        #
+        #
+        #     # ''' (b) find inner & outer rim '''
+        #     rim_int = np.zeros((nx_, ny_), dtype=np.int)
+        #     rim_out = np.zeros((nx_, ny_), dtype=np.int)
+        #
+        #     # ''' dump mask and rim '''
+        #     '''_____ '''
+        #     mask = np.zeros((nx_, ny_))
+        #     dump_mask(mask, rim_int, rim_out, mask_file_name, path_stats, k0, ik)
+        #     '''_____ '''
+        #
+        #     # dump statistics
+        #     dump_statistics_file(rim_intp_all[:, it, ik, :], rim_vel[:, it, ik, :], rim_vel_av[:, it, ik],
+        #                          stats_file_name, path_stats, k0, ik, t0, it)
+        #
+        #     print('')
 
-            # dump statistics
-            dump_statistics_file(rim_intp_all[:, it, ik, :], rim_vel[:, it, ik, :], rim_vel_av[:, it, ik],
-                                 stats_file_name, path_stats, k0, ik, t0, it)
 
-            print('')
-
-
-    del w_roll
+    # del v_roll, w_roll
 
 
     return
 
 
+# ----------------------------------------------------------------------
+
+def compute_vorticity(v_, w_, krange):
+    vort_yz = np.zeros((nx_, ny_, len(krange)))
+    # for j in range(1, ny_ - 1):
+    #     for ik, k in enumerate(krange[1:-1]):
+    #         k = np.int(k)
+    #         vort_yz[j, ik + 1] = (w_[j + 1, k] - w_[j - 1, k]) / (2 * dy) - (v_[j, k + 1] - v_[j, k - 1]) / (2 * dz)
+
+    for j in range(1, ny_ - 1):
+        for ik, k in enumerate(krange[:-1]):
+            k = np.int(k)
+            # vort_yz[:, j, ik + 1] = 0.0
+            vort_yz[:, j, ik + 1] = (w_[:, j + 1, k] - w_[:, j - 1, k]) / (2 * dy) \
+                                    - (v_[:, j, k + 1] - v_[:, j, k ]) / dz
+    return vort_yz
 # ----------------------------------------------------------------------
 
 def create_statistics_file(file_name, path, angles, n_phi, nt, timerange, nk, krange):
