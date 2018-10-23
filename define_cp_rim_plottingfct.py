@@ -191,7 +191,7 @@ def plot_angles(rim_list, rim_list_int, rim_intp, t0, path_out):
 
 
 def plot_rim_mask(w, w_mask, rim_out, rim_int, rim_list, rim_list_int,
-                  icshift, jcshift, nx_, ny_, t0, k0, path_out):
+                  icshift, jcshift, nx_, ny_, t0, k0, perc, path_out):
     max = np.amax(w)
     nx_plots = 3
     ny_plots = 2
@@ -220,7 +220,7 @@ def plot_rim_mask(w, w_mask, rim_out, rim_int, rim_list, rim_list_int,
                  'x', color=cm_vir(rim_list_int[i][1][1]/360))
     plt.title('inner: after sort (c=angle)')
     plt.suptitle('cold pool outline - t='+str(t0)+'s',fontsize=28)
-    plt.savefig(os.path.join(path_out,'rim_mask_t'+str(t0)+'s_v2_k'+str(k0)+'.png'))
+    plt.savefig(os.path.join(path_out,'rim_mask_w'+str(perc)+'_t'+str(t0)+'s_v2_k'+str(k0)+'.png'))
     plt.close()
 
     return

@@ -55,7 +55,7 @@ def main():
     else:
         # path = '/Users/bettinameyer/polybox/ClimatePhysics/Copenhagen/Projects/LES_ColdPool/' \
         #        'triple_3D_noise/Out_CPDry_triple_dTh2K/'
-        path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th3K/'
+        # path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th3K/'
         path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th10K/'
     if os.path.exists(os.path.join(path, 'fields')):
         path_fields = os.path.join(path, 'fields')
@@ -120,6 +120,7 @@ def main():
     global nx_, ny_
     if case_name == 'ColdPoolDry_triple_3D':
         flag = 'triple'
+        # d = np.int(np.round(ny / 2))
         d = np.int(np.round( (ny+gw) / 2))
         a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
         try:
@@ -206,6 +207,7 @@ def main():
             print('level: k=' + str(k0), '(z=' + str(k0 * dz) + 'm)')
             w_roll = np.roll(np.roll(w[:, :, k0], ishift, axis=0), jshift, axis=1)
             w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
+            # icshift = id
             icshift = id -1
             jcshift = jd
             print('icshift', icshift, ic + ishift)
@@ -254,6 +256,7 @@ def main():
                 jmin1 = np.minimum(jcshift - j, jmin1)-1
                 jmax1 = np.maximum(jcshift + j, jmax1)+1
                 j += 1
+            # rmax2_int = (np.maximum(np.maximum(imax1-icshift,icshift-imin1),np.maximum(jmax1-jcshift,jcshift-jmin1))**2
             rmax2_int = (3+ np.maximum(np.maximum(imax1-icshift,icshift-imin1),
                                    np.maximum(jmax1-jcshift,jcshift-jmin1)) )**2
             print('rmax2', rmax2_int, np.sqrt(rmax2_int))
@@ -346,26 +349,27 @@ def main():
                             r2 = di ** 2 + dj ** 2
                             if r2 <= rmax2:
                                 rim_aux[i,j] = 1        # just to see which pixels where tested
-                                if w_mask_r.mask[i,j] and r2 > rmax2_int:       # outer rim
-                                    a = np.count_nonzero(w_bin_r[i - 1:i + 2, j - 1:j + 2])
-                                    if a > 5 and a < 9:     # btw 4-8 neighbouring pixels belong to rim
-                                        rim_out[i,j] = 1
-                                        rim_list_out.append((i,j))
-                                elif w_mask_r.mask[i,j]:
-                                    a = np.count_nonzero(w_bin_r[i - 1:i + 2, j - 1:j + 2])
-                                    if a > 5 and a < 9:  # btw 4-8 neighbouring pixels belong to rim
-                                        rim_int[i, j] = 1
-                                        rim_list_int.append((i, j))
-                                        # if np.sum(mask_aux[i-1:i+2,j-1:j+2]) > 9:
-                                        #     rim_int[i, j] = 1
-                                        #     rim_list_int.append((i, j))
-                                        # else:
-                                        #     rim_out[i,j] = 1
-                                        #     rim_list_out.append((i, j))
-                                        #     # a = np.count_nonzero(w_bin_r[i - 1:i + 2, j - 1 + sj:j + 2 + sj])
-                                        #     # if a <= 5 or a >= 9:
-                                        #     #     print('breaking')
-                                        #     #     break
+                                if w_mask_r.mask[i,j]:
+                                    if r2 > rmax2_int:       # outer rim
+                                        a = np.count_nonzero(w_bin_r[i - 1:i + 2, j - 1:j + 2])
+                                        if a > 5 and a < 9:     # btw 4-8 neighbouring pixels belong to rim
+                                            rim_out[i,j] = 1
+                                            rim_list_out.append((i,j))
+                                    else:
+                                        a = np.count_nonzero(w_bin_r[i - 1:i + 2, j - 1:j + 2])
+                                        if a > 5 and a < 9:  # btw 4-8 neighbouring pixels belong to rim
+                                            rim_int[i, j] = 1
+                                            rim_list_int.append((i, j))
+                                            # if np.sum(mask_aux[i-1:i+2,j-1:j+2]) > 9:
+                                            #     rim_int[i, j] = 1
+                                            #     rim_list_int.append((i, j))
+                                            # else:
+                                            #     rim_out[i,j] = 1
+                                            #     rim_list_out.append((i, j))
+                                            #     # a = np.count_nonzero(w_bin_r[i - 1:i + 2, j - 1 + sj:j + 2 + sj])
+                                            #     # if a <= 5 or a >= 9:
+                                            #     #     print('breaking')
+                                            #     #     break
 
             plot_outlines(perc, w_mask, rim_int, rim_out, rim_list_out, rim_aux, rmax2_int, icshift, jcshift, imin, imax, jmin, jmax,
                           nx_, ny_, k0, t0, path_out)
@@ -406,7 +410,7 @@ def main():
             rim_list_int.sort(key=lambda tup: tup[1][1])
             plot_rim_mask(w_, w_mask, rim_out, rim_int, rim_list_out, rim_list_int,
                           icshift, jcshift, nx_, ny_,
-                          t0, k0, path_out)
+                          t0, k0, perc, path_out)
 
             del w_mask
             del rim_out, rim_int
