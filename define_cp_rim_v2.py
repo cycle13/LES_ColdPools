@@ -104,7 +104,8 @@ def main():
     if args.perc:
         perc = args.perc
     else:
-        perc = 98  # tested for triple 3D, t=400s
+        # perc = 95     # tested for triple 3D, dTh=3K, t=400s
+        perc = 98       # tested for triple 3D, dTh=10K, t=100-400s
 
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
     global nx, ny, nz, dx, dy, dz
@@ -166,7 +167,8 @@ def main():
         ny_ = 2 * jd
 
     print('rstar: '+str(rstar), irstar)
-    print('ic,jc,id,jc,nx_,ny_', ic, jc, id, jd, nx_, ny_)
+    print('ic,jc,id,jd', ic, jc, id, jd)
+    print('nx_,ny_', nx_, ny_)
 
     # define general arrays
     dphi = 6        # angular resolution for averaging of radius
@@ -461,7 +463,7 @@ def main():
 
 
             ''' Compute radial velocity of rim '''
-            rim_vel[0:3, it, :] = rim_intp_all[0:3, it, :]  # copy phi [deg + rad], r_out(phi)
+            rim_vel[0:3, it, :] = rim_intp_all[0:3, it, :]  # copy phi[deg + rad], r_out(phi)
 
 
             if it == 0:
@@ -470,7 +472,7 @@ def main():
             elif it > 0:
                 print('computing velocity')
                 # for n, phi in enumerate(rim_intp_all[0,it,:]):
-                rim_vel[3, it, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :]) / dt
+                rim_vel[3, it, :, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :]) / dt    # U(t,k,i_phi)
                 rim_vel[4, it, :] = (rim_vel[3, it, :] - rim_vel[3, it-1, :]) / dt
                 rim_vel_av[0, it, ik] = np.average(np.ma.masked_less(rim_intp_all[2,it,:],1.))
                 rim_vel_av[1, it, ik] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
@@ -486,7 +488,6 @@ def main():
             print('U_av', rim_vel_av[1,it,ik])
             print('dU_av', rim_vel_av[2,it,ik])
             # dump statistics
-            # dump_statistics_file(rim_intp_all, stats_file_name, path_stats)
             dump_statistics_file(rim_intp_all[:, it, :], rim_vel[:, it, :], rim_vel_av, angular_range[:-1],
                                  stats_file_name, path_stats, k0, ik, t0, it)
             print('')
