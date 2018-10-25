@@ -21,7 +21,10 @@ def main():
 
     global cm_bwr, cm_grey, cm_vir
     cm_bwr = plt.cm.get_cmap('bwr')
-    cm_vir = plt.cm.get_cmap('viridis')
+    try:
+        cm_vir = plt.cm.get_cmap('viridis')
+    except:
+        cm_vir = plt.cm.get_cmap('jet')
     cm_grey = plt.cm.get_cmap('gist_gray_r')
 
     global path_out, path_fields, path_rim
@@ -93,10 +96,12 @@ def main():
         # # :::
 
         w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
-        percentiles = np.arange(90,101,1)
-        plot_hist_all_levels(w, percentiles, t0)
+        percentiles_l = np.append(np.arange(95,99,1), np.arange(99,100,0.5))
+        percentiles_s = np.append(np.arange(0,1,0.2), np.arange(1,4,1))
+        # plot_hist_all_levels(w, percentiles_l, t0)
 
-        plot_hist_twolevels(w, percentiles, nz, 50, t0)
+        plot_hist_twolevels(w, percentiles_l, percentiles_s, 50, 20, t0)
+        # plot_hist_twolevels_log(w, percentiles_l, nz, 50, t0)
 
     # plot w along crosssection
     perc = 95
@@ -261,56 +266,167 @@ def plot_hist_all_levels(data, perc_range, t0):
 
     return
 
-def plot_hist_twolevels(data, perc_range, kmax1, kmax2, t0):
+
+
+def plot_hist_twolevels(data, perc_range_l, perc_range_s, kmax1, kmax2, t0):
     n_bins = 1e2
     min = np.amin(data)
     max = np.amax(data)
     bins = np.linspace(min, max, n_bins)
     print('min', min, 'max', max)
-    kmax1 = nz
 
-    perc1 = np.zeros(len(perc_range))
-    perc2 = np.zeros(len(perc_range))
-    for i,p in enumerate(perc_range):
-        perc1[i] = np.percentile(data[:,:,:kmax1], p)
-        perc2[i] = np.percentile(data[:,:,:kmax2], p)
+    perc1 = np.zeros(len(perc_range_l))
+    perc2 = np.zeros(len(perc_range_l))
+    perc3 = np.zeros(len(perc_range_l))
+    for i,p in enumerate(perc_range_l):
+        perc1[i] = np.percentile(data[:,:,:nz], p)
+        perc2[i] = np.percentile(data[:,:,:kmax1], p)
+        perc3[i] = np.percentile(data[:,:,:kmax2], p)
+    perc1s = np.zeros(len(perc_range_s))
+    perc2s = np.zeros(len(perc_range_s))
+    perc3s = np.zeros(len(perc_range_s))
+    for i,p in enumerate(perc_range_s):
+        perc1s[i] = np.percentile(data[:,:,:nz], p)
+        perc2s[i] = np.percentile(data[:,:,:kmax1], p)
+        perc3s[i] = np.percentile(data[:,:,:kmax2], p)
 
-    fig, axes = plt.subplots(2,1, sharex=True, figsize=(12,10))
-    plt.subplot(211)
-    n, bins, patches = plt.hist(data[:,:,:kmax1].flatten(), bins, label='kmax=nz ('+str(kmax1)+')')
+    fig, axes = plt.subplots(3,1, sharex=True, figsize=(15,25))
+    # fig, axes = plt.subplots(3,1, figsize=(15,25))
+    plt.subplot(311)
+    n, bins_, patches = plt.hist(data[:,:,:nz].flatten(), bins, label='kmax=nz ('+str(nz)+')')
     max_hist = np.amax(n)
-    n, bins, patches = plt.hist(data[:,:,:kmax2].flatten(), bins, facecolor='red', alpha=0.4, label='kmax='+str(kmax2))
+    n, bins_, patches = plt.hist(data[:,:,:kmax1].flatten(), bins=bins,
+                                 facecolor='y', alpha=0.4, label='kmax='+str(kmax1))
+    n, bins_, patches = plt.hist(data[:,:,:kmax2].flatten(), bins=bins,
+                                 facecolor='r', alpha=0.4, label='kmax='+str(kmax2))
     max_hist = np.maximum(np.amax(n), max_hist)
     print('n', np.amax(n), n.shape)
     # n, bins, patches = plt.hist(data, bins, normed=False, facecolor='red', alpha=0.4, label='w')
-    for i,p in enumerate(perc_range):
-        plt.plot([perc1[i], perc1[i]], [0, max_hist], 'k', linewidth=1, label=str(p)+'th percentile')
-        plt.plot([perc2[i], perc2[i]], [0, max_hist], 'k--', linewidth=1)
+    for i,p in enumerate(perc_range_l):
+        plt.plot([perc1[i], perc1[i]], [0, max_hist], 'k', linewidth=2, label=str(p)+'th percentile')
+        plt.plot([perc2[i], perc2[i]], [0, max_hist], 'k--', linewidth=2)
+        plt.plot([perc3[i], perc3[i]], [0, max_hist], 'k:', linewidth=2)
+    plt.ylim([0,4e5])
+    plt.title('all w: max='+str(np.round(max,2))+', min='+str(np.round(min,2)))
     plt.ylabel('n')
     plt.legend(loc='upper left')  # , bbox_to_anchor=(0, 0))
 
-    # histogram on log scale.
-    # Use non-equal bin sizes, such that they look equal on log scale.
-    n_bins = 50
-    bins_pos = np.linspace(0,max,n_bins)
-    logbins = np.logspace(np.log10(bins_pos[1]), np.log10(bins_pos[-1]), len(bins_pos))
-    plt.subplot(212)
-    plt.hist(data[:,:,:kmax1].flatten(), bins=logbins)
-    plt.hist(data[:,:,:kmax2].flatten(), bins=logbins, facecolor='red', alpha=0.4)
-    plt.xscale('log')
-    max_hist = 4e4
-    for i,p in enumerate(perc_range):
-        plt.plot([perc1[i], perc1[i]], [0, max_hist], 'k', linewidth=1, label=str(p)+'th percentile')
+    plt.subplot(312)
+    plt.hist(data[:,:,:nz].flatten(), bins, label='kmax=nz ('+str(nz)+')')
+    plt.hist(data[:,:,:kmax1].flatten(), bins, facecolor='y', alpha=0.4, label='kmax='+str(kmax1))
+    plt.hist(data[:,:,:kmax2].flatten(), bins, facecolor='r', alpha=0.4, label='kmax='+str(kmax2))
+    for i,p in enumerate(perc_range_l):
+        plt.plot([perc1[i], perc1[i]], [0, max_hist], 'k', linewidth=2, label=str(p)+'th percentile')
         plt.plot([perc2[i], perc2[i]], [0, max_hist], 'k--', linewidth=2)
-    plt.legend(loc='right')#, bbox_to_anchor=(0, 0))
+        plt.plot([perc3[i], perc3[i]], [0, max_hist], 'k:', linewidth=2)
+    for i,p in enumerate(perc_range_s):
+        plt.plot([perc1s[i], perc1s[i]], [0, max_hist], 'g', linewidth=2, label=str(p)+'th percentile')
+        plt.plot([perc2s[i], perc2s[i]], [0, max_hist], 'g--', linewidth=2)
+        plt.plot([perc3s[i], perc3s[i]], [0, max_hist], 'g:', linewidth=2)
+    plt.yscale('log', nonposy='clip')
+    plt.title('all w')
+    plt.ylabel('log(n)')
+    plt.legend(loc='upper left', fontsize=10)#, bbox_to_anchor=(0, 0))
+
+    plt.subplot(313)
+    # perc_range = np.arange(0,10,1)
+    perc1 = np.zeros(len(perc_range_l))
+    perc2 = np.zeros(len(perc_range_l))
+    for i, p in enumerate(perc_range_l):
+        perc1[i] = np.percentile(np.abs(data[:, :, :kmax1]), p)
+        perc2[i] = np.percentile(np.abs(data[:, :, :kmax2]), p)
+    bins_pos = np.arange(0, np.maximum(np.abs(min), max), 1e-1)
+    plt.hist(np.abs(data[:,:,:nz]).flatten(), bins=bins_pos)
+    plt.hist(np.abs(data[:,:,:kmax1]).flatten(), bins=bins_pos, facecolor='y', alpha=0.4)
+    plt.hist(np.abs(data[:,:,:kmax2]).flatten(), bins=bins_pos, facecolor='r', alpha=0.4)
+    for i,p in enumerate(perc_range_l):
+        plt.plot([perc1[i], perc1[i]], [0, max_hist], 'k', linewidth=2, label=str(p)+'th percentile')
+        plt.plot([perc2[i], perc2[i]], [0, max_hist], 'k--', linewidth=2)
+    plt.yscale('log', nonposy='clip')
+    plt.title('abs(w)')
+    plt.ylabel('log(n)')
 
     plt.xlabel('w  [m/s]')
-    plt.ylabel('log_10(n)')
-    plt.suptitle('Histogram of w' + '   (t=' + str(t0) + ')')
+    plt.suptitle('Histogram of w' + '   (t=' + str(t0) + '), max=' +str(np.amax(data)))
     plt.savefig(os.path.join(path_out, 'hist_w_comp_t' + str(t0) + '.png'))
     plt.close()
 
     return
+
+
+
+
+# def plot_hist_twolevels_log(data, perc_range, kmax1, kmax2, t0):
+#     min = np.floor(np.amin(data))
+#     max = np.amax(data)
+#     print('min', min, 'max', max)
+#     kmax1 = nz
+#
+#     perc1 = np.zeros(len(perc_range))
+#     perc2 = np.zeros(len(perc_range))
+#     for i, p in enumerate(perc_range):
+#         perc1[i] = np.percentile(data[:, :, :kmax1], p)
+#         perc2[i] = np.percentile(data[:, :, :kmax2], p)
+#
+#     # fig, axes = plt.subplots(2,1, sharex=True, figsize=(12,10))
+#     fig, axes = plt.subplots(2,1, figsize=(12,10))
+#
+#     plt.subplot(211)
+#     n_bins = 50
+#     bins = np.linspace(min, max, n_bins)
+#     bins_pos = np.arange(0, max, 1e-1)
+#     bins_neg = np.arange(-min, 0, -1e-1)
+#     print(bins_pos)
+#     print(bins_neg)
+#     logbins_pos = np.logspace(np.log10(bins_pos[1]), np.log10(bins_pos[-1]), len(bins_pos))
+#     logbins_neg = -np.logspace(np.log10(bins_neg[1]), np.log10(bins_neg[-1]), len(bins_neg))
+#     print(logbins_pos)
+#     print(logbins_neg)
+#
+#
+#     n1, bins_, patches = plt.hist(data[:,:,:kmax1].flatten(), bins=logbins_pos, label='kmax=nz ('+str(kmax1)+')')
+#     # n2, bins_, patches = plt.hist(data[:,:,:kmax1].flatten(), bins=logbins_neg)
+#     # max_hist = np.maximum(np.amax(n1), np.amax(n2))
+#     plt.hist(data[:,:,:kmax2].flatten(), bins=logbins_pos, facecolor='red', alpha=0.4, label='kmax='+str(kmax2))
+#     plt.hist(data[:,:,:kmax2].flatten(), bins=logbins_neg, facecolor='red', alpha=0.4)
+#     # plt.xscale('log')
+#
+#     # max_hist = np.maximum(np.amax(n), max_hist)
+#     # print('n', np.amax(n), n.shape)
+#     # # n, bins, patches = plt.hist(data, bins, normed=False, facecolor='red', alpha=0.4, label='w')
+#     # for i,p in enumerate(perc_range):
+#     #     plt.plot([perc1[i], perc1[i]], [0, max_hist], 'k', linewidth=1, label=str(p)+'th percentile')
+#     #     plt.plot([perc2[i], perc2[i]], [0, max_hist], 'k--', linewidth=1)
+#     # plt.title('all w')
+#     # plt.ylabel('n')
+#     # plt.legend(loc='upper left')  # , bbox_to_anchor=(0, 0))
+#     #
+#     # histogram on log scale.
+#     # Use non-equal bin sizes, such that they look equal on log scale.
+#
+#     logbins = np.logspace(np.log10(bins_pos[1]), np.log10(bins_pos[-1]), len(bins_pos))
+#     plt.subplot(212)
+#     n, bins, patches = plt.hist(data[:,:,:kmax1].flatten(), bins=logbins)
+#     max_hist = np.amax(n)
+#     plt.hist(data[:,:,:kmax2].flatten(), bins=logbins, facecolor='red', alpha=0.4)
+#     plt.xscale('log')
+#     max_hist = 4e4
+#     for i,p in enumerate(perc_range):
+#         if i == 0:
+#             plt.plot([perc1[i], perc1[i]], [0, max_hist], 'k', linewidth=1, label = 'level 1 (kmax='+str(kmax1)+')')
+#             plt.plot([perc2[i], perc2[i]], [0, max_hist], 'k--', linewidth=1, label = 'level 2 (kmax='+str(kmax2)+')')
+#         else:
+#             plt.plot([perc1[i], perc1[i]], [0, max_hist], 'k', linewidth=1)
+#             plt.plot([perc2[i], perc2[i]], [0, max_hist], 'k--', linewidth=2)
+#     plt.legend(loc='upper right')#, bbox_to_anchor=(0, 0))
+#     plt.title('w>0')
+#     plt.xlabel('w  [m/s]')
+#     plt.ylabel('log_10(n)')
+#     plt.suptitle('Histogram of w' + '   (t=' + str(t0) + ')')
+#     plt.savefig(os.path.join(path_out, 'log_hist_w_comp_t' + str(t0) + '.png'))
+#     plt.close()
+#
+#     return
 
 # ----------------------------------
 
