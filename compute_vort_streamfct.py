@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.integrate as integrate  # for simpsons integration
 import matplotlib.pyplot as plt
 import netCDF4 as nc
 import argparse
@@ -29,25 +30,45 @@ def main():
 
 
     # read in fields
-    t0 = 500
-    v = read_in_netcdf_fields('v', os.path.join(path_fields, str(t0) + '.nc'))
-    # v_roll = np.roll(np.roll(v[:, :, :], ishift, axis=0), jshift, axis=1)
-    # v_ = v_roll[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
-    v_ = v[ic, :, :]
-    w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
-    # w_roll = np.roll(np.roll(w[:, :, :], ishift, axis=0), jshift, axis=1)
-    # w_ = w_roll[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
-    w_ = w[ic, :, :]
-    del v, w
+    for it, t0 in enumerate(timerange):
+        # t0 = 500
+        u = read_in_netcdf_fields('u', os.path.join(path_fields, str(t0) + '.nc'))
+        # u_roll = np.roll(np.roll(v[:, :, :], ishift, axis=0), jshift, axis=1)
+        # u_ = u_roll[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
+        u_ = u[ic, :, :]
+        v = read_in_netcdf_fields('v', os.path.join(path_fields, str(t0) + '.nc'))
+        # v_roll = np.roll(np.roll(v[:, :, :], ishift, axis=0), jshift, axis=1)
+        # v_ = v_roll[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
+        v_ = v[ic, :, :]
+        w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
+        # w_roll = np.roll(np.roll(w[:, :, :], ishift, axis=0), jshift, axis=1)
+        # w_ = w_roll[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
+        w_ = w[ic, :, :]
+        del v, w
 
-    # compute and plot vorticity in yz-cross section
-    vort_yz = compute_vorticity_yz(v_, w_, kmax)
-    # compute and plot vorticity in xz-crosssection
-    # >> compare the two
+        # compute and plot vorticity in yz-cross section
+        vort_yz = compute_vorticity_yz(v_, w_, kmax)
+        # compute and plot vorticity in xz-crosssection
+        vort_xz = compute_vorticity_yz(u_, v_, kmax)
+        # >> compare the two
 
-    # compute 2D streamfunction in yz-crosssection
+        # compute 2D streamfunction in yz-crosssection
+        psi = compute_streamfunction(v_, w_)
 
-    compute_streamfunction(v_, w_)
+        # compare streamfunction and streamlines
+        fig, (ax1, ax2) = plt.subplots(1,2, figsize=(10,6))
+        # plt.imshow(psi[:,:40].T, origin='lower')
+        ax1.contourf(psi[:,:kmax].T)
+        y_arr = np.arange(0,ny)
+        z_arr = np.arange(0,ny)
+        ax1.streamplot(y_arr, z_arr[:kmax], v_[:,:kmax].T, w_[:,:kmax].T, density=1.5, color='k')
+        ax2.contourf(vort_yz[:,:kmax].T)
+        ax2.streamplot(y_arr, z_arr[:kmax], v_[:,:kmax].T, w_[:,:kmax].T)
+        ax1.set_title('stream function')
+        ax2.set_title('vorticity')
+        plt.suptitle('t='+str(t0)+'s')
+        plt.savefig(os.path.join(path_out, 'psi_t'+str(t0)+'s.png'))
+        plt.close()
 
 
     return
@@ -68,7 +89,6 @@ def integrand(x, a, b):
 # def vort
 
 def compute_streamfunction(u_, v_):
-    import scipy.integrate as integrate  # for simpsons integration
     # est, errbound = integrate.quad(func, min, max)
     # funct: callable python object (function, method, class instance); also lambda-function
     # min, max: limits for integration (can us inf, -inf)
@@ -76,69 +96,80 @@ def compute_streamfunction(u_, v_):
     #   est: estimated value for integral
     #   errbound: upper bound on the error
 
+    # testing
+    # test_num_integration()
 
     if u_.shape != v_.shape:
         print('ERROR: input matrices do not have same shape')
         sys.exit()
 
-    # create output
-    phi = []        # vector potential
-    psi = []        # stream function
+    # phi: vector potential
+    # psi: stream function (solenoidal part)
     [lx, ly] = u_.shape
     print(lx, ly)
 
     # Integrate velocity fields to get potential and streamfunction
     # Use Simpson rule summation(function CUMSIMP)
-
-    # compute streamfunction psi (solenoidal part)
-    # x = np.linspace(0,10,10)
-    a = 2
-    b = 1
-    # integrand(x, 1, 0)
-    psi = integrate.quad(integrand, 0, 1, args=(a,b))
-    print('psi test', psi)
-
     # for u = -dpsi/dy, v = dpsi/dx
     # psi = int(v dx) - int(u dy)
     # psi = integrate.quad()
 
-    x = np.arange(1,10)
+    psi_A = np.zeros((lx, ly))
+    psi_B = np.zeros((lx, ly))
+    psi_simps = np.zeros((lx, ly))
+    for i in range(1,lx-1):
+        for j in range(1,ly-1):
+            # Simpson Rule
+            psi_A[i,j] = 2*dx/6 * ( v_[i+1,j] + 4*v_[i,j] + v_[i-1,j] )
+            psi_B[i,j] = 2*dy/6 * ( u_[i,j+1] + 4*u_[i,j] + u_[i,j-1] )
+    psi_simps = psi_A + psi_B
+
+    return psi_simps
+
+
+def test_num_integration():
+    x = np.arange(1, 10)
     a = 2
     f = a * x
-    I = integrate.simps(f,x)
+    I = integrate.simps(f, x)
     print x
     print f
     print I
-    x = np.arange(0,10)
-    f = 2*np.ones(10)
-    I = integrate.simps(f,x)
+    x = np.arange(0, 10)
+    f = 2 * np.ones(10)
+    I = integrate.simps(f, x)
     print f
     print I
-    x = np.arange(0,10)
-    y = np.arange(0,5)
-    X, Y = np.meshgrid(x, y, indexing='ij')     # if indexing not defined, output will be 'xy'-indexed
+    x = np.arange(0, 10)
+    y = np.arange(0, 5)
+    X, Y = np.meshgrid(x, y, indexing='ij')  # if indexing not defined, output will be 'xy'-indexed
     # 'ij'-indexing: X.shape = Y.shape = [len(x), len(y)]
     # 'xy'-indexing: X.shape = Y.shape = [len(y), len(x)]
     # X[:,j] = x, Y[i,:] = y
     a = 1
     b = 2
-    f = a*X + b*Y
+    f = a * X + b * Y
     print X
     print Y
     print f
 
     i = 0
     j = 0
-    I = integrate.simps(f[:,j],X[:,j])
+    I = integrate.simps(f[:, j], X[:, j])
     print I
-    I = integrate.simps(f[:,j],x, axis=0)
+    I = integrate.simps(f[:, j], x, axis=0)
     print I
     I = integrate.simps(f, x, axis=0)
     print I
-    I2 = integrate.simps(f, y, axis =1)
-    print I2    
+    I2 = integrate.simps(f, y, axis=1)
+    print I2
 
 
+    a = 2
+    b = 1
+    # integrand(x, 1, 0)
+    psi = integrate.quad(integrand, 0, 1, args=(a,b))
+    print('psi test', psi)
 
 
     return
