@@ -47,6 +47,7 @@ def main():
     # parser.add_argument("--k0", nargs = '+', type = int)
     parser.add_argument("--kmin")
     parser.add_argument("--kmax")
+    parser.add_argument("--perc")
     args = parser.parse_args()
 
     global path_fields, path_out, path_stats
@@ -97,8 +98,15 @@ def main():
         kmax = np.int(args.kmax)
     else:
         kmax = 5
-    krange = np.arange(kmin, kmax+1, 1)
+    krange = np.arange(kmin, kmax + 1, 1)
     nk = len(krange)
+
+    # percentile for threshold
+    if args.perc:
+        perc = args.perc
+    else:
+        # perc = 95     # tested for triple 3D, dTh=3K, t=400s
+        perc = 98       # tested for triple 3D, dTh=10K, t=100-400s
 
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
     global nx, ny, nz, dx, dy, dz
@@ -157,12 +165,9 @@ def main():
         nx_ = 2 * id
         ny_ = 2 * jd
 
-    print('ic,jc,id,jc', ic, jc, id, jd)
+    print('ic,jc,id,jd', ic, jc, id, jd)
     print('nx_,ny_', nx_, ny_)
     print('shift, ishift, jshift', shift, ishift, jshift)
-    # percentile for threshold
-    # perc = 95     # tested for triple 3D, dTh=3K, t=400s
-    perc = 98       # tested for triple 3D, dTh=10K, t=100-400s
 
 
     # (A) read in w-field
@@ -184,6 +189,10 @@ def main():
     # create statistics file
     stats_file_name = 'rimstats_perc' + str(perc) + 'th.nc'
     create_statistics_file(stats_file_name, path_stats, n_phi, nt, timerange, nk, krange)
+
+
+
+
 
     for it,t0 in enumerate(timerange):
         if it > 0:
@@ -463,10 +472,7 @@ def main():
             rim_intp_all[4, :, :] = rim_intp_all[2, :, :] - rim_intp_all[3, :, :]    # rim thickness
             print('')
 
-            # dump statistics
-            # dump_statistics_file(rim_intp_all, stats_file_name, path_stats)
-            dump_statistics_file(rim_intp_all[:,it,:], rim_vel[:,it,:], rim_vel_av[:,it], angular_range[:-1],
-                                 stats_file_name, path_stats, k0, ik, t0, it)
+
 
 
             # plot outline in polar coordinates r(theta)
@@ -496,6 +502,10 @@ def main():
                 plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], perc, k0, timerange[:it+1], path_out)
 
             plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av, perc, k0, timerange, path_out)
+
+            # dump statistics
+            dump_statistics_file(rim_intp_all[:, it, :], rim_vel[:, it, :], rim_vel_av[:,it], angular_range[:-1],
+                                 stats_file_name, path_stats, k0, ik, t0, it)
             print('')
 
     return
