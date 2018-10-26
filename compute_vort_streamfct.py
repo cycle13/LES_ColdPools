@@ -24,7 +24,9 @@ def main():
     cm_hsv = plt.cm.get_cmap('hsv')
 
     timerange, kmax, nml = set_input_output_parameters(args)
-    nx_half, ny_half = define_geometry(case_name, nml)
+    define_geometry(case_name, nml)
+    nx_half = np.int(nx_ / 2)
+    ny_half = np.int(ny_ / 2)
     icshift = nx_half - 1
     jcshift = ny_half -1
     x_arr = dx*np.arange(0,nx_)
@@ -45,6 +47,10 @@ def main():
     vort_yz_min = np.zeros((len(timerange)))
     vort_yz_sum = np.zeros((len(timerange)))
     vort_yz_env = np.zeros((len(timerange)))
+    add_statistics_variable('vort_yz_max', 's^-1', 'timeseries', stats_file_name, path_out)
+    add_statistics_variable('vort_yz_min', 's^-1', 'timeseries', stats_file_name, path_out)
+    add_statistics_variable('vort_yz_sum', 's^-1', 'timeseries', stats_file_name, path_out)
+    add_statistics_variable('vort_yz_env', 's^-1', 'timeseries', stats_file_name, path_out)
 
 
     # read in fields
@@ -88,17 +94,19 @@ def main():
         # compute and plot vorticity in yz-cross section
         vort_yz = compute_vorticity_yz(v[ic,:,:], w[ic,:,:])
         vort_yz_ = compute_vorticity_yz(v_[icshift,:,:], w_[icshift,:,:])
-        vort_yz_max[it] = np.amax(vort_yz)
-        vort_yz_min[it] = np.amin(vort_yz)
-        vort_yz_sum[it] = np.sum(vort_yz_[jcshift:,:])
-        vort_yz_env[it] = np.sum(vort_yz_[jcshift+50:,:])
         # compute and plot vorticity in xz-crosssection
         vort_xz = compute_vorticity_yz(u[:,jc,:], w[:,jc,:])
         vort_xz_ = compute_vorticity_yz(u_[:,jcshift,:], w_[:,jcshift,:])
         print('vorticity', vort_yz.shape, vort_xz.shape, nx, ny, nz)
         print vort_yz_.shape, vort_xz_.shape, ny_, ny_half, kmax
-        # >> compare the two
 
+        # compute vorticity statistics
+        vort_yz_max[it] = np.amax(vort_yz)
+        vort_yz_min[it] = np.amin(vort_yz)
+        vort_yz_sum[it] = np.sum(vort_yz_[jcshift:,:])
+        vort_yz_env[it] = np.sum(vort_yz_[jcshift+50:,:])
+
+        # compare vort_yz and vort_xz
         fig, axes = plt.subplots(1,3, figsize=(14,4), sharey='all')
         y_arr = np.arange(0,ny_)
         z_arr = np.arange(0,kmax)
@@ -130,8 +138,10 @@ def main():
         plt.savefig(os.path.join(path_out, 'vort_sum_t'+str(t0)+'s.png'))
         plt.close()
 
-
-
+        # dump vorticity_yz field
+        file_name = 'field_vort_yz_t'+str(t0)+'s.nc'
+        if flag == 'triple':
+            save_vort_field(vort_yz, file_name, path_out, 3, ic_arr, jc_arr, ishift, jshift)
 
 
         # ''' STREAM FUNCTION '''
@@ -183,6 +193,11 @@ def main():
     ax3.set_xlabel('time t  [s]')
     ax3.set_ylabel('sum vort_yz  [1/s]')
     fig.savefig(os.path.join(path_out, 'vort_yz_max_sum.png'))
+
+    dump_statistics_variable(vort_yz_max, 'vort_yz_max', 'timeseries', stats_file_name, path_out)
+    dump_statistics_variable(vort_yz_min, 'vort_yz_min', 'timeseries', stats_file_name, path_out)
+    dump_statistics_variable(vort_yz_sum, 'vort_yz_sum', 'timeseries', stats_file_name, path_out)
+    dump_statistics_variable(vort_yz_env, 'vort_yz_env', 'timeseries', stats_file_name, path_out)
 
     return
 
@@ -442,18 +457,39 @@ def define_geometry(case_name, nml):
     print('--- define geometry ---')
     global nx_, ny_
     global ic, jc, shift, ishift, jshift
+    global ic_arr, jc_arr
+    global flag
+
+    zstar = nml['init']['h']
+    kstar = np.int(np.round(zstar / dz))
+
     if case_name == 'ColdPoolDry_triple_3D':
         flag = 'triple'
         # d = np.int(np.round(ny / 2))
         d = np.int(np.round((ny + gw) / 2))
+        # d = np.int(np.round(10 * irstar)) # for r=1km, dTh=2K
         a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
         try:
             rstar = nml['init']['r']
         except:
             rstar = 5000.0  # half of the width of initial cold-pools [m]
         irstar = np.int(np.round(rstar / dx))
-        ic = np.int(np.round(a / 2))
-        jc = np.int(np.round(d / 2))
+        marg_i = 10  # width of margin
+
+        ic1 = np.int(np.round(a / 2))
+        # ic1 = 10 + np.int(np.round(a / 2)) + Gr.dims.gw # for r=1km
+        ic2 = ic1
+        ic3 = ic1 + np.int(np.round(a))
+        jc1 = np.int(np.round(d / 2))
+        # jc1 = np.int(np.round(d / 2) + gw)  # np.int(np.round(d/2) + Gr.dims.gw)
+        jc2 = jc1 + d
+        jc2 = jc1 + d
+        jc3 = jc1 + np.int(np.round(d / 2))
+        ic = ic1
+        jc = jc1
+        ic_arr = [ic1, ic2, ic3]
+        jc_arr = [jc1, jc2, jc3]
+
         shift = 60
         nx_half = irstar + shift
         ny_half = irstar + shift
@@ -480,12 +516,14 @@ def define_geometry(case_name, nml):
         jshift = np.max(ny_half - jc, 0)
         nx_ = 2 * nx_half
         ny_ = 2 * ny_half
+        # ic_arr = [ic1, ic2]
+        # jc_arr = [jc1, jc2]
 
     print('rstar: ' + str(rstar), irstar)
     print('ic,jc,id,jd', ic, jc, nx_half, ny_half)
     print('nx_,ny_', nx_, ny_)
     print('shift, ishift, jshift', shift, ishift, jshift)
-    return nx_half, ny_half
+    return
 
 # ----------------------------------------------------------------------
 
@@ -498,22 +536,61 @@ def create_statistics_file(file_name, path, nt, timerange):#, nk, krange):
     ts_grp.createDimension('nt', nt)
     var = ts_grp.createVariable('time', 'f8', ('nt'))
     var.units = "s"
-    var[:] = timerange
-    var = ts_grp.createVariable('vort_yz_max', 'f8', ('nt'))
-    var.description = "max in xy-crosssection i=ic1"
-    var.units = "s^-1"
+    var[:] = timerange[:]
 
     rootgrp.close()
 
     return
 
-
-def dump_statistics_variable(var_in, file_name, path, var_name, grp_name):
+def add_statistics_variable(var_name, units, grp_name, file_name, path):
     rootgrp = nc.Dataset(os.path.join(path, file_name), 'r+', format='NETCDF4')
-    ts_grp = rootgrp.groups[grp_name]
-    var = ts_grp.variables[var_name]
-    var[:] = var_in[:]
+    try:
+        grp = rootgrp.groups[grp_name]
+    except:
+        print 'except', grp_name
+        grp = rootgrp.createGroup(grp_name)
+    if grp_name == 'timeseries':
+        var = grp.createVariable(var_name, 'f8', ('nt'))
+        var.units = units
+    return
 
+
+def dump_statistics_variable(var_in, var_name, grp_name, file_name, path):
+    rootgrp = nc.Dataset(os.path.join(path, file_name), 'r+', format='NETCDF4')
+    grp = rootgrp.groups[grp_name]
+    if grp_name == 'timeseries':
+        var = grp.variables[var_name]
+        var[:] = var_in[:]
+    rootgrp.close()
+    return
+# ----------------------------------------------------------------------
+
+def save_vort_field(var_in, file_name, path, ncp, ic_arr, jc_arr, ishift, jshift):
+    # ncp: number of cold pools
+
+    print('-------- dump vorticity field --------')
+    rootgrp = nc.Dataset(os.path.join(path, file_name), 'w', format='NETCDF4')
+
+    descr_grp = rootgrp.createGroup('description')
+    descr_grp.createDimension('ncp', ncp)
+    var = descr_grp.createVariable('ic_arr', 'f8', 'ncp')
+    var[:] = ic_arr
+    var = descr_grp.createVariable('jc_arr', 'f8', 'ncp')
+    var[:] = jc_arr
+    var = descr_grp.createVariable('ishift', 'f8', )
+    var[:] = ishift
+    var = descr_grp.createVariable('jshift', 'f8', )
+    var[:] = jshift
+
+    fields_grp = rootgrp.createGroup('fields')
+    fields_grp.createDimension('nx', nx)
+    fields_grp.createDimension('ny', ny)
+    fields_grp.createDimension('nz', nz)
+    var = fields_grp.createVariable('vort_yz', 'f8', ('ny', 'nz'))
+    var.description = "vorticity in yz-plane through cold pool center (i=ic)"
+    var.units = "s^-1"
+    print var_in.shape, ny, nz
+    var[:,:] = var_in[:,:]
     rootgrp.close()
     return
 # ----------------------------------------------------------------------
