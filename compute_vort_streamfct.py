@@ -14,7 +14,7 @@ def main():
     parser.add_argument("--path")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
-    # parser.add_argument("--kmin")
+    parser.add_argument("--kmin")
     parser.add_argument("--kmax")
     args = parser.parse_args()
 
@@ -34,7 +34,13 @@ def main():
     z_arr = dz*np.arange(0,nz)
     X_, Y_ = np.meshgrid(x_arr, y_arr)
     print('')
-
+    #
+    # READ IN density profile
+    rootgrp = nc.Dataset(os.path.join(path, 'Stats.' + case_name + '.nc'))
+    rho0 = rootgrp.groups['reference'].variables['rho0'][:]
+    rho_unit = rootgrp.groups['reference'].variables['rho0'].units
+    z_half = rootgrp.groups['reference'].variables['z'][:]
+    rootgrp.close()
 
 
     ''' TEST FUNCTIONS '''
@@ -56,6 +62,8 @@ def main():
     # read in fields
     for it, t0 in enumerate(timerange):
         print('--- time: t='+str(t0)+'s ---')
+
+        s = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0) + '.nc'))
         u = read_in_netcdf_fields('u', os.path.join(path_fields, str(t0) + '.nc'))
         u_roll = np.roll(np.roll(u[:, :, :], ishift, axis=0), jshift, axis=1)
         u_ = u_roll[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
@@ -65,180 +73,206 @@ def main():
         w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
         w_roll = np.roll(np.roll(w[:, :, :], ishift, axis=0), jshift, axis=1)
         w_ = w_roll[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
-        # del v, w
-        print 'start:', u.shape, v.shape, w.shape
 
-        # # ''' FIELDS / GEOMETRY '''
-        # # plt.figure()
-        # # plt.subplot(131)
-        # # plt.imshow(u_[:,:,1].T, origin='lower')
-        # # plt.plot([icshift,icshift],[1,ny_-2],'k')
-        # # plt.plot([1,nx_-2],[jcshift,jcshift],'k')
-        # # plt.xlim([0,nx_])
-        # # plt.ylim([0,ny_])
-        # # plt.subplot(132)
-        # # plt.imshow(v_[:,:,1].T, origin='lower')
-        # # plt.plot([icshift, icshift], [1, ny_ - 2], 'k')
-        # # plt.plot([1, nx_ - 2], [jcshift, jcshift], 'k')
-        # # plt.xlim([0, nx_])
-        # # plt.ylim([0, ny_])
-        # # plt.subplot(133)
-        # # plt.imshow(w_[:,:,1].T, origin='lower')
-        # # plt.plot([icshift, icshift], [1, ny_ - 2], 'k')
-        # # plt.plot([1, nx_ - 2], [jcshift, jcshift], 'k')
-        # # plt.xlim([0, nx_])
-        # # plt.ylim([0, ny_])
-        # # plt.savefig(os.path.join(path_out, 'test_fields_t' + str(t0) + 's.png'))
-        #
-        # ''' VORTICITY '''
-        # # compute and plot vorticity in yz-cross section
-        # vort_yz = compute_vorticity_yz(v[ic,:,:], w[ic,:,:])
-        # vort_yz_ = compute_vorticity_yz(v_[icshift,:,:], w_[icshift,:,:])
-        # # compute and plot vorticity in xz-crosssection
-        # vort_xz = compute_vorticity_yz(u[:,jc,:], w[:,jc,:])
-        # vort_xz_ = compute_vorticity_yz(u_[:,jcshift,:], w_[:,jcshift,:])
-        # print('vorticity', vort_yz.shape, vort_xz.shape, nx, ny, nz)
-        # print vort_yz_.shape, vort_xz_.shape, ny_, ny_half, kmax
-        #
-        # # compute vorticity statistics
-        # vort_yz_max[it] = np.amax(vort_yz)
-        # vort_yz_min[it] = np.amin(vort_yz)
-        # vort_yz_sum[it] = np.sum(vort_yz_[jcshift:,:])
-        # vort_yz_env[it] = np.sum(vort_yz_[jcshift+50:,:])
-        #
-        # # compare vort_yz and vort_xz
-        # fig, axes = plt.subplots(1,3, figsize=(14,4), sharey='all')
-        # y_arr = np.arange(0,ny_)
-        # z_arr = np.arange(0,kmax)
-        # Y_, Z_ = np.meshgrid(y_arr, z_arr)
-        # plt.suptitle('t='+str(t0)+'s')
-        # ax1 = axes[0]
-        # # a = ax1.contourf(Y_,Z_,vort_xz_[:,:kmax])
-        # a = ax1.imshow(vort_xz_[:,:].T, origin='lower')
-        # ax1.autoscale(False)
-        # # ax1.set_ylim([0,kmax])
-        # # ax1.set_xlim([0,ny_])
-        # ax1.set_title('vort_xz')
-        # ax2 = axes[1]
-        # b = ax2.imshow(vort_yz_[:,:].T, origin='lower')
-        # ax2.set_title('vort_yz')
-        # ax3 = axes[2]
-        # c = ax3.imshow(vort_xz_[:,:].T-vort_yz_[:,:].T, origin='lower')
-        # ax3.set_title('vort_xz - vort_yz')
-        # plt.colorbar(a, ax=ax1)
-        # plt.colorbar(b, ax=ax2)
-        # plt.colorbar(c, ax=ax3)
-        # plt.savefig(os.path.join(path_out, 'vort_xz_yz_t'+str(t0)+'s.png'))
-        # plt.close()
-        #
+        # del v, w
+
+        # ''' FIELDS / GEOMETRY '''
         # plt.figure()
-        # plt.imshow(vort_yz_[jcshift:,:].T, origin='lower')
-        # plt.suptitle('t='+str(t0)+'s')
-        # plt.colorbar()
-        # plt.savefig(os.path.join(path_out, 'vort_sum_t'+str(t0)+'s.png'))
-        # plt.close()
-        #
-        # # dump vorticity_yz field
-        # file_name = 'field_vort_yz_t'+str(t0)+'s.nc'
-        # if flag == 'triple':
-        #     save_vort_field(vort_yz, file_name, path_out, 3, ic_arr, jc_arr, ishift, jshift)
+        # plt.subplot(131)
+        # plt.imshow(u_[:,:,1].T, origin='lower')
+        # plt.plot([icshift,icshift],[1,ny_-2],'k')
+        # plt.plot([1,nx_-2],[jcshift,jcshift],'k')
+        # plt.xlim([0,nx_])
+        # plt.ylim([0,ny_])
+        # plt.subplot(132)
+        # plt.imshow(v_[:,:,1].T, origin='lower')
+        # plt.plot([icshift, icshift], [1, ny_ - 2], 'k')
+        # plt.plot([1, nx_ - 2], [jcshift, jcshift], 'k')
+        # plt.xlim([0, nx_])
+        # plt.ylim([0, ny_])
+        # plt.subplot(133)
+        # plt.imshow(w_[:,:,1].T, origin='lower')
+        # plt.plot([icshift, icshift], [1, ny_ - 2], 'k')
+        # plt.plot([1, nx_ - 2], [jcshift, jcshift], 'k')
+        # plt.xlim([0, nx_])
+        # plt.ylim([0, ny_])
+        # plt.savefig(os.path.join(path_out, 'test_fields_t' + str(t0) + 's.png'))
+
+        ''' VORTICITY '''
+        # compute and plot vorticity in yz-cross section
+        vort_yz = compute_vorticity_yz(v[ic,:,:], w[ic,:,:])
+        vort_yz_ = compute_vorticity_yz(v_[icshift,:,:], w_[icshift,:,:])
+        # compute and plot vorticity in xz-crosssection
+        vort_xz = compute_vorticity_yz(u[:,jc,:], w[:,jc,:])
+        vort_xz_ = compute_vorticity_yz(u_[:,jcshift,:], w_[:,jcshift,:])
+        print('vorticity', vort_yz.shape, vort_xz.shape, nx, ny, nz)
+        print vort_yz_.shape, vort_xz_.shape
+
+        # compute vorticity statistics
+        vort_yz_max[it] = np.amax(vort_yz)
+        vort_yz_min[it] = np.amin(vort_yz)
+        vort_yz_sum[it] = np.sum(vort_yz_[jcshift:,:])
+        vort_yz_env[it] = np.sum(vort_yz_[jcshift+50:,:])
+
+        # # compare vort_yz and vort_xz
+        # comparison_vort_yz_vort_xz(vort_xz_, vort_yz_, kmax, t0)
+
+        # plot domain integral of vorticity
+        plt.figure()
+        plt.imshow(vort_yz_[jcshift:,:].T, origin='lower')
+        plt.suptitle('t='+str(t0)+'s')
+        plt.colorbar()
+        plt.savefig(os.path.join(path_out, 'vort_sum_t'+str(t0)+'s.png'))
+        plt.close()
+
+        # dump vorticity_yz field
+        file_name = 'field_vort_yz_t'+str(t0)+'s.nc'
+        if flag == 'triple':
+            save_vort_field(vort_yz, file_name, path_out, 3, ic_arr, jc_arr, ishift, jshift)
 
 
         ''' STREAM FUNCTION '''
         # compute 2D streamfunction in yz-crosssection
         psi_1 = compute_streamfunction_simps(v[ic,:,:], w[ic,:,:], t0)
         psi_2 = compute_streamfunction_simps2(v[ic,:,:], w[ic,:,:], t0)
+        psi_3 = compute_streamfunction_simps3(v[ic,:,:], w[ic,:,:], t0)
+        psi_4 = compute_streamfunction_simps4(v[ic,:,:], w[ic,:,:], rho0, t0)
+        psi_5 = compute_streamfunction_simps5(v[ic,:,:], w[ic,:,:], rho0, 0, 0)
 
         # compare two functions
-        y = np.arange(20,20+ny_)
+        ymax = 120
+        y = np.arange(0,ymax)
         z = np.arange(kmax)
         Y, Z = np.meshgrid(y, z,indexing='ij')
         print 'psi', psi_1.shape, psi_2.shape, y.shape, z.shape, Y.shape, Z.shape
-        fig, axes = plt.subplots(1,2, figsize=(12,4))
-        ax1 = axes[0]
+        fig, axes = plt.subplots(2,3, figsize=(16,8))
+        ax1 = axes[0,0]
         ax1.set_title('psi_1')
-        max = np.maximum(np.amax(psi_1[20:20+ny_, :kmax]),-np.amin(psi_1[20:20+ny_, :kmax]))
-        a = ax1.contourf(Y,Z,psi_1[20:20+ny_, :kmax], levels=np.linspace(-max,max,1e2))
+        max = np.maximum(np.amax(psi_1[:ymax, :kmax]),-np.amin(psi_1[:ymax, :kmax]))
+        a = ax1.contourf(Y,Z,psi_1[:ymax, :kmax], levels=np.linspace(-max,max,1e2))
         plt.colorbar(a, ax=ax1)
-        ax2 = axes[1]
+        ax2 = axes[0,1]
         ax2.set_title('psi_2')
-        max = np.maximum(np.amax(psi_2[20:20 + ny_, :kmax]), -np.amin(psi_2[20:20 + ny_, :kmax]))
-        a = ax2.contourf(Y,Z,psi_2[20:20+ny_, :kmax], levels=np.linspace(-max,max,1e2))
+        max = np.maximum(np.amax(psi_2[:ymax, :kmax]), -np.amin(psi_2[:ymax, :kmax]))
+        max = np.amax(psi_2[:ymax, :kmax])
+        a = ax2.contourf(Y,Z,psi_2[:ymax, :kmax], levels=np.linspace(-max,max,1e2), extend = 'both')
+        a.cmap.set_under('yellow')
+        a.cmap.set_over('cyan')
         plt.colorbar(a, ax=ax2)
+        ax3 = axes[0,2]
+        ax3.set_title('psi_4')
+        max = np.maximum(np.amax(psi_4[:ymax, :kmax]), -np.amin(psi_4[:ymax, :kmax]))
+        a = ax3.contourf(Y,Z,psi_4[:ymax, :kmax], levels=np.linspace(-max,max,1e2))
+        plt.colorbar(a, ax=ax3)
+
+        ax = axes[1,1]
+        ax.set_title('w')
+        var = w[ic,:ymax,:kmax]
+        max = np.maximum(np.amax(var), -np.amin(var))
+        a = ax.contourf(Y,Z,var[:ymax, :kmax], levels=np.linspace(-max,max,1e2), cmap=cm_bwr)
+        speed_yz = np.sqrt(v[ic,:ymax,:kmax]*v[ic,:ymax,:kmax] + var*var)
+        lw = 5 * speed_yz[:, :] / speed_yz[:, :].max()
+        ax.streamplot(y,z,v[ic,:ymax,:kmax].T,var.T, color='k', linewidth=lw[:,:].T)
+        ax3.streamplot(y,z,v[ic,:ymax,:kmax].T,var.T, color='k', linewidth=lw[:,:].T)
+        plt.colorbar(a, ax=ax)
+        ax = axes[1,2]
+        ax.set_title('w')
+        max = np.maximum(np.amax(psi_4[:ymax, :kmax]), -np.amin(psi_4[:ymax, :kmax]))
+        a = ax.contourf(Y, Z, psi_4[:ymax, :kmax], levels=np.linspace(-max, max, 1e2))
+        plt.colorbar(a, ax=ax)
+        var = w[ic,:,:]
+        max = np.maximum(np.amax(var[:ymax, :kmax]), -np.amin(var[:ymax, :kmax]))
+        a = ax.contour(Y,Z,var[:ymax, :kmax], levels=np.linspace(-max,max,1e1+1), cmap=cm_bwr)
+        # plt.colorbar(a, ax=ax)
+
+        ax = axes[1,0]
+        ax.set_title('s')
+        var = s[ic,:,:]
+        max = np.amax(var[:ymax, :kmax])
+        min = np.amin(var[:ymax, :kmax])
+        a = ax.contourf(Y,Z,var[:ymax, :kmax], levels=np.linspace(min, max, 1e2))
+        plt.colorbar(a, ax=ax)
+
         fig.savefig(os.path.join(path_out, 'psi_t'+str(t0)+'s.png'))
         plt.close(fig)
 
-        fig, axes = plt.subplots(1, 3, figsize=(12, 4))
+        fig, axes = plt.subplots(1, 4, figsize=(16, 4))
         plt.suptitle('t='+str(t0)+'s')
         ax1 = axes[0]
         ax1.set_title('v')
-        max = np.maximum(np.amax(v[ic,20:20 + ny_, :kmax]), -np.amin(v[ic,20:20 + ny_, :kmax]))
-        a = ax1.contourf(Y, Z, v[ic, 20:20 + ny_, :kmax], levels=np.linspace(-max, max, 1e2))
+        max = np.maximum(np.amax(v[ic,20:20 + ymax, :kmax]), -np.amin(v[ic,20:20 + ymax, :kmax]))
+        a = ax1.contourf(Y, Z, v[ic, 20:20 + ymax, :kmax], levels=np.linspace(-max, max, 1e2))
         plt.colorbar(a, ax=ax1)
         ax1 = axes[1]
         ax1.set_title('w')
-        max = np.maximum(np.amax(w[ic,20:20 + ny_, :kmax]), -np.amin(w[ic,20:20 + ny_, :kmax]))
-        a = ax1.contourf(Y, Z, w[ic, 20:20 + ny_, :kmax], levels=np.linspace(-max, max, 1e2))
+        max = np.maximum(np.amax(w[ic,20:20 + ymax, :kmax]), -np.amin(w[ic,20:20 + ymax, :kmax]))
+        a = ax1.contourf(Y, Z, w[ic, 20:20 + ymax, :kmax], levels=np.linspace(-max, max, 1e2))
         plt.colorbar(a, ax=ax1)
         ax2 = axes[2]
-        ax2.set_title('psi_2')
-        max = np.maximum(np.amax(psi_2[20:20 + ny_, :kmax]), -np.amin(psi_2[20:20 + ny_, :kmax]))
-        a = ax2.contourf(Y, Z, psi_2[20:20 + ny_, :kmax], levels=np.linspace(-max, max, 1e2))
+        ax2.set_title('vort_yz')
+        print vort_yz.shape
+        max = np.maximum(np.amax(vort_yz[20:20 + ymax, :kmax]), -np.amin(vort_yz[20:20 + ymax, :kmax]))
+        a = ax2.contourf(Y, Z, vort_yz[20:20 + ymax, :kmax], levels=np.linspace(-max, max, 1e2))
+        plt.colorbar(a, ax=ax2)
+        ax2 = axes[3]
+        ax2.set_title('psi_4')
+        max = np.maximum(np.amax(psi_4[20:20 + ymax, :kmax]), -np.amin(psi_4[20:20 + ymax, :kmax]))
+        a = ax2.contourf(Y, Z, psi_4[20:20 + ymax, :kmax], levels=np.linspace(-max, max, 1e2))
         plt.colorbar(a, ax=ax2)
         fig.savefig(os.path.join(path_out, 'psi_2_t' + str(t0) + 's.png'))
         plt.close(fig)
 
-
-        # ym = np.int(3*ny_/3)
-        # ym = ny
-        # YM_, ZM_ = np.meshgrid(y_arr[:ym],z_arr[:kmax],indexing='ij')
-        # # compare streamfunction and streamlines
-        # fig, (ax1, ax2) = plt.subplots(1,2, figsize=(10,4))
-        # # # plt.imshow(psi[:,:40].T, origin='lower')
-        # a = ax1.contourf(YM_,ZM_,psi_1[:ym,:kmax])
-        # plt.colorbar(a, ax=ax1)
-        # # y_arr = np.arange(0,ny)
-        # # z_arr = np.arange(0,ny)
-        # ax1.streamplot(y_arr[:ym], z_arr[:kmax], v[ic,:ym,:kmax].T, w[ic,:ym,:kmax].T, density=1.5, color='k')
-        # # print '.....', y_arr.shape, z_arr.shape, ym, kmax, YM_.shape, ZM_.shape, v[ic,:ym,:kmax].shape, w[ic,:ym,:kmax].shape
-        # # ax1.streamplot(YM_,ZM_,v[ic,:ym,:kmax], w[ic,:ym,:kmax], density=1.5, color='k')
-        # b = ax2.contourf(y_arr[:ym], z_arr[:kmax], vort_yz[:ym,:kmax].T)
-        # ax2.streamplot(y_arr[:ym], z_arr[:kmax], v[ic,:ym,:kmax].T, w[ic,:ym,:kmax].T)
-        # plt.colorbar(b, ax=ax2)
-        # ax1.set_title('stream function (x(i-1)..x(i+1)')
-        # ax2.set_title('vorticity')
-        # plt.suptitle('t='+str(t0)+'s')
-        # plt.savefig(os.path.join(path_out, 'psi_1_t'+str(t0)+'s.png'))
-        # plt.close()
-
-        print('')
-
-    # maximum vorticity
-    fig, axes = plt.subplots(1,3, figsize=(15,5))
-    ax1 = axes[0]
-    ax1.plot(timerange, vort_yz_max, 'o-', label = 'max')
-    ax1.plot(timerange, -vort_yz_min, 'o-', label='-min')
-    ax1.legend()
-    ax1.set_title('max vort_yz')
-    ax1.set_xlabel('time t  [s]')
-    ax1.set_ylabel('max vort_yz  [1/s]')
-    ax2 = axes[1]
-    ax2.plot(timerange, vort_yz_sum, '-o')
-    ax2.set_title('sum vort_yz')
-    ax2.set_xlabel('time t  [s]')
-    ax2.set_ylabel('sum vort_yz  [1/s]')
-    fig.savefig(os.path.join(path_out, 'vort_yz_max_sum.png'))
-    ax3 = axes[2]
-    ax3.plot(timerange, vort_yz_env, '-o')
-    ax3.set_title('sum vort_yz env')
-    ax3.set_xlabel('time t  [s]')
-    ax3.set_ylabel('sum vort_yz  [1/s]')
-    fig.savefig(os.path.join(path_out, 'vort_yz_max_sum.png'))
-
-    dump_statistics_variable(vort_yz_max, 'vort_yz_max', 'timeseries', stats_file_name, path_out)
-    dump_statistics_variable(vort_yz_min, 'vort_yz_min', 'timeseries', stats_file_name, path_out)
-    dump_statistics_variable(vort_yz_sum, 'vort_yz_sum', 'timeseries', stats_file_name, path_out)
-    dump_statistics_variable(vort_yz_env, 'vort_yz_env', 'timeseries', stats_file_name, path_out)
+    #
+    #     # ym = np.int(3*ny_/3)
+    #     # ym = ny
+    #     # YM_, ZM_ = np.meshgrid(y_arr[:ym],z_arr[:kmax],indexing='ij')
+    #     # # compare streamfunction and streamlines
+    #     # fig, (ax1, ax2) = plt.subplots(1,2, figsize=(10,4))
+    #     # # # plt.imshow(psi[:,:40].T, origin='lower')
+    #     # a = ax1.contourf(YM_,ZM_,psi_1[:ym,:kmax])
+    #     # plt.colorbar(a, ax=ax1)
+    #     # # y_arr = np.arange(0,ny)
+    #     # # z_arr = np.arange(0,ny)
+    #     # ax1.streamplot(y_arr[:ym], z_arr[:kmax], v[ic,:ym,:kmax].T, w[ic,:ym,:kmax].T, density=1.5, color='k')
+    #     # # print '.....', y_arr.shape, z_arr.shape, ym, kmax, YM_.shape, ZM_.shape, v[ic,:ym,:kmax].shape, w[ic,:ym,:kmax].shape
+    #     # # ax1.streamplot(YM_,ZM_,v[ic,:ym,:kmax], w[ic,:ym,:kmax], density=1.5, color='k')
+    #     # b = ax2.contourf(y_arr[:ym], z_arr[:kmax], vort_yz[:ym,:kmax].T)
+    #     # ax2.streamplot(y_arr[:ym], z_arr[:kmax], v[ic,:ym,:kmax].T, w[ic,:ym,:kmax].T)
+    #     # plt.colorbar(b, ax=ax2)
+    #     # ax1.set_title('stream function (x(i-1)..x(i+1)')
+    #     # ax2.set_title('vorticity')
+    #     # plt.suptitle('t='+str(t0)+'s')
+    #     # plt.savefig(os.path.join(path_out, 'psi_1_t'+str(t0)+'s.png'))
+    #     # plt.close()
+    #
+    #     print('')
+    #
+    # # maximum vorticity
+    # fig, axes = plt.subplots(1,3, figsize=(15,5))
+    # ax1 = axes[0]
+    # ax1.plot(timerange, vort_yz_max, 'o-', label = 'max')
+    # ax1.plot(timerange, -vort_yz_min, 'o-', label='-min')
+    # ax1.legend()
+    # ax1.set_title('max vort_yz')
+    # ax1.set_xlabel('time t  [s]')
+    # ax1.set_ylabel('max vort_yz  [1/s]')
+    # ax2 = axes[1]
+    # ax2.plot(timerange, vort_yz_sum, '-o')
+    # ax2.set_title('sum vort_yz')
+    # ax2.set_xlabel('time t  [s]')
+    # ax2.set_ylabel('sum vort_yz  [1/s]')
+    # fig.savefig(os.path.join(path_out, 'vort_yz_max_sum.png'))
+    # ax3 = axes[2]
+    # ax3.plot(timerange, vort_yz_env, '-o')
+    # ax3.set_title('sum vort_yz env')
+    # ax3.set_xlabel('time t  [s]')
+    # ax3.set_ylabel('sum vort_yz  [1/s]')
+    # fig.savefig(os.path.join(path_out, 'vort_yz_max_sum.png'))
+    #
+    # dump_statistics_variable(vort_yz_max, 'vort_yz_max', 'timeseries', stats_file_name, path_out)
+    # dump_statistics_variable(vort_yz_min, 'vort_yz_min', 'timeseries', stats_file_name, path_out)
+    # dump_statistics_variable(vort_yz_sum, 'vort_yz_sum', 'timeseries', stats_file_name, path_out)
+    # dump_statistics_variable(vort_yz_env, 'vort_yz_env', 'timeseries', stats_file_name, path_out)
 
     return
 
@@ -329,6 +363,69 @@ def streamfunction_circular_flow():
     return
 
 
+def compute_streamfunction_simps5(v_, w_, rho0, i0, j0):
+    # int dy w(y,0)
+    yrange = np.arange(w_.shape[0])
+    # psi_A_ = integrate.simps(w_[:, 0], yrange[:])
+    rhow = np.zeros(shape=w_.shape)
+    for k in range(nz):
+        rhow[:,k] = rho0[k]*w_[:,k]
+    psi_A = integrate.simps(w_[:,:], yrange[:], axis=0)
+    print 'shapes: ', psi_A.shape
+    # print 'diff: ', (psi_A[0]-psi_A_)
+    krange = np.arange(v_.shape[1])
+    psi_B = integrate.simps(v_[0,:], krange[:], axis=0)
+
+    return psi_A
+
+
+def compute_streamfunction_simps4(v_, w_, rho0, t0):
+    # Psi(y,z) = \int_y0^y w(y',z)\rho_0(z) dy' + a(z)
+    # a(z) = -\int_z0^z u(y0,z) dz'
+    if v_.shape != w_.shape:
+        print('ERROR: input matrices do not have same shape')
+        sys.exit()
+    [ly,lz] = v_.shape
+    psi_A = np.zeros((ly,lz), dtype=np.double)     # psi_A = int dx v(x,y)
+    psi_B = np.zeros((ly,lz), dtype=np.double)     # psi_B = int dy u(x,y)
+    # psi_simps = np.zeros((ly,lz))                  # psi = int(v dx) - int(u dy) = psi_A - psi_B
+    for j in range(ly):
+        for k in range(lz):
+            # Simpson Rule
+            j0 = np.int(np.round(j/2))
+            k0 = np.int(np.round(k/2))
+            # (1)  \rho_0(z)*\int_y0^y w(y',z) dy'
+            psi_A[j,k] = rho0[k] * (j * dy) / 6 * (w_[0, k] + 4 * w_[j0, k] + w_[j, k])
+            # (2) a(z) =  -\int_z0^z u(y0,z) dz'
+            psi_B[j,k] = -  j * dy / 6 * (rho0[0]*v_[0, 0] + 4 * rho0[k0]*v_[0, k0] + rho0[k]*v_[0, k])
+    psi_simps = psi_A + psi_B
+
+    return psi_simps
+
+def compute_streamfunction_simps3(u_, v_, t0):
+    # Psi(x,y) = \int_y0^y w(x,y') dy' + a(x)
+    # a(x) = -\int_x0^x v(x',y0) dx'
+    if u_.shape != v_.shape:
+        print('ERROR: input matrices do not have same shape')
+        sys.exit()
+    [lx, ly] = u_.shape
+    psi_A = np.zeros((lx, ly), dtype=np.double)     # psi_A = int dx v(x,y)
+    psi_B = np.zeros((lx, ly), dtype=np.double)     # psi_B = int dy u(x,y)
+    psi_simps = np.zeros((lx, ly))                  # psi = int(v dx) - int(u dy) = psi_A - psi_B
+    for i in range(lx):
+        for j in range(ly):
+            # Simpson Rule
+            i0 = np.int(np.round(i/2))
+            j0 = np.int(np.round(j/2))
+            # (1)  \int_y0^y u(x,y') dy'
+            psi_B[i, j] = j * dy / 6 * (u_[i, 0] + 4 * u_[i, j0] + u_[i, j])
+            # (2) a(x) = -\int_x0^y v(x',y0)
+            psi_A[i, j] = - i * dx / 6 * (v_[0, 0] + 4 * v_[i0, 0] + v_[i, 0])
+    psi_simps = psi_A + psi_B
+
+    return psi_simps
+
+
 def compute_streamfunction_simps2(u_, v_, t0):
     # F(x) = int_c^x f(y) dy, with F(c) = 0
     if u_.shape != v_.shape:
@@ -343,8 +440,8 @@ def compute_streamfunction_simps2(u_, v_, t0):
             # Simpson Rule
             i0 = np.int(np.round(i/2))
             j0 = np.int(np.round(j/2))
-            psi_A[i, j] = i * dx / 6 * (v_[0, j] + 4 * v_[i0, j] + v_[i, j])
             psi_B[i, j] = j * dy / 6 * (u_[i, 0] + 4 * u_[i, j0] + u_[i, j])
+            psi_A[i, j] = i * dx / 6 * (v_[0, j] + 4 * v_[i0, j] + v_[i, j])
     psi_simps = psi_A - psi_B
 
     return psi_simps
@@ -461,10 +558,38 @@ def test_num_integration():
     return
 
 # ----------------------------------------------------------------------
+# PLOTTING
+
+def comparison_vort_yz_vort_xz(vort_xz_, vort_yz_, kmax, t0):
+    fig, axes = plt.subplots(1,3, figsize=(14,4), sharey='all')
+    y_arr = np.arange(0,ny_)
+    z_arr = np.arange(0,kmax)
+    Y_, Z_ = np.meshgrid(y_arr, z_arr)
+    plt.suptitle('t='+str(t0)+'s')
+    ax1 = axes[0]
+    # a = ax1.contourf(Y_,Z_,vort_xz_[:,:kmax])
+    a = ax1.imshow(vort_xz_[:,:].T, origin='lower')
+    ax1.autoscale(False)
+    # ax1.set_ylim([0,kmax])
+    # ax1.set_xlim([0,ny_])
+    ax1.set_title('vort_xz')
+    ax2 = axes[1]
+    b = ax2.imshow(vort_yz_[:,:].T, origin='lower')
+    ax2.set_title('vort_yz')
+    ax3 = axes[2]
+    c = ax3.imshow(vort_xz_[:,:].T-vort_yz_[:,:].T, origin='lower')
+    ax3.set_title('vort_xz - vort_yz')
+    plt.colorbar(a, ax=ax1)
+    plt.colorbar(b, ax=ax2)
+    plt.colorbar(c, ax=ax3)
+    plt.savefig(os.path.join(path_out, 'vort_xz_yz_t'+str(t0)+'s.png'))
+    plt.close()
+    return
+# ----------------------------------------------------------------------
 
 def set_input_output_parameters(args):
     print('--- set input parameters ---')
-    global path_in, path_out, path_stats, path_fields
+    global path, path_in, path_out, path_stats, path_fields
     if args.path:
         path = args.path
     else:
@@ -509,6 +634,8 @@ def set_input_output_parameters(args):
         kmax = np.int(args.kmax)
     else:
         kmax = 50
+    print('nx, ny, nz', nx, ny, nz)
+
 
     return timerange, kmax, nml
 
