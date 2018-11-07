@@ -17,15 +17,15 @@ plt.rcParams['axes.labelsize'] = 12
 # plt.rcParams['figure.titlesize'] = 35
 
 def main():
-    print('hello')
 
     # Parse information from the command line
     parser = argparse.ArgumentParser(prog='PyCLES')
     parser.add_argument("casename")
     parser.add_argument("path")
-    parser.add_argument("--timemin")
-    parser.add_argument("--timemax")
-    parser.add_argument("--k0")
+    parser.add_argument("--tmin")
+    parser.add_argument("--tmax")
+    parser.add_argument("--kmin")
+    parser.add_argument("--kmax")
     args = parser.parse_args()
 
     case_name = args.casename
@@ -34,7 +34,7 @@ def main():
         path_fields = os.path.join(path_in, 'fields')
     elif os.path.exists(os.path.join(path_in, 'fields_k120')):
         path_fields = os.path.join(path_in, 'fields_k120')
-    path_out = os.path.join(path_in, 'profiles')
+    path_out = os.path.join(path_in, 'figs_crosssections')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
 
@@ -97,17 +97,20 @@ def main():
         isep = dhalf
 
     ''' determine file range '''
-    if args.timemin:
-        time_min = np.int(args.timemin)
+    if args.tmin:
+        time_min = np.int(args.tmin)
     else:
         time_min = np.int(100)
-    if args.timemax:
-        time_max = np.int(args.timemax)
+    if args.tmax:
+        time_max = np.int(args.tmax)
     else:
         time_max = np.int(10000)
-    files = [name for name in os.listdir(path_fields) if name[-2:] == 'nc'
+    times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
              and np.int(name[:-3])>=time_min and np.int(name[:-3])<=time_max]
-    files.sort(key=len)
+    # times = [np.int(name[:-3]) for name in files]
+    times.sort()
+    print('times', times)
+    files = [str(t)+'.nc' for t in times]
     print('files', files)
 
     ''' --- auxiliary arrays (since no Grid.pyx) ---'''
@@ -136,34 +139,47 @@ def main():
     #
     #
     ''' (b) plot profiles for w, s for all time-steps '''
-    if args.k0:
-        k0 = np.int(args.k0)
+    if args.kmin:
+        kmin = np.int(args.kmin)
     else:
-        k0 = 0
+        kmin = 0
+    if args.kmax:
+        kmax = np.int(args.kmax)
+    else:
+        kmax = kmin
+    krange = np.arange(kmin, kmax + 1)
 
     zrange = np.arange(0, 1)
     var_list = ['w', 's']
     # var_list = ['s']
-    # -- 2D --
-    i0 = ic1 + isep
-    i_collision = np.int(ic1 + np.round((ic2 - ic1) / 2))  # double 3D
-    # plot_y_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, path_fields)
-
-    # -- 2D --
-    # j0 = np.int(jc1 + (ic2 - ic1) / 4)
-    # plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2, files, path_out, path_fields)
-    # -- 3D --
-    j0 = np.int(jc1 + isep)
-    plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic3, jc3, files, path_out, path_fields)
+    for k0 in krange:
+        print('---- k0: '+str(k0) + '----')
+    #     # -- 2D --
+    #     i0 = ic1 + isep
+    #     i_collision = np.int(ic1 + np.round((ic2 - ic1) / 2))  # double 3D
+    #     # plot_y_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, path_fields)
     #
-    # ''' (c) plot profiles at different levels for collision time '''
-    krange = [0, 2, 5,10]
-    # -- 2D --
-    # plot_yz_crosssections_multilevel('w', i_collision, krange, ic_arr, jc_arr, files, path_out, path_fields)
-    # -- 3D --
-    # j0 = np.int(jc1 + isep)
-    # plot_xz_crosssections_multilevel('w', j0, krange, ic_arr, jc_arr, files, path_out, path_fields)
+        # -- 2D --
+        # j0 = np.int(jc1 + (ic2 - ic1) / 4)
+        # plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2, files, path_out, path_fields)
+        # -- 3D --
+        # j0 = np.int(jc1 + isep)
+        # plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic3, jc3, files, path_out, path_fields)
 
+    # ''' (c) plot profiles at different levels for collision time '''
+    # krange_ = [0, 2, 5,10]
+    # krange_ = [1, 3, 4, 6]
+    krange_ = [7, 8, 9, 10]
+    krange_ = [0, 1, 2, 3]
+    krange_ = [4, 5, 6, 7]
+    # # -- 2D --
+    # # plot_yz_crosssections_multilevel('w', i_collision, krange, ic_arr, jc_arr, files, path_out, path_fields)
+    # # -- 3D --
+    j0 = np.int(jc1 + isep)
+    # # plot_xz_crosssections_multilevel('w', j0, krange, ic_arr, jc_arr, files, path_out, path_fields)
+    # i0 = ic3 + np.int(gw/2)
+    # plot_yz_crosssections_multilevel('w', i0, krange_, ic_arr, jc_arr, files, path_out, path_fields)
+    print ''
 
     return
 
@@ -171,10 +187,13 @@ def main():
 # ----------------------------------
 
 def plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2, files, path_out, path_fields):
+    # cm = plt.cm.get_cmap('bwr')
     cm = plt.cm.get_cmap('coolwarm')
     # cm = plt.cm.get_cmap('winter')
     # cm = plt.cm.get_cmap('viridis')
     # cm = plt.cm.get_cmap('viridis_r')
+
+    x_arr = dx*np.arange(0,nx)
 
 
     for var_name in var_list:
@@ -183,7 +202,8 @@ def plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2, files, path_out,
         var_min2 = 9999.9
         var_max2 = -9999.9
 
-        f1 = plt.figure(figsize=(6,12))
+        f1 = plt.figure(figsize=(12,12))
+        # f1 = plt.figure(figsize=(6,12))
         ax1 = plt.subplot(3, 1, 1)
         ax2 = plt.subplot(3, 1, 2)
         ax3 = plt.subplot(3, 1, 3)
@@ -193,6 +213,9 @@ def plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2, files, path_out,
         ax1.plot([0, nx-1], [j0, j0], 'k', linewidth=2)
         ax1.plot([ic1, ic1], [0, ny-1], 'k--', linewidth=1)
         ax1.plot([ic2, ic2], [0, ny-1], 'k--', linewidth=1)
+        ax1.set_xlim([0,nx])
+        ax1.set_ylim([0,ny])
+        count = 0
         for file in files:
             var = read_in_netcdf_fields(var_name, os.path.join(path_fields,file))
             if var_name == 's':
@@ -204,15 +227,17 @@ def plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2, files, path_out,
                 var_min2 = np.minimum(var_min2, np.amin(var[:, jc2, k0]))
             var_max1 = np.maximum(var_max1, np.amax(var[:,jc1,k0]))
             var_max2 = np.maximum(var_max2, np.amax(var[:,jc2,k0]))
-            count_color = np.double(file[:-3]) / np.double(files[-1][:-3])
-            ax2.plot(var[:,jc1,k0], color=cm(count_color), label='t='+str(file[:-3]))
-            ax3.plot(var[:,j0,k0], color=cm(count_color), label='t='+str(file[:-3]))
+            # count_color = np.double(file[:-3]) / np.double(files[-1][:-3])
+            count_color = np.double(count) / len(files)
+            ax2.plot(x_arr,var[:,jc1,k0], color=cm(count_color), label='t='+str(file[:-3]))
+            ax3.plot(x_arr,var[:,j0,k0], color=cm(count_color), label='t='+str(file[:-3]))
+            count += 1
 
         # print('minmax', var_min1, var_max1)
-        ax2.plot([ic1, ic1], [var_min1, var_max1], 'k--', linewidth=1)
-        ax2.plot([ic2, ic2], [var_min1, var_max1], 'k--', linewidth=1)
-        ax3.plot([ic1, ic1], [var_min2, var_max2], 'k--', linewidth=1)
-        ax3.plot([ic2, ic2], [var_min2, var_max2], 'k--', linewidth=1)
+        ax2.plot([dx*ic1, dx*ic1], [var_min1, var_max1], 'k--', linewidth=1.5)
+        ax2.plot([dx*ic2, dx*ic2], [var_min1, var_max1], 'k--', linewidth=1.5)
+        ax3.plot([dx*ic1, dx*ic1], [var_min2, var_max2], 'k--', linewidth=1.5)
+        ax3.plot([dx*ic2, dx*ic2], [var_min2, var_max2], 'k--', linewidth=1.5)
 
         plt.subplot(3, 1, 1)
         plt.xlabel('x')
@@ -304,7 +329,7 @@ def plot_xz_crosssections_multilevel(var_name, j0, krange, ic_arr, jc_arr, files
     ax4 = plt.subplot(nline, 1, 4)
     ax5 = plt.subplot(nline, 1, 5)
     s0 = read_in_netcdf_fields('s', os.path.join(path_fields, '0.nc'))
-    ax1.imshow(s0[:, :, 1].T)
+    ax1.imshow(s0[:, :, 1].T, origin='lower')
     ax1.plot([0, nx], [j0, j0], 'k', linewidth=2)
 
     for file in files:
@@ -353,10 +378,11 @@ def plot_yz_crosssections_multilevel(var_name, i0, krange, ic_arr, jc_arr, files
     ax4 = plt.subplot(nline, 1, 4)
     ax5 = plt.subplot(nline, 1, 5)
     s0 = read_in_netcdf_fields('s', os.path.join(path_fields, '0.nc'))
-    ax1.imshow(s0[:, :, 1].T)
+    ax1.imshow(s0[:, :, 1].T, origin='lower')
     # ax1.plot([ic1, ic1], [0, 2 * jc1], 'k', linewidth=2)
-    ax1.plot([i0, i0], [0, 2 * jc1], 'k', linewidth=2)
+    ax1.plot([i0, i0], [0, 4 * jc1], 'k', linewidth=2)
 
+    max = np.zeros(len(krange))
     for file in files:
         var = read_in_netcdf_fields(var_name, os.path.join(path_fields, file))
         # var_min1 = np.minimum(var_min1, np.amin(var[:, jc1, k0]))
@@ -367,13 +393,15 @@ def plot_yz_crosssections_multilevel(var_name, i0, krange, ic_arr, jc_arr, files
         ax3.plot(var[i0, :, krange[1]], color=cm(count_color), label='t=' + str(file[:-3]))
         ax4.plot(var[i0, :, krange[2]], color=cm(count_color), label='t=' + str(file[:-3]))
         ax5.plot(var[i0, :, krange[3]], color=cm(count_color), label='t=' + str(file[:-3]))
+        for n,k in enumerate(krange):
+            max[n] = np.maximum(max[n], np.amax(var[i0,:,k]))
 
     plt.subplot(nline, 1, 1)
     plt.xlabel('x')
     plt.ylabel('y')
     for n,k in enumerate(krange):
         plt.subplot(nline, 1, n+2)
-        plt.title('k='+str(k)+', z='+str(dz*k)+'m')
+        plt.title('k='+str(k)+', z='+str(dz*k)+'m, max=' + str(np.round(max[n], 1)))
         plt.ylabel(var_name)
         plt.xlabel('y')
     plt.subplot(nline,1,nline)

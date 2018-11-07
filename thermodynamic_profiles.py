@@ -2,6 +2,7 @@ import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 
+'''computing reference profiles in anelastic approximation: hydrostatic, adiabatic(=const entropy) profile'''
 
 def main():
     ''' parameters'''

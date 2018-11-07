@@ -440,7 +440,10 @@ def define_geometry(case_name, nml, files):
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
     elif case_name == 'ColdPoolDry_double_3D':
-        rstar = 5000.0  # half of the width of initial cold-pools [m]
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
         irstar = np.int(np.round(rstar / dx))
         # zstar = nml['init']['h']
         isep = 4 * irstar
@@ -452,7 +455,10 @@ def define_geometry(case_name, nml, files):
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
     elif case_name == 'ColdPoolDry_triple_3D':
-        rstar = 5000.0  # half of the width of initial cold-pools [m]
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
         irstar = np.int(np.round(rstar / dx))
         d = np.int(np.round(ny / 2))
         dhalf = np.int(np.round(ny / 4))

@@ -296,7 +296,26 @@ def define_geometry(case_name, nml):
     global icoll2, jcoll2, icoll3, jcoll3
     global shift, ishift, jshift
     global irstar
-    if case_name == 'ColdPoolDry_triple_3D':
+    if case_name == 'ColdPoolDry_double_3D':
+        flag = 'double'
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]        irstar = np.int(np.round(rstar / dx))
+        isep = 4 * irstar
+        jsep = 0
+        ic1 = np.int(nx / 3)
+        jc1 = np.int(ny / 2)
+        # ic2 = ic1 + isep
+        # jc2 = jc1 + jsep
+        shift = 40
+        nx_half = irstar + shift
+        ny_half = irstar + shift
+        ishift = np.max(nx_half - ic, 0)
+        jshift = np.max(ny_half - jc, 0)
+        nx_ = 2 * nx_half
+        ny_ = 2 * ny_half
+    elif case_name == 'ColdPoolDry_triple_3D':
         flag = 'triple'
         # d = np.int(np.round(ny / 2))
         d = np.int(np.round((ny + gw) / 2))
@@ -324,23 +343,6 @@ def define_geometry(case_name, nml):
         jcoll2 = np.int(jc1 + np.round(d / 2) -1)
         icoll3 = ic3 - np.int(np.sqrt(3) / 3 * d)
         jcoll3 = np.int(jc1 + np.round(d / 2))
-    elif case_name == 'ColdPoolDry_double_3D':
-        flag = 'double'
-        rstar = 5000.0
-        irstar = np.int(np.round(rstar / dx))
-        isep = 4 * irstar
-        jsep = 0
-        ic1 = np.int(nx / 3)
-        jc1 = np.int(ny / 2)
-        # ic2 = ic1 + isep
-        # jc2 = jc1 + jsep
-        shift = 40
-        nx_half = irstar + shift
-        ny_half = irstar + shift
-        ishift = np.max(nx_half - ic, 0)
-        jshift = np.max(ny_half - jc, 0)
-        nx_ = 2 * nx_half
-        ny_ = 2 * ny_half
 
     print('rstar: ' + str(rstar), irstar)
     print('ic1,jc1,id,jd', ic1, jc1, nx_half, ny_half)
