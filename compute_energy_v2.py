@@ -131,7 +131,8 @@ def main():
         krange = np.arange(0,nk+1)
         zrange = dz*krange
         nx_ = np.int(2./3*nx)
-        ny_ = np.int(2./3*ny)
+        ny_ = 120
+        # ny_ = np.int(2./3*ny)
         d = np.int(np.round(ny / 2)) + gw
         a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
         ic = np.int(np.round(a / 2)) - 2
@@ -850,35 +851,66 @@ def compute_vorticity(krange, kmax, timerange):
                 k = np.int(k)
                 vort_yz[j,ik+1] = (w_[j+1,k] - w_[j-1,k]) / (2*dy) - (v_[j,k+1] - v_[j,k-1]) / (2*dz)
 
-        ny_plot = 5
-        fig, axes = plt.subplots(ny_plot, 1, sharex=True, figsize=(12, 10))
-        plt.subplot(511)
-        plt.imshow(np.roll(np.roll(s[:, :, :], ishift, axis=0), jshift, axis=1)[:,:,0].T, origin='lower', alpha=0.4)
-        plt.imshow(np.roll(np.roll(s[:, :, :], ishift, axis=0), jshift, axis=1)[:nx_,:ny_,0].T, origin='lower')
-        plt.plot(ic+ishift,jc+jshift,'wo')
+        ny__ = ny_
+        ny_plot = 6
+        fig, axes = plt.subplots(ny_plot, 1, sharex=True, figsize=(12, 12))
+        plt.subplot(611)
+        # plt.imshow(np.roll(np.roll(s[:, :, :], ishift, axis=0), jshift, axis=1)[:,:,0].T, origin='lower', alpha=0.4)
+        plt.imshow(np.roll(np.roll(s[:, :, :], ishift, axis=0), jshift, axis=1)[:nx_, :ny__, 0].T, origin='lower')
+        plt.plot(ic + ishift, jc + jshift, 'wo')
         plt.plot([ic + ishift, ic + ishift], [0, ny], 'w-')
-        ax1 = plt.subplot(512)
-        cf = ax1.imshow(s_[:ny_,:nk].T, origin='lower')
-        plt.colorbar(cf, shrink=0.75)
+        ax1 = plt.subplot(612)
+        cf = ax1.imshow(s_[:ny__, :nk].T, origin='lower')
+        plt.colorbar(cf, shrink=1)
         ax1.set_title('s')
-        ax1.set_ylabel('z  (dz='+str(dz)+')')
-        ax2 = plt.subplot(513)
-        cf = ax2.imshow(vort_yz.T, origin='lower', cmap=cm_hsv)#, norm=colors.LogNorm(vmin=-4e-2,vmax=4e-2))
-        plt.colorbar(cf, shrink=0.75)
-        ax2.set_title('vorticity')
-        ax2.set_ylabel('z  (dz='+str(dz)+')')
-
-        ax2 = plt.subplot(514)
-        cf = ax2.imshow(v_[:ny_,:nk].T, origin='lower', cmap=cm_hsv)#, norm=colors.LogNorm(vmin=-4e-2,vmax=4e-2))
-        plt.colorbar(cf, shrink=0.75)
-        ax2.set_title('v')
-        ax2.set_ylabel('z  (dz='+str(dz)+')')
-        ax2 = plt.subplot(515)
-        cf = ax2.imshow(w_[:ny_,:nk].T, origin='lower', cmap=cm_hsv)#, norm=colors.LogNorm(vmin=-4e-2,vmax=4e-2))
-        plt.colorbar(cf, shrink=0.75)
+        ax1.set_ylabel('z  (dz=' + str(dz) + ')')
+        ax2 = plt.subplot(613)
+        levels = np.linspace(-5, 5, 100)
+        cf = ax2.imshow(w_[:ny__, :nk].T, vmin=-5, vmax=5, origin='lower', cmap=cm_bwr)
+        # , norm=colors.LogNorm(vmin=-4e-2,vmax=4e-2))
+        plt.colorbar(cf, shrink=1)
         ax2.set_title('w')
-        ax2.set_ylabel('z  (dz='+str(dz)+')')
-        ax2.set_xlabel('y  (dy='+str(dy)+')')
+        ax2.set_ylabel('z  (dz=' + str(dz) + ')')
+
+        ax2 = plt.subplot(614)
+        cf = ax2.imshow(v_[:ny__, :nk].T, origin='lower', cmap=cm_bwr)  # , norm=colors.LogNorm(vmin=-4e-2,vmax=4e-2))
+        plt.colorbar(cf, shrink=1)
+        ax2.set_title('v')
+        ax2.set_ylabel('z  (dz=' + str(dz) + ')')
+        ax2 = plt.subplot(615)
+        y_half = np.empty((ny__), dtype=np.double, order='c')
+        z_half = np.empty((nz), dtype=np.double, order='c')
+        count = 0
+        for j in xrange(ny__):
+            y_half[count] = (j + 0.5)  # * dy
+            count += 1
+        count = 0
+        for i in xrange(nz):
+            z_half[count] = (i + 0.5)  # * dz
+            count += 1
+        cf = ax2.imshow(s_[:ny_, :nk].T, origin='lower', alpha=0.4)
+        plt.colorbar(cf, shrink=1)
+        speed_yz = np.sqrt(v_[:ny_, :nk] * v_[:ny_, :nk] + w_[:ny_, :nk] * w_[:ny_, :nk])
+        lw = 5 * speed_yz[:, :] / speed_yz[:, :].max()
+        ax2.streamplot(y_half[:ny_], z_half[:nk], v_[:ny_, :nk].T, w_[:ny_, :nk].T,
+                       color='k', density=1.5,
+                       # linewidth=1.5)
+                       linewidth=lw.T)
+        ax2.set_title('streamlines')
+        ax2.set_ylabel('z  (dz=' + str(dz) + ')')
+        ax2 = plt.subplot(616)
+        cf = ax2.imshow(vort_yz[:ny_, :nk].T, origin='lower',
+                        cmap=cm_hsv)  # , norm=colors.LogNorm(vmin=-4e-2,vmax=4e-2))
+        plt.colorbar(cf, shrink=1)
+        ax2.set_title('vorticity')
+        ax2.set_ylabel('z  (dz=' + str(dz) + ')')
+        # ax2 = plt.subplot(313)
+        # cf = ax2.imshow(KE[:,:nk].T, origin='lower')
+        # plt.colorbar(cf, shrink=0.5)
+        # ax2.set_title('kinetic energy')
+        # ax2.set_ylabel('z  (dz='+str(dz)+')')
+        # plt.colorbar(shrink=0.5)
+        ax2.set_xlabel('y  (dy=' + str(dy) + ')')
         plt.suptitle('x-component of vorticity (t=' + str(t0) + 's)')
         fig.tight_layout()
         plt.savefig(os.path.join(path_out, '_vort_field_t'+str(t0)+'.png'))
