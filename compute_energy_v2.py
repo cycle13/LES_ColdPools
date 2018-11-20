@@ -47,7 +47,10 @@ def main():
 
     global cm_bwr, cm_grey, cm_vir, cm_hsv
     cm_bwr = plt.cm.get_cmap('bwr')
-    cm_vir = plt.cm.get_cmap('viridis')
+    try:
+        cm_vir = plt.cm.get_cmap('viridis')
+    except:
+        cm_vir = plt.cm.get_cmap('jet')
     cm_grey = plt.cm.get_cmap('gist_gray_r')
     cm_hsv = plt.cm.get_cmap('hsv')
 
@@ -124,7 +127,7 @@ def main():
         del contr, krange_, zrange_
         del mask
     else:
-        nk = 20
+        nk = 30
         krange = np.arange(0,nk+1)
         zrange = dz*krange
         nx_ = np.int(2./3*nx)
@@ -181,227 +184,228 @@ def main():
 
     for it,t0 in enumerate(timerange):
         print('t0: ' +str(t0) + 's')
-
-        ''' (a) kinetic Energy (KE) '''
-        # subtract radial velocity of rim (read in) >> make stats-file k-dependent
-
-        u = read_in_netcdf_fields('u', os.path.join(path_fields, str(t0) + '.nc'))
-        v = read_in_netcdf_fields('v', os.path.join(path_fields, str(t0) + '.nc'))
-        w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
-        s = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0) + '.nc'))
-
-        # subdomain >> consider crosssection in yz-plane
-        i0 = id
-        u_ = np.roll(np.roll(u[:, :, :], ishift, axis=0), jshift, axis=1)[i0,jc + jshift - jd:jc + jshift + jd + 1, :nz_]
-        v_ = np.roll(np.roll(v[:, :, :], ishift, axis=0), jshift, axis=1)[i0,jc + jshift - jd:jc + jshift + jd + 1, :nz_]
-        w_ = np.roll(np.roll(w[:, :, :], ishift, axis=0), jshift, axis=1)[i0,jc + jshift - jd:jc + jshift + jd + 1, :nz_]
-        s_ = np.roll(np.roll(s[:, :, :], ishift, axis=0), jshift, axis=1)[i0,jc + jshift - jd:jc + jshift + jd + 1, :nz_]
-        del u, v, w, s
-
-        u2 = u_ * u_
-        v2 = v_ * v_
-        w2 = w_ * w_
-
-        KEd = 0.5 * (u2 + v2 + w2)
-        KE = np.zeros((ny_,nz_))
-        print(KE.shape, KEd.shape, u2.shape, u_.shape, rho0.shape)
-        print(ny_, nz_)
-        for j in range(ny_):
-            for k in range(nz_):
-                KE[j,k] = 0.5 * rho0[k] * dV * KEd[j,k]
-        del u2, v2, w2
-
-
-        # total kinetic energy (KE)
-        # plt.figure()
-        fig, axes = plt.subplots(2, 1, figsize=(12, 6), sharex=True)
-        print(path_out)
-        plt.subplot(221)
-        im = plt.imshow(KEd[:, :60].T, origin='lower', cmap=cm_hsv, vmin=0, vmax=50)
-        plt.colorbar(im, shrink=0.5)
-        plt.title('KE density')
-        plt.subplot(223)
-        im = plt.imshow(KE[:, :60].T, origin='lower', cmap=cm_hsv, vmin=0, vmax=1e8)
-        plt.colorbar(im, shrink=0.5)
-        plt.title('KE')
-        plt.subplot(222)
-        im = plt.imshow(KEd[:, :60].T, origin='lower', cmap=cm_hsv,
-                        norm=colors.LogNorm(vmin=1e-5, vmax=1e2))  # norm=colors.LogNorm(vmin=Z1.min(), vmax=Z1.max()))
-        plt.colorbar(im, shrink=0.5)
-        plt.title('KE density')
-        plt.subplot(224)
-        im = plt.imshow(KE[:, :60].T, origin='lower', cmap=cm_hsv, norm=colors.LogNorm(vmin=1e1, vmax=1e8))
-        plt.colorbar(im, shrink=0.5)
-        plt.title('KE')
-        plt.savefig(os.path.join(path_out, 'KE_field_ic_t' + str(t0) + '.png'))
-        plt.close()
-
-        plt.figure()
-        im = plt.imshow(KE[:, :60].T, origin='lower', cmap=cm_hsv, norm=colors.LogNorm(vmin=1e1, vmax=1e8))
-
-        plt.colorbar(im, shrink=0.5)
-        plt.title('KE')
-        plt.savefig(os.path.join(path_out, 'KE_streamlines_ic_t' + str(t0) + '.png'))
-        plt.close()
-
-        plt.figure(figsize=(12, 6))
-        print(path_out)
-        plt.subplot(1, 2, 1)
-        plt.contourf(KEd.T)
-        plt.title('KE density')
-        plt.colorbar(shrink=0.5)
-        plt.subplot(1, 2, 2)
-        plt.contourf(KE.T)
-        plt.title('KE')
-        plt.colorbar(shrink=0.5)
-        plt.savefig(os.path.join(path_out, 'KE_contfig_ic_t' + str(t0) + '.png'))
-        plt.close()
-
-
-
-        # eddy kinetic energy (EKE)
-        # EKEd = np.zeros((ny_, nk))
-        # EKE = np.zeros((ny_, nk))
-        # print('.....')
-        # print('U_av: ', U_av[it,:])
-        # print('.....')
-        # for j in range(ny_):
-        #     for ik,k in enumerate(krange):
-        #         k = np.int(k)
-        #         EKEd[j,ik] = 0.5 * (u_[j,k] * u_[j,k] + (v_[j,k] - U_av[it,ik]) * (v_[j,k] - U_av[it,ik]) + w_[j,k] * w_[j,k])
-        #         EKE[j,ik] = 0.5 * rho0[k] * dV * EKEd[j,ik]
-        # plt.figure()
-        # print(path_out)
-        # plt.subplot(1, 2, 1)
-        # plt.imshow(EKEd.T, origin='lower')
-        # plt.title('EKE density')
-        # plt.subplot(1, 2, 2)
-        # plt.imshow(EKE.T, origin='lower')
-        # plt.title('EKE')
-        # plt.savefig(os.path.join(path_out, 'EKE_field_ic_t' + str(t0) + '.png'))
-        # plt.close()
-        #
-        # plt.figure(figsize=(12, 6))
-        # print(path_out)
-        # plt.subplot(1, 2, 1)
-        # plt.contourf(EKEd.T)
-        # plt.title('EKE density')
-        # plt.colorbar(shrink=0.5)
-        # plt.subplot(1, 2, 2)
-        # plt.contourf(EKE.T)
-        # plt.title('EKE')
-        # plt.colorbar(shrink=0.5)
-        # plt.savefig(os.path.join(path_out, 'EKE_contfig_ic_t' + str(t0) + '.png'))
-        # plt.close()
-        #
-        # # plot difference KE vs. EKE
-        # mask_file_name = 'rimmask_perc' + str(perc) + 'th' + '_t'+str(t0)+'.nc'
-        # rootgrp = nc.Dataset(os.path.join(path_in, mask_file_name), 'r')
-        # mask = rootgrp.groups['fields'].variables['mask'][i0, :, :]
-        # rim_out = rootgrp.groups['fields'].variables['rim_outer'][:, :, :]
-        # rootgrp.close()
-        # print('rim', rim_out.shape, np.amax(rim_out), np.count_nonzero(rim_out))
-        #
-        #
-        # auxd = np.zeros((ny_, nk))
-        # aux = np.zeros((ny_, nk))
-        # for ik, k in enumerate(krange):
-        #     k = np.int(k)
-        #     auxd[:, ik] = KEd[:, k]
-        #     aux[:, ik] = KE[:, k]
-        #
-        # npl_x = 3
-        # npl_y = 2
-        # jcshift = jd
-        # # auxd = np.zeros((ny_, nk))
-        # # aux = np.zeros((ny_, nk))
-        # # for ik, k in enumerate(krange):
-        # #     k = np.int(k)
-        # #     auxd[:, ik] = KEd[:, k]
-        # #     aux[:, ik] = KE[:, k]
-        # deltaj = 50
-        # plt.figure(figsize=(npl_x*4,5))
-        # plt.subplot(npl_y, npl_x, 1)
-        # plt.contourf((KEd[jcshift-10:jcshift+deltaj,:kmax+1]).T)
-        # plt.colorbar(shrink=0.5)
-        # plt.title('KE density')
-        # plt.ylabel('k  [-]')
-        # plt.subplot(npl_y, npl_x, 2)
-        # plt.contourf((EKEd[jcshift-10:jcshift+deltaj,:]).T)
-        # plt.title('EKE density')
-        # plt.colorbar(shrink=0.5)
-        # plt.subplot(npl_y, npl_x, 3)
-        # plt.contourf((auxd[jcshift-10:jcshift+deltaj,:] - EKEd[jcshift-10:jcshift+deltaj,:]).T)
-        # plt.title('KE density - EKE density')
-        # plt.colorbar(shrink=0.5)
-        # plt.subplot(npl_y, npl_x, 4)
-        # plt.contourf((KE[jcshift-10:jcshift+deltaj,:kmax+1]).T)
-        # plt.title('KE')
-        # plt.ylabel('k  [-]')
-        # plt.xlabel('y  [-]')
-        # plt.colorbar(shrink=0.5)
-        # plt.subplot(npl_y, npl_x, 5)
-        # plt.contourf((EKE[jcshift-10:jcshift+deltaj,:]).T)
-        # plt.title('EKE')
-        # plt.xlabel('y  [-]')
-        # plt.colorbar(shrink=0.5)
-        # plt.subplot(npl_y, npl_x, 6)
-        # plt.contourf((aux[jcshift-10:jcshift+deltaj,:] - EKE[jcshift-10:jcshift+deltaj,:]).T)
-        # plt.title('KE - EKE')
-        # plt.xlabel('y  [-]')
-        # plt.colorbar(shrink=0.5)
-        # for i in range(npl_x*npl_y):
-        #     ax = plt.subplot(npl_y,npl_x,i+1)
-        #     ax.plot(10*np.ones(len(krange)), krange, 'r-', zorder=2)
-        # plt.savefig(os.path.join(path_out, 'diff_ic_t' + str(t0) + '.png'))
-        # plt.close()
-        #
-        #
-        # plt.figure(figsize=(npl_x * 4, 5))
-        # ax = plt.subplot(npl_y, npl_x, 1)
-        # ax.contourf((KEd[jcshift - 10:jcshift + deltaj, :kmax + 1]).T)
-        # plt.title('KE density')
-        # plt.ylabel('k  [-]')
-        # # plt.colorbar(shrink=0.5)
-        # plt.subplot(npl_y, npl_x, 2)
-        # plt.imshow(rim_out[i0,:,:].T, origin='lower')
-        # plt.subplot(npl_y, npl_x, 3)
-        # plt.contourf(rim_out[i0,:,:].T)
-        # plt.subplot(npl_y, npl_x, 5)
-        # # ax.contourf((KEd[jcshift - 10:jcshift + deltaj, :kmax + 1]).T)
-        # print('levels', np.arange(0,1.1,1))
-        # plt.contour(rim_out[i0,:,:].T, levels=np.arange(0,1.1,1), linewidth=0.2, colors='k')
-        # # plt.colorbar()
-        # plt.subplot(npl_y, npl_x, 6)
-        # plt.contourf(rim_out[i0,:,:].T)
-        # # plt.plot(rim_out[])
-        # plt.savefig(os.path.join(path_out, 'diff_mask_ic_t' + str(t0) + '.png'))
-        # plt.close()
-        #
-        # # fig, axes = plt.subplots(1, 3, sharey=True)
-        # # for ax in axes:
-        # #     ax.contourf((KEd[jcshift - 10:jcshift + deltaj, :]).T)
-        # #     ax.plot(10 * np.ones(len(krange)), krange, 'r-', zorder=1)
-        # # # fig, axes = plt.subplots(npl_y, npl_x, sharey=True)
-        # # # # # print('axes: ', axes)
-        # # # for ax in axes:
-        # # # #     # print('ax', ax)
-        # # # #     # ax.contourf((KEd[jcshift - 10:jcshift + deltaj, :]).T)
-        # # #     ax.plot([0, 0], [0,1], 'r-')
-        # # plt.savefig(os.path.join(path_out, 'diff_ic_t' + str(t0) + '.png'))
-        # # plt.close()
-
-
-        del u_, v_, w_
-
-
-        ''' (b) Potential Energy (PE) '''
-
-
-
-
-    ''' compute Energies in mask '''
-    # compute_energies_in_mask(rho0, rho_unit, z_half, perc, nt, timerange)
+    #
+    #
+    #     ''' (a) kinetic Energy (KE) '''
+    #     # subtract radial velocity of rim (read in) >> make stats-file k-dependent
+    #
+    #     u = read_in_netcdf_fields('u', os.path.join(path_fields, str(t0) + '.nc'))
+    #     v = read_in_netcdf_fields('v', os.path.join(path_fields, str(t0) + '.nc'))
+    #     w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))
+    #     s = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0) + '.nc'))
+    #
+    #     # subdomain >> consider crosssection in yz-plane
+    #     i0 = id
+    #     u_ = np.roll(np.roll(u[:, :, :], ishift, axis=0), jshift, axis=1)[i0,jc + jshift - jd:jc + jshift + jd + 1, :nz_]
+    #     v_ = np.roll(np.roll(v[:, :, :], ishift, axis=0), jshift, axis=1)[i0,jc + jshift - jd:jc + jshift + jd + 1, :nz_]
+    #     w_ = np.roll(np.roll(w[:, :, :], ishift, axis=0), jshift, axis=1)[i0,jc + jshift - jd:jc + jshift + jd + 1, :nz_]
+    #     s_ = np.roll(np.roll(s[:, :, :], ishift, axis=0), jshift, axis=1)[i0,jc + jshift - jd:jc + jshift + jd + 1, :nz_]
+    #     del u, v, w, s
+    #
+    #     u2 = u_ * u_
+    #     v2 = v_ * v_
+    #     w2 = w_ * w_
+    #
+    #     KEd = 0.5 * (u2 + v2 + w2)
+    #     KE = np.zeros((ny_,nz_))
+    #     print(KE.shape, KEd.shape, u2.shape, u_.shape, rho0.shape)
+    #     print(ny_, nz_)
+    #     for j in range(ny_):
+    #         for k in range(nz_):
+    #             KE[j,k] = 0.5 * rho0[k] * dV * KEd[j,k]
+    #     del u2, v2, w2
+    #
+    #
+    #     # total kinetic energy (KE)
+    #     # plt.figure()
+    #     fig, axes = plt.subplots(2, 1, figsize=(12, 6), sharex=True)
+    #     print(path_out)
+    #     plt.subplot(221)
+    #     im = plt.imshow(KEd[:, :60].T, origin='lower', cmap=cm_hsv, vmin=0, vmax=50)
+    #     plt.colorbar(im, shrink=0.5)
+    #     plt.title('KE density')
+    #     plt.subplot(223)
+    #     im = plt.imshow(KE[:, :60].T, origin='lower', cmap=cm_hsv, vmin=0, vmax=1e8)
+    #     plt.colorbar(im, shrink=0.5)
+    #     plt.title('KE')
+    #     plt.subplot(222)
+    #     im = plt.imshow(KEd[:, :60].T, origin='lower', cmap=cm_hsv,
+    #                     norm=colors.LogNorm(vmin=1e-5, vmax=1e2))  # norm=colors.LogNorm(vmin=Z1.min(), vmax=Z1.max()))
+    #     plt.colorbar(im, shrink=0.5)
+    #     plt.title('KE density')
+    #     plt.subplot(224)
+    #     im = plt.imshow(KE[:, :60].T, origin='lower', cmap=cm_hsv, norm=colors.LogNorm(vmin=1e1, vmax=1e8))
+    #     plt.colorbar(im, shrink=0.5)
+    #     plt.title('KE')
+    #     plt.savefig(os.path.join(path_out, 'KE_field_ic_t' + str(t0) + '.png'))
+    #     plt.close()
+    #
+    #     plt.figure()
+    #     im = plt.imshow(KE[:, :60].T, origin='lower', cmap=cm_hsv, norm=colors.LogNorm(vmin=1e1, vmax=1e8))
+    #
+    #     plt.colorbar(im, shrink=0.5)
+    #     plt.title('KE')
+    #     plt.savefig(os.path.join(path_out, 'KE_streamlines_ic_t' + str(t0) + '.png'))
+    #     plt.close()
+    #
+    #     plt.figure(figsize=(12, 6))
+    #     print(path_out)
+    #     plt.subplot(1, 2, 1)
+    #     plt.contourf(KEd.T)
+    #     plt.title('KE density')
+    #     plt.colorbar(shrink=0.5)
+    #     plt.subplot(1, 2, 2)
+    #     plt.contourf(KE.T)
+    #     plt.title('KE')
+    #     plt.colorbar(shrink=0.5)
+    #     plt.savefig(os.path.join(path_out, 'KE_contfig_ic_t' + str(t0) + '.png'))
+    #     plt.close()
+    #
+    #
+    #
+    #     # eddy kinetic energy (EKE)
+    #     # EKEd = np.zeros((ny_, nk))
+    #     # EKE = np.zeros((ny_, nk))
+    #     # print('.....')
+    #     # print('U_av: ', U_av[it,:])
+    #     # print('.....')
+    #     # for j in range(ny_):
+    #     #     for ik,k in enumerate(krange):
+    #     #         k = np.int(k)
+    #     #         EKEd[j,ik] = 0.5 * (u_[j,k] * u_[j,k] + (v_[j,k] - U_av[it,ik]) * (v_[j,k] - U_av[it,ik]) + w_[j,k] * w_[j,k])
+    #     #         EKE[j,ik] = 0.5 * rho0[k] * dV * EKEd[j,ik]
+    #     # plt.figure()
+    #     # print(path_out)
+    #     # plt.subplot(1, 2, 1)
+    #     # plt.imshow(EKEd.T, origin='lower')
+    #     # plt.title('EKE density')
+    #     # plt.subplot(1, 2, 2)
+    #     # plt.imshow(EKE.T, origin='lower')
+    #     # plt.title('EKE')
+    #     # plt.savefig(os.path.join(path_out, 'EKE_field_ic_t' + str(t0) + '.png'))
+    #     # plt.close()
+    #     #
+    #     # plt.figure(figsize=(12, 6))
+    #     # print(path_out)
+    #     # plt.subplot(1, 2, 1)
+    #     # plt.contourf(EKEd.T)
+    #     # plt.title('EKE density')
+    #     # plt.colorbar(shrink=0.5)
+    #     # plt.subplot(1, 2, 2)
+    #     # plt.contourf(EKE.T)
+    #     # plt.title('EKE')
+    #     # plt.colorbar(shrink=0.5)
+    #     # plt.savefig(os.path.join(path_out, 'EKE_contfig_ic_t' + str(t0) + '.png'))
+    #     # plt.close()
+    #     #
+    #     # # plot difference KE vs. EKE
+    #     # mask_file_name = 'rimmask_perc' + str(perc) + 'th' + '_t'+str(t0)+'.nc'
+    #     # rootgrp = nc.Dataset(os.path.join(path_in, mask_file_name), 'r')
+    #     # mask = rootgrp.groups['fields'].variables['mask'][i0, :, :]
+    #     # rim_out = rootgrp.groups['fields'].variables['rim_outer'][:, :, :]
+    #     # rootgrp.close()
+    #     # print('rim', rim_out.shape, np.amax(rim_out), np.count_nonzero(rim_out))
+    #     #
+    #     #
+    #     # auxd = np.zeros((ny_, nk))
+    #     # aux = np.zeros((ny_, nk))
+    #     # for ik, k in enumerate(krange):
+    #     #     k = np.int(k)
+    #     #     auxd[:, ik] = KEd[:, k]
+    #     #     aux[:, ik] = KE[:, k]
+    #     #
+    #     # npl_x = 3
+    #     # npl_y = 2
+    #     # jcshift = jd
+    #     # # auxd = np.zeros((ny_, nk))
+    #     # # aux = np.zeros((ny_, nk))
+    #     # # for ik, k in enumerate(krange):
+    #     # #     k = np.int(k)
+    #     # #     auxd[:, ik] = KEd[:, k]
+    #     # #     aux[:, ik] = KE[:, k]
+    #     # deltaj = 50
+    #     # plt.figure(figsize=(npl_x*4,5))
+    #     # plt.subplot(npl_y, npl_x, 1)
+    #     # plt.contourf((KEd[jcshift-10:jcshift+deltaj,:kmax+1]).T)
+    #     # plt.colorbar(shrink=0.5)
+    #     # plt.title('KE density')
+    #     # plt.ylabel('k  [-]')
+    #     # plt.subplot(npl_y, npl_x, 2)
+    #     # plt.contourf((EKEd[jcshift-10:jcshift+deltaj,:]).T)
+    #     # plt.title('EKE density')
+    #     # plt.colorbar(shrink=0.5)
+    #     # plt.subplot(npl_y, npl_x, 3)
+    #     # plt.contourf((auxd[jcshift-10:jcshift+deltaj,:] - EKEd[jcshift-10:jcshift+deltaj,:]).T)
+    #     # plt.title('KE density - EKE density')
+    #     # plt.colorbar(shrink=0.5)
+    #     # plt.subplot(npl_y, npl_x, 4)
+    #     # plt.contourf((KE[jcshift-10:jcshift+deltaj,:kmax+1]).T)
+    #     # plt.title('KE')
+    #     # plt.ylabel('k  [-]')
+    #     # plt.xlabel('y  [-]')
+    #     # plt.colorbar(shrink=0.5)
+    #     # plt.subplot(npl_y, npl_x, 5)
+    #     # plt.contourf((EKE[jcshift-10:jcshift+deltaj,:]).T)
+    #     # plt.title('EKE')
+    #     # plt.xlabel('y  [-]')
+    #     # plt.colorbar(shrink=0.5)
+    #     # plt.subplot(npl_y, npl_x, 6)
+    #     # plt.contourf((aux[jcshift-10:jcshift+deltaj,:] - EKE[jcshift-10:jcshift+deltaj,:]).T)
+    #     # plt.title('KE - EKE')
+    #     # plt.xlabel('y  [-]')
+    #     # plt.colorbar(shrink=0.5)
+    #     # for i in range(npl_x*npl_y):
+    #     #     ax = plt.subplot(npl_y,npl_x,i+1)
+    #     #     ax.plot(10*np.ones(len(krange)), krange, 'r-', zorder=2)
+    #     # plt.savefig(os.path.join(path_out, 'diff_ic_t' + str(t0) + '.png'))
+    #     # plt.close()
+    #     #
+    #     #
+    #     # plt.figure(figsize=(npl_x * 4, 5))
+    #     # ax = plt.subplot(npl_y, npl_x, 1)
+    #     # ax.contourf((KEd[jcshift - 10:jcshift + deltaj, :kmax + 1]).T)
+    #     # plt.title('KE density')
+    #     # plt.ylabel('k  [-]')
+    #     # # plt.colorbar(shrink=0.5)
+    #     # plt.subplot(npl_y, npl_x, 2)
+    #     # plt.imshow(rim_out[i0,:,:].T, origin='lower')
+    #     # plt.subplot(npl_y, npl_x, 3)
+    #     # plt.contourf(rim_out[i0,:,:].T)
+    #     # plt.subplot(npl_y, npl_x, 5)
+    #     # # ax.contourf((KEd[jcshift - 10:jcshift + deltaj, :kmax + 1]).T)
+    #     # print('levels', np.arange(0,1.1,1))
+    #     # plt.contour(rim_out[i0,:,:].T, levels=np.arange(0,1.1,1), linewidth=0.2, colors='k')
+    #     # # plt.colorbar()
+    #     # plt.subplot(npl_y, npl_x, 6)
+    #     # plt.contourf(rim_out[i0,:,:].T)
+    #     # # plt.plot(rim_out[])
+    #     # plt.savefig(os.path.join(path_out, 'diff_mask_ic_t' + str(t0) + '.png'))
+    #     # plt.close()
+    #     #
+    #     # # fig, axes = plt.subplots(1, 3, sharey=True)
+    #     # # for ax in axes:
+    #     # #     ax.contourf((KEd[jcshift - 10:jcshift + deltaj, :]).T)
+    #     # #     ax.plot(10 * np.ones(len(krange)), krange, 'r-', zorder=1)
+    #     # # # fig, axes = plt.subplots(npl_y, npl_x, sharey=True)
+    #     # # # # # print('axes: ', axes)
+    #     # # # for ax in axes:
+    #     # # # #     # print('ax', ax)
+    #     # # # #     # ax.contourf((KEd[jcshift - 10:jcshift + deltaj, :]).T)
+    #     # # #     ax.plot([0, 0], [0,1], 'r-')
+    #     # # plt.savefig(os.path.join(path_out, 'diff_ic_t' + str(t0) + '.png'))
+    #     # # plt.close()
+    #
+    #
+    #     del u_, v_, w_
+    #
+    #
+    #     ''' (b) Potential Energy (PE) '''
+    #
+    #
+    #
+    #
+    # ''' compute Energies in mask '''
+    # # compute_energies_in_mask(rho0, rho_unit, z_half, perc, nt, timerange)
 
 
     return
@@ -874,6 +878,66 @@ def compute_vorticity(krange, kmax, timerange):
         plt.colorbar(cf, shrink=0.75)
         ax2.set_title('w')
         ax2.set_ylabel('z  (dz='+str(dz)+')')
+        ax2.set_xlabel('y  (dy='+str(dy)+')')
+        plt.suptitle('x-component of vorticity (t=' + str(t0) + 's)')
+        fig.tight_layout()
+        plt.savefig(os.path.join(path_out, '_vort_field_t'+str(t0)+'.png'))
+        plt.close()
+
+
+
+
+        ny_plot = 6
+        fig, axes = plt.subplots(ny_plot, 1, sharex=True, figsize=(12, 12))
+        plt.subplot(611)
+        # plt.imshow(np.roll(np.roll(s[:, :, :], ishift, axis=0), jshift, axis=1)[:,:,0].T, origin='lower', alpha=0.4)
+        plt.imshow(np.roll(np.roll(s[:, :, :], ishift, axis=0), jshift, axis=1)[:nx_,:ny_,0].T, origin='lower')
+        plt.plot(ic+ishift,jc+jshift,'wo')
+        plt.plot([ic + ishift, ic + ishift], [0, ny], 'w-')
+        ax1 = plt.subplot(612)
+        cf = ax1.imshow(s_[:ny_,:nk].T, origin='lower')
+        plt.colorbar(cf, shrink=1)
+        ax1.set_title('s')
+        ax1.set_ylabel('z  (dz='+str(dz)+')')
+        ax2 = plt.subplot(613)
+        levels = np.linspace(-5, 5, 100)
+        cf = ax2.imshow(w_[:ny_,:nk].T, vmin=-5, vmax=5, origin='lower', cmap=cm_bwr)
+        #, norm=colors.LogNorm(vmin=-4e-2,vmax=4e-2))
+        plt.colorbar(cf, shrink=1)
+        ax2.set_title('w')
+        ax2.set_ylabel('z  (dz='+str(dz)+')')
+
+        ax2 = plt.subplot(614)
+        cf = ax2.imshow(v_[:ny_,:nk].T, origin='lower', cmap=cm_bwr)#, norm=colors.LogNorm(vmin=-4e-2,vmax=4e-2))
+        plt.colorbar(cf, shrink=1)
+        ax2.set_title('v')
+        ax2.set_ylabel('z  (dz='+str(dz)+')')
+        ax2 = plt.subplot(615)
+        y_half = np.empty((ny_), dtype=np.double, order='c')
+        z_half = np.empty((nz), dtype=np.double, order='c')
+        count = 0
+        for j in xrange(ny_):
+            y_half[count] = (j + 0.5)# * dy
+            count += 1
+        count = 0
+        for i in xrange(nz):
+            z_half[count] = (i + 0.5)# * dz
+            count += 1
+        cf = ax2.imshow(s_[:ny_,:nk].T, origin='lower', alpha=0.4)
+        plt.colorbar(cf, shrink=1)
+        speed_yz = np.sqrt(v_[:ny_, :nk] * v_[:ny_, :nk] + w_[:ny_,:nk] * w_[:ny_,:nk])
+        lw = 5 * speed_yz[:, :] / speed_yz[:, :].max()
+        ax2.streamplot(y_half[:ny_], z_half[:nk], v_[:ny_,:nk].T, w_[:ny_,:nk].T,
+                       color='k', density=1.5,
+                       # linewidth=1.5)
+                       linewidth = lw.T)
+        ax2.set_title('streamlines')
+        ax2.set_ylabel('z  (dz='+str(dz)+')')
+        ax2 = plt.subplot(616)
+        cf = ax2.imshow(vort_yz[:ny_,:nk].T, origin='lower', cmap=cm_hsv)#, norm=colors.LogNorm(vmin=-4e-2,vmax=4e-2))
+        plt.colorbar(cf, shrink=1)
+        ax2.set_title('vorticity')
+        ax2.set_ylabel('z  (dz='+str(dz)+')')
         # ax2 = plt.subplot(313)
         # cf = ax2.imshow(KE[:,:nk].T, origin='lower')
         # plt.colorbar(cf, shrink=0.5)
@@ -885,6 +949,10 @@ def compute_vorticity(krange, kmax, timerange):
         fig.tight_layout()
         plt.savefig(os.path.join(path_out, 'vort_field_t'+str(t0)+'.png'))
         plt.close()
+
+
+
+
 
         ny_plot = 4
         fig, axes = plt.subplots(ny_plot, 1, sharex=True, figsize=(12, 10))

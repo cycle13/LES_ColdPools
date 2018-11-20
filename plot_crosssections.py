@@ -28,6 +28,7 @@ def main():
     parser.add_argument("--kmax")
     args = parser.parse_args()
 
+    global path_in, path_fields, path_out
     case_name = args.casename
     path_in = args.path
     if os.path.exists(os.path.join(path_in, 'fields')):
@@ -42,7 +43,7 @@ def main():
     # if not os.path.exists(out_path):
     #     os.mkdir(out_path)
 
-    global nx, ny, nz, dx, dy, dz
+    global nx, ny, nz, dx, dy, dz, gw
     nml = simplejson.loads(open(os.path.join(path_in, case_name + '.in')).read())
     nx = nml['grid']['nx']
     ny = nml['grid']['ny']
@@ -56,12 +57,16 @@ def main():
     # (a) double 3D
     global ic_arr, jc_arr
     if case_name == 'ColdPoolDry_double_3D':
-        rstar = 5000.0  # half of the width of initial cold-pools [m]
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
         irstar = np.int(np.round( rstar / dx ))
         # zstar = nml['init']['h']
         isep = 4 * irstar
         jsep = 0
-        ic1 = np.int(np.round( ( nx + 2*gw) / 3)) - gw
+        # ic1 = np.int(np.round( ( nx + 2*gw) / 3)) - gw
+        ic1 = np.int(np.round( ( nx - gw) / 3)) + 1
         jc1 = np.int(np.round( (ny + 2*gw) / 2)) - gw
         ic2 = ic1 + isep
         jc2 = jc1 + jsep
@@ -69,7 +74,10 @@ def main():
         jc_arr = [jc1, jc2]
     # (b) double 2D
     elif case_name == 'ColdPoolDry_double_2D':
-        rstar = 5000.0  # half of the width of initial cold-pools [m]
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
         irstar = np.int(np.round(rstar / dx))
         # zstar = nml['init']['h']
         isep = 4 * irstar
@@ -80,7 +88,10 @@ def main():
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
     elif case_name == 'ColdPoolDry_triple_3D':
-        rstar = 5000.0  # half of the width of initial cold-pools [m]
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
         irstar = np.int(np.round(rstar / dx))
         d = np.int(np.round(ny / 2))
         dhalf = np.int(np.round(ny / 4))
@@ -95,6 +106,7 @@ def main():
         jc_arr = [jc1, jc2, jc3]
 
         isep = dhalf
+    print('ic, jc: ', ic_arr, jc_arr)
 
     ''' determine file range '''
     if args.tmin:
@@ -115,8 +127,9 @@ def main():
 
     ''' --- auxiliary arrays (since no Grid.pyx) ---'''
     # test file:
-    var = read_in_netcdf_fields('u', os.path.join(path_fields, files[0]))
+    var = read_in_netcdf_fields('s', os.path.join(path_fields, files[0]))
     [nx_, ny_, nz_] = var.shape
+    plot_configuration(var)
 
     x_half = np.empty((nx_), dtype=np.double, order='c')
     y_half = np.empty((ny_), dtype=np.double, order='c')
@@ -154,11 +167,11 @@ def main():
     # var_list = ['s']
     for k0 in krange:
         print('---- k0: '+str(k0) + '----')
-    #     # -- 2D --
-    #     i0 = ic1 + isep
-    #     i_collision = np.int(ic1 + np.round((ic2 - ic1) / 2))  # double 3D
-    #     # plot_y_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, path_fields)
-    #
+        # # -- 2D --
+        # i0 = ic1 + isep
+        # i_collision = np.int(ic1 + np.round((ic2 - ic1) / 2))  # double 3D
+        # # plot_y_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, path_fields)
+
         # -- 2D --
         # j0 = np.int(jc1 + (ic2 - ic1) / 4)
         # plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2, files, path_out, path_fields)
@@ -168,22 +181,49 @@ def main():
 
     # ''' (c) plot profiles at different levels for collision time '''
     # krange_ = [0, 2, 5,10]
-    # krange_ = [1, 3, 4, 6]
-    krange_ = [7, 8, 9, 10]
-    krange_ = [0, 1, 2, 3]
-    krange_ = [4, 5, 6, 7]
-    # # -- 2D --
-    # # plot_yz_crosssections_multilevel('w', i_collision, krange, ic_arr, jc_arr, files, path_out, path_fields)
-    # # -- 3D --
-    j0 = np.int(jc1 + isep)
-    # # plot_xz_crosssections_multilevel('w', j0, krange, ic_arr, jc_arr, files, path_out, path_fields)
+    krange_ = [1, 3, 4, 6]
+    # krange_ = [7, 8, 9, 10]
+    # krange_ = [0, 1, 2, 3]
+    # krange_ = [4, 5, 6, 7]
+    # # # -- 2D --
+    # # # plot_yz_crosssections_multilevel('w', i_collision, krange, ic_arr, jc_arr, files, path_out, path_fields)
+    # # # -- 3D --
+    # j0 = np.int(jc1 + isep)
+    # # # plot_xz_crosssections_multilevel('w', j0, krange, ic_arr, jc_arr, files, path_out, path_fields)
     # i0 = ic3 + np.int(gw/2)
-    # plot_yz_crosssections_multilevel('w', i0, krange_, ic_arr, jc_arr, files, path_out, path_fields)
+    i0 = 0.5*(ic1+ic2)
+    plot_yz_crosssections_multilevel('w', i0, krange_, ic_arr, jc_arr, files, path_out, path_fields)
     print ''
 
     return
 
 
+# ----------------------------------
+
+def plot_configuration(var):
+    fig, (ax1, ax2)= plt.subplots(1,2)
+    ax1.imshow(var[:, :, 0].T, origin='lower')
+    ax1.plot([ic_arr[0], ic_arr[0]], [0, ny-1], 'w', linewidth=1)
+    ax1.plot([0, nx], [jc_arr[0], jc_arr[0]], 'w', linewidth=1)
+    ax1.set_xlabel('x')
+    ax1.set_ylabel('y')
+    plt.tight_layout()
+    ax1.set_xlim(0,nx)
+    ax1.set_ylim(0,ny)
+    ax2.contourf(var[:, :, 0].T, origin='lower')
+    ax2.plot([ic_arr[0], ic_arr[0]], [0, ny-1], 'w', linewidth=1)
+    ax2.plot([0, nz], [jc_arr[0], jc_arr[0]], 'w', linewidth=1)
+    ax2.set_xlabel('x')
+    plt.tight_layout()
+    ax2.set_xlim(70,130)
+    ax2.set_ylim(120,180)
+    print('gw', gw, ic_arr[0])
+    ax2.set_aspect('equal')
+    plt.savefig(os.path.join(path_out, 'initial.png'))
+    plt.close()
+
+
+    return
 # ----------------------------------
 
 def plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2, files, path_out, path_fields):
@@ -381,6 +421,8 @@ def plot_yz_crosssections_multilevel(var_name, i0, krange, ic_arr, jc_arr, files
     ax1.imshow(s0[:, :, 1].T, origin='lower')
     # ax1.plot([ic1, ic1], [0, 2 * jc1], 'k', linewidth=2)
     ax1.plot([i0, i0], [0, 4 * jc1], 'k', linewidth=2)
+    ax1.set_xlim(0,nx)
+    ax1.set_ylim(0,ny)
 
     max = np.zeros(len(krange))
     for file in files:

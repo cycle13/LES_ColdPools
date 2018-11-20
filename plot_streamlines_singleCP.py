@@ -177,11 +177,13 @@ def plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed,
 
     plt.colorbar(ax)
     if not vary:
-        plt.streamplot(y_arr[jmin:jmax], z_arr[:kmax], vel[1,i0,jmin:jmax,:kmax].T, w_[:,:kmax].T, color='k', density=1.5, linewidth=1.5)
+        plt.streamplot(y_arr[jmin:jmax], z_arr[:kmax], vel[1,i0,jmin:jmax,:kmax].T, w_[:,:kmax].T,
+                       color='k', density=1.5, linewidth=1.5)
     elif vary:
         #  Varying line width along a streamline
         lw = 5 * speed[i0,:,:] / speed[i0,:,:].max()
-        plt.streamplot(y_arr[jmin:jmax], z_arr[:kmax], vel[1, i0, jmin:jmax, :kmax].T, w_[jmin:jmax,:kmax].T, color='k',
+        plt.streamplot(y_arr[jmin:jmax], z_arr[:kmax], vel[1, i0, jmin:jmax, :kmax].T, w_[jmin:jmax,:kmax].T,
+                       color='k',
                     density=1.5,
                     linewidth = lw[jmin:jmax, :kmax].T)
 

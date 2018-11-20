@@ -47,10 +47,26 @@ def main():
     print('threshold for ds=s-s_bg: '+str(s_crit)+ 'K')
     print('')
 
-    i0_coll = ic_arr[2]
-    i0_center = ic_arr[0]
-    j0_coll = jc_arr[2]
-    j0_center = jc_arr[0]
+    if case_name == 'ColdPoolDry_triple_3D':
+        i0_coll = ic_arr[2]
+        i0_center = ic_arr[0]
+        j0_coll = jc_arr[2]
+        j0_center = jc_arr[0]
+        # domain boundaries for plotting
+        xmin_plt = 0
+        xmax_plt = nx
+        ymin_plt = xmin_plt
+        ymax_plt = xmax_plt
+    elif case_name == 'ColdPoolDry_double_3D':
+        i0_coll = 0.5*(ic_arr[0]+ic_arr[1])
+        i0_center = ic_arr[0]
+        j0_coll = jc_arr[0]
+        j0_center = jc_arr[0]
+        # domain boundaries for plotting
+        xmin_plt = 30
+        xmax_plt = 230
+        ymin_plt = xmin_plt
+        ymax_plt = xmax_plt
     dzi = 1./dz
 
     ''' background entropy '''
@@ -58,7 +74,7 @@ def main():
         s0 = read_in_netcdf_fields('s', os.path.join(path_fields, '0.nc'))
     except:
         s0 = read_in_netcdf_fields('s', os.path.join(path_fields, '100.nc'))[ic_arr[2],jc_arr[0],5]
-    s_bg = s0[ic_arr[2],jc_arr[0],5]
+    s_bg = s0[i0_coll,jc_arr[0],5]
     smax = np.amax(s0)
     smin = np.amin(s0)
     # del s
@@ -70,15 +86,22 @@ def main():
     w_max = np.zeros((2, nt, nx, ny))
     CP_top = np.zeros((nt, nx, ny))
     CP_top_grad = np.zeros((nt, nx, ny))
+    # xmax = 250
+    xmax = nx
     for it,t0 in enumerate(times):
         print('--- t: ', it, t0)
-        s = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0)+'.nc'))
-        w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0)+'.nc'))
+        s = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0)+'.nc'))[:xmax,:,:]
+        w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0)+'.nc'))[:xmax,:,:]
 
         kmax = kstar + 20
 
         if case_name == 'ColdPoolDry_triple_3D':
             i_eps_min = ic_arr[2]-irstar
+            j_eps_min = jc_arr[0]-2*irstar
+            deltax = 3*irstar
+            deltay = irstar
+        elif case_name == 'ColdPoolDry_double_3D':
+            i_eps_min = i0_coll-irstar
             j_eps_min = jc_arr[0]-2*irstar
             deltax = 3*irstar
             deltay = irstar
@@ -111,7 +134,8 @@ def main():
 
 
         '''plot contour-figure of CP_top, w_max, height of w_max (xy-plane)'''
-        plot_contourf_xy(CP_top[it,:,:], w_max[:,it,:,:], t0)
+        plot_contourf_xy(CP_top[it,xmin_plt:xmax_plt,ymin_plt:ymax_plt],
+                         w_max[:,it,xmin_plt:xmax_plt,ymin_plt:ymax_plt], t0)
         plot_contourf_test_yz(s, smin, smax, CP_top[it,:,:], kmax, t0)
 
 
@@ -140,10 +164,11 @@ def main():
         # plt.close(fig)
 
     ''' plotting all times '''
+
     i1 = ic_arr[0]
-    i2 = ic_arr[2]
+    i2 = i0_coll
     # i2 =
-    j1 = jc_arr[2]
+    j1 = j0_coll
     j2 = ic_arr[0]
     plot_x_crosssections(s0, CP_top, w_max, j1, j2)
     plot_x_crosssections_CPtop_w(s0, CP_top, w_max, j1, j2)
