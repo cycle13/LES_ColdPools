@@ -32,6 +32,8 @@ def main():
     parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("casename")
     parser.add_argument("path")
+    parser.add_argument("zparams")
+    parser.add_argument("rparams")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
     parser.add_argument("--kmin")
@@ -39,34 +41,32 @@ def main():
     args = parser.parse_args()
 
     files, times, krange, nml = set_inpout_parameters(args)
-
-    var_list = ['w', 's', 'temperature']
-    minmax = {}
-    minmax['time'] = times
-    for var_name in var_list:
-        minmax[var_name] = {}
-        minmax[var_name]['max'] = np.zeros(len(files), dtype=np.double)
-        minmax[var_name]['min'] = np.zeros(len(files), dtype=np.double)
-    # minmax['w'] = {}
-    # minmax['s'] = {}
-    # minmax['temp'] = {}
-
-    for var_name in var_list:
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6,8), sharex='all')
-        for it, t0 in enumerate(times):
-            var = read_in_netcdf_fields(var_name, os.path.join(path_fields, str(t0)+'.nc'))
-            minmax[var_name]['max'][it] = np.amax(var)
-            minmax[var_name]['min'][it] = np.amin(var)
-        ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=var_name)
-        ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=var_name)
-        # ax1.set_xlabel('time [s]')
-        ax1.set_ylabel('max('+var_name+')')
-        ax2.set_xlabel('time [s]')
-        ax2.set_ylabel('min('+var_name+')')
-        fig.suptitle('min, max of '+var_name)
-        fig.tight_layout()
-        fig.savefig(os.path.join(path_out_figs, var_name+'_minmax.png'))
-        plt.close(fig)
+    #
+    # var_list = ['w', 's', 'temperature']
+    # minmax = {}
+    # minmax['time'] = times
+    # for var_name in var_list:
+    #     minmax[var_name] = {}
+    #     minmax[var_name]['max'] = np.zeros(len(files), dtype=np.double)
+    #     minmax[var_name]['min'] = np.zeros(len(files), dtype=np.double)
+    # # minmax['w'] = {}
+    # # minmax['s'] = {}
+    # # minmax['temp'] = {}
+    #
+    # for var_name in var_list:
+    #     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5,12))
+    #     for it, t0 in enumerate(times):
+    #         var = read_in_netcdf_fields(var_name, os.path.join(path_fields, str(t0)+'.nc'))
+    #         minmax[var_name]['max'][it] = np.amax(var)
+    #         minmax[var_name]['min'][it] = np.amin(var)
+    #     ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=var_name)
+    #     ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=var_name)
+    #     ax1.set_title('max('+var_name+')')
+    #     ax1.set_xlabel('time [s]')
+    #     ax2.set_title('min('+var_name+')')
+    #     ax2.set_xlabel('time [s]')
+    #     fig.savefig(os.path.join(path_out_figs, var_name+'_minmax.png'))
+    #     plt.close(fig)
 
     return
 
@@ -76,19 +76,15 @@ def main():
 # ----------------------------------
 def set_inpout_parameters(args):
     print ''' setting parameters '''
-    global path_in, path_out_data, path_out_figs, path_fields
-    path_in = args.path
-    if os.path.exists(os.path.join(path_in, 'fields')):
-        path_fields = os.path.join(path_in, 'fields')
-    elif os.path.exists(os.path.join(path_in, 'fields_k120')):
-        path_fields = os.path.join(path_in, 'fields_k120')
-    print path_in
-    path_out_data = os.path.join(path_in, 'data_analysis')
+    global path_in, path_out_data, path_out_figs
+    path_root = args.path
+    path_out_data = os.path.join(path_root, 'data_analysis')
     if not os.path.exists(path_out_data):
         os.mkdir(path_out_data)
     path_out_figs = os.path.join(path_in, 'figs_minmax')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
+    print path_in
     print path_out_data
     print path_out_figs
     print path_fields

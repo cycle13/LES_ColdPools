@@ -6,11 +6,14 @@
 dTh=$1
 
 path="/cond1/meyerbe/ColdPools/single_3D_noise/"
+casename="ColdPoolDry_single_3D"
 
 if [ $dTh -eq 3 ]
 then
-  z_params=( 2000 500 1000 2000 )
-  r_params=( 2000 2000 1000 500 )
+  #z_params=( 2000 500 1000 2000 )
+  #r_params=( 2000 2000 1000 500 )
+  z_params=( 2000 )
+  r_params=( 2000 )
 elif [ $dTh -eq 2 ]
 then
   z_params=( 2450 1225 815 )
@@ -29,12 +32,12 @@ n_tot=$(( $n_geom*$n_therm ))
 echo "dTh:" $dTh
 echo "#geometry parameters:" $n_geom
 
-
+echo "MIN MAX ALL"
+python compute_minmax_all.py $casename $path $z_params $r_params
 
 count_geom=0
 while [ $count_geom -lt $n_geom ]
 do
-  # 'echo $z_params' will output only the first element.
   zstar=${z_params[$count_geom]}
   rstar=${r_params[$count_geom]}
   echo "parameters:" $zstar $rstar
@@ -45,8 +48,10 @@ do
   fullpath=$path$id
   echo $fullpath
   
-  python plot_streamlines_singleCP.py ColdPoolDry_single_3D $fullpath
-  
+  # PLOT STREAMLINES 
+  #python plot_streamlines_singleCP.py ColdPoolDry_single_3D $fullpath
+  # MIN MAX VALUES (w, s)
+  python compute_minmax.py $casename $fullpath --tmin 100 --tmax 3600
 
   # use the sleep command to add delay fora  specified amoutn of time
   # s for seconds (default); m for minutes; h for hours; d for days
