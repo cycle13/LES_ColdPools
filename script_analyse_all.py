@@ -40,8 +40,25 @@ print path_out_data
 print path_out_figs
 
 dTh_range = [3]
-zstar_range = [2000, 1000]
-rstar_range = [2000, 1000]
+zstar_range = [4000, 2000, 2000, 1500, 1000, 1000, 670, 2000, 500, 250 ]
+zstar_range = [4000, 1500, 670, 250]
+rstar_range = [250, 670, 1500, 4000]
+n_thermo = len(dTh_range)
+n_geom = len(zstar_range)
+thermo_parameters = np.asarray(dTh_range)
+geom_parameters = np.zeros((n_thermo, 2, n_geom), dtype=np.int)
+geom_parameters[0,0,:] = zstar_range
+geom_parameters[0,1,:] = rstar_range
+# geom_parameters[0, :] = [4000, 2000, 2000, 1500, 1000, 1000, 670, 2000, 500, 250 ]
+
+
+# thermo_parameters
+test_arr = np.zeros((3, 2))
+test_arr[0,0] = 3
+# test_arr[0,1] = [1 2]
+print('...', test_arr)
+# test_list = {}
+# test_list
 
 if args.kmin:
     kmin = np.int(args.kmin)
@@ -64,6 +81,9 @@ dt = 100
 times = np.arange(tmin, tmax + dt, dt)
 
 
-compute_minmax(dTh_range, zstar_range, rstar_range,
-               kmin, kmax, times, path_root, case_name)
+
+# compute_minmax(dTh_range, zstar_range, rstar_range,
+#                 kmin, kmax, times, path_root, case_name)
+compute_minmax(thermo_parameters, geom_parameters, kmin, kmax, times,
+               case_name, path_root, path_out_figs, path_out_data)
 

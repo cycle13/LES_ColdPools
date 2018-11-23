@@ -97,7 +97,7 @@ def main():
         kmax = np.int(args.kmax)
     else:
         kmax = 5
-    krange = np.arange(kmin, kmax+1, 1)
+    krange = np.arange(kmin, kmax + 1, 1)
     nk = len(krange)
 
     # percentile for threshold
@@ -119,7 +119,10 @@ def main():
 
     global cm_bwr, cm_grey, cm_vir
     cm_bwr = plt.cm.get_cmap('bwr')
-    cm_vir = plt.cm.get_cmap('viridis')
+    try:
+        cm_vir = plt.cm.get_cmap('viridis')
+    except:
+        cm_vir = plt.cm.get_cmap('jet')
     cm_grey = plt.cm.get_cmap('gist_gray_r')
     set_colorbars(cm_bwr, cm_vir, cm_grey)      # to set colorbars as global functions in define_cp_rim_plottingfct.py
 
@@ -127,7 +130,7 @@ def main():
     global nx_, ny_
     if case_name == 'ColdPoolDry_triple_3D':
         flag = 'triple'
-        # d = np.int(np.round(ny / 2))      # nbi
+        # d = np.int(np.round(ny / 2))
         d = np.int(np.round(ny / 2)) + gw
         a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
         try:
@@ -169,6 +172,13 @@ def main():
     print('rstar: '+str(rstar), irstar)
     print('ic,jc,id,jd', ic, jc, id, jd)
     print('nx_,ny_', nx_, ny_)
+    print('shift, ishift, jshift', shift, ishift, jshift)
+
+
+    # (A) read in w-field
+    #       - shift field (roll) and define partial domain where to look for cold pool
+    # (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)
+    # (C) Define rim of cold pool as the outline of the mask; based on number of neighbours
 
     # define general arrays
     dphi = 6        # angular resolution for averaging of radius
@@ -195,6 +205,7 @@ def main():
         else:
             dt = t0
         print('--- time: '+ str(t0), '(dt='+str(dt)+') ---')
+        print('nx_, ny_', nx_, ny_, 'id, jd', id, jd, shift)
 
         ''' create mask file for time step t0'''
         mask_file_name = 'rimmask_perc' + str(perc) + 'th' + '_t' + str(t0) + '.nc'
@@ -208,11 +219,12 @@ def main():
 
         for ik,k0 in enumerate(krange):
             print('level: k=' + str(k0), '(z=' + str(k0 * dz) + 'm)')
-            # w_roll = np.roll(np.roll(w[:, :, k0], ishift, axis=0), jshift, axis=1)    # nbi
-            w_roll = np.roll(w[:, :, :], [ishift, jshift], [0, 1])
+            w_roll = np.roll(np.roll(w[:, :, k0], ishift, axis=0), jshift, axis=1)
+            # w_roll = np.roll(w[:, :, :], [ishift, jshift], [0, 1])
             w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift, k0]
             icshift = id
             jcshift = jd
+            print('icshift', icshift, ic + ishift)
 
             # if flag == 'triple':
             #     plot_yz_crosssection(w, ic, path_out, t0)
@@ -281,6 +293,7 @@ def main():
                 i += 1
 
 
+
             ''' (b) find inner & outer rim '''
             rim_int = np.zeros((nx_, ny_), dtype=np.int)
             rim_out = np.zeros((nx_, ny_), dtype=np.int)
@@ -313,26 +326,28 @@ def main():
             # plot_outlines(perc, w_mask, rim_int, rim_out, rim_list_out, rim_aux, rmax2, icshift, jcshift, imin, imax, jmin, jmax,
             #               nx_, ny_, k0, t0, path_out)
 
-            # plt.figure()
-            # plt.subplot(131)
-            # plt.contourf(w_mask.mask.T, origin='lower')
-            # plt.colorbar()
-            # plt.title('w_mask.mask')
-            # ax = plt.subplot(132)
-            # ax.imshow(w_mask.mask.T, origin='lower')
-            # plt.plot([imin, imin], [0, ny_ - 1], 'w', linewidth=1)
-            # plt.plot([imax, imax], [0, ny_ - 1], 'w', linewidth=1)
-            # circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
-            # ax.add_artist(circle1)
-            # plt.title('w_mask.mask')
-            # ax = plt.subplot(133)
-            # ax.imshow(mask_aux.T, origin='lower')
-            # circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
-            # ax.add_artist(circle1)
-            # plt.plot(icshift,jcshift,'ow',markersize=5)
-            # plt.title('mask_aux')
-            # plt.savefig(os.path.join(path_out,'test_mask_aux_t'+str(t0)+'.png'))
-            # plt.close()
+            plt.figure()
+            plt.subplot(131)
+            plt.imshow(w_mask.mask.T, origin='lower')
+            plt.colorbar(shrink=0.3)
+            plt.title('w_mask.mask')
+            ax = plt.subplot(132)
+            ax.imshow(w_mask.mask.T, origin='lower')
+            plt.colorbar(shrink=0.3)
+            plt.plot([imin, imin], [0, ny_ - 1], 'w', linewidth=1)
+            plt.plot([imax, imax], [0, ny_ - 1], 'w', linewidth=1)
+            circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
+            ax.add_artist(circle1)
+            plt.title('w_mask.mask')
+            ax = plt.subplot(133)
+            ax.imshow(mask_aux.T, origin='lower')
+            circle1 = plt.Circle((icshift, jcshift), np.sqrt(rmax2), fill=False, color='w')
+            ax.add_artist(circle1)
+            plt.plot(icshift, jcshift, 'ow', markersize=5)
+            plt.tight_layout()
+            plt.title('mask_aux')
+            plt.savefig(os.path.join(path_out, 'test_mask_aux_t' + str(t0) + '.png'))
+            plt.close()
 
             for si in [-1, 1]:
                 for sj in [-1, 1]:
@@ -515,64 +530,6 @@ def polar(x, y):
     return r, theta
 
 # ----------------------------------------------------------------------
-
-# def create_statistics_file(file_name, path, n_phi, nt, timerange, nk, krange):
-#     # output list with coordinates of rim points; mean velocity, radius etc.
-#
-#     print('-------- create statistics file -------- ' )
-#     print(path + ', ' + file_name)
-#     print('')
-#     rootgrp = nc.Dataset(os.path.join(path, file_name), 'w', format='NETCDF4')
-#     # # dimgrp = rootgrp.createGroup('dims')
-#     ts_grp = rootgrp.createGroup('time')
-#     ts_grp.createDimension('nt', nt)
-#     var = ts_grp.createVariable('time', 'f8', ('nt'))
-#     var[:] = timerange
-#
-#     # fields_grp = rootgrp.createGroup('fields')
-#     # fields_grp.createDimension('nx', nx)
-#     # fields_grp.createDimension('ny', ny)
-#     # fields_grp.createDimension('nz', nz)
-#
-#     stats_grp = rootgrp.createGroup('stats')
-#     stats_grp.createDimension('nt', nt)
-#     stats_grp.createDimension('nphi', n_phi)    # number of segments
-#     stats_grp.createVariable('r_out', 'f8', ('nt', 'nphi'))
-#     stats_grp.createVariable('r_int', 'f8', ('nt', 'nphi'))
-#     stats_grp.createVariable('D', 'f8', ('nt', 'nphi'))     # thickness of rim
-#
-#     pol_grp = rootgrp.createGroup('angles')
-#     pol_grp.createDimension('nphi', n_phi)
-#     var = pol_grp.createVariable('degree', 'f8', ('nphi'))
-#     var = pol_grp.createVariable('radian', 'f8', ('nphi'))
-#
-#     prof_grp = rootgrp.createGroup('profiles')
-#     prof_grp.createDimension('nz', nk)
-#     var = prof_grp.createVariable('k_dumped', 'f8', ('nz'))
-#     var[:] = np.zeros(nk)
-#     var = prof_grp.createVariable('krange', 'f8', ('nz'))
-#     var[:] = krange[:]
-#     var = prof_grp.createVariable('zrange', 'f8', ('nz'))
-#     var[:] = krange[:] * dz
-#
-#     rootgrp.close()
-#
-#     return
-
-# def dump_statistics_file(rim_intp_all, file_name, path):
-#     # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], r_int(t,i_phi)[m], D(t,i_phi)[m])
-#     #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
-#     # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], U(t,i_phi)[m/s], dU(t, i_phi)[m/s**2])
-#     # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
-#     rootgrp = nc.Dataset(os.path.join(path, file_name), 'r+', format='NETCDF4')
-#
-#     prof_grp = rootgrp.createGroup('profiles')
-#     var = levels_grp.variables['k_dumped']
-#     var[ik] = 1
-#
-#     rootgrp.close()
-#     return
-
 def create_statistics_file(file_name, path, n_phi, nt, timerange, nk, krange):
     # output list with coordinates of rim points; mean velocity, radius etc.
 

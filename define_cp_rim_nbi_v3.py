@@ -71,7 +71,7 @@ def main():
         tmax = np.int(args.tmax)
     else:
         tmax = tmin
-    timerange = np.arange(tmin,tmax + 100,100)
+    timerange = np.arange(tmin, tmax + 100, 100)
     nt = len(timerange)
 
     # if args.k0:
@@ -86,7 +86,7 @@ def main():
         kmax = np.int(args.kmax)
     else:
         kmax = 5
-    krange = np.arange(kmin, kmax+1, 1)
+    krange = np.arange(kmin, kmax + 1, 1)
     nk = len(krange)
 
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())

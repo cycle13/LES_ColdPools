@@ -120,7 +120,10 @@ def main():
 
     global cm_bwr, cm_grey, cm_vir
     cm_bwr = plt.cm.get_cmap('bwr')
-    cm_vir = plt.cm.get_cmap('jet')
+    try:
+        cm_vir = plt.cm.get_cmap('viridis')
+    except:
+        cm_vir = plt.cm.get_cmap('jet')
     cm_grey = plt.cm.get_cmap('gist_gray_r')
     set_colorbars(cm_bwr, cm_vir, cm_grey)      # to set colorbars as global functions in define_cp_rim_plottingfct.py
 
@@ -165,6 +168,7 @@ def main():
         nx_ = 2 * id
         ny_ = 2 * jd
 
+    print('rstar: '+str(rstar), irstar)
     print('ic,jc,id,jd', ic, jc, id, jd)
     print('nx_,ny_', nx_, ny_)
     print('shift, ishift, jshift', shift, ishift, jshift)
@@ -181,10 +185,10 @@ def main():
     # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], r_int(t,i_phi)[m], D(t,i_phi)[m])
     #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
     # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], U(t,i_phi)[m/s], dU(t, i_phi)[m/s**2])
-    # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
+    # - rim_vel_av = (r_av(t,k), U_av(t,k), dU_av/dt(t,k))
     rim_intp_all = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
     rim_vel = np.zeros(shape=(5, nt, n_phi), dtype=np.double)
-    rim_vel_av = np.zeros(shape=(3, nt))
+    rim_vel_av = np.zeros(shape=(3, nt, nk))
 
     # create statistics file
     stats_file_name = 'rimstats_perc' + str(perc) + 'th.nc'
@@ -215,20 +219,22 @@ def main():
         for ik,k0 in enumerate(krange):
             print('level: k=' + str(k0), '(z=' + str(k0 * dz) + 'm)')
             w_roll = np.roll(np.roll(w[:, :, k0], ishift, axis=0), jshift, axis=1)
-            w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
+            # w_roll = np.roll(w[:, :, :], [ishift, jshift], [0, 1])
+            w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift, k0]
             # icshift = id
             icshift = id -1
             jcshift = jd
             print('icshift', icshift, ic + ishift)
 
-            if flag == 'triple':
-                plot_yz_crosssection(w, ic, path_out, t0)
+            # if flag == 'triple':
+            #     plot_yz_crosssection(w, ic, path_out, t0)
 
 
             ''' (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)'''
             # Note:  no difference if percentile of total field w or subdomain w_
-            # w_c = np.percentile(w_, perc)
-            w_c = np.percentile(w, perc)
+            # w_c = np.percentile(w_, perc)     # per level
+            # w_c = np.percentile(w, perc)      # total domain
+            w_c = np.percentile(w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift, :80], perc)
             # w_mask = True, if w<w_c
             # w_mask_r = True, if w>w_c
             w_mask = np.ma.masked_less(w_, w_c)
@@ -429,7 +435,7 @@ def main():
             # - rim_intp_all = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], r_int(t,i_phi)[m], D(t,i_phi)[m])
             #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
             # - rim_vel = (phi(t,i_phi)[deg], phi(t,i_phi)[rad], r_out(t,i_phi)[m], U(t,i_phi)[m/s], dU(t, i_phi)[m/s**2])
-            # - rim_vel_av = (r_av(t), U_av(t), dU_av/dt(t))
+            # - rim_vel_av = (r_av(t,k), U_av(t,k), dU_av/dt(t,k))
             rim_intp_all[0, it, :] = angular_range[:-1]
             rim_intp_all[1, it, :] = np.pi * rim_intp_all[0, it, :] / 180
             print('')
@@ -485,26 +491,31 @@ def main():
 
 
             ''' Compute radial velocity of rim '''
-            rim_vel[0:3, it, :] = rim_intp_all[0:3, it, :]  # copy phi [deg + rad], r(phi)
+            rim_vel[0:3, it, :] = rim_intp_all[0:3, it, :]  # copy phi[deg + rad], r_out(phi)
 
 
             if it == 0:
-                rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2, it, :], 1.))
-                rim_vel_av[1, it] = 0.0
+                rim_vel_av[0, it, ik] = np.average(np.ma.masked_less(rim_intp_all[2, it, :], 1.))
+                rim_vel_av[1, it, ik] = 0.0
             elif it > 0:
                 # for n, phi in enumerate(rim_intp_all[0,it,:]):
-                rim_vel[3, it, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :]) / dt
+                rim_vel[3, it, :, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :]) / dt    # U(t,k,i_phi)
                 rim_vel[4, it, :] = (rim_vel[3, it, :] - rim_vel[3, it-1, :]) / dt
-                rim_vel_av[0, it] = np.average(np.ma.masked_less(rim_intp_all[2,it,:],1.))
-                rim_vel_av[1, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
-                rim_vel_av[2, it] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[4,it,:]).data)
+                rim_vel_av[0, it, ik] = np.average(np.ma.masked_less(rim_intp_all[2,it,:],1.))
+                rim_vel_av[1, it, ik] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
+                rim_vel_av[2, it, ik] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[4,it,:]).data)
 
-                plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1], perc, k0, timerange[:it+1], path_out)
+                plot_cp_rim_averages(rim_vel[:, 0:it+1, :], rim_vel_av[:, :it+1, ik], perc, k0, timerange[:it+1], path_out)
 
-            plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av, perc, k0, timerange, path_out)
+            plot_cp_rim_velocity(rim_vel[:, 0:it + 1, :], rim_vel_av[:,:,ik], perc, k0, timerange, path_out)
 
+            print('')
+            print('r_av', rim_vel_av[0,it,ik])
+            # print('rim_vel', rim_vel[3,it,:])
+            print('U_av', rim_vel_av[1,it,ik])
+            print('dU_av', rim_vel_av[2,it,ik])
             # dump statistics
-            dump_statistics_file(rim_intp_all[:, it, :], rim_vel[:, it, :], rim_vel_av[:,it], angular_range[:-1],
+            dump_statistics_file(rim_intp_all[:, it, :], rim_vel[:, it, :], rim_vel_av, angular_range[:-1],
                                  stats_file_name, path_stats, k0, ik, t0, it)
             print('')
 

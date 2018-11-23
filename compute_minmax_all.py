@@ -9,8 +9,10 @@ import argparse
 import json as simplejson
 import os
 
-def compute_minmax(dTh_range, zstar_range, rstar_range,
-                   kmin, kmax, times, path_root, case_name):
+def compute_minmax(thermo_params, geom_params,
+                   kmin, kmax, times, case_name, path_root, path_out_figs, path_out_data):
+# def compute_minmax(dTh_range, zstar_range, rstar_range,
+#                    kmin, kmax, times, path_root, case_name):
     print('COMPUTING MIN MAX')
     # (A) full fields
     # determine time range
@@ -42,33 +44,47 @@ def compute_minmax(dTh_range, zstar_range, rstar_range,
     # parser.add_argument("--kmax")
     # args = parser.parse_args()
 
-    # times = set_inpout_parameters(args)
-    #
-    # var_list = ['w', 's', 'temperature']
-    # minmax = {}
-    # minmax['time'] = times
-    # for var_name in var_list:
-    #     minmax[var_name] = {}
-    #     minmax[var_name]['max'] = np.zeros(len(times), dtype=np.double)
-    #     minmax[var_name]['min'] = np.zeros(len(times), dtype=np.double)
+    # times = set_inpout_parameters()
+
+    var_list = ['w', 's', 'temperature']
+    minmax = {}
+    minmax['time'] = times
+    for var_name in var_list:
+        minmax[var_name] = {}
+        minmax[var_name]['max'] = np.zeros(len(times), dtype=np.double)
+        minmax[var_name]['min'] = np.zeros(len(times), dtype=np.double)
     # # # minmax['w'] = {}
     # # # minmax['s'] = {}
     # # # minmax['temp'] = {}
     #
-    # for var_name in var_list:
-    #     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5,12))
-    #     for it, t0 in enumerate(times):
-    #         var = read_in_netcdf_fields(var_name, os.path.join(path_fields, str(t0)+'.nc'))
-    #         minmax[var_name]['max'][it] = np.amax(var)
-    #         minmax[var_name]['min'][it] = np.amin(var)
-    #     ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=var_name)
-    #     ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=var_name)
-    #     ax1.set_title('max('+var_name+')')
-    #     ax1.set_xlabel('time [s]')
-    #     ax2.set_title('min('+var_name+')')
-    #     ax2.set_xlabel('time [s]')
-    #     fig.savefig(os.path.join(path_out_figs, var_name+'_minmax.png'))
-    #     plt.close(fig)
+    nth = geom_params.shape[0]
+    ng = geom_params.shape[2]
+    for var_name in var_list:
+        print('')
+        print('variable: ' + var_name)
+        dTh = thermo_params[0]
+        fig, (ax1, ax2) = plt.subplots(2, 1, sharex='all', figsize=(5,12))
+        for istar in range(ng):
+            id = 'dTh'+str(dTh)+'_z'+str(geom_params[0,0,istar])+'_r'+str(geom_params[0,1,istar])
+            print('id', id)
+            path_fields = os.path.join(path_root, id, 'fields')
+            print(path_fields)
+            for it, t0 in enumerate(times):
+                var = read_in_netcdf_fields(var_name, os.path.join(path_fields, str(t0)+'.nc'))
+                minmax[var_name]['max'][it] = np.amax(var)
+                minmax[var_name]['min'][it] = np.amin(var)
+            maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=id)
+            minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=id)
+        ax1.legend(loc='best')
+        ax2.legend(loc='best')
+        ax1.set_title('max('+var_name+')')
+        ax1.set_ylabel('max('+var_name+')')
+        ax2.set_title('min('+var_name+')')
+        ax2.set_xlabel('time [s]')
+        ax2.set_ylabel('max('+var_name+')')
+        fig.suptitle('dTh='+str(dTh))
+        fig.savefig(os.path.join(path_out_figs, var_name+'_dTh'+str(dTh)+'_minmax_all.png'))
+        plt.close(fig)
 
     return
 
@@ -76,7 +92,7 @@ def compute_minmax(dTh_range, zstar_range, rstar_range,
 
 # ----------------------------------
 # ----------------------------------
-def set_inpout_parameters(args):
+def set_inpout_parameters():
     print '''setting parameters '''
     global path_root, path_out_data, path_out_figs
     path_root = args.path
