@@ -37,41 +37,14 @@ def main():
         print('wrong number of parameters! ')
         sys.exit()
 
-    minmax_domain = plot_domain_minmax(dTh, z_params, r_params, dx, times,
-                                       case_name, path_root, path_out_figs, path_out_data)
-
+    # minmax_domain = plot_domain_minmax(dTh, z_params, r_params, dx, times,
+    #                                    case_name, path_root, path_out_figs, path_out_data)
+    #
 
     minmax_xz = plot_xz_minmax(dTh, z_params, r_params,
                                ic_arr, jc_arr, dx, times,
                                case_name, path_root, path_out_figs, path_out_data)
 
-    # var_list = ['w', 's', 'temperature']
-    # minmax = {}
-    # minmax['time'] = times
-    # for var_name in var_list:
-    #     minmax[var_name] = {}
-    #     minmax[var_name]['max'] = np.zeros(len(times), dtype=np.double)
-    #     minmax[var_name]['min'] = np.zeros(len(times), dtype=np.double)
-    # minmax['w'] = {}
-    # minmax['s'] = {}
-    # minmax['temp'] = {}
-
-    # for var_name in var_list:
-    #     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6,8), sharex='all')
-    #     for it, t0 in enumerate(times):
-    #         var = read_in_netcdf_fields(var_name, os.path.join(path_fields, str(t0)+'.nc'))
-    #         minmax[var_name]['max'][it] = np.amax(var)
-    #         minmax[var_name]['min'][it] = np.amin(var)
-    #     ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=var_name)
-    #     ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=var_name)
-    #     # ax1.set_xlabel('time [s]')
-    #     ax1.set_ylabel('max('+var_name+')')
-    #     ax2.set_xlabel('time [s]')
-    #     ax2.set_ylabel('min('+var_name+')')
-    #     fig.suptitle('min, max of '+var_name)
-    #     fig.tight_layout()
-    #     fig.savefig(os.path.join(path_out_figs, var_name+'_minmax.png'))
-    #     plt.close(fig)
 
     return
 
@@ -85,7 +58,8 @@ def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
                    case_name, path_root, path_out_figs, path_out_data):
     print('')
     print('COMPUTING MIN MAX (XZ)')
-    var_list = ['v', 'w', 's', 'temperature']
+    # var_list = ['u', 'w', 's', 'temperature']
+    var_list = ['u']
     minmax = {}
     minmax['time'] = times
     for var_name in var_list:

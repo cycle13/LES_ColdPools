@@ -47,14 +47,13 @@ def main():
     print('threshold for ds=s-s_bg: '+str(s_crit)+ 'K')
     print('')
 
-    if case_name == 'ColdPoolDry_triple_3D':
-        i0_coll = ic_arr[2]
+    if case_name == 'ColdPoolDry_single_3D':
+        i0_coll = 10
+        j0_coll = 10
         i0_center = ic_arr[0]
-        j0_coll = jc_arr[2]
         j0_center = jc_arr[0]
-        # domain boundaries for plotting
-        xmin_plt = 0
-        xmax_plt = nx
+        xmin_plt = 100
+        xmax_plt = nx-xmin_plt
         ymin_plt = xmin_plt
         ymax_plt = xmax_plt
     elif case_name == 'ColdPoolDry_double_3D':
@@ -67,7 +66,21 @@ def main():
         xmax_plt = 230
         ymin_plt = xmin_plt
         ymax_plt = xmax_plt
-    dzi = 1./dz
+    elif case_name == 'ColdPoolDry_triple_3D':
+        i0_coll = ic_arr[2]
+        i0_center = ic_arr[0]
+        j0_coll = jc_arr[2]
+        j0_center = jc_arr[0]
+        # domain boundaries for plotting
+        xmin_plt = 0
+        xmax_plt = nx
+        ymin_plt = xmin_plt
+        ymax_plt = xmax_plt
+
+
+
+    dzi = 1./dx[2]
+    kstar = np.round(np.int(zstar / dx[2]))
 
     ''' background entropy '''
     try:
@@ -84,7 +97,9 @@ def main():
     ''' define CP height & maximal updraft velocity'''
     nt = len(times)
     w_max = np.zeros((2, nt, nx, ny))
+    # define CP height by threshold in entropy directly (s > s_crit)
     CP_top = np.zeros((nt, nx, ny))
+    # define CP height by threshold in gradient of entropy
     CP_top_grad = np.zeros((nt, nx, ny))
     # xmax = 250
     xmax = nx
@@ -95,8 +110,8 @@ def main():
 
         kmax = kstar + 20
 
-        if case_name == 'ColdPoolDry_triple_3D':
-            i_eps_min = ic_arr[2]-irstar
+        if case_name == 'ColdPoolDry_single_3D':
+            i_eps_min = i0_coll-irstar
             j_eps_min = jc_arr[0]-2*irstar
             deltax = 3*irstar
             deltay = irstar
@@ -105,6 +120,12 @@ def main():
             j_eps_min = jc_arr[0]-2*irstar
             deltax = 3*irstar
             deltay = irstar
+        elif case_name == 'ColdPoolDry_triple_3D':
+            i_eps_min = ic_arr[2]-irstar
+            j_eps_min = jc_arr[0]-2*irstar
+            deltax = 3*irstar
+            deltay = irstar
+
 
         s_grad = np.zeros((nx,ny,kmax))
         for i in range(nx):
@@ -155,11 +176,11 @@ def main():
         # plt.close(fig)
 
         # fig = plt.figure()
-        # plt.contourf(dz*CP_top.T)
+        # plt.contourf(dx[2]*CP_top.T)
         # plt.colorbar()
         # plt.title('CP height  (t='+str(t0)+'s)')
         # plt.xlabel('x  (dx='+str(dx)+')')
-        # plt.ylabel('y  (dy='+str(dy)+')')
+        # plt.ylabel('y  (dy='+str(dx[1])+')')
         # fig.savefig(os.path.join(path_out, 'CP_height_t'+str(t0)+'.png'))
         # plt.close(fig)
 
@@ -208,23 +229,23 @@ def plot_contourf_xy(CP_top, w_max, t0):
 
     fig, axes = plt.subplots(1,3, figsize=(16,5), sharey=True)
     ax1 = axes[0]
-    a = ax1.contourf(dz*CP_top.T)
+    a = ax1.contourf(dx[2]*CP_top.T)
     plt.colorbar(a, ax=ax1)
-    ax1.set_title('CP height  (max='+str(dz*np.amax(CP_top))+'m)')
-    ax1.set_xlabel('x  (dx='+str(dx)+')')
-    ax1.set_ylabel('y  (dy='+str(dy)+')')
+    ax1.set_title('CP height  (max='+str(dx[2]*np.amax(CP_top))+'m)')
+    ax1.set_xlabel('x  (dx=' + str(dx[0]) + 'm)')
+    ax1.set_ylabel('y  (dy=' + str(dx[1]) + 'm)')
 
     ax2 = axes[1]
     b = ax2.contourf(w_max[0,:,:].T, levels=levels, cmap=cm_bwr)
     plt.colorbar(b, ax=ax2)
     ax2.set_title('max(w), (max='+str(np.round(np.amax(w_max[0,:,:]),2))+'m/s)')
-    ax2.set_xlabel('x  (dx='+str(dx)+')')
+    ax2.set_xlabel('x  (dx='+str(dx[0])+')')
 
     ax3 = axes[2]
-    b = ax3.contourf(dz*w_max[1, :, :].T)
+    b = ax3.contourf(dx[2]*w_max[1, :, :].T)
     plt.colorbar(b, ax=ax3)
-    ax3.set_title('height of max(w), (max='+str(dz*np.int(np.amax(w_max[1,:,:])))+'m)')
-    ax3.set_xlabel('x  (dx='+str(dx)+')')
+    ax3.set_title('height of max(w), (max='+str(dx[2]*np.int(np.amax(w_max[1,:,:])))+'m)')
+    ax3.set_xlabel('x  (dx='+str(dx[0])+')')
     fig.suptitle('t='+str(t0)+'s')
     fig.tight_layout()
     fig.savefig(os.path.join(path_out, 'CP_height_t'+str(t0)+'.png'))
@@ -240,14 +261,14 @@ def plot_x_crosssections(s0, CP_top, w_max, jp1, jp2):
     f1, axes = plt.subplots(3, 1, figsize=(6, 12))
     ax1 = axes[0]
     ax1.set_title('entropy')
-    ax1.set_xlabel('x  (dx='+str(dx)+'m)')
-    ax1.set_ylabel('y  (dy='+str(dy)+'m)')
+    ax1.set_xlabel('x  (dx=' + str(dx[0]) + 'm)')
+    ax1.set_ylabel('y  (dy=' + str(dx[1]) + 'm)')
     ax2 = axes[1]
     ax2.set_title('x-crossection through collision point')
     ax2.set_ylabel('CP height [m]')
     ax3 = axes[2]
     ax3.set_title('x-crossection through center of coldpool #1')
-    ax3.set_xlabel('y  (dy='+str(dy)+'m)')
+    ax3.set_xlabel('y  (dy='+str(dx[1])+'m)')
     ax3.set_ylabel('CP height [m]')
     ax1.imshow(s0[:,:,1].T)
     ax1.set_xlim(0,nx)
@@ -274,14 +295,14 @@ def plot_y_crosssections(s0, CP_top, w_max, ip1, ip2):
     f1, axes = plt.subplots(3, 1, figsize=(6, 12))
     ax1 = axes[0]
     ax1.set_title('entropy')
-    ax1.set_xlabel('x  (dx='+str(dx)+'m)')
-    ax1.set_ylabel('y  (dy='+str(dy)+'m)')
+    ax1.set_xlabel('x  (dx=' + str(dx[0]) + 'm)')
+    ax1.set_ylabel('y  (dy=' + str(dx[1]) + 'm)')
     ax2 = axes[1]
     ax2.set_title('y-crossection through 2 CP-collision point')
     ax2.set_ylabel('CP height [m]')
     ax3 = axes[2]
     ax3.set_title('y-crossection through center of coldpool #3')
-    ax3.set_xlabel('y  (dy='+str(dy)+'m)')
+    ax3.set_xlabel('y  (dy='+str(dx[1])+'m)')
     ax3.set_ylabel('CP height [m]')
     ax1.imshow(s0[:,:,1].T)
     ax1.set_xlim(0,nx)
@@ -311,14 +332,14 @@ def plot_x_crosssections_CPtop_w(s0, CP_top, w_max, jp1, jp2):
     f1, axes = plt.subplots(3, 1, figsize=(6, 12))
     ax1 = axes[0]
     ax1.set_title('entropy')
-    ax1.set_xlabel('x  (dx='+str(dx)+'m)')
-    ax1.set_ylabel('y  (dy='+str(dy)+'m)')
+    ax1.set_xlabel('x  (dx='+str(dx[0])+'m)')
+    ax1.set_ylabel('y  (dy='+str(dx[1])+'m)')
     ax2 = axes[1]
     ax2.set_title('CP height')
     ax2.set_ylabel('CP height [m]')
     ax3 = axes[2]
     ax3.set_title('max w')
-    ax3.set_xlabel('y  (dy='+str(dy)+'m)')
+    ax3.set_xlabel('y  (dy='+str(dx[1])+'m)')
     ax3.set_ylabel('max(w) [m/s]')
     ax1.imshow(s0[:,:,1].T)
     ax1.set_xlim(0,nx)
@@ -343,14 +364,14 @@ def plot_y_crosssections_CPtop_w(s0, CP_top, w_max, ip1, ip2):
     f1, axes = plt.subplots(3, 1, figsize=(6, 12))
     ax1 = axes[0]
     ax1.set_title('entropy')
-    ax1.set_xlabel('x  (dx='+str(dx)+'m)')
-    ax1.set_ylabel('y  (dy='+str(dy)+'m)')
+    ax1.set_xlabel('x  (dx='+str(dx[0])+'m)')
+    ax1.set_ylabel('y  (dy='+str(dx[1])+'m)')
     ax2 = axes[1]
     ax2.set_title('CP height')
     ax2.set_ylabel('CP height [m]')
     ax3 = axes[2]
     ax3.set_title('max w')
-    ax3.set_xlabel('y  (dy='+str(dy)+'m)')
+    ax3.set_xlabel('y  (dy='+str(dx[1])+'m)')
     ax3.set_ylabel('max(w) [m/s]')
     ax1.imshow(s0[:,:,1].T)
     ax1.set_xlim(0,nx)
@@ -392,15 +413,16 @@ def set_input_output_parameters(args):
         os.mkdir(path_out)
 
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
-    global nx, ny, nz, dx, dy, dz, dV, gw
+    global nx, ny, nz, dx, dV, gw
     nx = nml['grid']['nx']
     ny = nml['grid']['ny']
     nz = nml['grid']['nz']
-    dx = nml['grid']['dx']
-    dy = nml['grid']['dy']
-    dz = nml['grid']['dz']
+    dx = np.zeros(3, dtype=np.int)
+    dx[0] = nml['grid']['dx']
+    dx[1] = nml['grid']['dy']
+    dx[2] = nml['grid']['dz']
     gw = nml['grid']['gw']
-    dV = dx * dy * dz
+    dV = dx[0] * dx[1] * dx[2]
 
 
     ''' determine file range '''
@@ -447,22 +469,41 @@ def define_geometry(case_name, nml):
     z_half = np.empty((nz_), dtype=np.double, order='c')
     count = 0
     for i in xrange(nx_):
-        x_half[count] = (i + 0.5) * dx
+        x_half[count] = (i + 0.5) * dx[0]
         count += 1
     count = 0
     for j in xrange(ny_):
-        y_half[count] = (j + 0.5) * dy
+        y_half[count] = (j + 0.5) * dx[1]
         count += 1
     count = 0
     for i in xrange(nz_):
-        z_half[count] = (i + 0.5) * dz
+        z_half[count] = (i + 0.5) * dx[2]
         count += 1
 
     # set coordinates for plots
     # (a) double 3D
-    if case_name == 'ColdPoolDry_double_2D':
-        rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
+    if case_name == 'ColdPoolDry_single_3D':
+        rstar = nml['init']['r']
+        irstar = np.int(np.round(rstar / dx[0]))
+        zstar = nml['init']['h']
+        try:
+            ic = nml['init']['ic']
+            jc = nml['init']['jc']
+            print('(ic,jc) from nml')
+        except:
+            ic = np.int(nx/2)
+            jc = np.int(ny/2)
+            print('(ic,jc) NOT from nml')
+        ic_arr = np.zeros(1)
+        jc_arr = np.zeros(1)
+        ic_arr[0] = ic
+        jc_arr[0] = jc
+    elif case_name == 'ColdPoolDry_double_2D':
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx[0]))
         # zstar = nml['init']['h']
         isep = 4 * irstar
         ic1 = np.int(nx / 3)  # np.int(Gr.dims.ng[0] / 3)
@@ -476,9 +517,9 @@ def define_geometry(case_name, nml):
             rstar = nml['init']['r']
         except:
             rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
+        irstar = np.int(np.round(rstar / dx[0]))
         zstar = nml['init']['h']
-        kstar = np.int(np.round(zstar / dz))
+        kstar = np.int(np.round(zstar / dx[2]))
         isep = 4 * irstar
         jsep = 0
         ic1 = np.int(np.round((nx + 2 * gw) / 3)) - gw
@@ -492,9 +533,9 @@ def define_geometry(case_name, nml):
             rstar = nml['init']['r']
         except:
             rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
+        irstar = np.int(np.round(rstar / dx[0]))
         zstar = nml['init']['h']
-        kstar = np.int(np.round(zstar / dz))
+        kstar = np.int(np.round(zstar / dx[2]))
         d = np.int(np.round(ny / 2))
         dhalf = np.int(np.round(ny / 4))
         a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
