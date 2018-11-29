@@ -12,8 +12,8 @@ casename="ColdPoolDry_single_3D"
 
 if [ $dTh -eq 4 ]
 then 
-  z_params=( 1730, 870, 430 )
-  r_params=( 430, 870, 1730 )
+  z_params=( 1730 870 430 )
+  r_params=( 430 870 1730 )
 elif [ $dTh -eq 3 ]
 then
   #z_params=( 2000 500 1000 2000 )
@@ -44,8 +44,16 @@ echo "r-parameters:" $r_params
 
 echo "#geometry parameters:" $n_geom
 
+
+
+
+echo " "
+echo "TEST INITIALIZATION / CONFIGURATION"
+python plot_configuration.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]}
+echo " "
+
 echo "MIN MAX ALL"
-python compute_minmax_all.py $casename $path --zparams ${z_params[*]} --rparams ${r_params[*]}
+python compute_minmax_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]}
 
 
 
