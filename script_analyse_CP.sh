@@ -2,8 +2,10 @@
 
 # set range of parameters for z*, r*, th' (3 values per index)
 
-do_loop=0
-dTh=$1
+# read in parameters
+read -p "dTh: " dTh; 
+read -p "tmin: " tmin; 
+read -p "tmax: " tmax; 
 
 echo "dTh:" $dTh
 
@@ -48,12 +50,13 @@ echo "#geometry parameters:" $n_geom
 
 
 echo " "
-echo "TEST INITIALIZATION / CONFIGURATION"
-python plot_configuration.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]}
-echo " "
+
+#echo "TEST INITIALIZATION / CONFIGURATION"
+#python plot_configuration.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]}
+#echo " "
 
 echo "MIN MAX ALL"
-python compute_minmax_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]}
+python compute_minmax_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
 
 
 
