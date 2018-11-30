@@ -58,8 +58,7 @@ def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
                    case_name, path_root, path_out_figs, path_out_data):
     print('')
     print('COMPUTING MIN MAX (XZ)')
-    # var_list = ['u', 'w', 's', 'temperature']
-    var_list = ['u']
+    var_list = ['u', 'w', 's', 'temperature']
     minmax = {}
     minmax['time'] = times
     for var_name in var_list:
@@ -182,7 +181,7 @@ def set_input_parameters(args):
     id0 = 'dTh' + str(dTh) + '_z' + str(z_params[0]) + '_r' + str(r_params[0])
     nml = simplejson.loads(open(os.path.join(path_root, id0, case_name + '.in')).read())
     global nx, ny, nz, dx
-    dx = np.arange(3)
+    dx = np.ndarray(3, dtype=np.int)
     nx = nml['grid']['nx']
     ny = nml['grid']['ny']
     nz = nml['grid']['nz']
