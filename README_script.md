@@ -19,8 +19,10 @@
 [--tmin TMIN] [--tmax TMAX][--kmin KMIN] [--kmax KMAX]
 
 computes CP height in terms of entropy threshold (given by s_crit)
-> OUTPUT: plots with CP height, 
+> OUTPUT: 
+> - plots with CP height in *id/figs_CP_height/*, 
 max vertical velocity and height of maximum vertical velocity
+> - nc-files with max(CP_height[t]), max(w)[i,j], height(max(w))[i,j]
 
 
 
