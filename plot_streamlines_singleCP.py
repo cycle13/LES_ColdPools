@@ -202,12 +202,12 @@ def plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel, x_arr, y_arr,
 
     fig, ax = plt.subplots(figsize=(16,10))
     ax.set_aspect('equal')    # ax.set_aspect(1.0)
-    # if np.abs(speed[:,:,k0].max()) > 0.0:
-    #     lw = 5 * speed[:,:,k0] / speed[:,:,k0].max()
-    # else:
-    #     lw = 2 * np.ones(shape=speed[:,:,k0].shape)
-    # ax1 = plt.contourf(x_arr, y_arr, w[:,:,k0].T, levels=levels, alpha=1., cmap = cm)
-    # plt.colorbar(ax1, shrink=0.5)
+    if np.abs(speed[:,:,k0].max()) > 0.0:
+        lw = 5 * speed[:,:,k0] / speed[:,:,k0].max()
+    else:
+        lw = 2 * np.ones(shape=speed[:,:,k0].shape)
+    ax1 = plt.contourf(x_arr, y_arr, cont_var[:,:,k0].T, levels=levels, alpha=1., cmap = cm)
+    plt.colorbar(ax1, shrink=0.5)
     # # plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
     # #                color='k', density=1.5, linewidth=lw[:,:].T)
     # strm = plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
