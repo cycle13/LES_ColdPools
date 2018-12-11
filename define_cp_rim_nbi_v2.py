@@ -240,10 +240,9 @@ def main():
 
         for ik,k0 in enumerate(krange):
             print('level: k=' + str(k0), '(z=' + str(k0 * dz) + 'm)')
-            w_roll = np.roll(np.roll(w[:, :, k0], ishift, axis=0), jshift, axis=1)
-            w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift]
+            w_roll = np.roll(np.roll(w[:, :, :], ishift, axis=0), jshift, axis=1)
             # w_roll = np.roll(w[:, :, :], [ishift, jshift], [0, 1])
-            # w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift, k0]
+            w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift, k0]
             # icshift = id
             icshift = id -1
             jcshift = jd
