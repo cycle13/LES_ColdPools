@@ -45,6 +45,7 @@ def main():
     id0 = 'dTh' + str(dTh) + '_z' + str(z_params[0]) + '_r' + str(r_params[0])
     filename = 'rimstats_perc' + str(perc) + 'th.nc'
     fullpath_in = os.path.join(path_root, id0, filename)
+    print('fullpath:', fullpath_in)
     rootgrp = nc.Dataset(fullpath_in, 'r')
     ts_grp = rootgrp.groups['timeseries']
     r_av = ts_grp.variables['r_av'][:, :]
