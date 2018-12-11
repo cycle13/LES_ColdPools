@@ -51,7 +51,7 @@ def main():
     r_av = ts_grp.variables['r_av'][:, :]
     [nt, nz] = r_av.shape
     ts_grp = rootgrp.groups['time']
-    times = ts_grp.variables['time']
+    times = ts_grp.variables['time'][:]
     z_grp = rootgrp.groups['profiles']
     krange = z_grp.variables['krange'][:]
     k_dumped = z_grp.variables['k_dumped'][:]
