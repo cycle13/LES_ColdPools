@@ -73,11 +73,20 @@ def main():
         fullpath_in = os.path.join(path_root, id, 'fields_CP_rim', filename)
         rootgrp = nc.Dataset(fullpath_in, 'r')
         ts_grp = rootgrp.groups['timeseries']
-        r_av[istar, :,:] = ts_grp.variables['r_av'][:,:]
-        U_av[istar, :,:] = ts_grp.variables['U_av'][:,:]
-        dU_av[istar, :,:] = ts_grp.variables['dU_av'][:,:]
+        var1 = ts_grp.variables['r_av'][:,:]
+        print('r_Av', var1.shape)
+        var2 = ts_grp.variables['U_av'][:,:]
+        print('r_Av', var2.shape)
+        var3 = ts_grp.variables['dU_av'][:,:]
+        print('r_Av', var3.shape)
+        r_av[istar, :,:] = var1
+        U_av[istar, :,:] = var2
+        dU_av[istar, :,:] = var3
         rootgrp.close()
-        print('shapes', r_av.shape, U_av.shape, dU_av.shape, times.shape)
+        print('shapes', r_av.shape)
+        print('shapes', U_av.shape)
+        print('shapes', dU_av.shape)
+        print('shapes', times.shape)
         ax0.plot(times, r_av[istar, :, 0], '-o', label=id)
         ax1.plot(times, U_av[istar, :, 0], '-o', label=id)
         ax2.plot(times, dU_av[istar, :, 0], '-o', label=id)
