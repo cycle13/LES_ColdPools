@@ -42,21 +42,21 @@ def main():
     ''' --- call plotting functions --- '''
     var_list = ['w', 'temperature'] # 's'
     cont_var_name = 'w'
-    vel = np.ndarray((2,nx_,ny_,nz_))
+    vel_h = np.ndarray((2,nx_,ny_,nz_))
 
     for it, file in enumerate(files):
         t0 = times[it]
         print('--- time: ', t0, '('+str(it), file+') ---')
-        vel[0,:,:,:] = read_in_netcdf_fields('u', os.path.join(path_fields, file))
-        vel[1,:,:,:] = read_in_netcdf_fields('v', os.path.join(path_fields, file))
+        vel_h[0,:,:,:] = read_in_netcdf_fields('u', os.path.join(path_fields, file))
+        vel_h[1,:,:,:] = read_in_netcdf_fields('v', os.path.join(path_fields, file))
         w = read_in_netcdf_fields('w', os.path.join(path_fields, file))
         if cont_var_name != 'w':
             cont_var = read_in_netcdf_fields(cont_var_name, os.path.join(path_fields, file))
         else:
             cont_var = w
-        speed_h = np.sqrt(vel[0, :] * vel[0, :] + vel[1, :] * vel[1, :])
-        speed_yz = np.sqrt(vel[1, :] * vel[1, :] + w * w)
-        speed_xz = np.sqrt(vel[0, :] * vel[0, :] + w * w)
+        speed_h = np.sqrt(vel_h[0, :] * vel_h[0, :] + vel_h[1, :] * vel_h[1, :])
+        speed_yz = np.sqrt(vel_h[1, :] * vel_h[1, :] + w * w)
+        speed_xz = np.sqrt(vel_h[0, :] * vel_h[0, :] + w * w)
 
 
         # --- 1D ---
@@ -70,7 +70,8 @@ def main():
 
         ''' (a) xy-plane '''
         for k0 in krange:
-            plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel, x_half, y_half, speed_h, k0, t0, path_out)
+            plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel_h, x_half, y_half, speed_h, k0, t0, path_out)
+
         #     plot_streamplot_xy_collision(cont_var_name, cont_var, vel, speed_h, x_half, y_half,
         #                                  i0, di, j0, dj, k0, t0, path_out)
     #
@@ -186,26 +187,32 @@ def plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed,
 
 
 
-def plot_streamplot_xy_varythickness(w, vel, x_arr, y_arr, speed, k0, t0, path_out):
+def plot_streamplot_xy_varythickness(cont_var_name, cont_var, w, vel, x_arr, y_arr, speed, k0, t0, path_out):
     cm = plt.cm.get_cmap('bwr')
     cm_lines = plt.cm.get_cmap('winter')
 
-    w_ = w[:, :, k0]
-    wmax = np.maximum(np.abs(np.amin(w_)), np.abs(np.amax(w_)))
-    levels = np.linspace(-wmax, wmax, 1e3)
+    if cont_var_name == 'w':
+        w_ = w[:, :, k0]
+        wmax = np.maximum(np.abs(np.amin(w_)), np.abs(np.amax(w_)))
+        levels = np.linspace(-wmax, wmax, 1e3)
+        del w_, wmax
+    else:
+        cont_var_ = cont_var[:,:,k0]
+        levels = np.linspace(np.amin(cont_var_), np.amax(cont_var_))
+        del cont_var_
 
     fig, ax = plt.subplots(figsize=(16,10))
     ax.set_aspect('equal')    # ax.set_aspect(1.0)
-    if np.abs(speed[:,:,k0].max()) > 0.0:
-        lw = 5 * speed[:,:,k0] / speed[:,:,k0].max()
-    else:
-        lw = 2 * np.ones(shape=speed[:,:,k0].shape)
-    ax1 = plt.contourf(x_arr, y_arr, w[:,:,k0].T, levels=levels, alpha=1., cmap = cm)
-    plt.colorbar(ax1, shrink=0.5)
-    # plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
-    #                color='k', density=1.5, linewidth=lw[:,:].T)
-    strm = plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
-                   color=vel[0,:,:,k0], cmap=cm_lines, density=1.5, linewidth=lw[:,:].T)
+    # if np.abs(speed[:,:,k0].max()) > 0.0:
+    #     lw = 5 * speed[:,:,k0] / speed[:,:,k0].max()
+    # else:
+    #     lw = 2 * np.ones(shape=speed[:,:,k0].shape)
+    # ax1 = plt.contourf(x_arr, y_arr, w[:,:,k0].T, levels=levels, alpha=1., cmap = cm)
+    # plt.colorbar(ax1, shrink=0.5)
+    # # plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
+    # #                color='k', density=1.5, linewidth=lw[:,:].T)
+    # strm = plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
+    #                color=vel[0,:,:,k0], cmap=cm_lines, density=1.5, linewidth=lw[:,:].T)
     plt.colorbar(strm.lines, shrink=0.5)
     plt.xlabel('x [m]   (dx='+str(dx)+')')
     plt.ylabel('y [m]   (dy='+str(dy)+')')
