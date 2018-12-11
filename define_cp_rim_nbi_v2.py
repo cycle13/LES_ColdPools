@@ -64,10 +64,10 @@ def main():
         path_fields = os.path.join(path, 'fields')
     elif os.path.exists(os.path.join(path, 'fields_k120')):
         path_fields = os.path.join(path, 'fields_k120')
-    path_out = os.path.join(path, 'figs_cp_rim')
+    path_out = os.path.join(path, 'figs_CP_rim')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
-    path_stats = os.path.join(path, 'fields_cp_rim')
+    path_stats = os.path.join(path, 'fields_CP_rim')
     if not os.path.exists(path_stats):
         os.mkdir(path_stats)
 
