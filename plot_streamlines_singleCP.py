@@ -71,30 +71,24 @@ def main():
 
         ''' (a) xy-plane '''
         for k0 in krange:
-            plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel_h, x_half, y_half, speed_h, k0, t0, path_out)
+            plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel_h,
+                                             x_half, y_half, speed_h, k0, t0, path_out)
 
         #     plot_streamplot_xy_collision(cont_var_name, cont_var, vel, speed_h, x_half, y_half,
         #                                  i0, di, j0, dj, k0, t0, path_out)
-    #
-    #     # ''' (b) yz-plane at collision point'''
-    #     # # --- 2D ---
-    #     # i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))  # at collision point
-    #     # plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed_yz, y_half, z_half, i0, t0, path_out, True)
-    #     #
-    #     # ''' (c) yz-plane at center of cold pool #1'''
-        # i0 = ic1    # through center of cold pool #1
-        # kmax = 40
-        # jmin = 20
-        # jmax = ny-jmin
-        # plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed_yz, y_half, z_half,
-        #                    i0, jmin, jmax, kmax, t0, path_out, True)
 
-    #     # ''' (d) xz-plane at center of cold pool #1'''
-    #     # # --- 2D ---
-    #     # j0 = jc1
-    #     # # --- 3D ---
-    #     # # j0 = jc3
-    #     # # plot_streamplot_xz(cont_var_name, cont_var, w, vel, speed_xz, x_half, z_half, j0, t0, path_out, True)
+        # ''' (b) yz-plane at center of cold pool #1'''
+        i0 = ic1    # through center of cold pool #1
+        kmax = 40
+        jmin = 20
+        jmax = ny-jmin
+        plot_streamplot_yz(cont_var_name, cont_var, w, vel_h, speed_yz, y_half, z_half,
+                           i0, jmin, jmax, kmax, t0, path_out, True)
+
+        # ''' (c) xz-plane at center of cold pool #1'''
+        j0 = jc1
+        plot_streamplot_xz(cont_var_name, cont_var, w, vel_h, speed_xz,
+                           x_half, z_half, j0, t0, path_out, True)
 
     return
 
@@ -150,9 +144,6 @@ def plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed,
 
     cm = plt.cm.get_cmap('bwr')
     w_ = w[i0, :,:]
-    # # levels = np.linspace(np.amin(w_), np.amax(w_), 1e3)
-    # wmax = np.maximum(np.abs(np.amin(w_)), np.abs(np.amax(w_)))
-    # levels = np.linspace(-wmax, wmax, 1e3)
     var_ = cont_var[i0,:,:]
     if cont_var_name == 'w':
         varmax = np.maximum(np.abs(np.amin(var_)), np.abs(np.amax(var_)))

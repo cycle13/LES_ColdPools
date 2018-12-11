@@ -23,7 +23,9 @@ def main():
     :param --tmax: maximum time taken into account
     :param --k0: level, at which the mask is computed
 
-    :return: figures in repository 'figs_cp_rim'; 2D field output with mask, inner and outer rim at levels k=[kmin..kmax]; statistics with cold pool radius, rim velocity
+    :return: figures in repository 'figs_cp_rim';
+                2D field output with mask, inner and outer rim at levels k=[kmin..kmax];
+                statistics with cold pool radius, rim velocity
 
     Details:
 
@@ -40,8 +42,8 @@ def main():
     """
 
     parser = argparse.ArgumentParser(prog='LES_CP')
-    parser.add_argument("--casename")
-    parser.add_argument("--path")
+    parser.add_argument("casename")
+    parser.add_argument("path")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
     # parser.add_argument("--k0", nargs = '+', type = int)
