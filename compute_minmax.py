@@ -8,21 +8,13 @@ import netCDF4 as nc
 import argparse
 import json as simplejson
 import os
+import sys
 
 def main():
     print('COMPUTING MIN MAX')
-    # (A) full fields
-    # determine time range
-    # determine domain (max height, evtl. lateral boundaries) for analysis
-    # loop over time
-    #   read in fields
-    #   compute theta
-    #   determine max of w, s, temperature, theta
+    # (A) domain maximum
     #
     # (B) cross-sections
-    # determin CP center
-    # extract crosssection through CP center
-    # loop over time
     #   determine max v in yz-crosssections
     #   determine max u in xz-crosssections
     #
