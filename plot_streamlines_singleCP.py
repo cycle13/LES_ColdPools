@@ -33,8 +33,8 @@ def main():
     global cm_bwr
     cm_bwr = plt.cm.get_cmap('bwr')
 
-    # set_inpout_parameters(args)
-    files, times, nml = set_inpout_parameters(args)
+    # set_input_parameters(args)
+    files, times, nml = set_input_parameters(args)
     x_half, y_half, z_half = define_geometry(case_name, nml, files)
 
 
@@ -64,21 +64,9 @@ def main():
         jc1 = jc_arr[0]
         i0 = ic1 + irstar
         j0 = jc1 + irstar
-        di = np.int(3*irstar)
+        di = np.int(3 * irstar)
         dj = di
-        # # --- 2D ---
-        # ic1 = ic_arr[0]
-        # jc1 = jc_arr[0]
-        # i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))
-        # di = 15
-        # j0 = jc1
-        # dj = np.int(2*irstar)
-        # # --- 3D ---
-        # d = 2*isep
-        # i0 = ic_arr[2] - np.int(np.sqrt(3)/3* d)
-        # j0 = np.int(jc_arr[0] + np.round(d / 2))
-        # di = np.int(i0*2/3)
-        # dj = 50
+
 
         ''' (a) xy-plane '''
         # for k0 in krange:
@@ -93,11 +81,11 @@ def main():
     #     #
     #     # ''' (c) yz-plane at center of cold pool #1'''
         # i0 = ic1    # through center of cold pool #1
-        kmax = 40
-        jmin = 20
-        jmax = ny-jmin
-        plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed_yz, y_half, z_half,
-                           i0, jmin, jmax, kmax, t0, path_out, True)
+        # kmax = 40
+        # jmin = 20
+        # jmax = ny-jmin
+        # plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed_yz, y_half, z_half,
+        #                    i0, jmin, jmax, kmax, t0, path_out, True)
 
     #     # ''' (d) xz-plane at center of cold pool #1'''
     #     # # --- 2D ---
@@ -196,74 +184,6 @@ def plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed,
 
 
 
-def plot_streamplot_xy_collision(cont_var_name, cont_var, vel, speed, x_arr, y_arr, ic, di, jc, dj, k0, t0, path_out):
-    cm_cont = plt.cm.get_cmap('bwr')
-    cm_lines = plt.cm.get_cmap('winter')
-    # cm_lines = plt.cm.get_cmap('autumn')
-
-    # var_ = cont_var[ic-di:ic+di+1, jc-dj:jc+dj+1, :]
-    var_ = cont_var[ic - di - 1:ic + di + 1, jc - dj - 1:jc + dj + 1, :]
-    if cont_var_name == 'w':
-        varmax = np.maximum(np.abs(np.amin(var_)), np.abs(np.amax(var_)))
-        levels = np.linspace(-varmax, varmax, 1e3)
-    else:
-        varmin = np.amin(var_)
-        varmax = np.amax(var_)
-        levels = np.linspace(varmin, varmax, 1e3)
-
-    #  Varying line width along a streamline
-    lw = 5 * speed[ic-di:ic+di+1, jc-dj:jc+dj+1, k0] / speed[ic-di:ic+di+1, jc-dj:jc+dj+1, k0].max()
-
-    fig, ax = plt.subplots(figsize=(10, 10))
-    ax.set_aspect('equal')  # ax.set_aspect(1.0)
-    ax = plt.contourf(x_arr[ic - di-1:ic + di + 1], y_arr[jc - dj-1:jc + dj + 1], var_[:,:,k0].T,
-                      cmap=cm_cont, levels=levels)
-
-    plt.colorbar(ax, shrink=0.5)
-    plt.plot(x_arr[ic],y_arr[jc],'go', markersize=10)
-    plt.streamplot(x_arr[ic - di:ic + di + 1], y_arr[jc - dj:jc + dj + 1],
-                   vel[0, ic - di:ic + di + 1, jc - dj:jc + dj + 1, k0].T,
-                   vel[1, ic - di:ic + di + 1, jc - dj:jc + dj + 1, k0].T,
-                   color='k', density=1., linewidth=lw[:,:].T)
-
-    plt.plot([ x_arr[ic_arr[0]], x_arr[ic_arr[1]], x_arr[ic_arr[2]] ],
-             [y_arr[jc_arr[0]], y_arr[jc_arr[1]], y_arr[jc_arr[2]] ], 'o', markersize=12, color='k')
-    plt.plot([x_arr[ic_arr[0]], x_arr[ic_arr[1]] ], [y_arr[jc_arr[0]], y_arr[jc_arr[1]] ], 'k')
-    plt.plot([x_arr[ic_arr[1]], x_arr[ic_arr[2]] ], [y_arr[jc_arr[1]], y_arr[jc_arr[2]] ], 'k')
-    plt.plot([x_arr[ic_arr[0]], x_arr[ic_arr[2]] ], [y_arr[jc_arr[0]], y_arr[jc_arr[2]] ], 'k')
-    plt.xlabel('x [m]   (dx=' + str(dx) + ')')
-    plt.ylabel('y [m]   (dy=' + str(dy) + ')')
-    plt.title(cont_var_name + ' overlaid by horizontal velocity (t=' + str(t0) + ', z=' + str(dz * k0) + ')', fontsize=21)
-    plt.savefig(os.path.join(path_out, cont_var_name+'_streamlines_xy_collision_lw_t' + str(t0) + '_k' + str(k0) + '.png'))
-    plt.close()
-
-
-
-    # Varying color along a streamline
-    fig, ax = plt.subplots(figsize=(12, 10))
-    ax.set_aspect('equal')  # ax.set_aspect(1.0)
-    ax = plt.contourf(x_arr[ic-di-1:ic+di+1], y_arr[jc-dj-1:jc+dj+1], var_[:,:,k0].T,
-                      cmap=cm_cont, levels=levels, alpha=1.)
-    # plt.contourf(x_arr[ic - di:ic + di + 1], y_arr[jc - dj:jc + dj + 1], np.zeros((2*di+1,2*dj+1)).T,
-    #                   colors='w', alpha=0.5)
-    plt.colorbar(ax, shrink=0.5)
-    u = vel[0,ic-di:ic+di+1,jc-dj:jc+dj+1,k0].T
-    v = vel[1,ic-di:ic+di+1,jc-dj:jc+dj+1,k0].T
-    # strm = plt.streamplot(x_arr[ic-di:ic+di+1], y_arr[jc-dj:jc+dj+1], u, v,
-    #                       color=u, cmap=cm_lines,
-    #                       linewidth=lw[:,:].T)
-    # print('color', u.shape, speed)
-    strm = plt.streamplot(x_arr[ic-di:ic+di+1], y_arr[jc-dj:jc+dj+1], u, v,
-                          color=speed[ic - di:ic + di + 1, jc - dj:jc + dj + 1, k0].T, cmap=cm_lines,
-                          linewidth=lw[:,:].T)
-    fig.colorbar(strm.lines, shrink=0.5)
-    plt.xlabel('x [m]   (dx=' + str(dx) + ')')
-    plt.ylabel('y [m]   (dy=' + str(dy) + ')')
-    plt.title(cont_var_name + ' overlaid by horizontal velocity (t=' + str(t0) + ', z=' + str(dz * k0) +')', fontsize=21)
-    plt.savefig(os.path.join(path_out, cont_var_name + '_streamlines_xy_collision_col_t' + str(t0) + '_k' + str(k0) + '.png'))
-    plt.close()
-    return
-
 
 
 def plot_streamplot_xy_varythickness(w, vel, x_arr, y_arr, speed, k0, t0, path_out):
@@ -293,69 +213,10 @@ def plot_streamplot_xy_varythickness(w, vel, x_arr, y_arr, speed, k0, t0, path_o
     return
 
 
-def example_streamplot():
-    w = 3
-    Y, X = np.mgrid[-w:w:100j, -w:w:100j]
-    U = -1 - X ** 2 + Y
-    V = 1 + X - Y ** 2
-    speed = np.sqrt(U * U + V * V)
-
-    fig = plt.figure(figsize=(7, 9))
-    gs = gridspec.GridSpec(nrows=3, ncols=2, height_ratios=[1, 1, 2])
-
-    #  Varying density along a streamline
-    ax0 = fig.add_subplot(gs[0, 0])
-    ax0.streamplot(X, Y, U, V, density=[0.5, 1])
-    ax0.set_title('Varying Density')
-
-    # # Varying color along a streamline
-    # ax1 = fig.add_subplot(gs[0, 1])
-    # strm = ax1.streamplot(X, Y, U, V, color=U, linewidth=2, cmap='autumn')
-    # fig.colorbar(strm.lines)
-    # ax1.set_title('Varying Color')
-    #
-    # #  Varying line width along a streamline
-    # ax2 = fig.add_subplot(gs[1, 0])
-    # lw = 5 * speed / speed.max()
-    # ax2.streamplot(X, Y, U, V, density=0.6, color='k', linewidth=lw)
-    # ax2.set_title('Varying Line Width')
-    #
-    # # Controlling the starting points of the streamlines
-    # seed_points = np.array([[-2, -1, 0, 1, 2, -1], [-2, -1, 0, 1, 2, 2]])
-    #
-    # ax3 = fig.add_subplot(gs[1, 1])
-    # strm = ax3.streamplot(X, Y, U, V, color=U, linewidth=2,
-    #                       cmap='autumn', start_points=seed_points.T)
-    # fig.colorbar(strm.lines)
-    # ax3.set_title('Controlling Starting Points')
-    #
-    # # Displaying the starting points with blue symbols.
-    # ax3.plot(seed_points[0], seed_points[1], 'bo')
-    # ax3.axis((-w, w, -w, w))
-    #
-    # # Create a mask
-    # mask = np.zeros(U.shape, dtype=bool)
-    # mask[40:60, 40:60] = True
-    # U[:20, :20] = np.nan
-    # U = np.ma.array(U, mask=mask)
-    #
-    # ax4 = fig.add_subplot(gs[2:, :])
-    # ax4.streamplot(X, Y, U, V, color='r')
-    # ax4.set_title('Streamplot with Masking')
-    #
-    # ax4.imshow(~mask, extent=(-w, w, -w, w), alpha=0.5,
-    #            interpolation='nearest', cmap='gray', aspect='auto')
-    # ax4.set_aspect('equal')
-    #
-    # plt.tight_layout()
-    plt.savefig('./streamlines_example.png')
-    plt.close()
-    # plt.show()
-    return
 
 
 # ----------------------------------
-def set_inpout_parameters(args):
+def set_input_parameters(args):
     global path_in, path_out, path_fields
     path_in = args.path
     if os.path.exists(os.path.join(path_in, 'fields')):
