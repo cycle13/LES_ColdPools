@@ -269,7 +269,7 @@ def main():
                     [np.int(w_mask_r.mask.reshape(nx_ * ny_)[i]) for i in range(nx_ * ny_)]).reshape(nx_, ny_)
 
             # plot_s(w, w_c, t0, k0, path_fields, path_out)
-            plot_w_field(w_c, perc, w, w_roll, w_, w_mask,
+            plot_w_field(w_c, perc, w, w_roll[:,:,k0], w_, w_mask,
                          ishift, jshift, id, jd, ic, jc, icshift, jcshift,
                          k0, t0, dz, gw, nx_, ny_, ny, ny, path_out)
             del w_roll
