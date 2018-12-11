@@ -46,7 +46,7 @@ def main():
 
     for it, file in enumerate(files):
         t0 = times[it]
-        print('t', t0, it, file)
+        print('--- time: ', t0, '('+str(it), file+') ---')
         vel[0,:,:,:] = read_in_netcdf_fields('u', os.path.join(path_fields, file))
         vel[1,:,:,:] = read_in_netcdf_fields('v', os.path.join(path_fields, file))
         w = read_in_netcdf_fields('w', os.path.join(path_fields, file))
@@ -69,10 +69,10 @@ def main():
 
 
         ''' (a) xy-plane '''
-        # for k0 in krange:
+        for k0 in krange:
+            plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel, x_half, y_half, speed_h, k0, t0, path_out)
         #     plot_streamplot_xy_collision(cont_var_name, cont_var, vel, speed_h, x_half, y_half,
         #                                  i0, di, j0, dj, k0, t0, path_out)
-    #     # # plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel, x_half, y_half, speed_h, k0, t0, path_out)
     #
     #     # ''' (b) yz-plane at collision point'''
     #     # # --- 2D ---
@@ -196,7 +196,10 @@ def plot_streamplot_xy_varythickness(w, vel, x_arr, y_arr, speed, k0, t0, path_o
 
     fig, ax = plt.subplots(figsize=(16,10))
     ax.set_aspect('equal')    # ax.set_aspect(1.0)
-    lw = 5 * speed[:,:,k0] / speed[:,:,k0].max()
+    if np.abs(speed[:,:,k0].max()) > 0.0:
+        lw = 5 * speed[:,:,k0] / speed[:,:,k0].max()
+    else:
+        lw = 2 * np.ones(shape=speed[:,:,k0].shape)
     ax1 = plt.contourf(x_arr, y_arr, w[:,:,k0].T, levels=levels, alpha=1., cmap = cm)
     plt.colorbar(ax1, shrink=0.5)
     # plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
@@ -300,7 +303,7 @@ def set_input_parameters(args):
 
 
 def define_geometry(case_name, nml, files):
-    print('--- define geometry ---')
+    # print('--- define geometry ---')
     global ic_arr, jc_arr
     global ic, jc, isep
     global rstar, irstar
