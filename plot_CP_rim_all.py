@@ -111,6 +111,7 @@ def set_input_parameters(args):
     dTh = args.dTh
     z_params = args.zparams
     r_params = args.rparams
+    print('dTh: ', dTh)
     print('z*: ', z_params)
     print('r*: ', r_params)
 
@@ -140,6 +141,7 @@ def set_input_parameters(args):
     # times = [np.int(name[:-3]) for name in files]
     times.sort()
     print('times', times)
+
 
     return dTh, z_params, r_params
 
