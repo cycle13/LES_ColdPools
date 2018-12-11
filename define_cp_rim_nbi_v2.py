@@ -218,14 +218,16 @@ def main():
 
 
 
-
-
+    nx_2 = nx_
+    ny_2 = ny_
     for it,t0 in enumerate(timerange):
         if it > 0:
             dt = t0-timerange[it-1]
         else:
             dt = t0
         print('--- time: '+ str(t0), '(dt='+str(dt)+') ---')
+        nx_ = nx_2
+        ny_ = ny_2
         print('nx_, ny_', nx_, ny_, 'id, jd', id, jd, shift)
 
         ''' create mask file for time step t0'''
@@ -324,7 +326,6 @@ def main():
             rim_aux = np.zeros((nx_, ny_), dtype=np.int)
             rim_list_int = []
             rim_list_out = []
-
 
 
             # find radius of circle that encloses whole cp rim (rmax2 >= rim)
@@ -427,20 +428,6 @@ def main():
                 rim_list_int[i] = (coord, (polar(coord[0] - icshift, coord[1] - jcshift)))
             for i, coord in enumerate(rim_list_out):
                 rim_list_out[i] = (coord, (polar(coord[0] - icshift, coord[1] - jcshift)))
-            # if rim already very close to subdomain (nx_,ny_), make domain larger
-            print('rim size: ', coord[0], coord[1], 'domain size nx_, ny_', nx_, ny_)
-            if coord[0] >= nx_ - 5 or coord[1] >= ny_ - 5:
-                print('!!! changing domain size', nx_, nx_ +10)
-                shift += 10
-                id = irstar + shift
-                jd = irstar + shift
-                ishift = np.max(id - ic, 0)
-                jshift = np.max(jd - jc, 0)
-                if 2 * id <= nx and 2 * jd <= ny:
-                    nx_ = 2 * id
-                    ny_ = 2 * jd
-                else:
-                    print('!!! reached domain size')
 
             # sort list according to angle
             rim_list_out.sort(key=lambda tup: tup[1][1])
@@ -451,6 +438,26 @@ def main():
 
             del w_mask
             del rim_out, rim_int
+
+            # if rim already very close to subdomain (nx_,ny_), make domain larger
+            print('rim size: ', coord[0], coord[1], 'domain size nx_, ny_', nx_, ny_)
+            nx_2 = nx_
+            ny_2 = ny_
+            if coord[0] >= nx_ - 5 or coord[1] >= ny_ - 5:
+                print('!!! changing domain size', nx_, nx_ + 10)
+                shift += 10
+                id = irstar + shift
+                jd = irstar + shift
+                ishift = np.max(id - ic, 0)
+                jshift = np.max(jd - jc, 0)
+                if 2 * id <= nx and 2 * jd <= ny:
+                    # nx_ = 2 * id
+                    # ny_ = 2 * jd
+                    nx_2 = 2 * id
+                    ny_2 = 2 * jd
+                else:
+                    print('!!! reached domain size')
+
 
             # average and interpolate for bins of 6 degrees
             angular_range = np.arange(0, 361, dphi)
