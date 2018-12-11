@@ -77,6 +77,7 @@ def main():
         U_av[istar, :,:] = ts_grp.variables['U_av'][:,:]
         dU_av[istar, :,:] = ts_grp.variables['dU_av'][:,:]
         rootgrp.close()
+        print('shapes', r_av.shape, U_av.shape, dU_av.shape, times.shape)
         ax0.plot(times, r_av[istar, :, 0], '-o', label=id)
         ax1.plot(times, U_av[istar, :, 0], '-o', label=id)
         ax2.plot(times, dU_av[istar, :, 0], '-o', label=id)
