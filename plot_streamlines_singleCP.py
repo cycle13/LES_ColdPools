@@ -38,8 +38,9 @@ def main():
     x_half, y_half, z_half = define_geometry(case_name, nml, files)
 
 
-    print('')
+    # print('')
     ''' --- call plotting functions --- '''
+    print(path_out)
     var_list = ['w', 'temperature'] # 's'
     cont_var_name = 'w'
     vel_h = np.ndarray((2,nx_,ny_,nz_))
@@ -99,7 +100,7 @@ def main():
 
 
 def plot_streamplot_xz(cont_var_name, cont_var, w, vel, speed, x_arr, z_arr, j0, t0, path_out, vary=False):
-    print(path_out)
+    # print(path_out)
     if t0 <= 100:
         plt.figure()
         plt.contourf(w[:, :, 1].T)
@@ -210,9 +211,9 @@ def plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel, x_arr, y_arr,
     plt.colorbar(ax1, shrink=0.5)
     # # plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
     # #                color='k', density=1.5, linewidth=lw[:,:].T)
-    # strm = plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
-    #                color=vel[0,:,:,k0], cmap=cm_lines, density=1.5, linewidth=lw[:,:].T)
-    # plt.colorbar(strm.lines, shrink=0.5)
+    strm = plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
+                   color=vel[0,:,:,k0], cmap=cm_lines, density=1.5, linewidth=lw[:,:].T)
+    plt.colorbar(strm.lines, shrink=0.5)
     plt.xlabel('x [m]   (dx='+str(dx)+')')
     plt.ylabel('y [m]   (dy='+str(dy)+')')
     plt.title('t='+str(t0) + ', z='+str(dz*k0), fontsize=label_size)
@@ -284,7 +285,7 @@ def set_input_parameters(args):
                  and np.int(name[:-3]) >= time_min and np.int(name[:-3]) <= time_max]
         times = [np.int(name[:-3]) for name in files]
         times.sort()
-        print(type(times), times)
+        # print(type(times), times)
         for it,t0 in enumerate(times):
             files[it] = str(t0)+'.nc'
     else:  # 100_k120.nc
@@ -298,9 +299,7 @@ def set_input_parameters(args):
     print('')
     print('files', files)
     print('len', len(files[0]))
-    print('')
     print('times', times)
-    print('')
     print('krange', krange)
     print('')
 
