@@ -115,7 +115,7 @@ def set_input_parameters(args):
     global times
 
     path_root = args.path_root
-    path_out_figs = os.path.join(path_root, 'figs_CP_height')
+    path_out_figs = os.path.join(path_root, 'figs_CP_rim')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
 
