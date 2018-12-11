@@ -70,7 +70,7 @@ def main():
         id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
         print('id', id)
         # filename = 'rimstats_perc' + str(perc) + 'th.nc'
-        fullpath_in = os.path.join(path_root, id, filename)
+        fullpath_in = os.path.join(path_root, id, 'fields_CP_rim', filename)
         rootgrp = nc.Dataset(fullpath_in, 'r')
         ts_grp = rootgrp.groups['timeseries']
         r_av[istar, :,:] = ts_grp.variables['r_av'][:,:]
