@@ -187,19 +187,18 @@ def plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed,
 
 
 
-def plot_streamplot_xy_varythickness(cont_var_name, cont_var, w, vel, x_arr, y_arr, speed, k0, t0, path_out):
+def plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel, x_arr, y_arr, speed, k0, t0, path_out):
     cm = plt.cm.get_cmap('bwr')
     cm_lines = plt.cm.get_cmap('winter')
 
+    cont_var_ = cont_var[:, :, k0]
     if cont_var_name == 'w':
-        w_ = w[:, :, k0]
-        wmax = np.maximum(np.abs(np.amin(w_)), np.abs(np.amax(w_)))
+        wmax = np.maximum(np.abs(np.amin(cont_var_)), np.abs(np.amax(cont_var_)))
         levels = np.linspace(-wmax, wmax, 1e3)
-        del w_, wmax
+        del wmax
     else:
-        cont_var_ = cont_var[:,:,k0]
         levels = np.linspace(np.amin(cont_var_), np.amax(cont_var_))
-        del cont_var_
+    del cont_var_
 
     fig, ax = plt.subplots(figsize=(16,10))
     ax.set_aspect('equal')    # ax.set_aspect(1.0)
@@ -213,7 +212,7 @@ def plot_streamplot_xy_varythickness(cont_var_name, cont_var, w, vel, x_arr, y_a
     # #                color='k', density=1.5, linewidth=lw[:,:].T)
     # strm = plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
     #                color=vel[0,:,:,k0], cmap=cm_lines, density=1.5, linewidth=lw[:,:].T)
-    plt.colorbar(strm.lines, shrink=0.5)
+    # plt.colorbar(strm.lines, shrink=0.5)
     plt.xlabel('x [m]   (dx='+str(dx)+')')
     plt.ylabel('y [m]   (dy='+str(dy)+')')
     plt.title('t='+str(t0) + ', z='+str(dz*k0), fontsize=label_size)
