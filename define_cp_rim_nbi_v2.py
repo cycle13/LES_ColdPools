@@ -521,7 +521,7 @@ def main():
                 rim_vel_av[1, it, ik] = 0.0
             elif it > 0:
                 # for n, phi in enumerate(rim_intp_all[0,it,:]):
-                rim_vel[3, it, :, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :]) / dt    # U(t,k,i_phi)
+                rim_vel[3, it, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :]) / dt    # U(t,k,i_phi)
                 rim_vel[4, it, :] = (rim_vel[3, it, :] - rim_vel[3, it-1, :]) / dt
                 rim_vel_av[0, it, ik] = np.average(np.ma.masked_less(rim_intp_all[2,it,:],1.))
                 rim_vel_av[1, it, ik] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
@@ -537,7 +537,7 @@ def main():
             print('U_av', rim_vel_av[1,it,ik])
             print('dU_av', rim_vel_av[2,it,ik])
             # dump statistics
-            dump_statistics_file(rim_intp_all[:, it, :], rim_vel[:, it, :], rim_vel_av, angular_range[:-1],
+            dump_statistics_file(rim_intp_all[:, it, :], rim_vel[:, it, :], rim_vel_av[:, it, ik], angular_range[:-1],
                                  stats_file_name, path_stats, k0, ik, t0, it)
             print('')
 
