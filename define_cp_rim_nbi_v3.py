@@ -14,23 +14,29 @@ def main():
     """
     Find inner and outer rim of mask based on a threshold (usually 95th percentile) of the vertical velocity.
     The rim is found by number of neighbours and filling interior of mask
-
     :param --path: The full path to the files
     :param --casename: casename
     :param --tmin: minimum time taken into account
     :param --tmax: maximum time taken into account
     :param --k0: level, at which the mask is computed
 
-    :return: figures
-
+    :return: figures in repository 'figs_cp_rim';
+                2D field output with mask, inner and outer rim at levels k=[kmin..kmax];
+                statistics with cold pool radius, rim velocity
 
     Details:
 
     1. read in w-field, shift field (roll) and define partial domain where to look for cold pool
     2. mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)
     3. Define rim of cold pool as the outline of the mask; based on number of neighbours
-    """
 
+    Output 3D fields:
+
+    1. mask(x,y,k)
+    2. rim_inner(x,y,k)
+    3. rim_outer(x,y,k)
+     (x=[0..nx_-1], y=[0..ny_-1], k=[kmin..kmax])
+    """
 
     parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("--casename")
@@ -40,9 +46,10 @@ def main():
     # parser.add_argument("--k0", nargs = '+', type = int)
     parser.add_argument("--kmin")
     parser.add_argument("--kmax")
+    parser.add_argument("--perc")
     args = parser.parse_args()
 
-    global path_fields, path_out
+    global path_fields, path_out, path_stats
     if args.path:
         path = args.path
     else:
@@ -53,9 +60,12 @@ def main():
         path_fields = os.path.join(path, 'fields')
     elif os.path.exists(os.path.join(path, 'fields_k120')):
         path_fields = os.path.join(path, 'fields_k120')
-    path_out = os.path.join(path, 'figs_cp_rim')
+    path_out = os.path.join(path, 'figs_CP_rim')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
+    path_stats = os.path.join(path, 'fields_CP_rim')
+    if not os.path.exists(path_stats):
+        os.mkdir(path_stats)
 
     global case_name
     if args.casename:
@@ -89,6 +99,13 @@ def main():
     krange = np.arange(kmin, kmax + 1, 1)
     nk = len(krange)
 
+    # percentile for threshold
+    if args.perc:
+        perc = args.perc
+    else:
+        # perc = 95     # tested for triple 3D, dTh=3K, t=400s
+        perc = 98       # tested for triple 3D, dTh=10K, t=100-400s
+
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
     global nx, ny, nz, dx, dy, dz
     nx = nml['grid']['nx']
@@ -101,7 +118,10 @@ def main():
 
     global cm_bwr, cm_grey, cm_vir
     cm_bwr = plt.cm.get_cmap('bwr')
-    cm_vir = plt.cm.get_cmap('jet')
+    try:
+        cm_vir = plt.cm.get_cmap('viridis')
+    except:
+        cm_vir = plt.cm.get_cmap('jet')
     cm_grey = plt.cm.get_cmap('gist_gray_r')
     set_colorbars(cm_bwr, cm_vir, cm_grey)      # to set colorbars as global functions in define_cp_rim_plottingfct.py
 
@@ -109,7 +129,8 @@ def main():
     global nx_, ny_
     if case_name == 'ColdPoolDry_triple_3D':
         flag = 'triple'
-        d = np.int(np.round(ny / 2))
+        # d = np.int(np.round(ny / 2))
+        d = np.int(np.round( (ny+gw) / 2))
         a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
         try:
             rstar = nml['init']['r']
@@ -118,7 +139,7 @@ def main():
         irstar = np.int(np.round(rstar / dx))
         ic = np.int(np.round(a / 2))
         jc = np.int(np.round(d / 2))
-        shift = 40
+        shift = 60
         id = irstar + shift
         jd = irstar + shift
         ishift = np.max(id - ic, 0)
@@ -145,9 +166,10 @@ def main():
         nx_ = 2 * id
         ny_ = 2 * jd
 
-    print('ic,jc,id,jc,nx_,ny_', ic, jc, id, jd, nx_, ny_)
-    # percentile for threshold
-    perc = 95  # tested for triple 3D, t=400s
+    print('rstar: '+str(rstar), irstar)
+    print('ic,jc,id,jd', ic, jc, id, jd)
+    print('nx_, ny_', nx_, ny_)
+    print('shift, ishift, jshift', shift, ishift, jshift)
 
 
     # (A) read in w-field
@@ -171,7 +193,7 @@ def main():
             dt = t0-timerange[it-1]
         else:
             dt = t0
-        print('time: '+ str(t0), '(dt='+str(dt)+')')
+        print('--- time: '+ str(t0), '(dt='+str(dt)+') ---')
         print('nx_, ny_', nx_, ny_, 'id, jd', id, jd, shift)
 
         '''(A) read in w-field, shift domain and define partial domain '''
@@ -186,7 +208,6 @@ def main():
 
 
         ''' (B) mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)'''
-        perc = 90
         # ??? or use percentile of total field w: np.percentile(w, perc)
         w_c = np.percentile(w_, perc)
         # w_mask = True, if w<w_c

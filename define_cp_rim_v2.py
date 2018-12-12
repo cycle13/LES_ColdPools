@@ -40,8 +40,8 @@ def main():
     """
 
     parser = argparse.ArgumentParser(prog='LES_CP')
-    parser.add_argument("--casename")
-    parser.add_argument("--path")
+    parser.add_argument("casename")
+    parser.add_argument("path")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
     # parser.add_argument("--k0", nargs = '+', type = int)
@@ -61,10 +61,10 @@ def main():
         path_fields = os.path.join(path, 'fields')
     elif os.path.exists(os.path.join(path, 'fields_k120')):
         path_fields = os.path.join(path, 'fields_k120')
-    path_out = os.path.join(path, 'figs_cp_rim')
+    path_out = os.path.join(path, 'figs_CP_rim')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
-    path_stats = os.path.join(path, 'fields_cp_rim')
+    path_stats = os.path.join(path, 'fields_CP_rim')
     if not os.path.exists(path_stats):
         os.mkdir(path_stats)
 
@@ -136,7 +136,7 @@ def main():
         try:
             rstar = nml['init']['r']
         except:
-            rstar = 5000.0  # half of the width of initial cold-pools [m]
+            rstar = 1000.0  # half of the width of initial cold-pools [m]
         irstar = np.int(np.round(rstar / dx))
         # ic = np.int(np.round(a / 2))
         # jc = np.int(np.round(d / 2))
@@ -219,7 +219,7 @@ def main():
 
         for ik,k0 in enumerate(krange):
             print('level: k=' + str(k0), '(z=' + str(k0 * dz) + 'm)')
-            w_roll = np.roll(np.roll(w[:, :, k0], ishift, axis=0), jshift, axis=1)
+            w_roll = np.roll(np.roll(w[:, :, :], ishift, axis=0), jshift, axis=1)
             # w_roll = np.roll(w[:, :, :], [ishift, jshift], [0, 1])
             w_ = w_roll[ic - id + ishift:ic + id + ishift, jc - jd + jshift:jc + jd + jshift, k0]
             icshift = id
@@ -247,7 +247,7 @@ def main():
                     [np.int(w_mask_r.mask.reshape(nx_ * ny_)[i]) for i in range(nx_ * ny_)]).reshape(nx_, ny_)
 
             # plot_s(w, w_c, t0, k0, path_fields, path_out)
-            plot_w_field(w_c, perc, w, w_roll, w_, w_mask,
+            plot_w_field(w_c, perc, w, w_roll[:,:,k0], w_, w_mask,
                          ishift, jshift, id, jd, ic, jc, icshift, jcshift,
                          k0, t0, dz, gw, nx_, ny_, ny, ny, path_out)
             del w_roll
@@ -271,8 +271,8 @@ def main():
                 jmin = np.minimum(jcshift - j, jmin)-1
                 jmax = np.maximum(jcshift + j, jmax)+1
                 j += 1
-            rmax2 = np.maximum(np.maximum(imax-icshift,icshift-imin),np.maximum(jmax-jcshift,jcshift-jmin))**2
-            print('rmax2', rmax2, np.sqrt(rmax2))
+            rmax2_int = np.maximum(np.maximum(imax-icshift,icshift-imin),np.maximum(jmax-jcshift,jcshift-jmin))**2
+            print('rmax2', rmax2_int, np.sqrt(rmax2_int))
             print('imin, imax, jmin, jmax', imin, imax, jmin, jmax)
             print('icshift, jcshift', icshift, jcshift)
 
@@ -283,7 +283,7 @@ def main():
                 # while (icshift - i > imin or icshift + i < imax): # older version
                 j = 0
                 r2 = i ** 2 + j ** 2
-                while (r2 <= rmax2):
+                while (r2 <= rmax2_int):
                     for si in [-1, 1]:
                         for sj in [-1, 1]:
                             r2 = i ** 2 + j ** 2
@@ -300,7 +300,6 @@ def main():
             rim_aux = np.zeros((nx_, ny_), dtype=np.int)
             rim_list_int = []
             rim_list_out = []
-
 
 
             # find radius of circle that encloses whole cp rim (rmax2 >= rim)
@@ -393,9 +392,20 @@ def main():
                 rim_list_int[i] = (coord, (polar(coord[0] - icshift, coord[1] - jcshift)))
             for i, coord in enumerate(rim_list_out):
                 rim_list_out[i] = (coord, (polar(coord[0] - icshift, coord[1] - jcshift)))
+
+            # sort list according to angle
+            rim_list_out.sort(key=lambda tup: tup[1][1])
+            rim_list_int.sort(key=lambda tup: tup[1][1])
+            plot_rim_mask(w_, w_mask, rim_out, rim_int, rim_list_out, rim_list_int,
+                          icshift, jcshift, nx_, ny_,
+                          t0, k0, perc, path_out)
+
+            del w_mask
+            del rim_out, rim_int
+
             # if rim already very close to subdomain (nx_,ny_), make domain larger
             if coord[0] >= nx_ - 3 or coord[1] >= ny_ - 3:
-                print('!!! changing domain size', nx_, nx_ + 4)
+                print('!!! changing domain size', nx_, nx_ + 10)
                 shift += 10
                 id = irstar + shift
                 jd = irstar + shift
@@ -407,15 +417,6 @@ def main():
                 else:
                     print('!!! reached domain size')
 
-            # sort list according to angle
-            rim_list_out.sort(key=lambda tup: tup[1][1])
-            rim_list_int.sort(key=lambda tup: tup[1][1])
-            plot_rim_mask(w_, w_mask, rim_out, rim_int, rim_list_out, rim_list_int,
-                          icshift, jcshift, nx_, ny_,
-                          t0, k0, perc, path_out)
-
-            del w_mask
-            del rim_out, rim_int
 
             # average and interpolate for bins of 6 degrees
             angular_range = np.arange(0, 361, dphi)
@@ -487,7 +488,7 @@ def main():
             elif it > 0:
                 print('computing velocity')
                 # for n, phi in enumerate(rim_intp_all[0,it,:]):
-                rim_vel[3, it, :, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :]) / dt    # U(t,k,i_phi)
+                rim_vel[3, it, :] = (rim_intp_all[2, it, :] - rim_intp_all[2, it-1, :]) / dt    # U(t,k,i_phi)
                 rim_vel[4, it, :] = (rim_vel[3, it, :] - rim_vel[3, it-1, :]) / dt
                 rim_vel_av[0, it, ik] = np.average(np.ma.masked_less(rim_intp_all[2,it,:],1.))
                 rim_vel_av[1, it, ik] = np.average(np.ma.masked_where(rim_intp_all[2,it,:]>1., rim_vel[3,it,:]).data)
@@ -503,7 +504,7 @@ def main():
             print('U_av', rim_vel_av[1,it,ik])
             print('dU_av', rim_vel_av[2,it,ik])
             # dump statistics
-            dump_statistics_file(rim_intp_all[:, it, :], rim_vel[:, it, :], rim_vel_av, angular_range[:-1],
+            dump_statistics_file(rim_intp_all[:, it, :], rim_vel[:, it, :], rim_vel_av[:, it, ik], angular_range[:-1],
                                  stats_file_name, path_stats, k0, ik, t0, it)
             print('')
 
