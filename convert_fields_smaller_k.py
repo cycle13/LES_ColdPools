@@ -10,7 +10,7 @@ def main():
 
     # Parse information from the command line
     parser = argparse.ArgumentParser(prog='PyCLES')
-    parser.add_argument("casename")
+    # parser.add_argument("casename")
     parser.add_argument("path")
     parser.add_argument("--kmax")
     parser.add_argument("--kmin")
@@ -18,9 +18,9 @@ def main():
     args = parser.parse_args()
 
 
-    case_name = args.casename
+    # case_name = args.casename
     path_in = args.path
-    nml = simplejson.loads(open(os.path.join(path_in, case_name + '.in')).read())
+    # nml = simplejson.loads(open(os.path.join(path_in, case_name + '.in')).read())
 
     path_fields = os.path.join(path_in, 'fields')
     if args.kmax:
@@ -74,13 +74,14 @@ def main():
     # convert_file_for_varlist(var_list, files, path_fields, path_out, k_min, k_max)
 
     ''' output file with one level of one variable for all times '''
-    var_list = ['u', 'v', 'w']
+    var_list = ['u', 'v']
     for var in var_list:
         if k0 >= 0:
             convert_file_for_singlevariable(var, files, path_fields, path_out, k0)
-
+    # var_list = ['u', 'v']
+    # for var in var_list:
+    #     file_for_simple_array(var, files, path_fields, path_out, k0)
     return
-
 
 
 
@@ -94,7 +95,8 @@ def convert_file_for_singlevariable(var, files, path_fields, path_out, k0):
     print('nt:', nt)
     t_ini = times[0]
     t_end = times[-1]
-    file_name = var + '_merged_t' +str(t_ini) + '_t' + str(t_end) + '_k' + str(k0) + '.nc'
+    # file_name = var + '_merged_t' +str(t_ini) + '_t' + str(t_end) + '_k' + str(k0) + '.nc'
+    file_name = var + '_merged.nc'
     fullpath_out = os.path.join(path_out,file_name)
     print('filename', file_name)
 
@@ -116,8 +118,8 @@ def convert_file_for_singlevariable(var, files, path_fields, path_out, k0):
         rootgrp_in.close()
 
         rootgrp_out = nc.Dataset(fullpath_out, 'w', format='NETCDF4')
-        # rootgrp_out.createDimension('time', None)
-        rootgrp_out.createDimension('time', nt)
+        rootgrp_out.createDimension('time', None)
+        # rootgrp_out.createDimension('time', nt)
         rootgrp_out.createDimension('nx', nx)
         rootgrp_out.createDimension('ny', ny)
         time_out = rootgrp_out.createVariable('time', 'f8', ('time',))
