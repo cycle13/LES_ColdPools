@@ -47,66 +47,61 @@ def main():
     ''' --- call plotting functions --- '''
     print(path_out)
     var_list = ['w', 'temperature', 's', 'temperature_anomaly']
-    # cont_var_name = 'w'
-    cont_var_name = 'temperature'
-    cont_var_name = 's'
-    cont_var_name = 'temperature_anomaly'
-    print('contourfigure for ' + cont_var_name)
-    vel_h = np.ndarray((2,nx_,ny_,nz_))
 
+    # --- 1D ---
+    ic1 = ic_arr[0]
+    jc1 = jc_arr[0]
+    i0 = ic1 + irstar
+    j0 = jc1 + irstar
+    di = np.int(3 * irstar)
+    dj = di
 
     for it, file in enumerate(files):
         t0 = times[it]
         print('--- time: ', t0, '('+str(it), file+') ---')
+        vel_h = np.ndarray((2, nx_, ny_, nz_))
         vel_h[0,:,:,:] = read_in_netcdf_fields('u', os.path.join(path_fields, file))
         vel_h[1,:,:,:] = read_in_netcdf_fields('v', os.path.join(path_fields, file))
         w = read_in_netcdf_fields('w', os.path.join(path_fields, file))
-        if cont_var_name == 'w':
-            cont_var = w
-        elif cont_var_name == 'temperature_anomaly':
-            cont_var = read_in_netcdf_fields('temperature', os.path.join(path_fields, file))
-        else:
-            cont_var = read_in_netcdf_fields(cont_var_name, os.path.join(path_fields, file))
         speed_h = np.sqrt(vel_h[0, :] * vel_h[0, :] + vel_h[1, :] * vel_h[1, :])
         speed_yz = np.sqrt(vel_h[1, :] * vel_h[1, :] + w * w)
         speed_xz = np.sqrt(vel_h[0, :] * vel_h[0, :] + w * w)
+        for cont_var_name in var_list:
+            print('contourfigure for ' + cont_var_name)
 
+            if cont_var_name == 'w':
+                cont_var = w
+            elif cont_var_name == 'temperature_anomaly':
+                cont_var = read_in_netcdf_fields('temperature', os.path.join(path_fields, file))
+            else:
+                cont_var = read_in_netcdf_fields(cont_var_name, os.path.join(path_fields, file))
 
-        # --- 1D ---
-        ic1 = ic_arr[0]
-        jc1 = jc_arr[0]
-        i0 = ic1 + irstar
-        j0 = jc1 + irstar
-        di = np.int(3 * irstar)
-        dj = di
-
-
-        # ''' (a) xy-plane '''
-        # for k0 in krange:
-        #     print('-- k0=' + str(k0) + ' --')
-        #     plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel_h,
-        #                                      x_half, y_half, speed_h, k0, t0, path_out)
-        #
-        # ''' (b) yz-plane at center of cold pool #1'''
-        # i0 = ic1    # through center of cold pool #1
-        # kmax = 40
-        # jmin = 20
-        # jmax = ny-jmin
-        # plot_streamplot_yz(cont_var_name, cont_var, w, vel_h, speed_yz, y_half, z_half,
-        #                    i0, jmin, jmax, kmax, t0, path_out, True)
-        #
-        ''' (c) xz-plane at center of cold pool #1'''
-        j0 = jc1
-        imin = 20
-        imax = nx - imin
-        kmax = 60
-        if cont_var_name == 'temperature_anomaly':
-            t_mean = np.average(cont_var[:, j0, :kmax], axis=0)
-            cont_var = cont_var[:, j0, :kmax] - t_mean
-        else:
-            cont_var = cont_var[:, j0, :kmax]
-        plot_streamplot_xz(cont_var_name, cont_var, w, vel_h, speed_xz,
-                           x_half, z_half, j0, imin, imax, kmax, t0, path_out, id, True)
+            # ''' (a) xy-plane '''
+            # for k0 in krange:
+            #     print('-- k0=' + str(k0) + ' --')
+            #     plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel_h,
+            #                                      x_half, y_half, speed_h, k0, t0, path_out)
+            #
+            # ''' (b) yz-plane at center of cold pool #1'''
+            # i0 = ic1    # through center of cold pool #1
+            # kmax = 40
+            # jmin = 20
+            # jmax = ny-jmin
+            # plot_streamplot_yz(cont_var_name, cont_var, w, vel_h, speed_yz, y_half, z_half,
+            #                    i0, jmin, jmax, kmax, t0, path_out, True)
+            #
+            ''' (c) xz-plane at center of cold pool #1'''
+            j0 = jc1
+            imin = 20
+            imax = nx - imin
+            kmax = 60
+            if cont_var_name == 'temperature_anomaly':
+                t_mean = np.average(cont_var[:, j0, :kmax], axis=0)
+                cont_var = cont_var[:, j0, :kmax] - t_mean
+            else:
+                cont_var = cont_var[:, j0, :kmax]
+            plot_streamplot_xz(cont_var_name, cont_var, w, vel_h, speed_xz,
+                               x_half, z_half, j0, imin, imax, kmax, t0, path_out, id, True)
 
     return
 
@@ -162,10 +157,8 @@ def plot_streamplot_xz(cont_var_name, cont_var, w, vel, speed, x_arr, z_arr, j0,
     plt.xlabel('x [m]   (dx=' + str(dx) + ')')
     plt.ylabel('z [m]   (dz=' + str(dy) + ')')
     plt.title('crosssection through center of CP, (t=' + str(t0) + 's)', fontsize=18)#' y=' + str(j0 * dy) + 'm')
-    if cont_var_name == 'w':
-        fig_name = 'streamlines_xz_t' + str(t0) + '_j' + str(j0) + '.png'
-    else:
-        fig_name = cont_var_name + '_streamlines_xz_t' + str(t0) + '_j' + str(j0) + '.png'
+
+    fig_name = cont_var_name + '_streamlines_xz_t' + str(t0) + '_j' + str(j0) + '.png'
     plt.savefig(os.path.join(path_out, fig_name))
     plt.close()
 

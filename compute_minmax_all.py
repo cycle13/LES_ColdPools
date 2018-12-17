@@ -14,7 +14,7 @@ def main():
     print('COMPUTING MIN MAX')
     # (A) domain maximum
     #
-    # (B) cross-sections
+    # (B) maximum in cross-sections
     #   determine max v in yz-crosssections
     #   determine max u in xz-crosssections
     #
@@ -57,7 +57,7 @@ def main():
 def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
                    case_name, path_root, path_out_figs, path_out_data):
     print('')
-    print('COMPUTING MIN MAX (XZ)')
+    print('compting min/max xz')
     var_list = ['u', 'w', 's', 'temperature']
     minmax = {}
     minmax['time'] = times
@@ -79,6 +79,7 @@ def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
             print('id', id)
             path_fields = os.path.join(path_root, id, 'fields')
             print(path_fields)
+
             for it, t0 in enumerate(times):
                 var = read_in_netcdf_fields(var_name, os.path.join(path_fields, str(t0) + '.nc'))
                 minmax[var_name]['max'][it] = np.amax(var[:,jc_arr[0],:kmax])
@@ -91,10 +92,10 @@ def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
         ax1.set_title('max(' + var_name + ')')
         ax1.set_ylabel('max(' + var_name + ')')
         ax2.set_title('min(' + var_name + ')')
+        ax2.set_ylabel('min(' + var_name + ')')
         ax2.set_xlabel('time [s]')
-        ax2.set_ylabel('max(' + var_name + ')')
         fig.suptitle('dTh=' + str(dTh))
-        fig.savefig(os.path.join(path_out_figs, var_name + '_dTh' + str(dTh) + '_minmax_xy.png'))
+        fig.savefig(os.path.join(path_out_figs, var_name + '_dTh' + str(dTh) + '_minmax_xz.png'))
         plt.close(fig)
 
     return minmax
@@ -104,9 +105,10 @@ def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
 # compute domain minimum and maximum of variables (s, temperature, w) for each timestep
 def plot_domain_minmax(dTh, z_params, r_params, dx, times,
                        case_name, path_root, path_out_figs, path_out_data):
-    print('COMPUTING MIN MAX')
+    print('compting min/max domain')
 
-    var_list = ['w', 's', 'temperature']
+    var_list = ['w', 's', 'temperature', 'theta']
+    var_list = ['theta']
     minmax = {}
     minmax['time'] = times
     for var_name in var_list:
@@ -122,6 +124,7 @@ def plot_domain_minmax(dTh, z_params, r_params, dx, times,
     kmax = np.amax(z_params) + 2000. / dx[2]
 
     for var_name in var_list:
+        print('')
         print('variable: ' + var_name)
         fig, (ax1, ax2) = plt.subplots(2, 1, sharex='all', figsize=(5,12))
         for istar in range(ng):
@@ -132,7 +135,11 @@ def plot_domain_minmax(dTh, z_params, r_params, dx, times,
             path_fields = os.path.join(path_root, id, 'fields')
             print(path_fields)
             for it, t0 in enumerate(times):
-                var = read_in_netcdf_fields(var_name, os.path.join(path_fields, str(t0)+'.nc'))
+                if var_name == 'theta':
+                    s_var = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0)+'.nc'))
+                    var = theta_s(s_var)
+                else:
+                    var = read_in_netcdf_fields(var_name, os.path.join(path_fields, str(t0)+'.nc'))
                 minmax[var_name]['max'][it] = np.amax(var[:,:,:kmax])
                 minmax[var_name]['min'][it] = np.amin(var[:,:,:kmax])
                 del var
@@ -143,8 +150,8 @@ def plot_domain_minmax(dTh, z_params, r_params, dx, times,
         ax1.set_title('max('+var_name+')')
         ax1.set_ylabel('max('+var_name+')')
         ax2.set_title('min('+var_name+')')
+        ax2.set_ylabel('min('+var_name+')')
         ax2.set_xlabel('time [s]')
-        ax2.set_ylabel('max('+var_name+')')
         fig.suptitle('dTh='+str(dTh))
         fig.savefig(os.path.join(path_out_figs, var_name+'_dTh'+str(dTh)+'_minmax_all.png'))
         plt.close(fig)
@@ -153,6 +160,15 @@ def plot_domain_minmax(dTh, z_params, r_params, dx, times,
     return minmax
 
 
+
+# ----------------------------------
+def theta_s(s):
+    # parameters from pycles
+    T_tilde = 298.15
+    sd_tilde = 6864.8
+    cpd = 1004.0
+    th_s = T_tilde * np.exp( (s - sd_tilde)/cpd )
+    return th_s
 
 # ----------------------------------
 def set_input_parameters(args):
@@ -230,13 +246,7 @@ def set_input_parameters(args):
 
 
 # ----------------------------------
-def theta_s(s):
-    # parameters from pycles
-    T_tilde = 298.15
-    sd_tilde = 6864.8
-    cpd = 1004.0
-    th_s = np.exp( (s - sd_tilde)/cpd )
-    return th_s
+
 
 
 def read_in_netcdf_fields(variable_name, fullpath_in):

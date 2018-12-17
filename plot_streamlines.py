@@ -44,83 +44,79 @@ def main():
     ''' --- call plotting functions --- '''
     print(path_out)
     var_list = ['w', 'temperature', 's', 'temperature_anomaly']
-    # cont_var_name = 'w'
-    cont_var_name = 'temperature'
-    cont_var_name = 's'
-    cont_var_name = 'temperature_anomaly'
-    print('contourfigure for ' + cont_var_name)
-    vel_h = np.ndarray((2,nx_,ny_,nz_))
 
+    # --- 1D ---
+    ic1 = ic_arr[0]
+    jc1 = jc_arr[0]
+    i0 = ic1 + irstar
+    j0 = jc1 + irstar
+    di = np.int(3 * irstar)
+    dj = di
+    # --- 2D ---
+    # ic1 = ic_arr[0]
+    # jc1 = jc_arr[0]
+    # i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))
+    # di = 15
+    # j0 = jc1
+    # dj = np.int(2*irstar)
+    # # --- 3D ---
+    # d = 2*isep
+    # i0 = ic_arr[2] - np.int(np.sqrt(3)/3* d)
+    # j0 = np.int(jc_arr[0] + np.round(d / 2))
+    # di = np.int(i0*2/3)
+    # dj = 50
 
     for it, file in enumerate(files):
         t0 = times[it]
         print('--- time: ', t0, '('+str(it), file+') ---')
+        vel_h = np.ndarray((2, nx_, ny_, nz_))
         vel_h[0,:,:,:] = read_in_netcdf_fields('u', os.path.join(path_fields, file))
         vel_h[1,:,:,:] = read_in_netcdf_fields('v', os.path.join(path_fields, file))
         w = read_in_netcdf_fields('w', os.path.join(path_fields, file))
-        if cont_var_name == 'w':
-            cont_var = w
-        elif cont_var_name == 'temperature_anomaly':
-            cont_var = read_in_netcdf_fields('temperature', os.path.join(path_fields, file))
-        else:
-            cont_var = read_in_netcdf_fields(cont_var_name, os.path.join(path_fields, file))
         speed_h = np.sqrt(vel_h[0, :] * vel_h[0, :] + vel_h[1, :] * vel_h[1, :])
         speed_yz = np.sqrt(vel_h[1, :] * vel_h[1, :] + w * w)
         speed_xz = np.sqrt(vel_h[0, :] * vel_h[0, :] + w * w)
+        for cont_var_name in var_list:
+            print('contourfigure for ' + cont_var_name)
 
+            if cont_var_name == 'w':
+                cont_var = w
+            elif cont_var_name == 'temperature_anomaly':
+                cont_var = read_in_netcdf_fields('temperature', os.path.join(path_fields, file))
+            else:
+                cont_var = read_in_netcdf_fields(cont_var_name, os.path.join(path_fields, file))
 
-        # --- 1D ---
-        ic1 = ic_arr[0]
-        jc1 = jc_arr[0]
-        i0 = ic1 + irstar
-        j0 = jc1 + irstar
-        di = np.int(3 * irstar)
-        dj = di
-        # --- 2D ---
-        # ic1 = ic_arr[0]
-        # jc1 = jc_arr[0]
-        # i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))
-        # di = 15
-        # j0 = jc1
-        # dj = np.int(2*irstar)
-        # # --- 3D ---
-        # d = 2*isep
-        # i0 = ic_arr[2] - np.int(np.sqrt(3)/3* d)
-        # j0 = np.int(jc_arr[0] + np.round(d / 2))
-        # di = np.int(i0*2/3)
-        # dj = 50
+            # ''' (a) xy-plane '''
+            # for k0 in krange:
+            #     print('-- k0=' + str(k0) + ' --')
+            #     plot_streamplot_xy_collision(cont_var_name, cont_var, vel_h, speed_h, x_half, y_half, i0, di, j0, dj, k0, t0, path_out)
+            #     plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel_h,
+            #                                      x_half, y_half, speed_h, k0, t0, path_out)
 
-        # ''' (a) xy-plane '''
-        # for k0 in krange:
-        #     print('-- k0=' + str(k0) + ' --')
-        #     plot_streamplot_xy_collision(cont_var_name, cont_var, vel_h, speed_h, x_half, y_half, i0, di, j0, dj, k0, t0, path_out)
-        #     plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel_h,
-        #                                      x_half, y_half, speed_h, k0, t0, path_out)
+            # ''' (b) yz-plane at collision point'''
+            # # --- 2D ---
+            # i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))  # at collision point
+            # plot_streamplot_yz(cont_var_name, cont_var, w, vel_h, speed_yz, y_half, z_half, i0, t0, path_out, True)
+            #
+            # ''' (c) yz-plane at center of cold pool #1'''
+            # i0 = ic1    # through center of cold pool #1
+            # plot_streamplot_yz(cont_var_name, cont_var, w, vel_h, speed_yz, y_half, z_half, i0, t0, path_out, True)
 
-        # ''' (b) yz-plane at collision point'''
-        # # --- 2D ---
-        # i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))  # at collision point
-        # plot_streamplot_yz(cont_var_name, cont_var, w, vel_h, speed_yz, y_half, z_half, i0, t0, path_out, True)
-        #
-        # ''' (c) yz-plane at center of cold pool #1'''
-        # i0 = ic1    # through center of cold pool #1
-        # plot_streamplot_yz(cont_var_name, cont_var, w, vel_h, speed_yz, y_half, z_half, i0, t0, path_out, True)
-
-        # ''' (d) xz-plane at center of cold pool #1'''
-        imin = 20
-        imax = nx - imin
-        kmax = 60
-        # # --- 2D ---
-        # j0 = jc1
-        # # --- 3D ---
-        # j0 = jc3
-        if cont_var_name == 'temperature_anomaly':
-            t_mean = np.average(cont_var[:, j0, :kmax], axis=0)
-            cont_var = cont_var[:, j0, :kmax] - t_mean
-        else:
-            cont_var = cont_var[:, j0, :kmax]
-        plot_streamplot_xz(cont_var_name, cont_var, w, vel_h, speed_xz,
-                           x_half, z_half, j0, imin, imax, kmax, t0, path_out, id, True)
+            # ''' (d) xz-plane at center of cold pool #1'''
+            imin = 20
+            imax = nx - imin
+            kmax = 60
+            # # --- 2D ---
+            # j0 = jc1
+            # # --- 3D ---
+            # j0 = jc3
+            if cont_var_name == 'temperature_anomaly':
+                t_mean = np.average(cont_var[:, j0, :kmax], axis=0)
+                cont_var = cont_var[:, j0, :kmax] - t_mean
+            else:
+                cont_var = cont_var[:, j0, :kmax]
+            plot_streamplot_xz(cont_var_name, cont_var, w, vel_h, speed_xz,
+                               x_half, z_half, j0, imin, imax, kmax, t0, path_out, id, True)
 
     return
 
