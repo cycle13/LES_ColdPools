@@ -86,7 +86,7 @@ def main():
 
         ic = ic_arr[0]
         jc = jc_arr[0]
-        KE, KEd, KE_x = compute_KE(ic, jc, irstar, tmin, tmax, path_in, path_fields, path_out)
+        KE, KEd, KE_x = compute_KE(ic, jc, irstar, tmin, tmax, id, path_in, path_fields, path_out)
         rootgrp = nc.Dataset(os.path.join(path_out, filename), 'r+', format='NETCDF4')
         ts_grp = rootgrp.groups['timeseries']
         var = ts_grp.variables['KE']
@@ -99,6 +99,7 @@ def main():
         del KE, KEd, KE_x
 
 
+    ''' plot for all cases '''
     print ' '
     path_root_out = os.path.join(path_root, 'figs_energy')
     if not os.path.exists(path_root_out):
@@ -115,8 +116,8 @@ def main():
         filename = 'CP_energy_' + id + '.nc'
         rootgrp = nc.Dataset(os.path.join(path_in, filename), 'r+', format='NETCDF4')
         ts_grp = rootgrp.groups['timeseries']
-        var = ts_grp.variables['KE']
-        var[:] = KE[:]
+        KE = ts_grp.variables['KE'][:]
+        # var[:] = KE[:]
         rootgrp.close()
 
         plt.plot(times, KE, '-o', label=id)
@@ -134,7 +135,7 @@ def main():
 
 
 
-def compute_KE(ic, jc, irstar, tmin, tmax, path_in, path_fields, path_out):
+def compute_KE(ic, jc, irstar, tmin, tmax, id, path_in, path_fields, path_out):
     times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
              and np.int(name[:-3]) >= tmin and np.int(name[:-3]) <= tmax]
     times.sort()
@@ -223,15 +224,18 @@ def compute_KE(ic, jc, irstar, tmin, tmax, path_in, path_fields, path_out):
 
     from matplotlib.colors import LogNorm
     fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(10,5), sharey='all')
+    # lvls =
     cf = ax0.contourf(KE_x[:,ic-irstar-100:ic+irstar+100])
     plt.colorbar(cf, ax=ax0)
-    cf = ax1.contourf(KE_x[:,ic-irstar-100:ic+irstar+100],norm = LogNorm())
+    # lvls = np.logspace(np.amin(np.log(plot_levels)), np.amax(np.log(plot_levels)), 10)
+    lvls = np.logspace(4, 10, 100)
+    cf = ax1.contourf(KE_x[:,ic-irstar-100:ic+irstar+100],norm = LogNorm(), levels=lvls)
     plt.colorbar(cf, ax=ax1)
     ax0.set_xlabel('x')
     ax1.set_xlabel('x')
     plt.ylabel('time')
     plt.suptitle('Kinetic Energy KE[x,jc,:]')
-    plt.savefig(os.path.join(path_out,'KE_x.png'))
+    plt.savefig(os.path.join(path_out,'KE_x_'+id + '.png'))
     plt.close()
 
 
@@ -267,7 +271,6 @@ def compute_PE(ic,jc,id,jd,nx_,ny_,case_name,path,path_fields):
     # int dz a(z) = sum_i a_i dz_i
     PE = 0.0
     PEd = 0.0
-    dV = dx*dy*dz
     for i in range(nx_):
         for j in range(ny_):
             for k in range(nz):
