@@ -37,13 +37,14 @@ def main():
         print('wrong number of parameters! ')
         sys.exit()
 
-    # minmax_domain = plot_domain_minmax(dTh, z_params, r_params, dx, times,
-    #                                    case_name, path_root, path_out_figs, path_out_data)
-    #
+    save_name = 'dTh' + str(dTh) + '_minmax_all.png'
+    minmax_domain = plot_domain_minmax(dTh, z_params, r_params, dx, times,
+                                       case_name, path_root, save_name, path_out_figs)
 
-    minmax_xz = plot_xz_minmax(dTh, z_params, r_params,
-                               ic_arr, jc_arr, dx, times,
-                               case_name, path_root, path_out_figs, path_out_data)
+
+    # minmax_xz = plot_xz_minmax(dTh, z_params, r_params,
+    #                            ic_arr, jc_arr, dx, times,
+    #                            case_name, path_root, path_out_figs, path_out_data)
 
 
     return
@@ -104,7 +105,7 @@ def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
 
 # compute domain minimum and maximum of variables (s, temperature, w) for each timestep
 def plot_domain_minmax(dTh, z_params, r_params, dx, times,
-                       case_name, path_root, path_out_figs, path_out_data):
+                       case_name, path_root, save_name, path_out_figs):
     print('compting min/max domain')
 
     var_list = ['w', 's', 'temperature', 'theta']
@@ -153,7 +154,8 @@ def plot_domain_minmax(dTh, z_params, r_params, dx, times,
         ax2.set_ylabel('min('+var_name+')')
         ax2.set_xlabel('time [s]')
         fig.suptitle('dTh='+str(dTh))
-        fig.savefig(os.path.join(path_out_figs, var_name+'_dTh'+str(dTh)+'_minmax_all.png'))
+        # fig.savefig(os.path.join(path_out_figs, var_name+'_dTh'+str(dTh)+'_minmax_all.png'))
+        fig.savefig(os.path.join(path_out_figs, var_name+ '_' + save_name))
         plt.close(fig)
         print('')
 
@@ -211,6 +213,10 @@ def set_input_parameters(args):
         print('(ic,jc) from nml')
         ic = nml['init']['ic']
         jc = nml['init']['jc']
+        ic_arr = np.zeros(1)
+        jc_arr = np.zeros(1)
+        ic_arr[0] = ic
+        jc_arr[0] = jc
     except:
         print('(ic,jc) NOT from nml')
         if case_name == 'ColdPoolDry_single_3D':

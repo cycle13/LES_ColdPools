@@ -68,22 +68,21 @@ def main():
 
     # -----------
     global fullpath_out
-    fullpath_out = os.path.join(path,'figs_fields/')
+    fullpath_out = os.path.join(path, 'figs_fields/')
     if not os.path.exists(fullpath_out):
         os.mkdir(fullpath_out)
     print('fullpath_out: ', fullpath_out)
 
-    path_fields = os.path.join(path,'fields/')
+    path_fields = os.path.join(path, 'fields/')
     files = [name for name in os.listdir(path_fields) if name[-2:] == 'nc']
     files.sort(key=len)
     times = [np.int(name[:-3]) for name in files]
     print('Found the following fields: ', files)
-    #print(type(files), type(files[0]), files[0], len(files))
+    # print(type(files), type(files[0]), files[0], len(files))
     print('')
 
+
     # -----------
-
-
     # (0) import Namelist --> to chose right mean profile, fitting with time
     global nx0, ny0, nz0
     global time, nml
@@ -697,8 +696,6 @@ def read_in_netcdf_profile(variable_name, group_name, fullpath_in):
 
 
 # ----------------------------------
-
-
 
 if __name__ == "__main__":
     main()

@@ -10,10 +10,28 @@ import json as simplejson
 import os
 import sys
 
-plt.rcParams['lines.linewidth'] = 3
+label_size = 12
+plt.rcParams['xtick.labelsize'] = label_size
+plt.rcParams['ytick.labelsize'] = label_size
+plt.rcParams['axes.labelsize'] = 12
+# plt.rcParams['xtick.direction']='out'
+# plt.rcParams['ytick.direction']='out'
+plt.rcParams['legend.fontsize'] = 10
+plt.rcParams['lines.linewidth'] = 4
+plt.rcParams['grid.linewidth'] = 20
+# plt.rcParams['xtick.major.size'] = 8.5
+# plt.rcParams['xtick.minor.size'] = 5
+# plt.rcParams['ytick.major.size'] = 8.5
+# plt.rcParams['ytick.minor.size'] = 5
+# plt.rcParams['xtick.major.width'] = 2
+# plt.rcParams['xtick.minor.width'] = 1.5
+# plt.rcParams['ytick.major.width'] = 2
+# plt.rcParams['ytick.minor.width'] = 1.5
+plt.rcParams['pdf.fonttype'] = 42         # Output Type 3 (Type3) or Type 42 (TrueType)
 
 def main():
     print('PLOT CONFIGURATION')
+    print('')
     # (A) domain maximum
     #
     # (B) cross-sections
@@ -32,29 +50,36 @@ def main():
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
     args = parser.parse_args()
-    #
-    dTh, z_params, r_params, ic_arr, jc_arr, marg, times = set_input_parameters(args)
 
-    # if len(z_params) != len(r_params):
-    #     print('wrong number of parameters! ')
-    #     sys.exit()
-    #
-    # # plot contourfigure of entropy and centers of CPs (ic_arr, jc_arr)
-    # test_configuration(dTh, z_params, r_params, ic_arr, jc_arr, marg, path_root, path_out_figs)
+    colorlist = ['seagreen', 'navy', 'firebrick', 'grey', 'k', 'r', 'r']
 
+    dTh = args.dTh
+    z_params, r_params = set_geom_parameters(dTh)
+    if args.zparams:
+        z_params = args.zparams
+    if args.rparams:
+        r_params = args.rparams
+    ic_arr, jc_arr, marg, times = set_input_parameters(args, dTh, z_params, r_params)
+
+    # # if len(z_params) != len(r_params):
+    # #     print('wrong number of parameters! ')
+    # #     sys.exit()
+    # #
+    # # # plot contourfigure of entropy and centers of CPs (ic_arr, jc_arr)
+    # # test_configuration(dTh, z_params, r_params, ic_arr, jc_arr, marg, path_root, path_out_figs)
+    #
     # plot Gaussian envelops of configurations
     dTh_params = [2, 3, 4]
-    plot_envelope(dTh_params, ic_arr, path_out_figs)
+    plot_envelope(dTh_params, ic_arr, colorlist, path_out_figs)
 
     return
 
 
 
 # ----------------------------------
-def plot_envelope(dTh_params, ic_arr, path_out_figs):
+def plot_envelope(dTh_params, ic_arr, colorlist, path_out_figs):
     ''' geometry '''
 
-    # global x_half, y_half, z_half
     x_half = np.empty((nx + 2 * gw), dtype=np.double, order='c')
     z_half = np.empty((nz + 2 * gw), dtype=np.double, order='c')
     count = 0
@@ -69,42 +94,37 @@ def plot_envelope(dTh_params, ic_arr, path_out_figs):
     ic = np.int(ic_arr[0])
     xc = x_half[ic]
 
+    zstar_max = 0
+    rstar_max = 0
     fig, (axes) = plt.subplots(1, 4, figsize=(20,5))
-    ax0 = axes[0]
-    ax1 = axes[1]
-    ax2 = axes[2]
-    ax3 = axes[3]
-    # dTh_params = [2, 3, 4]
 
-    z_params = [1225, 1000, 870]
-    r_params = z_params
-    n_params = len(dTh_params)
-    for istar in range(n_params):
-        zstar = z_params[istar]
-        rstar = r_params[istar]
+    # (1) r = 1km, varying dTh
+    ax0 = axes[0]
+    for ith, dTh in enumerate(dTh_params):
+        z_params, r_params = set_geom_parameters(dTh)
+        istar = 0
+        while (z_params[istar] < 1200):
+            istar+=1
+        zstar = z_params[istar-1]
+        rstar = r_params[istar-1]
         irstar = np.int(rstar/dx[0])
+        zstar_max = np.maximum(zstar_max, zstar)
+        rstar_max = np.maximum(rstar_max, rstar)
         x_half_aux = (xc+rstar) * np.ones(shape=x_half.shape)
         for i in range(ic-irstar, ic+irstar):
             x_half_aux[i] = x_half[i]
         z_max = zstar * (np.cos((x_half_aux-xc) / rstar * np.pi / 2) ** 2)
         imin = ic - irstar - 10
         imax = ic + irstar + 10
-        ax0.plot(x_half[imin:imax], z_max[imin:imax], label='dTh'+str(dTh_params[istar]))
+        ax0.plot(x_half[imin:imax], z_max[imin:imax], color=colorlist[ith],
+                 label='dTh'+str(dTh)+': z*'+str(zstar)+', r*'+str(rstar))
     ax0.set_title('r = 1km')
+    ax0.set_ylabel('z   [m]')
+    
 
-
+    # (2) for all dTh, varying z*, r*
     for n,dTh in enumerate(dTh_params):
-        print('n', n, dTh)
-        if dTh == 4:
-            z_params = [1730, 870, 430]
-            # r_params=[430, 870, 1730]
-        elif dTh == 3:
-            z_params = [4000, 2000, 1500, 1000, 670, 500, 250]
-        elif dTh == 2:
-            z_params = [2450, 1225, 815]
-        elif dTh == 1:
-            z_params = [3465, 1730, 1155]
-        r_params = z_params[::-1]
+        z_params, r_params = set_geom_parameters(dTh)
         print('dTh: ', dTh)
         print('z*: ', z_params)
         print('r*: ', r_params)
@@ -114,6 +134,8 @@ def plot_envelope(dTh_params, ic_arr, path_out_figs):
             zstar = z_params[istar]
             rstar = r_params[istar]
             irstar = np.int(rstar / dx[0])
+            zstar_max = np.maximum(zstar_max, zstar)
+            rstar_max = np.maximum(rstar_max, rstar)
             x_half_aux = (xc + rstar) * np.ones(shape=x_half.shape)
             for i in range(ic - irstar, ic + irstar):
                 x_half_aux[i] = x_half[i]
@@ -121,7 +143,8 @@ def plot_envelope(dTh_params, ic_arr, path_out_figs):
             ax = axes[n + 1]
             imin = ic - irstar - 10
             imax = ic + irstar + 10
-            ax.plot(x_half[imin:imax], z_max[imin:imax], label='z*'+str(zstar)+', r*'+str(rstar))
+            ax.plot(x_half[imin:imax], z_max[imin:imax], color=colorlist[istar],
+                    label='z*'+str(zstar)+', r*'+str(rstar))
             ax.set_title('dTh='+str(dTh))
 
 
@@ -130,10 +153,13 @@ def plot_envelope(dTh_params, ic_arr, path_out_figs):
     imax = ic + irstar
     xmin = x_half[imin]
     xmax = x_half[imax]
+    xmin = x_half[ic] - rstar_max - 500
+    xmax = x_half[ic] + rstar_max + 500
     for ax in axes:
         ax.set_xlim(xmin, xmax)
-        ax.set_ylim(0, 4000)
-        ax.legend(fontsize=9)
+        ax.set_ylim(0, zstar_max + 200)
+        ax.set_xlabel('x  [m]')
+        ax.legend()
     plt.tight_layout
     plt.savefig(os.path.join(path_out_figs, 'envelope.png'))
     plt.close(fig)
@@ -207,7 +233,40 @@ def test_configuration(dTh, z_params, r_params, ic_arr, jc_arr, marg, path_root,
 
 # ----------------------------------
 # ----------------------------------
-def set_input_parameters(args):
+def set_geom_parameters(dTh):
+
+    if dTh == 1:
+        z_params = [3465, 1730, 1155]  # run1
+    elif dTh == 2:
+        # z_params = [2450, 1225, 815]  # run1
+        z_params = [500, 900, 1600, 1900, 2500]  # run2
+        r_params_ = [1900, 1300, 900, 800, 600]  # run2
+    elif dTh == 3:
+        # z_params = [4000, 2000, 1500, 1000, 670, 500, 250] # run1
+        z_params = [500, 1000, 1600, 2000, 2500]  # run2
+        r_params_ = [1500, 1000, 700, 600, 500]  # run2
+    elif dTh == 4:
+        # z_params = [1730, 870, 430]     # run1
+        z_params = [500, 900, 1600, 2000, 2500]  # run2
+        r_params_ = [1300, 900, 600, 500, 400]  # run2
+
+
+    try:
+        r_params = r_params_
+        del r_params_
+    except:
+        r_params = z_params[::-1]
+    print('z*: ', z_params)
+    print('r*: ', r_params)
+    print('')
+
+    return z_params, r_params
+
+
+
+
+
+def set_input_parameters(args, dTh, z_params, r_params):
 
     global path_root, path_out_data, path_out_figs
     path_root = args.path_root
@@ -220,26 +279,8 @@ def set_input_parameters(args):
     print('path root: ', path_root)
     print('path out data: ', path_out_data)
     print('path out figs: ', path_out_figs)
+    print('')
 
-
-    dTh = args.dTh
-    if args.zparams:
-        z_params = args.zparams
-    else:
-        if dTh == 4:
-            z_params = [1730, 870, 430]
-        elif dTh == 3:
-            z_params = [4000, 2000, 1500, 1000, 670, 500, 250]
-        elif dTh == 2:
-            z_params = [2450, 1225, 815]
-        elif dTh == 1:
-            z_params = [3465, 1730, 1155]
-    if args.rparams:
-        r_params = args.rparams
-    else:
-        r_params = z_params[::-1]
-    print('z*: ', z_params)
-    print('r*: ', r_params)
 
     global case_name
     case_name = args.casename
@@ -260,6 +301,10 @@ def set_input_parameters(args):
         print('(ic,jc) from nml')
         ic = nml['init']['ic']
         jc = nml['init']['jc']
+        ic_arr = np.zeros(1)
+        jc_arr = np.zeros(1)
+        ic_arr[0] = ic
+        jc_arr[0] = jc
     except:
         print('(ic,jc) NOT from nml')
         if case_name == 'ColdPoolDry_single_3D':
@@ -273,10 +318,10 @@ def set_input_parameters(args):
             print('ic, jc not defined')
     try:
         marg = nml['init']['marg']
-        print('marg from nml')
+        print('marg from nml: ', marg)
     except:
-        marg = 500.
-        print('marg NOT from nml')
+        marg = 200.
+        print('marg NOT from nml: ', marg)
 
     if args.tmin:
         tmin = np.int(args.tmin)
@@ -291,7 +336,7 @@ def set_input_parameters(args):
     print('times', times)
     print('')
 
-    return dTh, z_params, r_params, ic_arr, jc_arr, marg, times
+    return ic_arr, jc_arr, marg, times
 
 
 
