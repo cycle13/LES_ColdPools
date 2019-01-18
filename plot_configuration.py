@@ -120,7 +120,7 @@ def plot_envelope(dTh_params, ic_arr, colorlist, path_out_figs):
                  label='dTh'+str(dTh)+': z*'+str(zstar)+', r*'+str(rstar))
     ax0.set_title('r = 1km')
     ax0.set_ylabel('z   [m]')
-    
+
 
     # (2) for all dTh, varying z*, r*
     for n,dTh in enumerate(dTh_params):

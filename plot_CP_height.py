@@ -38,7 +38,7 @@ def main():
     cm_summer = plt.cm.get_cmap('spring')
 
     nml = set_input_output_parameters(args)
-    define_geometry(case_name, nml)
+    i0_center, j0_center, i0_coll, j0_coll, xmin_plt, xmax_plt, ymin_plt, ymax_plt = define_geometry(case_name, nml)
 
     ''' threshold for entropy '''
     if args.s_crit:
@@ -47,36 +47,6 @@ def main():
         s_crit = 5e-1
     print('threshold for ds=s-s_bg: '+str(s_crit)+ 'J/K')
 
-    ''' plotting parameters '''
-    if case_name == 'ColdPoolDry_single_3D':
-        i0_coll = 10
-        j0_coll = 10
-        i0_center = ic_arr[0]
-        j0_center = jc_arr[0]
-        xmin_plt = 100
-        xmax_plt = nx-xmin_plt
-        ymin_plt = xmin_plt
-        ymax_plt = xmax_plt
-    elif case_name == 'ColdPoolDry_double_3D':
-        i0_coll = 0.5*(ic_arr[0]+ic_arr[1])
-        i0_center = ic_arr[0]
-        j0_coll = jc_arr[0]
-        j0_center = jc_arr[0]
-        # domain boundaries for plotting
-        xmin_plt = 30
-        xmax_plt = 230
-        ymin_plt = xmin_plt
-        ymax_plt = xmax_plt
-    elif case_name == 'ColdPoolDry_triple_3D':
-        i0_coll = ic_arr[2]
-        i0_center = ic_arr[0]
-        j0_coll = jc_arr[2]
-        j0_center = jc_arr[0]
-        # domain boundaries for plotting
-        xmin_plt = 0
-        xmax_plt = nx
-        ymin_plt = xmin_plt
-        ymax_plt = xmax_plt
 
     ''' create output file '''
     id = os.path.basename(path)
@@ -141,17 +111,10 @@ def main():
                     if np.abs(s[i,j,k]-s_bg) > s_crit and CP_top[it,i,j] == 0:
                         CP_top[it,i,j] = k
                     s_grad[i,j,k] = dzi * (s[i,j,k+1] - s[i,j,k])
-                    # if w[i,j,k] > maxi:
-                    #     maxi = w[i,j,k]
-                    #     # maxik = k
-                    #     if w[i,j,k] > 0.5:
-                    #         maxik = k
-                    # w_max[0,it,i,j] = maxi
-                    # w_max[1,it,i,j] = maxik
         w_ = np.array(w, copy=True)
         w_[w_ < 0.5] = 0
-        w_max[0,:,:] = np.amax(w, axis=2)
-        w_max[1,:,:] = np.argmax(w_, axis=2)
+        w_max[0,:,:] = np.amax(w, axis=2)       # maximum value
+        w_max[1,:,:] = np.argmax(w_, axis=2)    # height of maximum value
         del w_
 
 
@@ -174,32 +137,8 @@ def main():
         print('plotting')
         plot_contourf_xy(CP_top[it,xmin_plt:xmax_plt,ymin_plt:ymax_plt],
                          w_max[:,it,xmin_plt:xmax_plt,ymin_plt:ymax_plt], t0)
-        plot_contourf_test_yz(s, smin, smax, CP_top[it,:,:], kmax, t0)
+        plot_contourf_test_yz(s, smin, smax, CP_top[it,:,:], CP_top_grad[it,:,:], kmax, t0)
 
-
-        # # plot profiles
-        # fig, axes = plt.subplots(1, 3, figsize=(15,5))
-        # ax = axes[0]
-        # ax.contourf(s[:,:,1].T)
-        # ax.plot([i0_coll, i0_center], [j0_coll, j0_center], 'ro')
-        # quad = patch.Rectangle((i_eps_min, j_eps_min), deltax, deltay, color='k')
-        # ax.add_patch(quad)
-        # ax = axes[1]
-        # ax.plot(s[i0_center, j0_center, :kmax], z_half[:kmax])
-        # ax = axes[2]
-        # ax.plot(s_grad[i0_center, j0_center, :], z_half[:kmax])
-        # ax.plot(0.0, CP_top[i0_center,j0_center], 'xk')
-        # fig.savefig(os.path.join(path_out, 'CP_height_test_t'+str(t0)+'s.png'))
-        # plt.close(fig)
-
-        # fig = plt.figure()
-        # plt.contourf(dx[2]*CP_top.T)
-        # plt.colorbar()
-        # plt.title('CP height  (t='+str(t0)+'s)')
-        # plt.xlabel('x  (dx='+str(dx)+')')
-        # plt.ylabel('y  (dy='+str(dx[1])+')')
-        # fig.savefig(os.path.join(path_out, 'CP_height_t'+str(t0)+'.png'))
-        # plt.close(fig)
 
     # ''' output all times '''
     # CP_top_max[0, :] = np.amax(np.amax(CP_top, axis=2), axis=1)
@@ -211,8 +150,10 @@ def main():
     i1 = ic_arr[0]
     i2 = i0_coll
     # i2 =
-    j1 = j0_coll
-    j2 = ic_arr[0]
+    # j1 = j0_coll
+    # j2 = ic_arr[0]
+    j1 = ic_arr[0]
+    j2 = j0_coll
     plot_x_crosssections(s0, CP_top, w_max, j1, j2)
     plot_x_crosssections_CPtop_w(s0, CP_top, w_max, j1, j2)
     plot_y_crosssections(s0, CP_top, w_max, i1, i2)
@@ -222,11 +163,11 @@ def main():
 
 
 # ----------------------------------------------------------------------
-def plot_contourf_test_yz(s, smin, smax, CP_top, kmax, t0):
+def plot_contourf_test_yz(s, smin, smax, CP_top, CP_top_grad, kmax, t0):
     ic1 = ic_arr[0]
     levels = np.arange(smin, smax, 0.1)
 
-    fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
     ax1 = axes[0]
     a = ax1.contourf(s[:, :, 1].T, levels=levels)
     ax1.plot([ic1, ic1], [0, ny], 'k-')
@@ -234,6 +175,11 @@ def plot_contourf_test_yz(s, smin, smax, CP_top, kmax, t0):
     ax2 = axes[1]
     ax2.contourf(s[ic1, :, :kmax].T, levels=levels)
     ax2.plot(CP_top[ic1, :], 'w-')
+    ax2.set_title('CP top (threshold)')
+    ax3 = axes[2]
+    ax3.contourf(s[ic1, :, :kmax].T, levels=levels)
+    ax3.plot(CP_top_grad[ic1, :], 'w-')
+    ax3.set_title('CP top (gradient)')
     fig.suptitle('t=' + str(t0) + 's')
     fig.tight_layout()
     fig.savefig(os.path.join(path_out, 'CP_height_yz_t' + str(t0) + '.png'))
@@ -244,11 +190,9 @@ def plot_contourf_test_yz(s, smin, smax, CP_top, kmax, t0):
 def plot_contourf_xy(CP_top, w_max, t0):
     wmax = np.ceil(np.maximum(np.amax(w_max[0,:,:]), np.abs(np.amin(w_max[0,:,:]))))
     if wmax > 0.0:
-        levels = np.arange(-wmax, wmax+1, 1)
+        levels = np.arange(-wmax, wmax+0.1, 0.1)
     else:
         levels = np.arange(-1,2,1)
-    # print('')
-    # print levels
 
     fig, axes = plt.subplots(1,3, figsize=(16,5), sharey=True)
     ax1 = axes[0]
@@ -446,6 +390,7 @@ def set_input_output_parameters(args):
     dx[2] = nml['grid']['dz']
     gw = nml['grid']['gw']
     dV = dx[0] * dx[1] * dx[2]
+    print('nx, ny, nz', nx, ny, nz)
 
 
     ''' determine file range '''
@@ -469,7 +414,6 @@ def set_input_output_parameters(args):
         kmax = np.int(args.kmax)
     else:
         kmax = 50
-    print('nx, ny, nz', nx, ny, nz)
 
     return nml
 
@@ -481,7 +425,6 @@ def define_geometry(case_name, nml):
     global x_half, y_half, z_half
     global ic_arr, jc_arr
     global rstar, irstar, zstar, kstar
-
 
     # test file:
     var = read_in_netcdf_fields('u', os.path.join(path_fields, files[0]))
@@ -504,7 +447,6 @@ def define_geometry(case_name, nml):
         count += 1
 
     # set coordinates for plots
-    # (a) double 3D
     if case_name == 'ColdPoolDry_single_3D':
         rstar = nml['init']['r']
         irstar = np.int(np.round(rstar / dx[0]))
@@ -512,11 +454,11 @@ def define_geometry(case_name, nml):
         try:
             ic = nml['init']['ic']
             jc = nml['init']['jc']
-            print('(ic,jc) from nml')
+            # print('(ic,jc) from nml')
         except:
             ic = np.int(nx/2)
             jc = np.int(ny/2)
-            print('(ic,jc) NOT from nml')
+            # print('(ic,jc) NOT from nml')
         ic_arr = np.zeros(1)
         jc_arr = np.zeros(1)
         ic_arr[0] = ic
@@ -527,7 +469,7 @@ def define_geometry(case_name, nml):
         except:
             rstar = 5000.0  # half of the width of initial cold-pools [m]
         irstar = np.int(np.round(rstar / dx[0]))
-        # zstar = nml['init']['h']
+        zstar = nml['init']['h']
         isep = 4 * irstar
         ic1 = np.int(nx / 3)  # np.int(Gr.dims.ng[0] / 3)
         ic2 = ic1 + isep
@@ -573,8 +515,55 @@ def define_geometry(case_name, nml):
 
         isep = dhalf
 
-    return
+    ''' plotting parameters '''
+    if case_name == 'ColdPoolDry_single_3D':
+        i0_coll = 10
+        j0_coll = 10
+        i0_center = ic_arr[0]
+        j0_center = jc_arr[0]
+        xmin_plt = 100
+        xmax_plt = nx - xmin_plt
+        ymin_plt = xmin_plt
+        ymax_plt = xmax_plt
+    elif case_name == 'ColdPoolDry_double_3D':
+        i0_coll = 0.5 * (ic_arr[0] + ic_arr[1])
+        i0_center = ic_arr[0]
+        j0_coll = jc_arr[0]
+        j0_center = jc_arr[0]
+        # domain boundaries for plotting
+        xmin_plt = 30
+        xmax_plt = 230
+        ymin_plt = xmin_plt
+        ymax_plt = xmax_plt
+    elif case_name == 'ColdPoolDry_triple_3D':
+        i0_coll = ic_arr[2]
+        i0_center = ic_arr[0]
+        j0_coll = jc_arr[2]
+        j0_center = jc_arr[0]
+        # domain boundaries for plotting
+        xmin_plt = 0
+        xmax_plt = nx
+        ymin_plt = xmin_plt
+        ymax_plt = xmax_plt
 
+    return i0_center, j0_center, i0_coll, j0_coll, xmin_plt, xmax_plt, ymin_plt, ymax_plt
+
+
+# ----------------------------------
+def theta_s(s):
+    # T_tilde = 298.15
+    # thetas_c(s, qt){
+    #     return T_tilde * exp((s - (1.0 - qt) * sd_tilde - qt * sv_tilde) / cpm_c(qt));
+    # }
+    # cpm_c(qt){
+    #     return (1.0 - qt) * cpd + qt * cpv;
+    # }
+    # parameters from pycles
+    T_tilde = 298.15
+    sd_tilde = 6864.8
+    cpd = 1004.0
+    th_s = T_tilde * np.exp( (s - sd_tilde)/cpd )
+    return th_s
 
 # ----------------------------------
 def create_output_file(id, s_crit, nx, ny, times, path_out):
@@ -630,13 +619,13 @@ def dump_output_file(CP_top_max, w_max, it, id, s_crit, path_out):
 
     rootgrp.close()
     return
-# ----------------------------------
+
+
+
 def read_in_netcdf_fields(variable_name, fullpath_in):
-    print(fullpath_in)
+    # print(fullpath_in)
     rootgrp = nc.Dataset(fullpath_in, 'r')
     var = rootgrp.groups['fields'].variables[variable_name]
-    # shape = var.shape
-    # data = np.ndarray(shape = var.shape)
     data = var[:,:,:]
     rootgrp.close()
     return data

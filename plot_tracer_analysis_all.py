@@ -5,18 +5,20 @@ import argparse
 import json as simplejson
 import os
 
-label_size = 8
+label_size = 10
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
 plt.rcParams['lines.linewidth'] = 2
-plt.rcParams['legend.fontsize'] = 8
-plt.rcParams['axes.labelsize'] = 12
+plt.rcParams['legend.fontsize'] = 10
+plt.rcParams['axes.labelsize'] = 15
 
 def main():
     parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("casename")
     parser.add_argument("path_root")
     parser.add_argument("dTh", type=int)
+    parser.add_argument("--zparams_r1km", nargs='+', type=int)
+    parser.add_argument("--rparams_r1km", nargs='+', type=int)
     parser.add_argument("--zparams", nargs='+', type=int)
     parser.add_argument('--rparams', nargs='+', type=int)
     parser.add_argument("--tmin")
@@ -53,6 +55,7 @@ def main():
     k0 = 0
 
     # --------------------------------------
+    ''' ---------------- for each dTh ---------------- '''
     n_params = len(z_params)
     dist_av = np.zeros((n_params, nt, nk))
     r_av = np.zeros((n_params, nt, nk))
@@ -81,13 +84,19 @@ def main():
             drdt_av[:,it,:] = 1./dt_fields * (r_av[:,it,:] - r_av[:,it-1,:])
 
     figname = 'CP_rim_dTh' + str(dTh) + '.png'
-    plot_dist_vel(r_av, drdt_av, U_rad_av, [dTh], z_params, r_params, n_params, k0, figname)
+    title = 'CP rim (dTh=' + str(dTh) + ')'
+    plot_dist_vel(r_av, drdt_av, U_rad_av, [dTh], z_params, r_params, n_params, k0, title, figname)
 
 
-    # --------------------------------------
+    # -----------------------------------------------
+    ''' ---------------- r = 1km ---------------- '''
     dTh_params = [2, 3, 4]
-    z_params = [1225, 1000, 870]
-    r_params = z_params
+    z_params = args.zparams_r1km
+    r_params = args.rparams_r1km
+    print('r=1km')
+    print('dTh: ', dTh_params)
+    print('z*: ', z_params)
+    print('r*: ', r_params)
     n_params = len(dTh_params)
     dist_av = np.zeros((n_params, nt, nk))
     r_av = np.zeros((n_params, nt, nk))
@@ -111,8 +120,12 @@ def main():
         for it, t0 in enumerate(times[1:]):
             drdt_av[:,it,:] = 1./dt_fields * (r_av[:,it,:] - r_av[:,it-1,:])
 
+    print('path', path_out_figs)
     figname = 'CP_rim_r1km.png'
-    plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_params, k0, figname)
+    title = 'CP rim (r=1km)'
+    plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_params, k0, title, figname)
+    figname = 'CP_rim_vel_r1km.png'
+    plot_vel(r_av, U_rad_av, dTh_params, z_params, r_params, n_params, k0, figname)
 
 
 
@@ -120,7 +133,8 @@ def main():
 
     return
 # ----------------------------------------------------------------------
-def plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_params, k0, fig_name):
+def plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_params, k0,
+                  title, fig_name):
 
     fig, (ax0, ax1, ax2) = plt.subplots(1, 3, sharex='all', figsize=(18, 5))
     for istar in range(n_params):
@@ -144,10 +158,38 @@ def plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_par
     ax1.set_ylabel('drdt_av')
     ax2.set_ylabel('U_rad_av')
     ax1.legend()
-    fig.suptitle('CP rim (dTh=' + str(dTh) + ')')
+    # fig.suptitle('CP rim (dTh=' + str(dTh) + ')')
+    fig.suptitle(title)
     fig.tight_layout()
     fig.savefig(os.path.join(path_out_figs, fig_name))
     # fig.savefig(os.path.join(path_out_figs, 'CP_rim_dTh' + str(dTh) + '.png'))
+    plt.close(fig)
+
+    return
+
+# ----------------------------------------------------------------------
+def plot_vel(r_av, U_rad_av, dTh_params, z_params, r_params, n_params, k0, fig_name):
+
+    fig, (ax0, ax1) = plt.subplots(1, 2, sharex='all', figsize=(11, 5))
+    for istar in range(n_params):
+        if len(dTh_params) == 1:
+            dTh = dTh_params[0]
+        else:
+            dTh = dTh_params[istar]
+        zstar = z_params[istar]
+        rstar = r_params[istar]
+        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        ax0.plot(times, r_av[istar, :, k0], 'o-', label=id)
+        ax1.plot(times, U_rad_av[istar, :, k0], 'o-', label=id)
+    ax0.set_xlabel('times [s]')
+    ax1.set_xlabel('times [s]')
+    ax0.set_ylabel('r_av')
+    ax1.set_ylabel('U_rad_av')
+    ax1.legend()
+    fig.suptitle('CPs (r=1km)')
+    fig.tight_layout()
+    plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, wspace=0.25)
+    fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 
     return
@@ -275,19 +317,34 @@ def set_input_parameters(args):
     if args.zparams:
         z_params = args.zparams
     else:
-        if dTh == 4:
-            z_params=[1730, 870, 430]
-            # r_params=[430, 870, 1730]
-        elif dTh == 3:
-            z_params=[4000, 2000, 1500, 1000, 670, 500, 250]
+        if dTh == 1:
+            z_params = [3465, 1730, 1155]  # run1
         elif dTh == 2:
-            z_params=[2450, 1225, 815]
-        elif dTh == 1:
-            z_params=[3465, 1730, 1155]
+            # z_params = [2450, 1225, 815]  # run1
+            z_params = [500, 900, 1600, 1900, 2500]  # run2
+            r_params_ = [1900, 1300, 900, 800, 600]  # run2
+        elif dTh == 3:
+            # z_params = [4000, 2000, 1500, 1000, 670, 500, 250] # run1
+            z_params = [500, 1000, 1600, 2000, 2500]  # run2
+            r_params_ = [1500, 1000, 700, 600, 500]  # run2
+        elif dTh == 4:
+            # z_params = [1730, 870, 430]     # run1
+            z_params = [500, 900, 1600, 2000, 2500]  # run2
+            r_params_ = [1300, 900, 600, 500, 400]  # run2
     if args.rparams:
         r_params = args.rparams
     else:
-        r_params = z_params[::-1]
+        try:
+            r_params = r_params_
+            del r_params_
+        except:
+            r_params = z_params[::-1]
+
+
+
+
+
+
     print('dTh: ', dTh)
     print('z*: ', z_params)
     print('r*: ', r_params)

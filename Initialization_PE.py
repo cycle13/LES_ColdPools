@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
-import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 import matplotlib.colors as colors
 import netCDF4 as nc
@@ -9,11 +8,14 @@ import argparse
 import json as simplejson
 import os
 from scipy.integrate import odeint
+import sys
 
 # import thermodynamic_profiles
 # from thermodynamic_profiles import alpha_c
 
 def main():
+    cm = plt.cm.get_cmap('rainbow')
+
     path_out = './figs_Initialization/'
 
     define_geometry()
@@ -25,50 +27,127 @@ def main():
 
     # parameter range
     dTh_range = [2, 3, 4]
-    # dTh_range = [3]
     zstar_min = 400
     zstar_max = 2500
-    zstar_range = np.arange(1000, zstar_max+100, 100)
+    dTh_range = [4]
+    # zstar_min = 800
+    # zstar_max = 800
+    zstar_range = np.arange(zstar_min, zstar_max+100, 100)
     print('zstar', zstar_range)
 
     n_thermo = len(dTh_range)
     n_geom_z = len(zstar_range)
+
+    path = '/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2/dTh3_z1000_r1000/stats/'
+    case_name = 'ColdPoolDry_single_3D'
+    rootgrp = nc.Dataset(os.path.join(path, 'Stats.' + case_name + '.nc'))
+    rho0_stats = rootgrp.groups['reference'].variables['rho0'][:]
+    # alpha0_stats = rootgrp.groups['reference'].variables['alpha0'][:]
+    zhalf_stats = rootgrp.groups['reference'].variables['z'][:]
+    # rho_unit = rootgrp.groups['reference'].variables['rho0'].units
+    rootgrp.close()
+
 
     # reference PE
     dTh_ref = 3
     rstar_ref = 1000
     zstar_ref = 1000
     z_max_arr, theta = compute_envelope(dTh_ref, rstar_ref, zstar_ref, Th_g)
-    PE_ref = compute_PE(theta, Th_g, z_max_arr)
+    PE_ref = compute_PE(theta, Th_g, z_max_arr, zstar_ref, rho0_stats, zhalf_stats)
+    PE_ref_approx = compute_PE_density_approx(dTh_ref, zstar_ref, rstar_ref)
     print('PE_ref: ', PE_ref)
 
+
     for iTh, dTh in enumerate(dTh_range):
-        rstar_min = np.sqrt(compute_PE_density_approx(dTh_ref, zstar_ref, rstar_ref) / (dTh * zstar_max ** 2)) - 2*dx
-        rstar_max = np.sqrt(compute_PE_density_approx(dTh_ref, zstar_ref, rstar_ref) / (dTh * zstar_min ** 2)) + 2*dx
-        print('rstar', rstar_min, rstar_max)
+        rstar_guess = np.sqrt(PE_ref_approx / (dTh * zstar_max ** 2))
+        rstar_min = rstar_guess - dx
+        rstar_max = np.minimum(np.sqrt(PE_ref_approx / (dTh * zstar_min ** 2)) + 2*dx, 2500)
+        print('rstar', rstar_guess, rstar_min, rstar_max)
         print('')
         rstar_range = dx * np.arange(np.floor(rstar_min/dx), np.ceil(rstar_max/dx)+1)
         n_geom_r = len(rstar_range)
         PE = np.zeros((n_geom_z, n_geom_r))
+        diff = np.zeros((3, n_thermo, n_geom_z))
+        diff[2, :, :] = 2*PE_ref*np.ones((n_thermo, n_geom_z))
 
         print('dTh: ', dTh, 'r*-range', rstar_range)
-        fig1 = plt.figure(figsize=(10,6))
-        plt.plot([rstar_range[0], rstar_range[-1]], [PE_ref, PE_ref], '-o',
-                 label='PE ref (dTh=' + str(dTh_ref) + ', z*=' + str(zstar_ref) + ', '+ 'r*=' + str(rstar_ref)+')')
+        fig1, (ax1, ax2) = plt.subplots(1, 2, figsize=(11,5))
+        ax2.fill_between([rstar_range[0], rstar_range[-1]], 0.9, 1.1, color='gray', alpha=0.2)
+        ax2.fill_between([rstar_range[0], rstar_range[-1]], 0.95, 1.05, color='gray', alpha=0.4)
+
         for iz, zstar in enumerate(zstar_range):
+            PE_guess = 0.0
             for ir, rstar in enumerate(rstar_range):
                 print('z*: ', zstar, 'r*:', rstar)
 
                 z_max_arr, theta = compute_envelope(dTh, rstar, zstar, Th_g)
-                PE[iz, ir] = compute_PE(theta, Th_g, z_max_arr)
+                PE[iz, ir] = compute_PE(theta, Th_g, z_max_arr, zstar, rho0_stats, zhalf_stats)
 
-            plt.plot(rstar_range, PE[iz, :], '-o', label='dTh='+str(dTh)+', z*='+str(zstar))
-        plt.xlabel('r*   [m]')
-        plt.ylabel('PE(r*)')
-        plt.legend(loc='center left', bbox_to_anchor=(1., 0.5),fontsize=8)
-        plt.subplots_adjust(bottom=0.12, right=.8, top=0.95, wspace=0.1)
-        fig1.savefig(os.path.join(path_out, 'initialization_dTh'+str(dTh)+'.png'))
+                diff_aux = np.abs(PE[iz, ir] - PE_ref)
+                if diff_aux < np.abs(diff[2, iTh, iz] - PE_ref):
+                    diff[0, iTh, iz] = ir
+                    diff[1, iTh, iz] = rstar
+                    diff[2, iTh, iz] = PE[iz, ir]
+
+                rstar_guess = np.sqrt(PE_ref_approx / (dTh * zstar ** 2))
+                if rstar == rstar_guess:
+                    PE_guess = PE[iz, ir]
+
+            ax1.plot(rstar_range, PE[iz, :], '-o', color=cm(np.double(iz)/n_geom_z))
+            ax2.plot(rstar_range, PE[iz, :]/PE_ref, '-o', color=cm(np.double(iz)/n_geom_z),
+                     # label='dTh='+str(dTh)+', z*='+str(zstar)+', r*='+str(diff[1, iTh, iz])
+                     #       + ', (PE/PE_ref='+str(diff[2, iTh, iz]) + ')')
+                     label='z*='+str(zstar)+', r*='+str(diff[1, iTh, iz])
+                           + ', (PE/PE_ref='+str(np.round(diff[2, iTh, iz]/PE_ref, 2)) + ')')
+            ax1.plot(diff[1, iTh, iz], PE[iz, diff[0, iTh, iz]], 'ko')
+            ax2.plot(diff[1, iTh, iz], PE[iz, diff[0, iTh, iz]]/PE_ref, 'ko')
+            ax1.plot(rstar_guess, PE_guess, 'kd')
+            ax2.plot(rstar_guess, PE_guess/PE_ref, 'dk')
+        ax1.plot([rstar_range[0], rstar_range[-1]], [PE_ref, PE_ref], '-k', linewidth=2,
+                 label='PE ref (dTh=' + str(dTh_ref) + ', z*=' + str(zstar_ref) + ', ' + 'r*=' + str(rstar_ref) + ')')
+        ax2.plot([rstar_range[0], rstar_range[-1]], [1., 1.], '-k', linewidth=2)
+
+        ax1.set_xlabel('r*   [m]')
+        ax2.set_xlabel('r*   [m]')
+        ax1.set_ylabel('PE(r*)   [J]')
+        ax2.set_ylabel('PE(r*)/PE_ref')
+        ax1.set_xlim(rstar_range[0], diff[1, iTh, 0]+2*dx)
+        ax1.set_ylim(np.amin(PE), PE_ref*1.3)
+        ax2.set_xlim(rstar_range[0], diff[1, iTh, 0]+2*dx)
+        ax2.set_ylim(0.5, 1.5)
+        ax2.legend(loc='center left', bbox_to_anchor=(1., 0.5),fontsize=8)
+        plt.suptitle('dTh='+str(dTh) + ', marg='+str(marg)+'m', fontsize=15)
+        plt.subplots_adjust(bottom=0.12, right=.75, left=0.07, top=0.9, wspace=0.25)
+        fig1.savefig(os.path.join(path_out, 'initialization_dTh'+str(dTh)+'K_marg'+str(marg)+'m.png'))
         plt.close(fig1)
+
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11,5))
+        cf = ax1.contourf(PE[:,:])
+        plt.colorbar(cf, ax=ax1)
+        ax1.set_title('PE(z*,r*)')
+        ax1.set_xlabel('z*')
+        ax1.set_ylabel('r*')
+        lvls = np.linspace(0,2, 1e3)
+        cf = ax2.contourf(PE[:,:]/PE_ref, levels=lvls, extend='max')
+        plt.colorbar(cf, ax=ax2)
+        ax2.set_title('PE(z*,r*)/PE(1000m, 1000m)')
+        ax2.set_xlabel('z*')
+        ax2.set_ylabel('r*')
+        plt.savefig(os.path.join(path_out, 'initialization_dTh' + str(dTh) + 'K_marg'+str(marg)+'m_contourf.png'))
+        plt.close(fig)
+
+        file_name = 'PE_init_dTh'+str(dTh)+'K_marg'+str(marg)+'m.nc'
+        dump_file(file_name, n_geom_z, n_geom_r, zstar_range, rstar_range, PE, PE_ref, path_out)
+
+
+
+    print('')
+    for iTh, dTh in enumerate(dTh_range):
+        print('dTh='+str(dTh) + ': z*='+str(zstar_range))
+        print('r*=' +str(diff[1, iTh, :]))
+        print('PE_ref - PE=' +str(diff[2, iTh, :]))
+        print('PE/PE_ref = '+str(diff[2, iTh, :]/PE_ref))
 
     return
 
@@ -76,10 +155,29 @@ def main():
 
 
 #_______________________________
+
+def dump_file(fname, n_zstar, n_rstar, zstar_range, rstar_range, PE, PE_ref, path_out):
+    rootgrp = nc.Dataset(os.path.join(path_out, fname), 'w', format='NETCDF4')
+    rootgrp.createDimension('n_zstar', n_zstar)
+    rootgrp.createDimension('n_rstar', n_rstar)
+    var = rootgrp.createVariable('zstar', 'f8', ('n_zstar'))
+    var[:] = zstar_range[:]
+    var = rootgrp.createVariable('rstar', 'f8', ('n_rstar'))
+    var[:] = rstar_range[:]
+    var = rootgrp.createVariable('PE_ref', 'f8', )
+    var[:] = PE_ref
+    var = rootgrp.createVariable('PE', 'f8', ('n_zstar', 'n_rstar'))
+    var[:,:] = PE[:,:]
+    rootgrp.close()
+    return
+
+
+
+#_______________________________
 def compute_envelope(dTh, rstar, zstar, th_g):
-    k_max_arr = (-1) * np.ones((2, nlg[0], nlg[1]), dtype=np.double)
+    # k_max_arr = (-1) * np.ones((2, nlg[0], nlg[1]), dtype=np.double)
     z_max_arr = np.zeros((2, nlg[0], nlg[1]), dtype=np.double)
-    theta = th_g * np.ones(shape=(nlg[0], nlg[1], nlg[2]))
+    # theta = th_g * np.ones(shape=(nlg[0], nlg[1], nlg[2]))
     theta_z = th_g * np.ones(shape=(nlg[0], nlg[1], nlg[2]))
     theta_pert = np.random.random_sample(npg)
     # entropy = np.empty((npl), dtype=np.double, order='c')
@@ -101,22 +199,6 @@ def compute_envelope(dTh, rstar, zstar, th_g):
                 z_max = (zstar + marg) * (np.cos(r / (rstar + marg) * np.pi / 2) ** 2)
                 z_max_arr[1, i, j] = z_max
 
-            # for k in xrange(gw, nlg[2]-gw):
-            #     ijk = ishift + jshift + k
-            #     if (k - gw) <= k_max_arr[0, i, j]:
-            #         theta[i, j, k] = th_g - dTh
-            #     elif (k - gw) <= k_max_arr[1, i, j]:
-            #         th = th_g - dTh * np.sin(
-            #             ((k - gw) - k_max_arr[1, i, j]) / (k_max_arr[1, i, j] - k_max_arr[0, i, j]) * np.pi / 2) ** 2
-            #         # th = th_g - dTh * np.sin((k - k_max_arr[1, i, j]) / (k_max_arr[1, i, j] - k_max_arr[0, i, j])) ** 2
-            #         theta[i, j, k] = th
-            #     if k <= kstar + 2:
-            #         theta_pert_ = (theta_pert[ijk] - 0.5) * 0.1
-            #     else:
-            #         theta_pert_ = 0.0
-            #     # PV.values[s_varshift + ijk] = entropy_from_thetas_c(theta[i, j, k] + theta_pert_, 0.0)
-            #     # entropy[ijk] = entropy_from_thetas_c(theta[i, j, k] + theta_pert_, 0.0)
-
             kstar = np.int(np.round(zstar / dz))
             for k in xrange(gw, nlg[2]-gw):
                 ijk = ishift + jshift + k
@@ -126,13 +208,14 @@ def compute_envelope(dTh, rstar, zstar, th_g):
                     th = th_g - dTh * np.sin(
                         (z_half[k] - z_max_arr[1, i, j]) / (z_max_arr[1, i, j] - z_max_arr[0, i, j]) * np.pi / 2) ** 2
                     theta_z[i, j, k] = th
-                if k <= kstar + 2:
-                    theta_pert_ = (theta_pert[ijk] - 0.5) * 0.1
-                else:
-                    theta_pert_ = 0.0
+                # if k <= kstar + 2:
+                #     theta_pert_ = (theta_pert[ijk] - 0.5) * 0.1
+                # else:
+                #     theta_pert_ = 0.0
                 # PV.values[s_varshift + ijk] = entropy_from_thetas_c(theta_z[i, j, k] + theta_pert_, 0.0)
                 # entropy[ijk] = entropy_from_thetas_c(theta_z[i, j, k] + theta_pert_, 0.0)
     return z_max_arr, theta_z
+
 
 
 def compute_PE_density_approx(dTh, zstar, rstar):
@@ -141,34 +224,27 @@ def compute_PE_density_approx(dTh, zstar, rstar):
 
 
 
-def compute_PE(theta_z, th_g, z_max_arr):
+def compute_PE(theta_z, th_g, z_max_arr, z_max, rho0_stats, zhalf_stats):
     g = 9.80665
     dV = dx * dy * dz
 
-    path = '/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/dTh3_z1000_r1000/stats/'
-    case_name = 'ColdPoolDry_single_3D'
-    rootgrp = nc.Dataset(os.path.join(path, 'Stats.' + case_name + '.nc'))
-    rho0_stats = rootgrp.groups['reference'].variables['rho0'][:]
-    alpha0_stats = rootgrp.groups['reference'].variables['alpha0'][:]
-    zhalf_stats = rootgrp.groups['reference'].variables['z'][:]
-    rho_unit = rootgrp.groups['reference'].variables['rho0'].units
-    rootgrp.close()
 
-    p0 = np.log(Pg)
-    # Perform the integration at integration points z_half
-    # p = odeint(rhs, p0, z_, hmax=1.0)[:, 0]  # type: # object
-    # p = np.exp(p)
-    p_half = odeint(rhs, p0, z_half[gw:nz+gw+1], hmax=1.0)[1:, 0]
-    p_half = np.exp(p_half)
-    # temperature[k], ql[k], qi[k] = Thermodynamics.eos(p_[k], self.sg, self.qtg)
-    T, ql, qi = eos(p_half, sg, qtg)
-    # qv[k] = self.qtg - (ql[k] + qi[k])
-    # qv = np.zeros(p.shape)
-    qv = np.zeros(p_half.shape)
-    alpha0 = alpha_c(p_half, T, qtg, qv)
-    rho0 = 1./alpha0
-    # print(rho0.shape, rho0_stats.shape, z_half.shape)
-    print('diff rho: ', np.amax(np.abs(rho0[:nz] - rho0_stats[:nz])), np.amax(rho0[:nz]))
+
+    # p0 = np.log(Pg)
+    # # Perform the integration at integration points z_half
+    # # p = odeint(rhs, p0, z_, hmax=1.0)[:, 0]  # type: # object
+    # # p = np.exp(p)
+    # p_half = odeint(rhs, p0, z_half[gw:nz+gw+1], hmax=1.0)[1:, 0]
+    # p_half = np.exp(p_half)
+    # # temperature[k], ql[k], qi[k] = Thermodynamics.eos(p_[k], self.sg, self.qtg)
+    # T, ql, qi = eos(p_half, sg, qtg)
+    # # qv[k] = self.qtg - (ql[k] + qi[k])
+    # # qv = np.zeros(p.shape)
+    # qv = np.zeros(p_half.shape)
+    # alpha0 = alpha_c(p_half, T, qtg, qv)
+    # rho0 = 1./alpha0
+    # # print(rho0.shape, rho0_stats.shape, z_half.shape)
+    # # print('diff rho: ', np.amax(np.abs(rho0[:nz] - rho0_stats[:nz])), np.amax(rho0[:nz]))
 
     # plt.figure()
     # plt.subplot(1,2,1)
@@ -180,23 +256,25 @@ def compute_PE(theta_z, th_g, z_max_arr):
     # plt.legend()
     # plt.show()
 
-    theta_av = np.average(np.average(theta_z, axis=0), axis=0)
+    kmax = np.int(z_max/dz) + 20
+    if not kmax <= nz:
+        print('in PE computation: looping outwards of vertical domain extent')
+        sys.exit()
+
     PE = 0.0
     PE_av = 0.0
+    theta_av = np.average(np.average(theta_z, axis=0), axis=0)
     for i in range(nx):
         for j in range(ny):
-            for k in range(nz):
-                # delta_th = theta_z[i,j,k] - th_g
-                # PE += z_half[k+gw] * delta_th * dV * 1./alpha0[k]
-                if z_half[k] <= z_max_arr[0, i, j]:
-                    delta_th = np.abs(theta_z[i,j,k] - th_g)
-                    # PE += z_half[k+gw] * delta_th * dV * rho0_stats[k]
-                    PE += zhalf_stats[k] * delta_th * dV * rho0_stats[k]
-                    delta_th_av = theta_z[i,j,k] - theta_av[k]
-                    PE_av += z_half[k+gw] * delta_th_av * dV * rho0_stats[k]
-    PE_av = g / th_g * PE_av
+            for k in range(kmax):
+                delta_th = th_g - theta_z[i,j,k]
+                PE += zhalf_stats[k] * delta_th * dV * rho0_stats[k]
+                delta_th_av = theta_z[i, j, k] - theta_av[k]
+                PE_av += z_half[k + gw] * delta_th_av * dV * rho0_stats[k]
     PE = g / th_g * PE
-    print('PE: '+str(PE), PE_av)
+    PE_av = g / th_g * PE_av
+
+    # print('test: ', PE_test / PE)
 
     return PE
 
@@ -222,134 +300,6 @@ def rhs(p, z):
     rhs_ = -g / (Rd * T * (1.0 - qtg + eps_vi * (qtg - ql - qi)))
     return rhs_
 #_______________________________
-
-
-def plotting(dTh, rstar, irstar, zstar, kstar, theta, theta_z, k_max_arr, z_max_arr, icg):
-    ''' plot theta[k=0]'''
-    theta_ = theta[gw:-gw, gw:-gw, gw:-gw]
-    theta_z_ = theta_z[gw:-gw, gw:-gw, gw:-gw]
-    fig, axes = plt.subplots(2, 4, figsize=(20, 10))
-    # ax = axes[0, 0]
-    ax1 = axes[0, 0]
-    ax2 = axes[1, 0]
-    im = ax1.imshow(theta_[:, :, 0].T, origin='lower', cmap=cm.bwr)
-    plt.colorbar(im, ax=ax1, shrink=0.5)
-    ax1.plot(ic, jc, 'or')
-    ax1.plot([ic, ic], [0, ny], 'k')
-    ax1.plot([ic + irstar, ic + irstar], [0, ny], 'w:')
-    ax1.plot([ic - irstar, ic - irstar], [0, ny], 'w:')
-    ax1.plot([jc - irstar - marg_i, jc - irstar - marg_i], [0, ny], '--', color='w', linewidth=1,
-             label='jc-irstar-marg_i')
-    ax1.plot([jc + irstar + marg_i, jc + irstar + marg_i], [0, ny], '--', color='w', linewidth=1)
-    ax1.plot([xc / dx, xc / dx], [0, ny], '--k')
-    ax1.plot([0, nx], [jc, jc], 'k')
-    circle1 = plt.Circle((ic, jc), irstar, fill=False, color='lime', linewidth=2)
-    circle2 = plt.Circle((ic, jc), irstar + marg_i, fill=False, color='lime', linewidth=1)
-    ax1.add_artist(circle1)
-    ax1.add_artist(circle2)
-    ax1.set_xlim([0, nx])
-    ax1.set_ylim([0, ny])
-    # ax1.set_title(str(count_0))
-    ax2.contourf(x_half[gw:-gw], y_half[gw:-gw], theta_[:, :, 0])
-    ax2.plot([xc, xc], [y_half[gw], y_half[-gw]], 'k')
-    ax2.plot([x_half[gw], x_half[-gw]], [yc, yc], 'k')
-
-    ax1 = axes[0, 1]
-    ax2 = axes[1, 1]
-    im = ax1.imshow(theta_[ic, :, :].T, origin='lower', cmap=cm.bwr)
-    ax1.plot(k_max_arr[0, icg, gw:-gw], 'gold', label='k_max[0]', linewidth=3)
-    ax1.plot(k_max_arr[1, icg, gw:-gw], 'lime', label='k_max[1]', linewidth=3)
-    ax1.plot([jc, jc], [0, nz], 'k')
-    ax1.plot([jc - irstar, jc - irstar], [0, nz], ':', color='lightgray', linewidth=2, label='jc+irstar')
-    ax1.plot([jc + irstar, jc + irstar], [0, nz], ':', color='lightgray', linewidth=2)
-    ax1.plot([jc - irstar - marg_i, jc - irstar - marg_i], [0, nz], '--', color='lightgray', linewidth=2,
-             label='jc-irstar-marg_i')
-    ax1.plot([jc + irstar + marg_i, jc + irstar + marg_i], [0, nz], '--', color='lightgray', linewidth=2)
-    ax1.plot([0, ny], [kstar, kstar], color='aqua', label='kstar', linewidth=2)
-    ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
-               fancybox=True, shadow=True, ncol=2, fontsize=10)
-    ax1.set_title('max(kmax0)=' + str(np.amax(k_max_arr[0, :, :])) +
-                  ', max(kmax0[ic])=' + str(np.round(np.amax(k_max_arr[0, icg, :]))), fontsize=10)
-    ax1.grid()
-    ax1.set_xlim([0, ny])
-    ax1.set_ylim([0, nz])
-    ax2.contourf(theta_[ic, :, :].T, cmap=cm.bwr)
-    ax2.plot(k_max_arr[0, icg, gw:-gw], 'gold', label='k_max[0]', linewidth=3)
-    ax2.plot(k_max_arr[1, icg, gw:-gw], 'lime', label='k_max[1]', linewidth=3)
-    ax2.plot([jc, jc], [0, nz], 'k')
-    ax2.plot([jc - irstar, jc - irstar], [0, nz], ':', color='lightgray', linewidth=2, label='jc+irstar')
-    ax2.plot([jc + irstar, jc + irstar], [0, nz], ':', color='lightgray', linewidth=2)
-    ax2.plot([jc - irstar - marg_i, jc - irstar - marg_i], [0, nz], '--', color='lightgray', linewidth=2,
-             label='jc-irstar-marg_i')
-    ax2.plot([jc + irstar + marg_i, jc + irstar + marg_i], [0, nz], '--', color='lightgray', linewidth=2)
-    ax2.grid()
-    ax2.set_xlim([0, nx])
-
-    ax1 = axes[0, 2]
-    ax2 = axes[1, 2]
-    ax1.imshow(theta_z_[ic, :, :].T, origin='lower', cmap=cm.bwr)
-    ax1.plot(z_max_arr[0, icg, gw:-gw] / dz, 'gold', label='z_max[0]/dz', linewidth=3)
-    ax1.plot(z_max_arr[1, icg, gw:-gw] / dz, 'lime', label='z_max[1]/dz', linewidth=3)
-    ax1.plot([jc, jc], [0, nz], 'k')
-    ax1.plot([jc - irstar, jc - irstar], [0, nz], ':', color='lightgray', linewidth=2, label='jc+irstar')
-    ax1.plot([jc + irstar, jc + irstar], [0, nz], ':', color='lightgray', linewidth=2)
-    ax1.plot([jc - irstar - marg_i, jc - irstar - marg_i], [0, nz], '--', color='lightgray', linewidth=2,
-             label='jc-irstar-marg_i')
-    ax1.plot([jc + irstar + marg_i, jc + irstar + marg_i], [0, nz], '--', color='lightgray', linewidth=2)
-    ax1.plot([0, ny], [kstar, kstar], color='aqua', label='kstar', linewidth=2)
-    ax1.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
-               fancybox=True, shadow=True, ncol=2, fontsize=10)
-    ax1.set_title('max(zmax0)=' + str(np.amax(z_max_arr[0, :, :])) +
-                  ', max(zmax0[ic])=' + str(np.round(np.amax(z_max_arr[0, icg, :]))), fontsize=10)
-    ax1.grid()
-    ax1.set_xlim([0, ny])
-    ax1.set_ylim([0, nz])
-    ax2.contourf(y_half[gw:-gw], z_half[gw:-gw], theta_z_[ic, :, :].T, cmap=cm.bwr)
-    ax2.plot(y_half[gw:-gw], z_max_arr[0, icg, gw:-gw], 'gold', label='z_max[0]', linewidth=3)
-    ax2.plot(y_half[gw:-gw], (np.round(z_max_arr[0, icg, gw:-gw] / dz)) * dz, '--', color='k', label='z_max[0]',
-             linewidth=3)
-    ax2.plot(y_half[gw:-gw], z_max_arr[1, icg, gw:-gw], 'lime', label='z_max[1]', linewidth=3)
-    ax2.plot(y_half[gw:-gw], (np.round(z_max_arr[1, icg, gw:-gw] / dz)) * dz, '--', color='k', label='z_max[0]',
-             linewidth=3)
-    ax2.plot([jc, jc], [0, nz], 'k')
-    ax2.plot([jc - irstar, jc - irstar], [0, nz], 'w:')
-    ax2.plot([jc + irstar, jc + irstar], [0, nz], 'w:')
-    ax2.plot([jc - irstar - marg_i, jc - irstar - marg_i], [0, nz], 'w--')
-    ax2.plot([jc + irstar + marg_i, jc + irstar + marg_i], [0, nz], 'w--')
-    # ax4.legend()
-    # legend = plt.legend(frameon=1)
-    # frame.set_facecolor('green')
-    # frame.set_edgecolor('red')
-
-    ax1 = axes[0, 3]
-    ax2 = axes[1, 3]
-    im = ax1.imshow(theta_z_[:, :, 0].T, origin='lower', cmap=cm.bwr)
-    plt.colorbar(im, ax=ax1, shrink=0.5)
-    ax1.plot(ic, jc, 'or')
-    ax1.plot([ic, ic], [0, ny], 'k')
-    ax1.plot([ic + irstar, ic + irstar], [0, ny], 'w:')
-    ax1.plot([ic - irstar, ic - irstar], [0, ny], 'w:')
-    ax1.plot([jc - irstar - marg_i, jc - irstar - marg_i], [0, ny], '--', color='w', linewidth=1,
-             label='jc-irstar-marg_i')
-    ax1.plot([jc + irstar + marg_i, jc + irstar + marg_i], [0, ny], '--', color='w', linewidth=1)
-    ax1.plot([xc / dx, xc / dx], [0, ny], '--k')
-    ax1.plot([0, nx], [jc, jc], 'k')
-    circle1 = plt.Circle((ic, jc), irstar, fill=False, color='lime', linewidth=2)
-    circle2 = plt.Circle((ic, jc), irstar + marg_i, fill=False, color='lime', linewidth=1)
-    ax1.add_artist(circle1)
-    ax1.add_artist(circle2)
-    ax1.set_xlim([0, nx])
-    ax1.set_ylim([0, ny])
-    ax2.contourf(x_half[gw:-gw], y_half[gw:-gw], theta_z_[:, :, 0])
-    ax2.plot([xc, xc], [y_half[gw], y_half[-gw]], 'k')
-    ax2.plot([x_half[gw], x_half[-gw]], [yc, yc], 'k')
-
-    plt.tight_layout
-    plt.suptitle('r*=' + str(rstar) + ' (irstar=' + str(irstar) + '), z*=' + str(zstar) + ' (kstar=' + str(kstar) + ')')
-    fig.savefig('./initialization_k_dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar) + '.png')
-    plt.close(fig)
-
-    return
 
 
 
@@ -387,7 +337,7 @@ def define_geometry():
     global nx, ny, nz, dx, dy, dz
     nx = 80
     ny = 80
-    nz = 30
+    nz = 50
     dx = 100
     dy = 100
     dz = 100
@@ -436,11 +386,9 @@ def define_geometry():
     jc = np.int(ny / 2)
     xc = x_half[ic + gw]  # center of cold-pool !!!
     yc = y_half[jc + gw]  # center of cold-pool !!!
-    marg_k = np.int(np.round(0. / dz))  # width of margin
-    marg_i_ = np.int(0. / np.round(dx))  # width of margin
-    marg_i = np.int(np.round(0. / dx))  # width of margin
-    marg_ = marg_i_ * dx  # width of margin
-    marg = marg_i * dx  # width of margin
+    marg = 200.
+    marg_i = np.int(np.round( marg / dx ))
+    marg_k = np.int(np.round( marg / dz))  # width of margin
 
 
     return
