@@ -10,32 +10,33 @@ def main():
 
     # Parse information from the command line
     parser = argparse.ArgumentParser(prog='PyCLES')
-    # parser.add_argument("casename")
+    parser.add_argument("casename")
     parser.add_argument("path")
     parser.add_argument("--kmax")
     parser.add_argument("--kmin")
     parser.add_argument("--k0")
+    parser.add_argument("--vert")
     args = parser.parse_args()
 
 
     # case_name = args.casename
-    path_in = args.path
+    path_root = args.path
     # nml = simplejson.loads(open(os.path.join(path_in, case_name + '.in')).read())
 
-    path_fields = os.path.join(path_in, 'fields')
+    path_fields = os.path.join(path_root, 'fields')
     if args.kmax:
         k_max = np.int(args.kmax)
     else:
         k_max = 120     # leads to about 20% reduction of size for fields of original size 200x200x150
     if args.kmin:
         k_min = np.int(args.kmin)
-        path_out = os.path.join(path_in, 'fields_k' + str(k_min) + '_' + str(k_max))
+        path_out = os.path.join(path_root, 'fields_k' + str(k_min) + '_' + str(k_max))
     else:
         k_min = k_max
-        path_out = os.path.join(path_in, 'fields_k' + str(k_max))
+        path_out = os.path.join(path_root, 'fields_k' + str(k_max))
     if args.k0:
         k0 = np.int(args.k0)
-        path_out = os.path.join(path_in, 'fields_k' + str(k0))
+        path_out = os.path.join(path_root, 'fields_k' + str(k0))
     else:
         k0 = -1
     print('path out', path_out)
@@ -43,25 +44,23 @@ def main():
         print('ohoh')
         os.mkdir(path_out)
     print('')
-    print('path in', path_in)
-    print('path out', path_out)
+    print('path: ', path_root)
+    print('path out: ', path_out)
     print('')
     print('k0', k0)
     print('kmin', k_min)
     print('kmax', k_max)
     print('')
 
+    i0_center, j0_center, i0_coll, j0_coll = define_geometry(path_root, args)
+
 
     # (1) for each time/file in path_fields do...
-
-
     # (2) read in original fields file
     #       >> field_keys
     #       >> how to access dimensions of variables?
     #       >> data
-
     # (3) create new fields file, e.g. 100_k_kmax.nc
-
     # (4) save data[:,:,:k_max] in new variable of new fields file
 
     times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc']
@@ -73,23 +72,27 @@ def main():
     print(files)
     print('')
 
-    ''' reduce number of vertical levels; leave all variables and other dimensions '''
-    # convert_file_forall_variables(files, path_fields, path_out, k_min, k_max)
-
+    # ''' reduce number of vertical levels; keep all variables and horizontal dimensions '''
+    # # convert_file_forall_variables(files, path_fields, path_out, k_min, k_max)
+    #
     ''' output all levels for k=k_min..k_max for all variables given in var_list '''
     var_list = ['u', 'v', 'w', 's', 'temperature']# , 'phi'
     # convert_file_for_varlist(var_list, times, files, path_fields, path_out, k_min, k_max)
-    convert_file_for_varlist_vertsection(var_list, times, files, path_fields, path_out, 'center')
-
-    ''' output file with one level of one variable for all times '''
-    # var_list = ['u', 'v', 'w', 's', 'temperature']# , 'phi'
-    # for var in var_list:
-    #     if k0 >= 0:
-    #         convert_file_for_singlevariable_onelevel(var, times, files, path_fields, path_out, k0)
-
-    # # var_list = ['u', 'v']
-    # # for var in var_list:
-    # #     file_for_simple_array(var, files, path_fields, path_out, k0)
+    if args.vert:
+        path_out_ = os.path.join(path_root, 'fields_merged')
+        if not os.path.exists(path_out_):
+            os.mkdir(path_out_)
+        convert_file_for_varlist_vertsection(var_list, times, files, path_fields, path_out_, i0_center)
+    #
+    # # ''' output file with one level of one variable for all times '''
+    # # # var_list = ['u', 'v', 'w', 's', 'temperature']# , 'phi'
+    # # # for var in var_list:
+    # # #     if k0 >= 0:
+    # # #         convert_file_for_singlevariable_onelevel(var, times, files, path_fields, path_out, k0)
+    # #
+    # # # # var_list = ['u', 'v']
+    # # # # for var in var_list:
+    # # # #     file_for_simple_array(var, files, path_fields, path_out, k0)
     return
 
 
@@ -149,7 +152,7 @@ def convert_file_for_singlevariable_onelevel(var, times, files, path_fields, pat
 
 
 
-def convert_file_for_varlist_vertsection(var_list, times, files, path_fields, path_out, location='center'):
+def convert_file_for_varlist_vertsection(var_list, times, files, path_fields, path_out, location):
 
     # read in test fields file
     fullpath_in = os.path.join(path_fields, files[0])
@@ -162,9 +165,10 @@ def convert_file_for_varlist_vertsection(var_list, times, files, path_fields, pa
     nz = dims['nz'].size
     rootgrp_in.close()
 
-    if location == 'center':
-        ic = np.int(nx/2)
-    file_name = 'fields_allt_yz_i' + str(ic) + '.nc'
+    # if location == 'center':
+    #     ic = np.int(nx/2)
+    jc = location
+    file_name = 'fields_allt_xz_j' + str(jc) + '.nc'
     fullpath_out = os.path.join(path_out, file_name)
     print('filename', file_name)
 
@@ -179,6 +183,9 @@ def convert_file_for_varlist_vertsection(var_list, times, files, path_fields, pa
         # rootgrp_out.createDimension('nx', 1)
         rootgrp_out.createDimension('ny', ny)
         rootgrp_out.createDimension('nz', nz)
+        descr_grp = rootgrp_out.createGroup('description')
+        var = descr_grp.createVariable('jc', 'f8', )
+        var[:] = jc
 
         time_out = rootgrp_out.createVariable('time', 'f8', ('time',))
         time_out.long_name = 'Time'
@@ -194,7 +201,7 @@ def convert_file_for_varlist_vertsection(var_list, times, files, path_fields, pa
                 fullpath_in = os.path.join(path_fields, file)
                 rootgrp_in = nc.Dataset(fullpath_in, 'r')
                 data = rootgrp_in.groups['fields'].variables[var][:, :, :]
-                var_out[it, :, :] = data[ic, :, :]
+                var_out[it, :, :] = data[:, jc, :]
 
         rootgrp_out.close()
     return
@@ -312,6 +319,115 @@ def convert_file_forall_variables(files, path_fields, path_out, k_min, k_max):
 
         rootgrp_in.close()
     return
+# _______________________________________________________
+
+def define_geometry(path_root, args):
+    print('--- define geometry ---')
+
+    case_name = args.casename
+    nml = simplejson.loads(open(os.path.join(path_root, case_name + '.in')).read())
+    global nx, ny, nz, dx, dV, gw
+    nx = nml['grid']['nx']
+    ny = nml['grid']['ny']
+    nz = nml['grid']['nz']
+    dx = np.zeros(3, dtype=np.int)
+    dx[0] = nml['grid']['dx']
+    dx[1] = nml['grid']['dy']
+    dx[2] = nml['grid']['dz']
+    gw = nml['grid']['gw']
+    dV = dx[0] * dx[1] * dx[2]
+
+    # set coordinates for plots
+    if case_name == 'ColdPoolDry_single_3D':
+        rstar = nml['init']['r']
+        zstar = nml['init']['h']
+        try:
+            ic = nml['init']['ic']
+            jc = nml['init']['jc']
+        except:
+            ic = np.int(nx/2)
+            jc = np.int(ny/2)
+        ic_arr = np.zeros(1)
+        jc_arr = np.zeros(1)
+        ic_arr[0] = ic
+        jc_arr[0] = jc
+    elif case_name == 'ColdPoolDry_double_2D':
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx[0]))
+        # zstar = nml['init']['h']
+        isep = 4 * irstar
+        jsep = 0
+        ic1 = np.int(nx / 3)  # np.int(Gr.dims.ng[0] / 3)
+        ic2 = ic1 + isep
+        jc1 = np.int(ny / 2)
+        jc2 = jc1 + jsep
+        ic_arr = [ic1, ic2]
+        jc_arr = [jc1, jc2]
+    elif case_name == 'ColdPoolDry_double_3D':
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx[0]))
+        # zstar = nml['init']['h']
+        isep = 4 * irstar
+        jsep = 0
+        try:
+            ic1 = nml['init']['ic']
+            jc1 = nml['init']['jc']
+        except:
+            ic1 = np.int(nx/2)
+            jc1 = np.int(ny/2)
+            # ic1 = np.int(np.round((nx + 2 * gw) / 3)) - gw
+            # jc1 = np.int(np.round((ny + 2 * gw) / 2)) - gw
+        ic2 = ic1 + isep
+        jc2 = jc1 + jsep
+        ic_arr = [ic1, ic2]
+        jc_arr = [jc1, jc2]
+    elif case_name == 'ColdPoolDry_triple_3D':
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx[0]))
+        # zstar = nml['init']['h']
+        d = np.int(np.round(ny / 2))
+        dhalf = np.int(np.round(ny / 4))
+        a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
+        ic1 = np.int(np.round(a / 2))  # + gw
+        ic2 = ic1
+        ic3 = ic1 + np.int(np.round(a))
+        jc1 = np.int(np.round(d / 2))  # + gw
+        jc2 = jc1 + d
+        jc3 = jc1 + np.int(np.round(d / 2))
+        ic_arr = [ic1, ic2, ic3]
+        jc_arr = [jc1, jc2, jc3]
+
+
+    ''' plotting parameters '''
+    if case_name == 'ColdPoolDry_single_3D':
+        i0_coll = ic_arr[0]
+        j0_coll = jc_arr[0]
+        i0_center = ic_arr[0]
+        j0_center = jc_arr[0]
+    elif case_name == 'ColdPoolDry_double_3D':
+        i0_coll = 0.5 * (ic_arr[0] + ic_arr[1])
+        i0_center = ic_arr[0]
+        j0_coll = 0.5 * (jc_arr[0] + jc_arr[1])
+        j0_center = jc_arr[0]
+        # domain boundaries for plotting
+    elif case_name == 'ColdPoolDry_triple_3D':
+        i0_coll = ic_arr[2]
+        i0_center = ic_arr[0]
+        j0_coll = jc_arr[2]
+        j0_center = jc_arr[0]
+        # domain boundaries for plotting
+
+    return i0_center, j0_center, i0_coll, j0_coll
+
 # _______________________________________________________
 
 def create_file(fname, nx, ny, nz):
