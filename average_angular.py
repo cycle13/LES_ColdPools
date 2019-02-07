@@ -19,6 +19,7 @@ def main():
     args = parser.parse_args()
 
     times, nml = set_input_parameters(args)
+    nt = len(times)
     ic_arr, jc_arr = define_geometry(nml)
 
     r_field = np.zeros((nx, ny), dtype=np.int)
@@ -37,10 +38,12 @@ def main():
             r_field[ic-i,jc-j] = r_field[ic+i,jc+j]
             r_field[ic+i,jc-j] = r_field[ic+i,jc+j]
 
-    t0 = tmin
-    k0 = 0
+
     var_list = ['w', 's', 'phi']
-    fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
+    data_dict_av = {}
+    for var_name in var_list:
+        data_dict_av[var_name] = np.zeros((nt, rmax, kmax))
+
     #rootgrp = nc.Dataset(fullpath_in, 'r')
     #for var_name in var_list:
     #    var = rootgrp.groups['fields'].variables[var_name][:,:,:]
@@ -50,9 +53,15 @@ def main():
     file_name = 'stats_radial_averaged.nc'
     create_statistics_file(var_list, file_name, times, rmax)
 
+    t0 = tmin
+    it = 0
+    k0 = 0
+    fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
     data_dict = read_in_vars(fullpath_in, var_list)
     for var_name in var_list:
-        var_av = compute_average_var(data_dict[var_name][:,:,k0], rmax, r_field)
+        data_dict_av[var_name][it, :, k0] = compute_average_var(data_dict[var_name][:,:,k0], rmax, r_field)
+
+
 
     ## test field without reading in data
     #var1 = np.ones((nx, ny))  # should be from 3D LES fields, read in
@@ -80,10 +89,6 @@ def create_statistics_file(var_list, file_name, timerange, rmax):
     var[:] = timerange
     # var = ts_grp.createVariable('r_av', 'f8', ('nt', 'nz'))
     # var.units = "m"
-    # var = ts_grp.createVariable('U_av', 'f8', ('nt', 'nz'))
-    # var.units = "m/s"
-    # var = ts_grp.createVariable('dU_av', 'f8', ('nt', 'nz'))
-    # var.units = "m/s^2"
 
     stats_grp = rootgrp.createGroup('stats')
     stats_grp.createDimension('nt', nt)
