@@ -46,6 +46,10 @@ def main():
     #    var = rootgrp.groups['fields'].variables[var_name][:,:,:]
     #    var_av = compute_average_var(var[:,:,k0], rmax, r_field)
     #rootgrp.close()
+
+    file_name = 'stats_radial_averaged.nc'
+    create_statistics_file(var_list, file_name, times, rmax)
+
     data_dict = read_in_vars(fullpath_in, var_list)
     for var_name in var_list:
         var_av = compute_average_var(data_dict[var_name][:,:,k0], rmax, r_field)
@@ -58,6 +62,79 @@ def main():
 
 
 # _______________________________
+
+def create_statistics_file(var_list, file_name, timerange, rmax):
+    print('-------- create statistics file -------- ')
+    print(path_out_data + ', ' + file_name)
+    print('')
+
+    nt = len(timerange)
+
+    rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'w', format='NETCDF4')
+
+    ts_grp = rootgrp.createGroup('timeseries')
+    ts_grp.createDimension('nt', nt)
+    # ts_grp.createDimension('nz', nk)
+    var = ts_grp.createVariable('time', 'f8', ('nt'))
+    var.units = "s"
+    var[:] = timerange
+    # var = ts_grp.createVariable('r_av', 'f8', ('nt', 'nz'))
+    # var.units = "m"
+    # var = ts_grp.createVariable('U_av', 'f8', ('nt', 'nz'))
+    # var.units = "m/s"
+    # var = ts_grp.createVariable('dU_av', 'f8', ('nt', 'nz'))
+    # var.units = "m/s^2"
+
+    stats_grp = rootgrp.createGroup('stats')
+    stats_grp.createDimension('nt', nt)
+    stats_grp.createDimension('nr', rmax)
+    stats_grp.createDimension('nz', kmax)
+    for var_name in var_list:
+        var = stats_grp.createVariable(var_name, 'f8', ('nt', 'nr', 'nz'))
+        # var.units = "m"
+
+    rootgrp.close()
+
+    return
+
+
+#
+# def dump_statistics_file(rim_intp_all, rim_vel, rim_vel_av, file_name, path, k0, ik, t0, it):
+#     # statistics are dumped after each (t,k)-tuple (i.e. for each level)
+#
+#     # - rim_intp_all = (phi(i_phi)[deg], phi(i_phi)[rad], r_out(i_phi)[m], r_int(i_phi)[m], D(i_phi)[m])
+#     #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
+#     # - rim_vel = (phi(i_phi)[deg], phi(i_phi)[rad], r_out(i_phi)[m], U(i_phi)[m/s], dU(i_phi)[m/s**2])
+#     # - rim_vel_av = (r_av, U_av, dU_av/dt)
+#     rootgrp = nc.Dataset(os.path.join(path, file_name), 'r+', format='NETCDF4')
+#
+#     ts_grp = rootgrp.groups['timeseries']
+#     var = ts_grp.variables['r_av']
+#     var[it,ik] = rim_vel_av[0]
+#     var = ts_grp.variables['U_av']
+#     var[it,ik] = rim_vel_av[1]
+#     var = ts_grp.variables['dU_av']
+#     var[it,ik] = rim_vel_av[2]
+#
+#     stats_grp = rootgrp.groups['stats']
+#     var = stats_grp.variables['r_out']
+#     var[it,ik,:] = rim_intp_all[2,:]
+#     var = stats_grp.variables['r_int']
+#     var[it,ik,:] = rim_intp_all[3,:]
+#     var = stats_grp.variables['D']
+#     var[it,ik,:] = rim_intp_all[4,:]
+#     var = stats_grp.variables['U']
+#     var[it,ik,:] = rim_vel[3,:]
+#     var = stats_grp.variables['dU']
+#     var[it,ik,:] = rim_vel[4,:]
+#
+#     prof_grp = rootgrp.groups['profiles']
+#     var = prof_grp.variables['k_dumped']
+#     var[ik] = 1
+#
+#     rootgrp.close()
+#     return
+
 
 def read_in_vars(fullpath_in, var_list):
 
@@ -95,20 +172,20 @@ def compute_average_var(var1, rmax, r_field):
 # _______________________________
 def set_input_parameters(args):
     print ''' setting parameters '''
-    global path, path_fields #path_out_data, path_out_figs
+    global path, path_fields, path_out_data, path_out_figs
     path = args.path
     path_fields = os.path.join(path, 'fields')
 
-    # path_out_data = os.path.join(path, 'data_analysis')
-    # if not os.path.exists(path_out_data):
-    #     os.mkdir(path_out_data)
-    # path_out_figs = os.path.join(path, 'figs_minmax')
-    # if not os.path.exists(path_out_figs):
-    #     os.mkdir(path_out_figs)
+    path_out_data = os.path.join(path, 'data_analysis')
+    if not os.path.exists(path_out_data):
+        os.mkdir(path_out_data)
+    path_out_figs = os.path.join(path, 'figs_radial_average')
+    if not os.path.exists(path_out_figs):
+        os.mkdir(path_out_figs)
     print ''
     print 'paths:'
-    #print path_out_data
-    #print path_out_figs
+    print path_out_data
+    print path_out_figs
     print path_fields
     print ''
 
@@ -158,8 +235,6 @@ def set_input_parameters(args):
         tmax = 100
 
     ''' file range '''
-    # times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
-    #          and np.int(name[:-3]) >= tmin and np.int(name[:-3]) <= tmax]
     times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
              and tmin <= np.int(name[:-3]) <= tmax]
     times.sort()
