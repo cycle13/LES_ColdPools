@@ -1,6 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
-#import netCDF4 as nc
+#import matplotlib.pyplot as plt
+import netCDF4 as nc
 import argparse
 import json as simplejson
 import os
@@ -15,16 +15,12 @@ def main():
     parser.add_argument("path")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
-    # parser.add_argument("--kmin")
-    # parser.add_argument("--kmax")
+    parser.add_argument("--kmax")
     args = parser.parse_args()
 
-    nml = set_input_parameters(args)
+    times, nml = set_input_parameters(args)
     ic_arr, jc_arr = define_geometry(nml)
 
-    # global nx, ny
-    # nx = 20
-    # ny = 20
     r_field = np.zeros((nx, ny), dtype=np.int)
 
     ic = np.int(nx/2)
@@ -41,20 +37,22 @@ def main():
             r_field[ic-i,jc-j] = r_field[ic+i,jc+j]
             r_field[ic+i,jc-j] = r_field[ic+i,jc+j]
 
-    # t0 = 500
-    # fullpath_in = os.path.join(path, fields, str(t0) + '.nc')
-    # rootgrp = nc.Dataset(fullpath_in, 'r')
-    # for var_name in var_list:
-    #     var = rootgrp.groups['fields'].variables[var_name]
-    #     var_av = compute_average_var(var, rmax, r_field)
-    # rootgrp.close()
-    # var_list = ['w', 's', 'phi']
-    # data_dict = read_in_vars(fullpath_in, var_list)
-    # for var_name in var_list:
-    #     var_av = compute_average_var(data_dict[var_name], rmax, r_field)
+    t0 = tmin
+    k0 = 0
+    var_list = ['w', 's', 'phi']
+    fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
+    #rootgrp = nc.Dataset(fullpath_in, 'r')
+    #for var_name in var_list:
+    #    var = rootgrp.groups['fields'].variables[var_name][:,:,:]
+    #    var_av = compute_average_var(var[:,:,k0], rmax, r_field)
+    #rootgrp.close()
+    data_dict = read_in_vars(fullpath_in, var_list)
+    for var_name in var_list:
+        var_av = compute_average_var(data_dict[var_name][:,:,k0], rmax, r_field)
 
-    var1 = np.ones((nx, ny))  # should be from 3D LES fields, read in
-    var1_av = compute_average_var(var1, rmax, r_field)
+    ## test field without reading in data
+    #var1 = np.ones((nx, ny))  # should be from 3D LES fields, read in
+    #var1_av = compute_average_var(var1, rmax, r_field)
 
     return
 
@@ -69,12 +67,10 @@ def read_in_vars(fullpath_in, var_list):
     for var_name in var_list:
         var = rootgrp.groups['fields'].variables[var_name]
         data = var[:, :, :]
-        # var_dict[var_name] = data
-
+        var_dict[var_name] = data
     rootgrp.close()
 
-    return data
-    # return var_dict
+    return var_dict
 
 
 # _______________________________
@@ -88,7 +84,6 @@ def compute_average_var(var1, rmax, r_field):
             r = r_field[i, j]
             count[r] += 1
             var1_av[r] += var1[i, j]
-    print count
 
     for r in range(rmax):
         if count[r] > 0:
@@ -100,7 +95,7 @@ def compute_average_var(var1, rmax, r_field):
 # _______________________________
 def set_input_parameters(args):
     print ''' setting parameters '''
-    global path, path_out_data, path_out_figs, path_fields
+    global path, path_fields #path_out_data, path_out_figs
     path = args.path
     path_fields = os.path.join(path, 'fields')
 
@@ -112,8 +107,8 @@ def set_input_parameters(args):
     #     os.mkdir(path_out_figs)
     print ''
     print 'paths:'
-    print path_out_data
-    print path_out_figs
+    #print path_out_data
+    #print path_out_figs
     print path_fields
     print ''
 
@@ -152,6 +147,7 @@ def set_input_parameters(args):
     else:
         kmax = nx
 
+    global tmin, tmax
     if args.tmin:
         tmin = np.int(args.tmin)
     else:
@@ -168,7 +164,6 @@ def set_input_parameters(args):
              and tmin <= np.int(name[:-3]) <= tmax]
     times.sort()
     # files = [str(t) + '.nc' for t in times]
-    # print('files', files)
 
     print('')
     # print('files', files, len(files))
@@ -181,12 +176,12 @@ def set_input_parameters(args):
 # _______________________________
 
 
-# def define_geometry(case_name, nml, files):
-def define_geometry(case_name, nml):
-
+# def define_geometry(nml, files):
+def define_geometry(nml):
+    a = nml['grid']['nx']
     '''--- define geometry ---'''
     global rstar
-    if casename == 'ColdPoolDry_double_2D':
+    if case_name == 'ColdPoolDry_double_2D':
         rstar = 5000.0  # half of the width of initial cold-pools [m]
         irstar = np.int(np.round(rstar / dx))
         # zstar = nml['init']['h']
@@ -199,11 +194,9 @@ def define_geometry(case_name, nml):
         jc_arr = [jc1, jc2]
     elif case_name == 'ColdPoolDry_single_3D':
         rstar = nml['init']['r']
-        irstar = np.int(np.round(rstar / dx))
+        # irstar = np.int(np.round(rstar / dx))
         # zstar = nml['init']['h']
         dTh = nml['init']['dTh']
-        marg_i = np.int(500. / np.round(dx))  # width of margin
-        marg = marg_i * dx  # width of margin
         ic = np.int(nx / 2)
         jc = np.int(ny / 2)
         # xc = Gr.x_half[ic + Gr.dims.gw]  # center of cold-pool
