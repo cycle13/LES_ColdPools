@@ -61,7 +61,7 @@ def main():
     for var_name in var_list:
         data_dict_av[var_name][it, :, k0] = compute_average_var(data_dict[var_name][:,:,k0], rmax, r_field)
 
-    dump_statistics_file(file_name, data_dict_av)
+    dump_statistics_file(data_dict_av, var_list, file_name)
 
     ## test field without reading in data
     #var1 = np.ones((nx, ny))  # should be from 3D LES fields, read in
