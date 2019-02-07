@@ -61,7 +61,7 @@ def main():
     for var_name in var_list:
         data_dict_av[var_name][it, :, k0] = compute_average_var(data_dict[var_name][:,:,k0], rmax, r_field)
 
-
+    dump_statistics_file(file_name, data_dict_av)
 
     ## test field without reading in data
     #var1 = np.ones((nx, ny))  # should be from 3D LES fields, read in
@@ -103,42 +103,40 @@ def create_statistics_file(var_list, file_name, timerange, rmax):
     return
 
 
-#
+
 # def dump_statistics_file(rim_intp_all, rim_vel, rim_vel_av, file_name, path, k0, ik, t0, it):
-#     # statistics are dumped after each (t,k)-tuple (i.e. for each level)
-#
-#     # - rim_intp_all = (phi(i_phi)[deg], phi(i_phi)[rad], r_out(i_phi)[m], r_int(i_phi)[m], D(i_phi)[m])
-#     #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
-#     # - rim_vel = (phi(i_phi)[deg], phi(i_phi)[rad], r_out(i_phi)[m], U(i_phi)[m/s], dU(i_phi)[m/s**2])
-#     # - rim_vel_av = (r_av, U_av, dU_av/dt)
-#     rootgrp = nc.Dataset(os.path.join(path, file_name), 'r+', format='NETCDF4')
-#
-#     ts_grp = rootgrp.groups['timeseries']
-#     var = ts_grp.variables['r_av']
-#     var[it,ik] = rim_vel_av[0]
-#     var = ts_grp.variables['U_av']
-#     var[it,ik] = rim_vel_av[1]
-#     var = ts_grp.variables['dU_av']
-#     var[it,ik] = rim_vel_av[2]
-#
-#     stats_grp = rootgrp.groups['stats']
-#     var = stats_grp.variables['r_out']
-#     var[it,ik,:] = rim_intp_all[2,:]
-#     var = stats_grp.variables['r_int']
-#     var[it,ik,:] = rim_intp_all[3,:]
-#     var = stats_grp.variables['D']
-#     var[it,ik,:] = rim_intp_all[4,:]
-#     var = stats_grp.variables['U']
-#     var[it,ik,:] = rim_vel[3,:]
-#     var = stats_grp.variables['dU']
-#     var[it,ik,:] = rim_vel[4,:]
-#
-#     prof_grp = rootgrp.groups['profiles']
-#     var = prof_grp.variables['k_dumped']
-#     var[ik] = 1
-#
-#     rootgrp.close()
-#     return
+def dump_statistics_file(data_dictionary, var_list, file_name):
+    # statistics are dumped after each (t,k)-tuple (i.e. for each level)
+
+    # - rim_intp_all = (phi(i_phi)[deg], phi(i_phi)[rad], r_out(i_phi)[m], r_int(i_phi)[m], D(i_phi)[m])
+    #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
+    # - rim_vel = (phi(i_phi)[deg], phi(i_phi)[rad], r_out(i_phi)[m], U(i_phi)[m/s], dU(i_phi)[m/s**2])
+    # - rim_vel_av = (r_av, U_av, dU_av/dt)
+    rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'r+', format='NETCDF4')
+
+    # ts_grp = rootgrp.groups['timeseries']
+    # var = ts_grp.variables['r_av']
+    # var[it,ik] = rim_vel_av[0]
+    # var = ts_grp.variables['U_av']
+    # var[it,ik] = rim_vel_av[1]
+    # var = ts_grp.variables['dU_av']
+    # var[it,ik] = rim_vel_av[2]
+
+    stats_grp = rootgrp.groups['stats']
+    for var_name in var_list:
+        var = stats_grp.variables[var_name]
+        var[:,:,:] = data_dictionary[var_name][:,:,:]
+    # var = stats_grp.variables['r_int']
+    # var[it,ik,:] = rim_intp_all[3,:]
+    # var = stats_grp.variables['D']
+    # var[it,ik,:] = rim_intp_all[4,:]
+    #
+    # prof_grp = rootgrp.groups['profiles']
+    # var = prof_grp.variables['k_dumped']
+    # var[ik] = 1
+
+    rootgrp.close()
+    return
 
 
 def read_in_vars(fullpath_in, var_list):
