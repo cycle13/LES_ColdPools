@@ -64,7 +64,7 @@ def main():
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 
-    
+    gi
 
 
 
