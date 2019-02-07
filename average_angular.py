@@ -1,5 +1,5 @@
 import numpy as np
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import netCDF4 as nc
 import argparse
 import json as simplejson
@@ -44,12 +44,6 @@ def main():
     for var_name in var_list:
         data_dict_av[var_name] = np.zeros((nt, rmax, kmax))
 
-    #rootgrp = nc.Dataset(fullpath_in, 'r')
-    #for var_name in var_list:
-    #    var = rootgrp.groups['fields'].variables[var_name][:,:,:]
-    #    var_av = compute_average_var(var[:,:,k0], rmax, r_field)
-    #rootgrp.close()
-
     file_name = 'stats_radial_averaged.nc'
     create_statistics_file(var_list, file_name, times, rmax)
 
@@ -62,6 +56,15 @@ def main():
         data_dict_av[var_name][it, :, k0] = compute_average_var(data_dict[var_name][:,:,k0], rmax, r_field)
 
     dump_statistics_file(data_dict_av, var_list, file_name)
+
+    # plotting
+    fig_name = 'radial_average.png'
+    ncol = len(var_list)
+    fig, axes = plt.subplots(1, ncol, sharey='all', figsize=(5*ncol, 5))
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+
+
 
     ## test field without reading in data
     #var1 = np.ones((nx, ny))  # should be from 3D LES fields, read in
