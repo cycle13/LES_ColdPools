@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+#import matplotlib as plt
 import netCDF4 as nc
 import argparse
 import json as simplejson
