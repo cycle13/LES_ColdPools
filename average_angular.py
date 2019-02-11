@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-#import matplotlib as plt
+import matplotlib.cm as cm
 import netCDF4 as nc
 import argparse
 import json as simplejson
@@ -41,37 +41,56 @@ def main():
 
 
     var_list = ['w', 's', 'phi']
+    file_name = 'stats_radial_averaged.nc'
+    create_statistics_file(var_list, file_name, times, rmax)
+
     data_dict_av = {}
     for var_name in var_list:
         data_dict_av[var_name] = np.zeros((nt, rmax, kmax))
 
-    file_name = 'stats_radial_averaged.nc'
-    create_statistics_file(var_list, file_name, times, rmax)
-
-    t0 = tmin
-    it = 0
-    k0 = 0
-    fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
-    data_dict = read_in_vars(fullpath_in, var_list)
-    for var_name in var_list:
-        data_dict_av[var_name][it, :, k0] = compute_average_var(data_dict[var_name][:,:,k0], rmax, r_field)
+    # t0 = tmin
+    # it = 0
+    # k0 = 0
+    for it, t0 in enumerate(times):
+        fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
+        data_dict = read_in_vars(fullpath_in, var_list)
+        for k in range(kmax):
+            print('running on k='+str(k))
+            for var_name in var_list:
+                data_dict_av[var_name][it, :, k] = compute_average_var(data_dict[var_name][:,:,k], rmax, r_field)
 
     dump_statistics_file(data_dict_av, var_list, file_name)
 
-    # plotting
-    fig_name = 'radial_average.png'
+
+
+
+    ''' plotting '''
+
+    data_stats = nc.Dataset(os.path.join(path_out_data, file_name), 'r')
+    stats_grp = data_stats.groups['stats'].variables
+    times = data_stats.groups['timeseries'].variables['time'][:]
+    # var = ('nt', 'nr', 'nz')
+    r_range = stats_grp['r'][:]
+
     ncol = len(var_list)
-    fig, axes = plt.subplots(1, ncol, sharey='all', figsize=(5*ncol, 5))
+    k0 = 0
+    fig_name = 'radial_average_k'+str(k0)+'.png'
+    fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5*ncol, 5))
+    for i, ax in enumerate(axes):
+        var = stats_grp[var_list[i]][:,:,:]
+        print('var shape: ', var.shape, 'nt, rmax, kmax: ', nt, rmax, kmax, 'k0: ', k0)
+        for it, t0 in enumerate(times[1::2]):
+            count_color = 2 * np.double(it) / len(times)
+            if var_list[i] == 's':
+                ax.plot(r_range[:-1], var[2*it+1, :-1, 0], color=cm.jet(count_color), label='t='+str(t0))
+            else:
+                ax.plot(r_range, var[2*it+1, :, 0], color=cm.jet(count_color), label='t='+str(t0))
+        ax.set_title(var_list[i])
+    axes[2].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
+               fancybox=True, shadow=True, ncol=1, fontsize=10)
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
-
-    gi
-
-
-
-    ## test field without reading in data
-    #var1 = np.ones((nx, ny))  # should be from 3D LES fields, read in
-    #var1_av = compute_average_var(var1, rmax, r_field)
+    data_stats.close()
 
     return
 
@@ -87,19 +106,29 @@ def create_statistics_file(var_list, file_name, timerange, rmax):
 
     rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'w', format='NETCDF4')
 
+    dims_grp = rootgrp.createGroup('dimensions')
+    var = dims_grp.createDimension('dx', dx[0])
+    var = dims_grp.createDimension('dy', dx[1])
+    var = dims_grp.createDimension('dz', dx[2])
+
     ts_grp = rootgrp.createGroup('timeseries')
     ts_grp.createDimension('nt', nt)
-    # ts_grp.createDimension('nz', nk)
     var = ts_grp.createVariable('time', 'f8', ('nt'))
-    var.units = "s"
+    var.unit = "s"
     var[:] = timerange
-    # var = ts_grp.createVariable('r_av', 'f8', ('nt', 'nz'))
-    # var.units = "m"
 
     stats_grp = rootgrp.createGroup('stats')
     stats_grp.createDimension('nt', nt)
     stats_grp.createDimension('nr', rmax)
     stats_grp.createDimension('nz', kmax)
+    ri_range = np.arange(0, rmax, dtype=np.int)
+    r_range = np.arange(0, rmax, dtype=np.double)*dx[0]
+    var = stats_grp.createVariable('r', 'f8', ('nr'))
+    var.unit = 'm'
+    var[:] = r_range
+    var = stats_grp.createVariable('ri', 'f8', ('nr'))
+    var.unit = '-'
+    var[:] = ri_range
     for var_name in var_list:
         var = stats_grp.createVariable(var_name, 'f8', ('nt', 'nr', 'nz'))
         # var.units = "m"
@@ -110,14 +139,8 @@ def create_statistics_file(var_list, file_name, timerange, rmax):
 
 
 
-# def dump_statistics_file(rim_intp_all, rim_vel, rim_vel_av, file_name, path, k0, ik, t0, it):
 def dump_statistics_file(data_dictionary, var_list, file_name):
-    # statistics are dumped after each (t,k)-tuple (i.e. for each level)
 
-    # - rim_intp_all = (phi(i_phi)[deg], phi(i_phi)[rad], r_out(i_phi)[m], r_int(i_phi)[m], D(i_phi)[m])
-    #   (phi: angles at interval of 6 deg; r_out,int: outer,inner boundary of convergence zone; D: thickness of convergence zone)
-    # - rim_vel = (phi(i_phi)[deg], phi(i_phi)[rad], r_out(i_phi)[m], U(i_phi)[m/s], dU(i_phi)[m/s**2])
-    # - rim_vel_av = (r_av, U_av, dU_av/dt)
     rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'r+', format='NETCDF4')
 
     # ts_grp = rootgrp.groups['timeseries']
@@ -125,18 +148,12 @@ def dump_statistics_file(data_dictionary, var_list, file_name):
     # var[it,ik] = rim_vel_av[0]
     # var = ts_grp.variables['U_av']
     # var[it,ik] = rim_vel_av[1]
-    # var = ts_grp.variables['dU_av']
-    # var[it,ik] = rim_vel_av[2]
 
     stats_grp = rootgrp.groups['stats']
     for var_name in var_list:
         var = stats_grp.variables[var_name]
         var[:,:,:] = data_dictionary[var_name][:,:,:]
-    # var = stats_grp.variables['r_int']
-    # var[it,ik,:] = rim_intp_all[3,:]
-    # var = stats_grp.variables['D']
-    # var[it,ik,:] = rim_intp_all[4,:]
-    #
+
     # prof_grp = rootgrp.groups['profiles']
     # var = prof_grp.variables['k_dumped']
     # var[ik] = 1
@@ -231,7 +248,7 @@ def set_input_parameters(args):
     if args.kmax:
         kmax = np.int(args.kmax)
     else:
-        kmax = nx
+        kmax = nz
 
     global tmin, tmax
     if args.tmin:
@@ -257,10 +274,9 @@ def set_input_parameters(args):
     print('')
 
     return times, nml
+
 # _______________________________
 
-
-# def define_geometry(nml, files):
 def define_geometry(nml):
     a = nml['grid']['nx']
     '''--- define geometry ---'''
