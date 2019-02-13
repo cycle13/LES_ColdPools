@@ -20,10 +20,16 @@ def main():
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
     parser.add_argument("--kmax")
+    parser.add_argument("--everysecond")
     args = parser.parse_args()
 
     nml = set_input_parameters(args)
     # ic_arr, jc_arr = define_geometry(nml)
+    if args.everysecond:
+        every_second = args.everysecond
+    else:
+        every_second = True
+    print('every_second', every_second)
 
     file_name = 'stats_radial_averaged.nc'
     file1 = nc.Dataset(os.path.join(path1, 'data_analysis', file_name))
@@ -31,6 +37,8 @@ def main():
 
     dx1 = file1.groups['dimensions'].dimensions['dx'].size
     dx2 = file2.groups['dimensions'].dimensions['dx'].size
+    dz1 = file1.groups['dimensions'].dimensions['dz'].size
+    dz2 = file2.groups['dimensions'].dimensions['dz'].size
     if dx1 < dx2:   # want to have file2 higher resolution
         file_aux = file2
         file2 = file1
@@ -50,55 +58,106 @@ def main():
     ri1 = file1.groups['stats'].variables['ri'][:]
     ri2 = file2.groups['stats'].variables['ri'][:]
 
+    try:
+        krange1 = file1.groups['dimensions'].variables['krange'][:]
+        krange2 = file1.groups['dimensions'].variables['krange'][:]
+    except:
+        krange1 = np.arange(kmax)
+        krange2 = np.arange(kmax)
 
-    var_list = ['w', 's', 'phi']
+    if dz1 > dz2:
+        dz12 = np.double(dz1) / dz2
+        kmax_ = np.int(np.round(kmax / dz12))
+        krange1 = krange1[:kmax_]
+        krange2 = krange2[0::2]
+    elif dz1 < dz2:
+        dz12 = np.double(dz2) / dz1
+        kmax_ = np.int(np.round(kmax / dz12))
+        krange1 = krange1[0::2]
+        krange2 = krange2[:kmax_]
+    else:
+        dz12 = 1.
+        kmax_ = kmax
+
+    print 'dz: ', dz1, dz2, dz12
+    print 'zranges'
+    print kmax, kmax_
+    print krange1, krange1*dz1
+    print krange2, krange2*dz2
+
+    var_list = ['w', 'v_rad', 's']
     ncol = len(var_list)
-    k0 = 0
     rmax = 10e3
-
     irmax1 = np.where(r1 == rmax)[0]
     irmax2 = np.where(r2 == rmax)[0]
     # irmax1 = -1
     # irmax2 = -1
-    print dx1, dx2
+    print ''
+    print 'dx: ', dx1, dx2
     print r1[-1], r2[-1]
     print irmax1, irmax2
+    print ''
 
-    fig_name = 'radial_average_k' + str(k0) + '.png'
-    fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5 * ncol, 5))
-    for i, ax in enumerate(axes):
-        var1 = grp_stats1[var_list[i]][:, :, :]
-        var2 = grp_stats2[var_list[i]][:, :, :]
-        print('shapes: ', var1.shape, len(time1), irmax1, nz)
-        print r1.shape
-        for it, t0 in enumerate(time1[1::2]):
-            count_color = 2 * np.double(it) / len(time1)
-            if it == 0:
-                ax.plot(r1[:irmax1], var1[2*it+1, :irmax1, k0], color=cm.copper(count_color), label='t=' + str(t0)+', dx='+str(dx1))
-                ax.plot(r2[:irmax2], var2[2*it+1, :irmax2, 0], '--', color=cm.jet(count_color), label='t=' + str(t0)+',dx='+str(dx2))
+
+
+    for k0 in range(kmax_):
+        k1 = krange1[k0]
+        k2 = krange2[k0]
+        print('z1, z2: ', k1*dz1, k2*dz2)
+        fig_name = 'radial_average_z' + str(k1*dz1) + '.png'
+        fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5 * ncol, 5))
+        for i, ax in enumerate(axes):
+            var1 = grp_stats1[var_list[i]][:, :, :]
+            var2 = grp_stats2[var_list[i]][:, :, :]
+
+            if every_second == True:
+                for it, t0 in enumerate(time1[1::2]):
+                    print('- t='+str(t0))
+                    count_color = 2 * np.double(it) / len(time1)
+                    if it == 0:
+                        ax.plot(r1[:irmax1], var1[2*it+1, :irmax1, k1], color=cm.copper(count_color), linewidth=3,
+                                label='t=' + str(t0)+', dx='+str(dx1))
+                    else:
+                        ax.plot(r1[:irmax1], var1[2*it+1, :irmax1, k1], color=cm.copper(count_color), linewidth=3,
+                                label='t=' + str(t0))
+                for it, t0 in enumerate(time1[1::2]):
+                    print('t=' + str(t0))
+                    count_color = 2 * np.double(it) / len(time1)
+                    if it == 0:
+                        ax.plot(r2[:irmax2], var2[2*it+1, :irmax2, k2], '-', color=cm.jet(count_color), linewidth=2,
+                                label='dx='+str(dx2))
+                    else:
+                        ax.plot(r2[:irmax2], var2[2*it+1, :irmax2, k2], '-', color=cm.jet(count_color), linewidth=2,
+                                label='dx='+str(dx2))
             else:
-                ax.plot(r1[:irmax1], var1[2*it+1, :irmax1, k0], color=cm.copper(count_color), label='t=' + str(t0))
-                ax.plot(r2[:irmax2], var2[2*it+1, :irmax2, 0], '--', color=cm.jet(count_color))
-            # if var_list[i] == 's':
-            #     ax.plot(r1[:irmax1], var1[2 * it + 1, :irmax1, 0], color=cm.copper(count_color), label='t=' + str(t0))
-            #     ax.plot(r2[:irmax2], var2[2 * it + 1, :irmax2, 0], '--', color=cm.jet(count_color))
-            # else:
-            #     ax.plot(r1[:irmax1], var1[2 * it + 1, :irmax1, 0], color=cm.copper(count_color), label='t=' + str(t0))
-            #     ax.plot(r2[:irmax2], var2[2 * it + 1, :irmax2, 0], '--', color=cm.jet(count_color), label='t=' + str(t0))
-        ax.set_title(var_list[i])
-        ax.set_xlabel('radius r  [m]')
-        ax.set_ylabel(var_list[i])
-    axes[2].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
-                   fancybox=True, shadow=True, ncol=1, fontsize=10)
-    # plt.tight_layout()
-    fig.suptitle('radially averaged variables   (k='+str(k0)+')')
-    fig.savefig(os.path.join(path_out_figs, fig_name))
-    plt.close(fig)
-
-    print r1
-    print r2
-
-
+                for it, t0 in enumerate(time1):
+                    print('t=' + str(t0))
+                    count_color = np.double(it) / len(time1)
+                    if it == 0:
+                        ax.plot(r1[:irmax1], var1[it, :irmax1, k1], color=cm.copper(count_color), linewidth=3,
+                                label='t=' + str(t0) + ', dx=' + str(dx1))
+                    else:
+                        ax.plot(r1[:irmax1], var1[it, :irmax1, k1], color=cm.copper(count_color), linewidth=3,
+                                label='t=' + str(t0))
+                for it, t0 in enumerate(time1):
+                    print('t=' + str(t0))
+                    count_color = np.double(it) / len(time1)
+                    if it == 0:
+                        ax.plot(r2[:irmax2], var2[it, :irmax2, k2], '-', color=cm.jet(count_color), linewidth=2,
+                                label='dx=' + str(dx2))
+                    else:
+                        ax.plot(r2[:irmax2], var2[it, :irmax2, k2], '-', color=cm.jet(count_color), linewidth=2,
+                                label='dx=' + str(dx2))
+            ax.set_title(var_list[i])
+            ax.set_xlabel('radius r  [m]')
+            ax.set_ylabel(var_list[i])
+        axes[2].legend(loc='upper center', bbox_to_anchor=(1.4, 1.),
+                       fancybox=True, ncol=2, fontsize=8)
+        # plt.tight_layout()
+        plt.subplots_adjust(bottom=0.12, right=.83, left=0.04, top=0.9, wspace=0.25)
+        fig.suptitle('radially averaged variables   (k='+str(k0)+')')
+        fig.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
 
     file1.close()
     file2.close()
@@ -186,68 +245,68 @@ def set_input_parameters(args):
 
 # _______________________________
 
-def define_geometry(nml):
-    a = nml['grid']['nx']
-    '''--- define geometry ---'''
-    global rstar
-    if case_name == 'ColdPoolDry_double_2D':
-        rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
-        # zstar = nml['init']['h']
-        isep = 4 * irstar
-        ic1 = np.int(nx / 3)
-        ic2 = ic1 + isep
-        jc1 = np.int(ny / 2)
-        jc2 = jc1
-        ic_arr = [ic1, ic2]
-        jc_arr = [jc1, jc2]
-    elif case_name == 'ColdPoolDry_single_3D':
-        rstar = nml['init']['r']
-        # irstar = np.int(np.round(rstar / dx))
-        # zstar = nml['init']['h']
-        dTh = nml['init']['dTh']
-        ic = np.int(nx / 2)
-        jc = np.int(ny / 2)
-        # xc = Gr.x_half[ic + Gr.dims.gw]  # center of cold-pool
-        # yc = Gr.y_half[jc + Gr.dims.gw]  # center of cold-pool
-        ic_arr = [ic]
-        jc_arr = [jc]
-    elif case_name == 'ColdPoolDry_double_3D':
-        try:
-            rstar = nml['init']['r']
-        except:
-            rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
-        # zstar = nml['init']['h']
-        isep = 4 * irstar
-        jsep = 0
-        ic1 = np.int(np.round((nx + 2 * gw) / 3)) - gw
-        jc1 = np.int(np.round((ny + 2 * gw) / 2)) - gw
-        ic2 = ic1 + isep
-        jc2 = jc1 + jsep
-        ic_arr = [ic1, ic2]
-        jc_arr = [jc1, jc2]
-    elif case_name == 'ColdPoolDry_triple_3D':
-        try:
-            rstar = nml['init']['r']
-        except:
-            rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
-        d = np.int(np.round(ny / 2))
-        dhalf = np.int(np.round(ny / 4))
-        a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
-        ic1 = np.int(np.round(a / 2))  # + gw
-        ic2 = ic1
-        ic3 = ic1 + np.int(np.round(a))
-        jc1 = np.int(np.round(d / 2))  # + gw
-        jc2 = jc1 + d
-        jc3 = jc1 + np.int(np.round(d / 2))
-        ic_arr = [ic1, ic2, ic3]
-        jc_arr = [jc1, jc2, jc3]
-
-        isep = dhalf
-
-    return ic_arr, jc_arr
+# def define_geometry(nml):
+#     a = nml['grid']['nx']
+#     '''--- define geometry ---'''
+#     global rstar
+#     if case_name == 'ColdPoolDry_double_2D':
+#         rstar = 5000.0  # half of the width of initial cold-pools [m]
+#         irstar = np.int(np.round(rstar / dx))
+#         # zstar = nml['init']['h']
+#         isep = 4 * irstar
+#         ic1 = np.int(nx / 3)
+#         ic2 = ic1 + isep
+#         jc1 = np.int(ny / 2)
+#         jc2 = jc1
+#         ic_arr = [ic1, ic2]
+#         jc_arr = [jc1, jc2]
+#     elif case_name == 'ColdPoolDry_single_3D':
+#         rstar = nml['init']['r']
+#         # irstar = np.int(np.round(rstar / dx))
+#         # zstar = nml['init']['h']
+#         dTh = nml['init']['dTh']
+#         ic = np.int(nx / 2)
+#         jc = np.int(ny / 2)
+#         # xc = Gr.x_half[ic + Gr.dims.gw]  # center of cold-pool
+#         # yc = Gr.y_half[jc + Gr.dims.gw]  # center of cold-pool
+#         ic_arr = [ic]
+#         jc_arr = [jc]
+#     elif case_name == 'ColdPoolDry_double_3D':
+#         try:
+#             rstar = nml['init']['r']
+#         except:
+#             rstar = 5000.0  # half of the width of initial cold-pools [m]
+#         irstar = np.int(np.round(rstar / dx))
+#         # zstar = nml['init']['h']
+#         isep = 4 * irstar
+#         jsep = 0
+#         ic1 = np.int(np.round((nx + 2 * gw) / 3)) - gw
+#         jc1 = np.int(np.round((ny + 2 * gw) / 2)) - gw
+#         ic2 = ic1 + isep
+#         jc2 = jc1 + jsep
+#         ic_arr = [ic1, ic2]
+#         jc_arr = [jc1, jc2]
+#     elif case_name == 'ColdPoolDry_triple_3D':
+#         try:
+#             rstar = nml['init']['r']
+#         except:
+#             rstar = 5000.0  # half of the width of initial cold-pools [m]
+#         irstar = np.int(np.round(rstar / dx))
+#         d = np.int(np.round(ny / 2))
+#         dhalf = np.int(np.round(ny / 4))
+#         a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
+#         ic1 = np.int(np.round(a / 2))  # + gw
+#         ic2 = ic1
+#         ic3 = ic1 + np.int(np.round(a))
+#         jc1 = np.int(np.round(d / 2))  # + gw
+#         jc2 = jc1 + d
+#         jc3 = jc1 + np.int(np.round(d / 2))
+#         ic_arr = [ic1, ic2, ic3]
+#         jc_arr = [jc1, jc2, jc3]
+#
+#         isep = dhalf
+#
+#     return ic_arr, jc_arr
 
 # _______________________________
 

@@ -11,8 +11,8 @@ import sys
 
 def main():
     parser = argparse.ArgumentParser(prog='LES_CP')
-    parser.add_argument("--casename")
-    parser.add_argument("--path")
+    parser.add_argument("casename")
+    parser.add_argument("path")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
     parser.add_argument("--kmin")
@@ -54,21 +54,22 @@ def main():
 
     # output time arrays
     stats_file_name = 'Stats_rotational.nc'
-    create_statistics_file(stats_file_name, path_out, nt, timerange)
+    create_statistics_file(stats_file_name, path_out_fields, nt, timerange)
     vort_yz_max = np.zeros((len(timerange)))
     vort_yz_min = np.zeros((len(timerange)))
     vort_yz_sum = np.zeros((len(timerange)))
     vort_yz_env = np.zeros((len(timerange)))
-    add_statistics_variable('vort_yz_max', 's^-1', 'timeseries', stats_file_name, path_out)
-    add_statistics_variable('vort_yz_min', 's^-1', 'timeseries', stats_file_name, path_out)
-    add_statistics_variable('vort_yz_sum', 's^-1', 'timeseries', stats_file_name, path_out)
-    add_statistics_variable('vort_yz_env', 's^-1', 'timeseries', stats_file_name, path_out)
+    add_statistics_variable('vort_yz_max', 's^-1', 'timeseries', stats_file_name, path_out_fields)
+    add_statistics_variable('vort_yz_min', 's^-1', 'timeseries', stats_file_name, path_out_fields)
+    add_statistics_variable('vort_yz_sum', 's^-1', 'timeseries', stats_file_name, path_out_fields)
+    add_statistics_variable('vort_yz_env', 's^-1', 'timeseries', stats_file_name, path_out_fields)
 
 
-    # read in fields
+
     for it, t0 in enumerate(timerange):
         print('--- time: t='+str(t0)+'s ---')
 
+        # read in fields
         s = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0) + '.nc'))
         u = read_in_netcdf_fields('u', os.path.join(path_fields, str(t0) + '.nc'))
         u_roll = np.roll(np.roll(u[:, :, :], ishift, axis=0), jshift, axis=1)
@@ -82,27 +83,7 @@ def main():
 
         # del v, w
 
-        # ''' FIELDS / GEOMETRY '''
-        # plt.figure()
-        # plt.subplot(131)
-        # plt.imshow(u_[:,:,1].T, origin='lower')
-        # plt.plot([icshift,icshift],[1,ny_-2],'k')
-        # plt.plot([1,nx_-2],[jcshift,jcshift],'k')
-        # plt.xlim([0,nx_])
-        # plt.ylim([0,ny_])
-        # plt.subplot(132)
-        # plt.imshow(v_[:,:,1].T, origin='lower')
-        # plt.plot([icshift, icshift], [1, ny_ - 2], 'k')
-        # plt.plot([1, nx_ - 2], [jcshift, jcshift], 'k')
-        # plt.xlim([0, nx_])
-        # plt.ylim([0, ny_])
-        # plt.subplot(133)
-        # plt.imshow(w_[:,:,1].T, origin='lower')
-        # plt.plot([icshift, icshift], [1, ny_ - 2], 'k')
-        # plt.plot([1, nx_ - 2], [jcshift, jcshift], 'k')
-        # plt.xlim([0, nx_])
-        # plt.ylim([0, ny_])
-        # plt.savefig(os.path.join(path_out, 'test_fields_t' + str(t0) + 's.png'))
+        # plot_configuration()
 
         ''' VORTICITY '''
         # compute and plot vorticity in yz-cross section
@@ -120,28 +101,33 @@ def main():
         vort_yz_sum[it] = np.sum(vort_yz_[jcshift:,:])
         vort_yz_env[it] = np.sum(vort_yz_[jcshift+50:,:])       # profile outside of coldpool
 
+        # dump vorticity_yz field
+        file_name = 'field_vort_yz_t' + str(t0) + 's.nc'
+        if flag == 'single':
+            save_vort_field(vort_yz, file_name, path_out_fields, 1, ic_arr, jc_arr, ishift, jshift)
+        elif flag == 'double':
+            save_vort_field(vort_yz, file_name, path_out_fields, 2, ic_arr, jc_arr, ishift, jshift)
+        elif flag == 'triple':
+            save_vort_field(vort_yz, file_name, path_out_fields, 3, ic_arr, jc_arr, ishift, jshift)
+
         # # compare vort_yz and vort_xz
         # comparison_vort_yz_vort_xz(vort_xz_, vort_yz_, kmax, t0)
 
-        # # plot domain integral of vorticity
-        # plt.figure()
-        # plt.imshow(vort_yz_[jcshift:,:].T, origin='lower')
-        # plt.suptitle('t='+str(t0)+'s')
-        # plt.colorbar()
-        # plt.savefig(os.path.join(path_out, 'vort_sum_t'+str(t0)+'s.png'))
-        # plt.close()
+    # PLOTTING
+    # plot_vorticity_field(vort_xz_, vort_yz_, icshift, jcshift, t0)
+    # plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env, timerange)
 
-        # dump vorticity_yz field
-        file_name = 'field_vort_yz_t'+str(t0)+'s.nc'
-        if flag == 'single':
-            save_vort_field(vort_yz, file_name, path_out, 1, ic_arr, jc_arr, ishift, jshift)
-        elif flag == 'double':
-            save_vort_field(vort_yz, file_name, path_out, 2, ic_arr, jc_arr, ishift, jshift)
-        elif flag == 'triple':
-            save_vort_field(vort_yz, file_name, path_out, 3, ic_arr, jc_arr, ishift, jshift)
+    # output vorticity timeseries
+    dump_statistics_variable(vort_yz_max, 'vort_yz_max', 'timeseries', stats_file_name, path_out_fields)
+    dump_statistics_variable(vort_yz_min, 'vort_yz_min', 'timeseries', stats_file_name, path_out_fields)
+    dump_statistics_variable(vort_yz_sum, 'vort_yz_sum', 'timeseries', stats_file_name, path_out_fields)
+    dump_statistics_variable(vort_yz_env, 'vort_yz_env', 'timeseries', stats_file_name, path_out_fields)
 
 
-        # ''' STREAM FUNCTION '''
+    ''' STREAM FUNCTION '''
+    for it, t0 in enumerate(timerange):
+        print('--- time: t=' + str(t0) + 's ---')
+
         # # compute 2D streamfunction in yz-crosssection
         # psi_1 = compute_streamfunction_simps(v[ic,:,:], w[ic,:,:], t0)
         # psi_2 = compute_streamfunction_simps2(v[ic,:,:], w[ic,:,:], t0)
@@ -203,7 +189,7 @@ def main():
         # a = ax.contourf(Y,Z,var[:ymax, :kmax], levels=np.linspace(min, max, 1e2))
         # plt.colorbar(a, ax=ax)
         #
-        # fig.savefig(os.path.join(path_out, 'psi_t'+str(t0)+'s.png'))
+        # fig.savefig(os.path.join(path_out_figs, 'psi_t'+str(t0)+'s.png'))
         # plt.close(fig)
         #
         # fig, axes = plt.subplots(1, 4, figsize=(16, 4))
@@ -229,7 +215,7 @@ def main():
         # max = np.maximum(np.amax(psi_4[20:20 + ymax, :kmax]), -np.amin(psi_4[20:20 + ymax, :kmax]))
         # a = ax2.contourf(Y, Z, psi_4[20:20 + ymax, :kmax], levels=np.linspace(-max, max, 1e2))
         # plt.colorbar(a, ax=ax2)
-        # fig.savefig(os.path.join(path_out, 'psi_2_t' + str(t0) + 's.png'))
+        # fig.savefig(os.path.join(path_out_figs, 'psi_2_t' + str(t0) + 's.png'))
         # plt.close(fig)
 
 
@@ -252,42 +238,92 @@ def main():
         # ax1.set_title('stream function (x(i-1)..x(i+1)')
         # ax2.set_title('vorticity')
         # plt.suptitle('t='+str(t0)+'s')
-        # plt.savefig(os.path.join(path_out, 'psi_1_t'+str(t0)+'s.png'))
+        # plt.savefig(os.path.join(path_out_figs, 'psi_1_t'+str(t0)+'s.png'))
         # plt.close()
 
-        print('')
+        # print('')
 
-    # # maximum vorticity
-    # fig, axes = plt.subplots(1,3, figsize=(15,5))
-    # ax1 = axes[0]
-    # ax1.plot(timerange, vort_yz_max, 'o-', label = 'max')
-    # ax1.plot(timerange, -vort_yz_min, 'o-', label='-min')
-    # ax1.legend()
-    # ax1.set_title('max vort_yz')
-    # ax1.set_xlabel('time t  [s]')
-    # ax1.set_ylabel('max vort_yz  [1/s]')
-    # ax2 = axes[1]
-    # ax2.plot(timerange, vort_yz_sum, '-o')
-    # ax2.set_title('sum vort_yz')
-    # ax2.set_xlabel('time t  [s]')
-    # ax2.set_ylabel('sum vort_yz  [1/s]')
-    # fig.savefig(os.path.join(path_out, 'vort_yz_max_sum.png'))
-    # ax3 = axes[2]
-    # ax3.plot(timerange, vort_yz_env, '-o')
-    # ax3.set_title('sum vort_yz env')
-    # ax3.set_xlabel('time t  [s]')
-    # ax3.set_ylabel('sum vort_yz  [1/s]')
-    # fig.savefig(os.path.join(path_out, 'vort_yz_max_sum.png'))
 
-    # output vorticity timeseries
-    dump_statistics_variable(vort_yz_max, 'vort_yz_max', 'timeseries', stats_file_name, path_out)
-    dump_statistics_variable(vort_yz_min, 'vort_yz_min', 'timeseries', stats_file_name, path_out)
-    dump_statistics_variable(vort_yz_sum, 'vort_yz_sum', 'timeseries', stats_file_name, path_out)
-    dump_statistics_variable(vort_yz_env, 'vort_yz_env', 'timeseries', stats_file_name, path_out)
 
     return
 
+
+
+# ---------------------------------- PLOTTING ------------------------------------
+def plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env, timerange):
+    fig, axes = plt.subplots(1,3, figsize=(15,5))
+    ax1 = axes[0]
+    ax1.plot(timerange, vort_yz_max, 'o-', label = 'max')
+    ax1.plot(timerange, -vort_yz_min, 'o-', label='-min')
+    ax1.legend()
+    ax1.set_title('max vort_yz')
+    ax1.set_xlabel('time t  [s]')
+    ax1.set_ylabel('max vort_yz  [1/s]')
+    ax2 = axes[1]
+    ax2.plot(timerange, vort_yz_sum, '-o')
+    ax2.set_title('sum vort_yz')
+    ax2.set_xlabel('time t  [s]')
+    ax2.set_ylabel('sum vort_yz  [1/s]')
+    fig.savefig(os.path.join(path_out_figs, 'vort_yz_max_sum.png'))
+    ax3 = axes[2]
+    ax3.plot(timerange, vort_yz_env, '-o')
+    ax3.set_title('sum vort_yz env')
+    ax3.set_xlabel('time t  [s]')
+    ax3.set_ylabel('sum vort_yz  [1/s]')
+    fig.savefig(os.path.join(path_out_figs, 'vort_yz_max_sum.png'))
+
+    return
+
+
+def plot_vorticity_field(vort_xz_, vort_yz_, icshift, jcshift, t0):
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,5))
+    ax1 = plt.imshow(vort_xz_.T, origin='lower')
+    ax1.set_title('vort_xz')
+    ax2 = plt.imshow(vort_yz_.T, origin='lower')
+    ax2.set_title('vort_yz')
+    ax1.plot([icshift,icshift],[1,ny_-2],'k')
+    ax2.plot([icshift,icshift],[1,ny_-2],'k')
+    ax1.plot([1,nx_-2],[jcshift,jcshift],'k')
+    ax2.plot([1,nx_-2],[jcshift,jcshift],'k')
+    ax1.xlim([0,nx_])
+    ax1.ylim([0,ny_])
+    ax2.xlim([0,nx_])
+    ax2.ylim([0,ny_])
+    fig.savefig(os.path.join(path_out_figs, 'vort_t' + str(t0) + 's.png'))
+    plt.close(fig)
+
+    return
+
+
+def plot_configuration():
+    ''' FIELDS / GEOMETRY '''
+    plt.figure()
+    plt.subplot(131)
+    plt.imshow(u_[:,:,1].T, origin='lower')
+    plt.plot([icshift,icshift],[1,ny_-2],'k')
+    plt.plot([1,nx_-2],[jcshift,jcshift],'k')
+    plt.xlim([0,nx_])
+    plt.ylim([0,ny_])
+    plt.subplot(132)
+    plt.imshow(v_[:,:,1].T, origin='lower')
+    plt.plot([icshift, icshift], [1, ny_ - 2], 'k')
+    plt.plot([1, nx_ - 2], [jcshift, jcshift], 'k')
+    plt.xlim([0, nx_])
+    plt.ylim([0, ny_])
+    plt.subplot(133)
+    plt.imshow(w_[:,:,1].T, origin='lower')
+    plt.plot([icshift, icshift], [1, ny_ - 2], 'k')
+    plt.plot([1, nx_ - 2], [jcshift, jcshift], 'k')
+    plt.xlim([0, nx_])
+    plt.ylim([0, ny_])
+    plt.savefig(os.path.join(path_out_figs, 'test_fields_t' + str(t0) + 's.png'))
+    return
+
+
+
 # ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
 def compute_vorticity_yz(v_, w_):
     vort_yz = np.zeros(shape=v_.shape)
     [lx, lz] = v_.shape
@@ -308,7 +344,7 @@ def compute_vorticity_xz(u_, w_):
 
 
 
-
+# ----------------------------------------------------------------------
 
 def streamfunction_circular_flow():
     print '--- compute circular stream ---'
@@ -521,7 +557,7 @@ def compute_streamfunction_simps(u_, v_, t0):
     print('maxs', np.amax(u_[:ym,:km]), np.amax(psi_B[:ym,:km]))
     ax2.contour(-psi_B[:ym,:km].T)
     ax2.contour(u_[:ym,:km].T, linestyles='--')
-    fig.savefig(os.path.join(path_out, 'test_u_t'+str(t0)+'s.png'))
+    fig.savefig(os.path.join(path_out_figs, 'test_u_t'+str(t0)+'s.png'))
     plt.close()
 
     return psi_simps
@@ -602,31 +638,30 @@ def comparison_vort_yz_vort_xz(vort_xz_, vort_yz_, kmax, t0):
     plt.colorbar(a, ax=ax1)
     plt.colorbar(b, ax=ax2)
     plt.colorbar(c, ax=ax3)
-    plt.savefig(os.path.join(path_out, 'vort_xz_yz_t'+str(t0)+'s.png'))
+    plt.savefig(os.path.join(path_out_figs, 'vort_xz_yz_t'+str(t0)+'s.png'))
     plt.close()
     return
+
 # ----------------------------------------------------------------------
 
 def set_input_output_parameters(args):
     print('--- set input parameters ---')
-    global path, path_in, path_out, path_stats, path_fields
-    if args.path:
-        path = args.path
-    else:
-        # path = '/Users/bettinameyer/polybox/ClimatePhysics/Copenhagen/Projects/LES_ColdPool/' \
-        #        'triple_3D_noise/Out_CPDry_triple_dTh2K/'
-        path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th10K/'
+    global path, path_in, path_out_figs, path_out_fields, path_stats, path_fields
+    path = args.path
+    # path = '/Users/bettinameyer/polybox/ClimatePhysics/Copenhagen/Projects/LES_ColdPool/' \
+    #        'triple_3D_noise/Out_CPDry_triple_dTh2K/'
+    # path = '/nbi/ac/cond1/meyerbe/ColdPools/triple_3D_noise/Out_CPDry_triple_Th10K/'
     path_in = os.path.join(path, 'fields_CP_rim')
     path_fields = os.path.join(path, 'fields')
-    path_out = os.path.join(path, 'figs_vorticity')
-    if not os.path.exists(path_out):
-        os.mkdir(path_out)
+    path_out_figs = os.path.join(path, 'figs_vorticity')
+    path_out_fields = os.path.join(path, 'fields_vorticity')
+    if not os.path.exists(path_out_figs):
+        os.mkdir(path_out_figs)
+    if not os.path.exists(path_out_fields):
+        os.mkdir(path_out_fields)
 
     global case_name
-    if args.casename:
-        case_name = args.casename
-    else:
-        case_name = 'ColdPoolDry_triple_3D'
+    case_name = args.casename
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
     global nx, ny, nz, dx, dy, dz, dV, gw
     nx = nml['grid']['nx']
@@ -851,7 +886,6 @@ def save_vort_field(var_in, file_name, path, ncp, ic_arr, jc_arr, ishift, jshift
     var = fields_grp.createVariable('vort_yz', 'f8', ('ny', 'nz'))
     var.description = "vorticity in yz-plane through cold pool center (i=ic)"
     var.units = "s^-1"
-    print var_in.shape, ny, nz
     var[:,:] = var_in[:,:]
     rootgrp.close()
     return

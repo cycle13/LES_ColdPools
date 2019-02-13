@@ -25,7 +25,6 @@ plt.rcParams['axes.labelsize'] = 12
 
 
 def main():
-    # Parse information from the command line
     parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("casename")
     parser.add_argument("path_root")
@@ -47,58 +46,10 @@ def main():
     ng = len(z_params)
     kmax = np.amax(z_params) + 2000. / dx[2]
 
-    print ' '
-    fig, axes = plt.subplots(1, 4, figsize=(20,4))
-    for istar in range(ng):
-        zstar = z_params[istar]
-        rstar = r_params[istar]
-        irstar = np.int(np.round(rstar / dx[0]))
-        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-
-        path = os.path.join(path_root, id)
-        path_in = os.path.join(path_root, id, 'figs_vorticity')
-        path_fields = os.path.join(path_root, id, 'fields')
-        path_out = os.path.join(path_root, 'figs_vorticity')
-        if not os.path.exists(path_out):
-            os.mkdir(path_out)
-
-        filename = 'Stats_rotational.nc'
-        rootgrp = nc.Dataset(os.path.join(path_in, filename), 'r+', format='NETCDF4')
-        ts_grp = rootgrp.groups['timeseries']
-        times = ts_grp.variables['time'][:]
-        max = ts_grp.variables['vort_yz_max'][:]
-        min = ts_grp.variables['vort_yz_min'][:]
-        sum = ts_grp.variables['vort_yz_sum'][:]
-        env = ts_grp.variables['vort_yz_env'][:]
-        rootgrp.close()
-
-        ax = axes[0]
-        ax.plot(times, max, '-o', markeredgecolor='w', label=id)
-        ax.set_title('max(vort_yz)')
-        ax.set_xlabel('time  [s]')
-        ax = axes[1]
-        ax.plot(times, min, '-o', markeredgecolor='w', label=id)
-        ax.set_title('min(vort_yz)')
-        ax.set_xlabel('time  [s]')
-        ax = axes[2]
-        ax.plot(times, sum, '-o', markeredgecolor='w', label=id)
-        ax.set_title('sum_ijk(vort_yz)')
-        ax.set_xlabel('time  [s]')
-        ax = axes[3]
-        ax.plot(times, env, '-o', markeredgecolor='w', label=id)
-        ax.set_title('environmental vort_yz')
-        ax.set_xlabel('time  [s]')
-
-    for ax in axes:
-        ax.legend(loc='best')
-    # plt.lines.set_markeredgewidth(0.0)
-    plt.tight_layout
-    plt.savefig(os.path.join(path_out, 'dTh_' + str(dTh) + '_vort_yz_domain.png'))
-    plt.close(fig)
 
 
     print ' '
-
+    print('--- plotting timeseries ---')
     fig, axes = plt.subplots(1, 4, figsize=(20, 4))
     for istar in range(ng):
         zstar = z_params[istar]
@@ -128,7 +79,7 @@ def main():
         ax.set_title('max(vort_yz)')
         ax.set_xlabel('time  [s]')
         ax = axes[1]
-        ax.plot(times, min, '-o', markeredgecolor='w', label=id)
+        # ax.plot(times, min, '-o', markeredgecolor='w', label=id)
         ax.set_title('min(vort_yz)')
         ax.set_xlabel('time  [s]')
         ax = axes[2]
@@ -207,6 +158,7 @@ def main():
 
 
 # ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def set_input_parameters(args):
     print('--- set input parameters ---')
@@ -264,6 +216,7 @@ def define_geometry(case_name, nml):
     print('--- define geometry ---')
     global x_half, y_half, z_half
     global ic_arr, jc_arr
+    global flag
     # global rstar, irstar, zstar, kstar
 
     x_half = np.empty((nx), dtype=np.double, order='c')
@@ -284,6 +237,11 @@ def define_geometry(case_name, nml):
 
     # set coordinates for plots
     if case_name == 'ColdPoolDry_single_3D':
+        flag = 'single'
+        rstar = nml['init']['r']
+        irstar = np.int(np.round(rstar / dx[0]))
+        zstar = nml['init']['h']
+        kstar = np.int(np.round(zstar / dx[2]))
         try:
             ic = nml['init']['ic']
             jc = nml['init']['jc']
@@ -312,6 +270,7 @@ def define_geometry(case_name, nml):
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
     elif case_name == 'ColdPoolDry_double_3D':
+        flag = 'double'
         # try:
         #     rstar = nml['init']['r']
         # except:

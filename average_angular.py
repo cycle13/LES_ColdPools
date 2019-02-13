@@ -23,7 +23,8 @@ def main():
     nt = len(times)
     ic_arr, jc_arr = define_geometry(nml)
 
-    r_field = np.zeros((nx, ny), dtype=np.int)
+    r_field = np.zeros((nx, ny), dtype=np.int)    # radius
+    th_field = np.zeros((nx, ny), dtype=np.int)   # angle
 
     ic = np.int(nx/2)
     jc = np.int(ny/2)
@@ -38,15 +39,49 @@ def main():
             r_field[ic-i,jc+j] = r_field[ic+i,jc+j]
             r_field[ic-i,jc-j] = r_field[ic+i,jc+j]
             r_field[ic+i,jc-j] = r_field[ic+i,jc+j]
+            if i == 0:
+                i = 1e-9
+            aux = np.arctan(j/i)
+            th_field[ic+i, jc+j] = aux
+            th_field[ic-i, jc+j] = aux
+            th_field[ic-i, jc+j] = -aux
+            th_field[ic+i, jc-j] = -aux
 
 
-    var_list = ['w', 's', 'phi']
+    # compute radial velocity
+    print ''
+    print('-------- compute radial velocity -------- ')
+    uv_list = ['u', 'v']
+    t0 = tmin
+    it = 0
+    k0 = 0
+    v_rad = np.zeros((nt, nx, ny, kmax))
+    for it, t0 in enumerate(times):
+        print('t=' + str(t0))
+        fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
+        rootgrp = nc.Dataset(fullpath_in, 'r')
+        for k0 in range(kmax):
+            v_hor = np.zeros((2, nx, ny))
+            v_hor[0,:,:] = rootgrp.groups['fields'].variables['u'][:,:,k0]
+            v_hor[1,:,:] = rootgrp.groups['fields'].variables['v'][:,:,k0]
+            v_rad[it, :, :, k0] = compute_radial_vel(v_hor, th_field)
+        rootgrp.close()
+    create_vrad_field(v_rad, kmax)
+
+
+
+
+
+    # compute angular average
+    var_list = ['w', 's', 'phi', 'temperature']
+
     file_name = 'stats_radial_averaged.nc'
     create_statistics_file(var_list, file_name, times, rmax)
 
     data_dict_av = {}
     for var_name in var_list:
         data_dict_av[var_name] = np.zeros((nt, rmax, kmax))
+    v_rad_av = np.zeros((nt, rmax, kmax))
 
     # t0 = tmin
     # it = 0
@@ -54,47 +89,82 @@ def main():
     for it, t0 in enumerate(times):
         fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
         data_dict = read_in_vars(fullpath_in, var_list)
+        print('running t='+str(t0))
         for k in range(kmax):
-            print('running on k='+str(k))
+            v_rad_av[it, :, k] = compute_average_var(v_rad[it, :, :, k], rmax, r_field)
             for var_name in var_list:
                 data_dict_av[var_name][it, :, k] = compute_average_var(data_dict[var_name][:,:,k], rmax, r_field)
 
-    dump_statistics_file(data_dict_av, var_list, file_name)
+    dump_statistics_file(data_dict_av, v_rad_av, var_list, file_name)
+
+
 
 
 
 
     ''' plotting '''
-
     data_stats = nc.Dataset(os.path.join(path_out_data, file_name), 'r')
     stats_grp = data_stats.groups['stats'].variables
     times = data_stats.groups['timeseries'].variables['time'][:]
-    # var = ('nt', 'nr', 'nz')
+    # var = np.array('nt', 'nr', 'nz')
     r_range = stats_grp['r'][:]
 
+    var_list = ['w', 'v_rad', 's']
     ncol = len(var_list)
     k0 = 0
-    fig_name = 'radial_average_k'+str(k0)+'.png'
-    fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5*ncol, 5))
-    for i, ax in enumerate(axes):
-        var = stats_grp[var_list[i]][:,:,:]
-        print('var shape: ', var.shape, 'nt, rmax, kmax: ', nt, rmax, kmax, 'k0: ', k0)
-        for it, t0 in enumerate(times[1::2]):
-            count_color = 2 * np.double(it) / len(times)
-            if var_list[i] == 's':
-                ax.plot(r_range[:-1], var[2*it+1, :-1, 0], color=cm.jet(count_color), label='t='+str(t0))
+    rmax = 10e3
+    irmax = np.where(r_range == rmax)[0]
+
+    for k0 in range(kmax):
+        fig_name = 'radial_average_k'+str(k0)+'.png'
+        fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5*ncol, 5))
+        for i, ax in enumerate(axes):
+            var = stats_grp[var_list[i]][:,:,:]
+            if len(times) >= 2:
+                for it, t0 in enumerate(times[1::2]):
+                    count_color = 2 * np.double(it) / len(times)
+                    if var_list[i] == 's':
+                        ax.plot(r_range[:-1], var[2*it+1, :-1, 0], color=cm.jet(count_color), label='t='+str(t0))
+                    else:
+                        ax.plot(r_range, var[2*it+1, :, 0], color=cm.jet(count_color), label='t='+str(t0))
             else:
-                ax.plot(r_range, var[2*it+1, :, 0], color=cm.jet(count_color), label='t='+str(t0))
-        ax.set_title(var_list[i])
-    axes[2].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
-               fancybox=True, shadow=True, ncol=1, fontsize=10)
-    fig.savefig(os.path.join(path_out_figs, fig_name))
-    plt.close(fig)
+                for it, t0 in enumerate(times):
+                    count_color = np.double(it) / len(times)
+                    if var_list[i] == 's':
+                        ax.plot(r_range[:irmax], var[it, :irmax, 0], color=cm.jet(count_color), label='t='+str(t0))
+                    else:
+                        ax.plot(r_range[:irmax], var[it, :irmax, 0], color=cm.jet(count_color), label='t='+str(t0))
+            ax.set_title(var_list[i])
+        axes[2].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
+                   fancybox=True, shadow=True, ncol=1, fontsize=10)
+        plt.suptitle('z='+str(k0*dx[2])+'m')
+        fig.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
+
     data_stats.close()
 
     return
 
 
+# _______________________________
+
+def create_vrad_field(v_rad, kmax):
+    path_out = os.path.join(path, 'fields_v_rad')
+    if not os.path.exists(path_out):
+        os.mkdir(path_out)
+    file_name = 'v_rad'
+    rootgrp = nc.Dataset(os.path.join(path_out, file_name), 'w', format='NETCDF4')
+
+    rootgrp.createDimension('time', None)
+    rootgrp.createDimension('nx', nx)
+    rootgrp.createDimension('ny', ny)
+    rootgrp.createDimension('nz', kmax)
+
+    var = rootgrp.createVariable('v_rad', 'f8', ('time', 'nx', 'ny', 'nz'))
+    var[:,:,:,:] = v_rad
+    rootgrp.close()
+
+    return
 # _______________________________
 
 def create_statistics_file(var_list, file_name, timerange, rmax):
@@ -107,9 +177,12 @@ def create_statistics_file(var_list, file_name, timerange, rmax):
     rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'w', format='NETCDF4')
 
     dims_grp = rootgrp.createGroup('dimensions')
-    var = dims_grp.createDimension('dx', dx[0])
-    var = dims_grp.createDimension('dy', dx[1])
-    var = dims_grp.createDimension('dz', dx[2])
+    dims_grp.createDimension('dx', dx[0])
+    dims_grp.createDimension('dy', dx[1])
+    dims_grp.createDimension('dz', dx[2])
+    dims_grp.createDimension('nz', kmax)
+    var = dims_grp.createVariable('krange', 'f8', ('nz'))
+    var[:] = np.arange(0, kmax, dtype=np.int)
 
     ts_grp = rootgrp.createGroup('timeseries')
     ts_grp.createDimension('nt', nt)
@@ -129,8 +202,13 @@ def create_statistics_file(var_list, file_name, timerange, rmax):
     var = stats_grp.createVariable('ri', 'f8', ('nr'))
     var.unit = '-'
     var[:] = ri_range
+
+    var = stats_grp.createVariable('v_rad', 'f8', ('nt', 'nr', 'nz'))
+    var.long_name = 'radial velocity'
+    var.units = "m/s"
+
     for var_name in var_list:
-        var = stats_grp.createVariable(var_name, 'f8', ('nt', 'nr', 'nz'))
+        stats_grp.createVariable(var_name, 'f8', ('nt', 'nr', 'nz'))
         # var.units = "m"
 
     rootgrp.close()
@@ -139,8 +217,8 @@ def create_statistics_file(var_list, file_name, timerange, rmax):
 
 
 
-def dump_statistics_file(data_dictionary, var_list, file_name):
-
+def dump_statistics_file(data_dictionary, v_rad_av, var_list, file_name):
+    print('-------- dump statistics file -------- ')
     rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'r+', format='NETCDF4')
 
     # ts_grp = rootgrp.groups['timeseries']
@@ -153,6 +231,8 @@ def dump_statistics_file(data_dictionary, var_list, file_name):
     for var_name in var_list:
         var = stats_grp.variables[var_name]
         var[:,:,:] = data_dictionary[var_name][:,:,:]
+    var = stats_grp.variables['v_rad']
+    var[:, :, :] = v_rad_av[:, :, :]
 
     # prof_grp = rootgrp.groups['profiles']
     # var = prof_grp.variables['k_dumped']
@@ -195,6 +275,15 @@ def compute_average_var(var1, rmax, r_field):
     return var1_av
 # _______________________________
 
+def compute_radial_vel(uv, th_field):
+    ur = np.zeros((nx,ny), dtype=np.double)
+    for i in range(nx):
+        for j in range(ny):
+            th = th_field[i,j]
+            ur[i,j] = uv[0,i,j]*np.cos(th) + uv[1,i,j]*np.sin(th)
+    return ur
+
+# _______________________________
 # _______________________________
 def set_input_parameters(args):
     print ''' setting parameters '''
@@ -260,14 +349,12 @@ def set_input_parameters(args):
     else:
         tmax = 100
 
-    ''' file range '''
+    ''' time range '''
     times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
              and tmin <= np.int(name[:-3]) <= tmax]
     times.sort()
-    # files = [str(t) + '.nc' for t in times]
 
     print('')
-    # print('files', files, len(files))
     print('times', times)
     print('')
     print('kmax ', kmax, 'nx ', nx)
