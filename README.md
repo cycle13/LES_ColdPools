@@ -74,12 +74,13 @@ INPUT: [path PATH] [--kmin KMIN] [--kmax KMAX] [--k0 K0]
 >  make new field of reduced number of levels (k=kmin..kmax) or single level (k=k0) and merged time
 
 ***modules:***
-``convert_file_for_varlist.py``: one single output file of n levels (k=kmin..kmax) for all variables in 
+
+- ``convert_file_for_varlist.py``: one single output file of n levels (k=kmin..kmax) for all variables in 
 given var_list and for all times
 
-``convert_file_for_varlist_vertsection.py``: one single output file with yz_crosssection for all variables in 
+- ``convert_file_for_varlist_vertsection.py``: one single output file with yz_crosssection for all variables in 
 given var_list and for all times
 
-``convert_file_for_singlevariable_onelevel.py:`` returns one file with all timesteps at one level (k=k0) for 
+- ``convert_file_for_singlevariable_onelevel.py:`` returns one file with all timesteps at one level (k=k0) for 
 given variable 
 (used for Olga's tracers) 

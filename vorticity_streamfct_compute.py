@@ -15,7 +15,6 @@ def main():
     parser.add_argument("path")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
-    parser.add_argument("--kmin")
     parser.add_argument("--kmax")
     args = parser.parse_args()
 
@@ -87,11 +86,11 @@ def main():
 
         ''' VORTICITY '''
         # compute and plot vorticity in yz-cross section
-        vort_yz = compute_vorticity_yz(v[ic,:,:], w[ic,:,:])
-        vort_yz_ = compute_vorticity_yz(v_[icshift,:,:], w_[icshift,:,:])
+        vort_yz = compute_vorticity_yz(v[ic,:,:], w[ic,:,:], kmax)
+        vort_yz_ = compute_vorticity_yz(v_[icshift,:,:], w_[icshift,:,:], kmax)
         # compute and plot vorticity in xz-crosssection
-        vort_xz = compute_vorticity_xz(u[:,jc,:], w[:,jc,:])
-        vort_xz_ = compute_vorticity_xz(u_[:,jcshift,:], w_[:,jcshift,:])
+        vort_xz = compute_vorticity_xz(u[:,jc,:], w[:,jc,:], kmax)
+        vort_xz_ = compute_vorticity_xz(u_[:,jcshift,:], w_[:,jcshift,:], kmax)
         print('vorticity', vort_yz.shape, vort_xz.shape, nx, ny, nz)
         print vort_yz_.shape, vort_xz_.shape
 
@@ -103,12 +102,9 @@ def main():
 
         # dump vorticity_yz field
         file_name = 'field_vort_yz_t' + str(t0) + 's.nc'
-        if flag == 'single':
-            save_vort_field(vort_yz, file_name, path_out_fields, 1, ic_arr, jc_arr, ishift, jshift)
-        elif flag == 'double':
-            save_vort_field(vort_yz, file_name, path_out_fields, 2, ic_arr, jc_arr, ishift, jshift)
-        elif flag == 'triple':
-            save_vort_field(vort_yz, file_name, path_out_fields, 3, ic_arr, jc_arr, ishift, jshift)
+        print 'shapes fields', vort_yz.shape
+        save_vort_field(vort_yz, file_name, path_out_fields, flag,
+                        ic_arr, jc_arr, ishift, jshift, kmax)
 
         # # compare vort_yz and vort_xz
         # comparison_vort_yz_vort_xz(vort_xz_, vort_yz_, kmax, t0)
@@ -295,7 +291,7 @@ def plot_vorticity_field(vort_xz_, vort_yz_, icshift, jcshift, t0):
     return
 
 
-def plot_configuration():
+def plot_configuration(u_, v_, icshift, jcshift):
     ''' FIELDS / GEOMETRY '''
     plt.figure()
     plt.subplot(131)
@@ -324,22 +320,30 @@ def plot_configuration():
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 
-def compute_vorticity_yz(v_, w_):
-    vort_yz = np.zeros(shape=v_.shape)
+def compute_vorticity_yz(v_, w_, kmax):
     [lx, lz] = v_.shape
+    if lz <= kmax:
+        kmax = lz-1
+    # vort_yz = np.zeros(shape=v_.shape)
+    vort_yz = np.zeros((lx, kmax), dtype=np.double)
     for j in range(1, lx - 1):
-        for k in range(1, lz-1):
+        # for k in range(1, lz-1):
+        for k in range(1, kmax):
             vort_yz[j, k] = (w_[j + 1, k] - w_[j - 1, k]) / (2 * dx[1]) \
                                 - (v_[j, k + 1] - v_[j, k - 1]) / (2 * dx[2])
     return vort_yz
 
-def compute_vorticity_xz(u_, w_):
-    vort_xz = np.zeros(shape=u_.shape)
+def compute_vorticity_xz(u_, w_, kmax):
     [ly, lz] = u_.shape
+    if lz <= kmax:
+        kmax = lz-1
+    # vort_xz = np.zeros(shape=u_.shape, dtype=np.double)
+    vort_xz = np.zeros((ly, kmax), dtype=np.double)
     for j in range(1, ly - 1):
-        for k in range(1, lz-1):
-            vort_xz[j, k] = (u_[j, k + 1] - u_[j, k - 1]) / (2 * dx[2])  \
-                                - (w_[j + 1, k] - w_[j - 1, k]) / (2 * dx[1])
+        # for k in range(1, lz-1):
+        for k in range(1, kmax):
+            vort_xz[j, k] = (u_[j, k + 1] - u_[j, k - 1]) / (2 * dx[2]) \
+                            - (w_[j + 1, k] - w_[j - 1, k]) / (2 * dx[1])
     return vort_xz
 
 
@@ -691,7 +695,7 @@ def set_input_output_parameters(args):
     if args.kmax:
         kmax = np.int(args.kmax)
     else:
-        kmax = 50
+        kmax = 60
     print('nx, ny, nz', nx, ny, nz)
     print('times', timerange)
 
@@ -862,8 +866,16 @@ def dump_statistics_variable(var_in, var_name, grp_name, file_name, path):
     return
 # ----------------------------------------------------------------------
 
-def save_vort_field(var_in, file_name, path, ncp, ic_arr, jc_arr, ishift, jshift):
+def save_vort_field(var_in, file_name, path, numberCPs,
+                    ic_arr, jc_arr, ishift, jshift, kmax):
     # ncp: number of cold pools
+    if numberCPs == 'single':
+        ncp = 1
+    elif numberCPs == 'double':
+        ncp = 2
+    elif numberCPs == 'triple':
+        ncp = 3
+
 
     print('-------- dump vorticity field --------')
     rootgrp = nc.Dataset(os.path.join(path, file_name), 'w', format='NETCDF4')
@@ -882,10 +894,13 @@ def save_vort_field(var_in, file_name, path, ncp, ic_arr, jc_arr, ishift, jshift
     fields_grp = rootgrp.createGroup('fields')
     fields_grp.createDimension('nx', nx)
     fields_grp.createDimension('ny', ny)
-    fields_grp.createDimension('nz', nz)
+    # fields_grp.createDimension('nz', nz)
+    fields_grp.createDimension('nz', kmax)
+    fields_grp.createDimension('nz_ori', nz)
     var = fields_grp.createVariable('vort_yz', 'f8', ('ny', 'nz'))
     var.description = "vorticity in yz-plane through cold pool center (i=ic)"
     var.units = "s^-1"
+    print 'shapes', var.shape, var_in.shape
     var[:,:] = var_in[:,:]
     rootgrp.close()
     return

@@ -16,6 +16,10 @@
 > - envelopes of initial anomaly (cos2())
 
 
+***(b) create file with merged time series***
+***`convert_fields_smaller_k.py`*** []
+
+
 ***(b) plot min/max in domain and xy-crosssections:*** 
 
 ***`compute_minmax_all.py`***
@@ -55,8 +59,25 @@ absolute value of velocity
 
 
 
+***(e) compute & plot vorticity and streamfunction***
 
-***(e) plot CP rim from tracers***
+`vorticity_streamfct_compute.py` [casename CASENMAE] [path PATH]
+[--tmin TMIN] [--tmax TMAX][--kmin KMIN] [--kmax KMAX]
+
+> OUTPUT: files *fields_vorticity/Stats_rotational.nc* with 
+timeseries for min, max and domain integrated vorticity 
+and *fields_vorticity/field_vort_yz_t(t0)s.nc* with 3D-field with vort_yz
+
+`voricity_streamfct_plotting_all.py` [casename CASENMAE] [path_root PATH]
+[dTh DTH] [--zparams ZPARAMS] [--rparams RPARAMS][--tmin TMIN] [--tmax TMAX]
+
+read in *Stats_rotational.nc*-files and plot for all cases
+
+> OUTPUT: figures in *path_root/figs_vorticity/*
+
+
+
+***(f) plot CP rim from tracers***
 
 `plot_tracer_analysis_all.py` [casename CASENAME] [pathroot PATH_ROOT] [dTh DELTA_TH] 
 [--zparams Z_RANGE] [--rparams R_RANGE] [--tmin TMIN] [--tmax TMAX] [--k0 K0]
