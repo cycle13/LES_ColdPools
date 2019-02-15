@@ -73,17 +73,19 @@ def main():
     print('')
 
     # ''' reduce number of vertical levels; keep all variables and horizontal dimensions '''
-    # # convert_file_forall_variables(files, path_fields, path_out, k_min, k_max)
+    # convert_file_forall_variables(files, path_fields, path_out, k_min, k_max)
     #
-    ''' output all levels for k=k_min..k_max for all variables given in var_list '''
-    var_list = ['u', 'v', 'w', 's', 'temperature']# , 'phi'
-    # convert_file_for_varlist(var_list, times, files, path_fields, path_out, k_min, k_max)
+    #''' output all levels for k=k_min..k_max for all variables given in var_list '''
+    ## var_list = ['u', 'v', 'w', 's', 'temperature']# , 'phi'
+    var_list = ['u', 'v', 'w', 's', 'temperature', 'phi']
+    ## convert_file_for_varlist(var_list, times, files, path_fields, path_out, k_min, k_max)
     if args.vert:
+        print '-- vertical crosssection --'
         path_out_ = os.path.join(path_root, 'fields_merged')
         if not os.path.exists(path_out_):
-            os.mkdir(path_out_)
+           os.mkdir(path_out_)
         convert_file_for_varlist_vertsection(var_list, times, files, path_fields, path_out_, i0_center)
-    #
+
     # # ''' output file with one level of one variable for all times '''
     # # # var_list = ['u', 'v', 'w', 's', 'temperature']# , 'phi'
     # # # for var in var_list:
@@ -179,9 +181,7 @@ def convert_file_for_varlist_vertsection(var_list, times, files, path_fields, pa
     else:
         rootgrp_out = nc.Dataset(fullpath_out, 'w', format='NETCDF4')
         rootgrp_out.createDimension('time', None)
-        # rootgrp_out.createDimension('time', nt)
-        # rootgrp_out.createDimension('nx', 1)
-        rootgrp_out.createDimension('ny', ny)
+        rootgrp_out.createDimension('nx', nx)
         rootgrp_out.createDimension('nz', nz)
         descr_grp = rootgrp_out.createGroup('description')
         var = descr_grp.createVariable('jc', 'f8', )
@@ -194,7 +194,7 @@ def convert_file_for_varlist_vertsection(var_list, times, files, path_fields, pa
 
         for var in var_list:
             print('var', var)
-            var_out = rootgrp_out.createVariable(var, 'f8', ('time', 'ny', 'nz'))
+            var_out = rootgrp_out.createVariable(var, 'f8', ('time', 'nx', 'nz'))
 
             for it, file in enumerate(files):
                 print('file: ', file)

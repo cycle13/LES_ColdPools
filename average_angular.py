@@ -26,8 +26,8 @@ def main():
     r_field = np.zeros((nx, ny), dtype=np.int)    # radius
     th_field = np.zeros((nx, ny), dtype=np.int)   # angle
 
-    ic = np.int(nx/2)
-    jc = np.int(ny/2)
+    ic = ic_arr[0]
+    jc = jc_arr[0]
     irange = np.minimum(nx-ic, ic)
     jrange = np.minimum(ny-jc, jc)
     rmax = np.int(np.ceil(np.sqrt(irange**2 + jrange**2)))
@@ -111,9 +111,8 @@ def main():
 
     var_list = ['w', 'v_rad', 's']
     ncol = len(var_list)
-    k0 = 0
-    rmax = 10e3
-    irmax = np.where(r_range == rmax)[0]
+    rmax_plot = 10e3
+    irmax = np.where(r_range == rmax_plot)[0]
 
     for k0 in range(kmax):
         fig_name = 'radial_average_k'+str(k0)+'.png'
@@ -131,9 +130,9 @@ def main():
                 for it, t0 in enumerate(times):
                     count_color = np.double(it) / len(times)
                     if var_list[i] == 's':
-                        ax.plot(r_range[:irmax], var[it, :irmax, 0], color=cm.jet(count_color), label='t='+str(t0))
+                        ax.plot(r_range[:rmax_plot], var[it, :rmax_plot, 0], color=cm.jet(count_color), label='t='+str(t0))
                     else:
-                        ax.plot(r_range[:irmax], var[it, :irmax, 0], color=cm.jet(count_color), label='t='+str(t0))
+                        ax.plot(r_range[:rmax_plot], var[it, :rmax_plot, 0], color=cm.jet(count_color), label='t='+str(t0))
             ax.set_title(var_list[i])
         axes[2].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
                    fancybox=True, shadow=True, ncol=1, fontsize=10)
@@ -317,22 +316,6 @@ def set_input_parameters(args):
     dx[2] = nml['grid']['dz']
     gw = nml['grid']['gw']
 
-
-    global ic_arr, jc_arr
-    try:
-        print('(ic,jc) from nml')
-        ic = nml['init']['ic']
-        jc = nml['init']['jc']
-    except:
-        print('(ic,jc) NOT from nml')
-        if case_name == 'ColdPoolDry_single_3D':
-            ic = np.int(nx/2)
-            jc = np.int(ny/2)
-            ic_arr = [ic]
-            jc_arr = [jc]
-        else:
-            print('ic, jc not defined')
-
     global kmax
     if args.kmax:
         kmax = np.int(args.kmax)
@@ -365,7 +348,8 @@ def set_input_parameters(args):
 # _______________________________
 
 def define_geometry(nml):
-    a = nml['grid']['nx']
+    # global ic_arr, jc_arr
+
     '''--- define geometry ---'''
     global rstar
     if case_name == 'ColdPoolDry_double_2D':
@@ -383,13 +367,19 @@ def define_geometry(nml):
         rstar = nml['init']['r']
         # irstar = np.int(np.round(rstar / dx))
         # zstar = nml['init']['h']
-        dTh = nml['init']['dTh']
-        ic = np.int(nx / 2)
-        jc = np.int(ny / 2)
-        # xc = Gr.x_half[ic + Gr.dims.gw]  # center of cold-pool
-        # yc = Gr.y_half[jc + Gr.dims.gw]  # center of cold-pool
+        # dTh = nml['init']['dTh']
+        try:
+            print('(ic,jc) from nml')
+            ic = nml['init']['ic']
+            jc = nml['init']['jc']
+        except:
+            print('(ic,jc) NOT from nml')
+            ic = np.int(nx / 2)
+            jc = np.int(ny / 2)
         ic_arr = [ic]
         jc_arr = [jc]
+        # xc = Gr.x_half[ic + Gr.dims.gw]  # center of cold-pool
+        # yc = Gr.y_half[jc + Gr.dims.gw]  # center of cold-pool
     elif case_name == 'ColdPoolDry_double_3D':
         try:
             rstar = nml['init']['r']

@@ -7,6 +7,26 @@ import json as simplejson
 import os
 import sys
 
+
+label_size = 12
+plt.rcParams['xtick.labelsize'] = label_size
+plt.rcParams['ytick.labelsize'] = label_size
+plt.rcParams['axes.labelsize'] = 15
+# plt.rcParams['xtick.direction']='out'
+# plt.rcParams['ytick.direction']='out'
+plt.rcParams['legend.fontsize'] = 8
+# plt.rcParams['lines.linewidth'] = 3
+# plt.rcParams['grid.linewidth'] = 20
+# plt.rcParams['xtick.major.size'] = 8.5
+# plt.rcParams['xtick.minor.size'] = 5
+# plt.rcParams['ytick.major.size'] = 8.5
+# plt.rcParams['ytick.minor.size'] = 5
+# plt.rcParams['xtick.major.width'] = 2
+# plt.rcParams['xtick.minor.width'] = 1.5
+# plt.rcParams['ytick.major.width'] = 2
+# plt.rcParams['ytick.minor.width'] = 1.5
+# plt.rcParams['pdf.fonttype'] = 42         # Output Type 3 (Type3) or Type 42 (TrueType)
+
 def main():
 
     ''' set paths & parameters '''
@@ -23,7 +43,7 @@ def main():
     parser.add_argument("--everysecond")
     args = parser.parse_args()
 
-    nml = set_input_parameters(args)
+    set_input_parameters(args)
     # ic_arr, jc_arr = define_geometry(nml)
     if args.everysecond:
         every_second = args.everysecond
@@ -44,12 +64,19 @@ def main():
         file2 = file1
         file1 = file_aux
         del file_aux
+    print('dx: ', dx1_nml[0], dx2_nml[0], dz1)
+    print('dz: ', dx1_nml[2], dx2_nml[2], dz1)
+    print('nx: ', nx1, nx2)
+    print('nz: ', nz1, nz2)
 
     grp_stats1 = file1.groups['stats'].variables
     grp_stats2 = file2.groups['stats'].variables
 
     time1 = file1.groups['timeseries'].variables['time'][:]
     time2 = file2.groups['timeseries'].variables['time'][:]
+    print('times')
+    print time1
+    print time2
     if time1.any() != time2.any():
         sys.exit()
 
@@ -79,6 +106,7 @@ def main():
         dz12 = 1.
         kmax_ = kmax
 
+    print('')
     print 'dz: ', dz1, dz2, dz12
     print 'zranges'
     print kmax, kmax_
@@ -87,15 +115,15 @@ def main():
 
     var_list = ['w', 'v_rad', 's']
     ncol = len(var_list)
-    rmax = 10e3
+    rmax = 9e3
     irmax1 = np.where(r1 == rmax)[0]
     irmax2 = np.where(r2 == rmax)[0]
     # irmax1 = -1
     # irmax2 = -1
     print ''
-    print 'dx: ', dx1, dx2
     print r1[-1], r2[-1]
-    print irmax1, irmax2
+    print 'irmax: ', irmax1, irmax2
+    print 'rmax', r1[irmax1], r2[irmax2]
     print ''
 
 
@@ -105,7 +133,7 @@ def main():
         k2 = krange2[k0]
         print('z1, z2: ', k1*dz1, k2*dz2)
         fig_name = 'radial_average_z' + str(k1*dz1) + '.png'
-        fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5 * ncol, 5))
+        fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(7 * ncol, 5))
         for i, ax in enumerate(axes):
             var1 = grp_stats1[var_list[i]][:, :, :]
             var2 = grp_stats2[var_list[i]][:, :, :]
@@ -120,15 +148,15 @@ def main():
                     else:
                         ax.plot(r1[:irmax1], var1[2*it+1, :irmax1, k1], color=cm.copper(count_color), linewidth=3,
                                 label='t=' + str(t0))
-                for it, t0 in enumerate(time1[1::2]):
-                    print('t=' + str(t0))
-                    count_color = 2 * np.double(it) / len(time1)
-                    if it == 0:
-                        ax.plot(r2[:irmax2], var2[2*it+1, :irmax2, k2], '-', color=cm.jet(count_color), linewidth=2,
-                                label='dx='+str(dx2))
-                    else:
-                        ax.plot(r2[:irmax2], var2[2*it+1, :irmax2, k2], '-', color=cm.jet(count_color), linewidth=2,
-                                label='dx='+str(dx2))
+                # for it, t0 in enumerate(time1[1::2]):
+                #     print('t=' + str(t0))
+                #     count_color = 2 * np.double(it) / len(time1)
+                #     if it == 0:
+                #         ax.plot(r2[:irmax2], var2[2*it+1, :irmax2, k2], '-', color=cm.jet(count_color), linewidth=2,
+                #                 label='dx='+str(dx2))
+                #     else:
+                #         ax.plot(r2[:irmax2], var2[2*it+1, :irmax2, k2], '-', color=cm.jet(count_color), linewidth=2,
+                #                 label='dx='+str(dx2))
             else:
                 for it, t0 in enumerate(time1):
                     print('t=' + str(t0))
@@ -151,10 +179,10 @@ def main():
             ax.set_title(var_list[i])
             ax.set_xlabel('radius r  [m]')
             ax.set_ylabel(var_list[i])
-        axes[2].legend(loc='upper center', bbox_to_anchor=(1.4, 1.),
+        axes[2].legend(loc='upper center', bbox_to_anchor=(1.15, 0.8),
                        fancybox=True, ncol=2, fontsize=8)
         # plt.tight_layout()
-        plt.subplots_adjust(bottom=0.12, right=.83, left=0.04, top=0.9, wspace=0.25)
+        plt.subplots_adjust(bottom=0.12, right=.9, left=0.04, top=0.9, wspace=0.15)
         fig.suptitle('radially averaged variables   (k='+str(k0)+')')
         fig.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
@@ -194,23 +222,40 @@ def set_input_parameters(args):
 
     global case_name
     case_name = args.casename
-    nml = simplejson.loads(open(os.path.join(path1, case_name + '.in')).read())
-    global nx, ny, nz, dx
-    dx = np.ndarray(3, dtype=np.int)
-    nx = nml['grid']['nx']
-    ny = nml['grid']['ny']
-    nz = nml['grid']['nz']
-    dx[0] = nml['grid']['dx']
-    dx[1] = nml['grid']['dy']
-    dx[2] = nml['grid']['dz']
-    gw = nml['grid']['gw']
+    nml1 = simplejson.loads(open(os.path.join(path1, case_name + '.in')).read())
+    nml2 = simplejson.loads(open(os.path.join(path2, case_name + '.in')).read())
+    global nx1, nx2, ny, nz1, nz2, dx1_nml, dx2_nml
+    dx1_nml = np.ndarray(3, dtype=np.int)
+    dx2_nml = np.ndarray(3, dtype=np.int)
+    nx1 = nml1['grid']['nx']
+    ny1 = nml1['grid']['ny']
+    nz1 = nml1['grid']['nz']
+    nx2 = nml2['grid']['nx']
+    nz2 = nml2['grid']['nz']
+    dx1_nml[0] = nml1['grid']['dx']
+    dx1_nml[1] = nml1['grid']['dy']
+    dx1_nml[2] = nml1['grid']['dz']
+    dx2_nml[0] = nml2['grid']['dx']
+    dx2_nml[1] = nml2['grid']['dy']
+    dx2_nml[2] = nml2['grid']['dz']
+    gw = nml1['grid']['gw']
 
 
     global ic_arr, jc_arr
     try:
         print('(ic,jc) from nml')
-        ic = nml['init']['ic']
-        jc = nml['init']['jc']
+        ic1 = nml1['init']['ic']
+        jc1 = nml1['init']['jc']
+        ic2 = nml2['init']['ic']
+        jc2 = nml2['init']['jc']
+        if ic1 != ic2 or jc1 != jc2:
+            print('Problem: different geometries')
+            sys.exit()
+        else:
+            ic = ic1
+            jc = jc1
+            ic_arr = [ic]
+            jc_arr = [jc]
     except:
         print('(ic,jc) NOT from nml')
         if case_name == 'ColdPoolDry_single_3D':
@@ -220,12 +265,11 @@ def set_input_parameters(args):
             jc_arr = [jc]
         else:
             print('ic, jc not defined')
-
     global kmax
     if args.kmax:
         kmax = np.int(args.kmax)
     else:
-        kmax = nx
+        kmax = nz1
 
     global tmin, tmax
     if args.tmin:
@@ -238,10 +282,10 @@ def set_input_parameters(args):
         tmax = 100
 
     print('')
-    print('kmax ', kmax, 'nx ', nx)
+    print('kmax ', kmax, 'nz1 ', nz1)
     print('')
 
-    return nml
+    return
 
 # _______________________________
 
