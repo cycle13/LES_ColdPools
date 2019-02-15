@@ -148,7 +148,7 @@ def main():
 
 
         # compare vorticities
-        plot_comparison_vort_vort_stag(vort_yz, vort_yz_, vort_yz_stag, icshift, jc, kmax, t0)
+        plot_comparison_vort_vort_stag(vort_yz, vort_yz_, vort_yz_stag, jcshift, jc, kmax, t0)
 
 
 
@@ -691,45 +691,45 @@ def test_num_integration():
 # ----------------------------------------------------------------------
 # PLOTTING
 
-def plot_comparison_vort_vort_stag(vort_yz, vort_yz_, vort_yz_stag, icshift, jc, kmax, t0):
+def plot_comparison_vort_vort_stag(vort_yz, vort_yz_, vort_yz_stag, jcshift, jc, kmax, t0):
     fig, axes = plt.subplots(2, 3, figsize=(15, 5))
     ax = axes[0, 0]
     cf = ax.imshow(vort_yz.T, origin='lower')
     ax.set_title('vort_yz')
-    ax.plot([icshift, icshift], [1, ny_ - 2], 'k')
+    ax.plot([jc, jc], [1, ny_ - 2], 'k')
     plt.colorbar(cf, ax=ax, shrink=0.8)
     ax = axes[0, 1]
     cf = ax.imshow(vort_yz_.T, origin='lower')
     ax.set_title('vort_yz_')
-    ax.plot([icshift, icshift], [1, ny_ - 2], 'k')
+    ax.plot([jcshift, jcshift], [1, ny_ - 2], 'k')
     plt.colorbar(cf, ax=ax, shrink=0.8)
     ax = axes[0, 2]
     cf = ax.imshow(vort_yz_stag.T, origin='lower')
     ax.set_title('vort_yz stag')
-    ax.plot([icshift, icshift], [1, ny_ - 2], 'k')
+    ax.plot([jc, jc], [1, ny_ - 2], 'k')
     plt.colorbar(cf, ax=ax, shrink=0.8)
-    for i in range(1, 2):
+    for i in [0,2]:
         axes[0, i].set_xlim([jc - np.int(ny_ / 2), jc + np.int(ny_ / 2)])
-    for i in range(2, 3):
+    for i in [1]:
         axes[0, i].set_xlim([0, ny_])
     for i in range(3):
         axes[0, i].set_ylim([0, kmax])
     ax = axes[1, 0]
     ax.plot(vort_yz[jc - np.int(ny_ / 2):jc + np.int(ny_ / 2), 0], np.arange(0, ny_), label='vort_yz')
     ax.plot(vort_yz_[:ny_, 0], np.arange(0, ny_), label='vort_yz_')
-    ax.plot(vort_yz_stag[:ny_, 0], np.arange(0, ny_), label='vort_yz_stag')
+    ax.plot(vort_yz_stag[jc - np.int(ny_ / 2):jc + np.int(ny_ / 2), 0], np.arange(0, ny_), label='vort_yz_stag')
     ax.legend(loc='best', fontsize=8)
     ax.set_title('k=0')
     ax = axes[1, 1]
     ax.plot(vort_yz[jc - np.int(ny_ / 2):jc + np.int(ny_ / 2), 1], np.arange(0, ny_), label='vort_yz')
     ax.plot(vort_yz_[:ny_, 1], np.arange(0, ny_), label='vort_yz_')
-    ax.plot(vort_yz_stag[:ny_, 1], np.arange(0, ny_), label='vort_yz_stag')
+    ax.plot(vort_yz_stag[jc - np.int(ny_ / 2):jc + np.int(ny_ / 2), 1], np.arange(0, ny_), label='vort_yz_stag')
     ax.legend(loc='best', fontsize=8)
     ax.set_title('k=1')
     ax = axes[1, 2]
     ax.plot(vort_yz[jc - np.int(ny_ / 2):jc + np.int(ny_ / 2), 2], np.arange(0, ny_), label='vort_yz')
     ax.plot(vort_yz_[:ny_, 2], np.arange(0, ny_), label='vort_yz_')
-    ax.plot(vort_yz_stag[:ny_, 2], np.arange(0, ny_), label='vort_yz_stag')
+    ax.plot(vort_yz_stag[jc - np.int(ny_ / 2):jc + np.int(ny_ / 2), 2], np.arange(0, ny_), label='vort_yz_stag')
     ax.legend(loc='best', fontsize=8)
     ax.set_title('k=2')
     fig.savefig(os.path.join(path_out_figs, 'test_vort_t' + str(t0) + 's.png'))

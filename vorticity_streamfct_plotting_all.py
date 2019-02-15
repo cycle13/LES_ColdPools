@@ -330,8 +330,6 @@ def define_geometry(case_name, nml):
     return i0_center, j0_center
 
 # ----------------------------------
-
-
 # ----------------------------------
 
 if __name__ == '__main__':
