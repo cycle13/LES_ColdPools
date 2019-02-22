@@ -7,7 +7,7 @@ import json as simplejson
 import os
 
 global tick_size, label_size
-tick_size = 12
+tick_size = 15
 label_size = 21
 plt.rcParams['xtick.labelsize'] = tick_size
 plt.rcParams['ytick.labelsize'] = tick_size
@@ -16,6 +16,14 @@ plt.rcParams['legend.fontsize'] = 8
 plt.rcParams['axes.labelsize'] = label_size
 # plt.rcParams['xtick.direction']='out'
 # plt.rcParams['ytick.direction']='out'
+plt.rcParams['xtick.major.size'] = 6
+plt.rcParams['xtick.minor.size'] = 3
+plt.rcParams['ytick.major.size'] = 6
+plt.rcParams['ytick.minor.size'] = 3
+plt.rcParams['xtick.major.width'] = 1.5
+plt.rcParams['xtick.minor.width'] = 1.
+plt.rcParams['ytick.major.width'] = 1.5
+plt.rcParams['ytick.minor.width'] = 1.
 # plt.rcParams['figure.titlesize'] = 35
 
 def main():
@@ -44,6 +52,7 @@ def main():
     ''' --- call plotting functions --- '''
     print(path_out)
     var_list = ['w', 'temperature', 's', 'temperature_anomaly']
+    var_list = ['temperature']
 
     # --- 1D ---
     ic1 = ic_arr[0]
@@ -53,18 +62,18 @@ def main():
     di = np.int(3 * irstar)
     dj = di
     # --- 2D ---
-    # ic1 = ic_arr[0]
-    # jc1 = jc_arr[0]
-    # i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))
-    # di = 15
-    # j0 = jc1
-    # dj = np.int(2*irstar)
-    # # --- 3D ---
-    # d = 2*isep
-    # i0 = ic_arr[2] - np.int(np.sqrt(3)/3* d)
-    # j0 = np.int(jc_arr[0] + np.round(d / 2))
-    # di = np.int(i0*2/3)
-    # dj = 50
+    ic1 = ic_arr[0]
+    jc1 = jc_arr[0]
+    i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))
+    di = 15
+    j0 = jc1
+    dj = np.int(2*irstar)
+    # --- 3D ---
+    d = 2*isep
+    i0 = ic_arr[2] - np.int(np.sqrt(3)/3* d)
+    j0 = np.int(jc_arr[0] + np.round(d / 2))
+    di = np.int(i0*2/3)
+    dj = 50
 
     for it, file in enumerate(files):
         t0 = times[it]
@@ -86,37 +95,41 @@ def main():
             else:
                 cont_var = read_in_netcdf_fields(cont_var_name, os.path.join(path_fields, file))
 
-            # ''' (a) xy-plane '''
-            # for k0 in krange:
-            #     print('-- k0=' + str(k0) + ' --')
-            #     plot_streamplot_xy_collision(cont_var_name, cont_var, vel_h, speed_h, x_half, y_half, i0, di, j0, dj, k0, t0, path_out)
-            #     plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel_h,
-            #                                      x_half, y_half, speed_h, k0, t0, path_out)
+            ''' (a) xy-plane '''
+            for k0 in krange:
+                print('-- k0=' + str(k0) + ' --')
+                # plot_streamplot_xy_collision(cont_var_name, cont_var, vel_h, speed_h, x_half, y_half, i0, di, j0, dj, k0, t0, path_out)
+                plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel_h,
+                                                 x_half, y_half, speed_h, k0, t0, path_out)
 
-            # ''' (b) yz-plane at collision point'''
-            # # --- 2D ---
-            # i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))  # at collision point
-            # plot_streamplot_yz(cont_var_name, cont_var, w, vel_h, speed_yz, y_half, z_half, i0, t0, path_out, True)
-            #
+            # # ''' (b) yz-plane at collision point'''
+            # # # --- 2D ---
+            # # i0 = np.int(np.round( ic1 + np.double(isep) / 2 ))  # at collision point
+            # # plot_streamplot_yz(cont_var_name, cont_var, w, vel_h, speed_yz,
+            # #                   y_half, z_half, i0, t0, path_out, True)
+            # #
             # ''' (c) yz-plane at center of cold pool #1'''
             # i0 = ic1    # through center of cold pool #1
-            # plot_streamplot_yz(cont_var_name, cont_var, w, vel_h, speed_yz, y_half, z_half, i0, t0, path_out, True)
+            # jmin = 0
+            # jmax = ny
+            # plot_streamplot_yz(cont_var_name, cont_var, w, vel_h, speed_yz,
+            #                    y_half, z_half, i0, jmin, jmax, t0, path_out, True)
 
-            # ''' (d) xz-plane at center of cold pool #1'''
-            imin = 20
-            imax = nx - imin
-            kmax = 60
-            # # --- 2D ---
-            # j0 = jc1
-            # # --- 3D ---
-            # j0 = jc3
-            if cont_var_name == 'temperature_anomaly':
-                t_mean = np.average(cont_var[:, j0, :kmax], axis=0)
-                cont_var = cont_var[:, j0, :kmax] - t_mean
-            else:
-                cont_var = cont_var[:, j0, :kmax]
-            plot_streamplot_xz(cont_var_name, cont_var, w, vel_h, speed_xz,
-                               x_half, z_half, j0, imin, imax, kmax, t0, path_out, id, True)
+            # # ''' (d) xz-plane at center of cold pool #1'''
+            # imin = 20
+            # imax = nx - imin
+            # kmax = 60
+            # # # --- 2D ---
+            # # j0 = jc1
+            # # # --- 3D ---
+            # # j0 = jc3
+            # if cont_var_name == 'temperature_anomaly':
+            #     t_mean = np.average(cont_var[:, j0, :kmax], axis=0)
+            #     cont_var = cont_var[:, j0, :kmax] - t_mean
+            # else:
+            #     cont_var = cont_var[:, j0, :kmax]
+            # plot_streamplot_xz(cont_var_name, cont_var, w, vel_h, speed_xz,
+            #                    x_half, z_half, j0, imin, imax, kmax, t0, path_out, id, True)
 
     return
 
@@ -172,10 +185,8 @@ def plot_streamplot_xz(cont_var_name, cont_var, w, vel, speed, x_arr, z_arr, j0,
     plt.xlabel('x [m]   (dx=' + str(dx) + ')')
     plt.ylabel('z [m]   (dz=' + str(dy) + ')')
     plt.title('crosssection through center of CP, (t=' + str(t0) + 's)', fontsize=18)#' y=' + str(j0 * dy) + 'm')
-    if cont_var_name == 'w':
-        fig_name = 'streamlines_xz_t' + str(t0) + '_j' + str(j0) + '.png'
-    else:
-        fig_name = cont_var_name + '_streamlines_xz_t' + str(t0) + '_j' + str(j0) + '.png'
+
+    fig_name = cont_var_name + '_streamlines_xz_t' + str(t0) + '_j' + str(j0) + '.png'
     plt.savefig(os.path.join(path_out, fig_name))
     plt.close()
 
@@ -239,25 +250,38 @@ def plot_streamplot_xy_collision(cont_var_name, cont_var, vel, speed, x_arr, y_a
     cm_lines = plt.cm.get_cmap('winter')
     # cm_lines = plt.cm.get_cmap('autumn')
 
-    # var_ = cont_var[ic-di:ic+di+1, jc-dj:jc+dj+1, :]
     var_ = cont_var[ic - di - 1:ic + di + 1, jc - dj - 1:jc + dj + 1, :]
     if cont_var_name == 'w':
-        varmax = np.maximum(np.abs(np.amin(var_)), np.abs(np.amax(var_)))
-        levels = np.linspace(-varmax, varmax, 1e3)
+        varmin = np.amin(var_[:,:,k0])
+        varmax = np.amax(var_[:,:,k0])
+        varmax = np.maximum(np.abs(varmin), np.abs(varmax))
+        varmin = -varmax
+    elif cont_var_name == 'temperature':
+        varmin = np.amin(var_[:,:,k0])
+        varmax = np.amax(var_[:,:,k0])
     else:
         varmin = np.amin(var_)
         varmax = np.amax(var_)
-        levels = np.linspace(varmin, varmax, 1e3)
+    levels = np.linspace(varmin, varmax, 1e3)
+    print 'minmax', varmin, varmax
 
     #  Varying line width along a streamline
     lw = 5 * speed[ic-di:ic+di+1, jc-dj:jc+dj+1, k0] / speed[ic-di:ic+di+1, jc-dj:jc+dj+1, k0].max()
 
-    fig, ax = plt.subplots(figsize=(10, 10))
+    fig, ax = plt.subplots(figsize=(10, 8))
     ax.set_aspect('equal')  # ax.set_aspect(1.0)
-    ax = plt.contourf(x_arr[ic - di-1:ic + di + 1], y_arr[jc - dj-1:jc + dj + 1], var_[:,:,k0].T,
+
+    cf = plt.contourf(x_arr[ic - di-1:ic + di + 1], y_arr[jc - dj-1:jc + dj + 1], var_[:,:,k0].T,
                       cmap=cm_cont, levels=levels)
 
-    plt.colorbar(ax, shrink=0.5)
+    if cont_var_name == 's':
+        cb = plt.colorbar(cf, shrink=0.6, ticks=np.arange(np.floor(varmin), np.floor(varmax)+1, 2), aspect=12)
+    elif cont_var_name == 'temperature':
+        cb = plt.colorbar(cf, shrink=0.5, ticks=np.arange(np.floor(varmin), np.floor(varmax)+1, .5), aspect=17)
+    else:
+        cb = plt.colorbar(cf, shrink=0.6, ticks=np.arange(np.floor(varmin), np.floor(varmax)+1, 1), aspect=12)
+    cb.ax.tick_params(width=1, size=4) #, labelsize=6)
+
     plt.plot(x_arr[ic],y_arr[jc],'go', markersize=10)
     plt.streamplot(x_arr[ic - di:ic + di + 1], y_arr[jc - dj:jc + dj + 1],
                    vel[0, ic - di:ic + di + 1, jc - dj:jc + dj + 1, k0].T,
@@ -269,127 +293,107 @@ def plot_streamplot_xy_collision(cont_var_name, cont_var, vel, speed, x_arr, y_a
     plt.plot([x_arr[ic_arr[0]], x_arr[ic_arr[1]] ], [y_arr[jc_arr[0]], y_arr[jc_arr[1]] ], 'k')
     plt.plot([x_arr[ic_arr[1]], x_arr[ic_arr[2]] ], [y_arr[jc_arr[1]], y_arr[jc_arr[2]] ], 'k')
     plt.plot([x_arr[ic_arr[0]], x_arr[ic_arr[2]] ], [y_arr[jc_arr[0]], y_arr[jc_arr[2]] ], 'k')
-    plt.xlabel('x [m]   (dx=' + str(dx) + ')')
-    plt.ylabel('y [m]   (dy=' + str(dy) + ')')
-    plt.title(cont_var_name + ' overlaid by horizontal velocity (t=' + str(t0) + ', z=' + str(dz * k0) + ')', fontsize=21)
+
+    x_ticks = ax.get_xticks() * 1e-3
+    y_ticks = ax.get_yticks() * 1e-3
+    ax.set_xticklabels(x_ticks)
+    ax.set_yticklabels(y_ticks)
+    plt.xlim([x_arr[ic - di], x_arr[ic + di]])
+    plt.ylim(y_arr[jc - dj],y_arr[jc + dj])
+    plt.xlabel('x [km]   (dx=' + str(np.round(dx,0)) + 'm)')
+    plt.ylabel('y [km]   (dy=' + str(np.round(dy,0)) + 'm)')
+    plt.title(cont_var_name + ' with horizontal velocity (t=' + str(t0) + ', z=' + str(dz * k0) + ')', fontsize=21)
     plt.savefig(os.path.join(path_out, cont_var_name+'_streamlines_xy_collision_lw_t' + str(t0) + '_k' + str(k0) + '.png'))
     plt.close()
 
 
 
     # Varying color along a streamline
-    fig, ax = plt.subplots(figsize=(12, 10))
+    fig, ax = plt.subplots(figsize=(10.5, 8))
     ax.set_aspect('equal')  # ax.set_aspect(1.0)
-    ax = plt.contourf(x_arr[ic-di-1:ic+di+1], y_arr[jc-dj-1:jc+dj+1], var_[:,:,k0].T,
+    cf = plt.contourf(x_arr[ic-di-1:ic+di+1], y_arr[jc-dj-1:jc+dj+1], var_[:,:,k0].T,
                       cmap=cm_cont, levels=levels, alpha=1.)
-    # plt.contourf(x_arr[ic - di:ic + di + 1], y_arr[jc - dj:jc + dj + 1], np.zeros((2*di+1,2*dj+1)).T,
-    #                   colors='w', alpha=0.5)
-    plt.colorbar(ax, shrink=0.5)
+    if cont_var_name == 's':
+        cb = plt.colorbar(cf, shrink=0.5, ticks=np.arange(np.floor(varmin), np.floor(varmax)+1, 2), aspect=17)
+    elif cont_var_name == 'temperature':
+        cb = plt.colorbar(cf, shrink=0.5, ticks=np.arange(np.floor(varmin), np.floor(varmax)+1, .5), aspect=17)
+    else:
+        cb = plt.colorbar(cf, shrink=0.5, ticks=np.arange(np.floor(varmin), np.floor(varmax)+1, 1), aspect=17)
+    cb.ax.tick_params(width=1, size=4)  # , labelsize=6)
+
     u = vel[0,ic-di:ic+di+1,jc-dj:jc+dj+1,k0].T
     v = vel[1,ic-di:ic+di+1,jc-dj:jc+dj+1,k0].T
-    # strm = plt.streamplot(x_arr[ic-di:ic+di+1], y_arr[jc-dj:jc+dj+1], u, v,
-    #                       color=u, cmap=cm_lines,
-    #                       linewidth=lw[:,:].T)
-    # print('color', u.shape, speed)
     strm = plt.streamplot(x_arr[ic-di:ic+di+1], y_arr[jc-dj:jc+dj+1], u, v,
                           color=speed[ic - di:ic + di + 1, jc - dj:jc + dj + 1, k0].T, cmap=cm_lines,
                           linewidth=lw[:,:].T)
-    fig.colorbar(strm.lines, shrink=0.5)
-    plt.xlabel('x [m]   (dx=' + str(dx) + ')')
-    plt.ylabel('y [m]   (dy=' + str(dy) + ')')
-    plt.title(cont_var_name + ' overlaid by horizontal velocity (t=' + str(t0) + ', z=' + str(dz * k0) +')', fontsize=21)
+    cb = fig.colorbar(strm.lines, shrink=0.5, ticks=np.arange(0, np.amax(speed),1), aspect=17)
+    cb.ax.tick_params(width=1, size=4)  # , labelsize=6)
+
+    x_ticks = ax.get_xticks() * 1e-3
+    y_ticks = ax.get_yticks() * 1e-3
+    ax.set_xticklabels(x_ticks)
+    ax.set_yticklabels(y_ticks)
+    plt.xlim([x_arr[ic - di], x_arr[ic + di]])
+    plt.ylim(y_arr[jc - dj], y_arr[jc + dj])
+    plt.xlabel('x [km]   (dx=' + str(np.round(dx, 0)) + 'm)')
+    plt.ylabel('y [km]   (dy=' + str(np.round(dy, 0)) + 'm)')
+    plt.title(cont_var_name + ' with horizontal velocity (t=' + str(t0) + ', z=' + str(dz * k0) +')', fontsize=21)
     plt.savefig(os.path.join(path_out, cont_var_name + '_streamlines_xy_collision_col_t' + str(t0) + '_k' + str(k0) + '.png'))
     plt.close()
     return
 
 
 
-def plot_streamplot_xy_varythickness(w, vel, x_arr, y_arr, speed, k0, t0, path_out):
+
+
+def plot_streamplot_xy_varythickness(cont_var_name, var, vel, x_arr, y_arr, speed, k0, t0, path_out):
     cm = plt.cm.get_cmap('bwr')
     cm_lines = plt.cm.get_cmap('winter')
 
-    w_ = w[:, :, k0]
-    wmax = np.maximum(np.abs(np.amin(w_)), np.abs(np.amax(w_)))
-    levels = np.linspace(-wmax, wmax, 1e3)
+    var_ = var[:, :, k0]
+    if cont_var_name == 'w':
+        varmin = np.amin(var)
+        varmax = np.amax(var)
+        varmax = np.maximum(np.abs(varmin), np.abs(varmax))
+        varmin = -varmax
+    elif cont_var_name == 'temperature':
+        varmin = np.amin(var_)
+        varmax = np.amax(var_)
+    else:
+        varmin = np.amin(var)
+        varmax = np.amax(var)
+    levels = np.linspace(varmin, varmax, 1e3)
+    print 'minmax', varmin, varmax
 
-    fig, ax = plt.subplots(figsize=(16,10))
+
+    fig, ax = plt.subplots(figsize=(14,10))
     ax.set_aspect('equal')    # ax.set_aspect(1.0)
     lw = 5 * speed[:,:,k0] / speed[:,:,k0].max()
-    ax1 = plt.contourf(x_arr, y_arr, w[:,:,k0].T, levels=levels, alpha=1., cmap = cm)
-    plt.colorbar(ax1, shrink=0.5)
-    # plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
-    #                color='k', density=1.5, linewidth=lw[:,:].T)
+    cf = plt.contourf(x_arr, y_arr, var_.T, levels=levels, alpha=1., cmap = cm)
+    if cont_var_name == 's':
+        cb = plt.colorbar(cf, shrink=0.5, ticks=np.arange(np.floor(varmin), np.floor(varmax) + 1, 2), aspect=17)
+    else:
+        cb = plt.colorbar(cf, shrink=0.5, ticks=np.arange(np.floor(varmin), np.floor(varmax) + 1, 1), aspect=17)
+    cb.ax.tick_params(width=1, size=4)  # , labelsize=6)
+
     strm = plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
-                   color=vel[0,:,:,k0], cmap=cm_lines, density=1.5, linewidth=lw[:,:].T)
-    plt.colorbar(strm.lines, shrink=0.5)
-    plt.xlabel('x [m]   (dx='+str(dx)+')')
-    plt.ylabel('y [m]   (dy='+str(dy)+')')
-    plt.title('t='+str(t0) + ', z='+str(dz*k0), fontsize=label_size)
+                            color=speed[:,:,k0].T, cmap=cm_lines, density=1.5, linewidth=lw[:,:].T)
+    cb = plt.colorbar(strm.lines, shrink=0.5, ticks=np.arange(0, np.amax(speed),1), aspect=17)
+    cb.ax.tick_params(width=1, size=4)  # , labelsize=6)
 
-    plt.savefig(os.path.join(path_out, 'streamlines_xy_lw_t'+str(t0)+'_k'+str(k0)+'.png'))
+    x_ticks = ax.get_xticks() * 1e-3
+    y_ticks = ax.get_yticks() * 1e-3
+    ax.set_xticklabels(x_ticks)
+    ax.set_yticklabels(y_ticks)
+    # plt.xlabel('x [m]   (dx='+str(dx)+')')
+    # plt.ylabel('y [m]   (dy='+str(dy)+')')
+    # plt.title('t='+str(t0) + ', z='+str(dz*k0), 'k='+str(k0), fontsize=label_size)
+
+    plt.savefig(os.path.join(path_out, cont_var_name + '_streamlines_xy_lw_t'+str(t0)+'_k'+str(k0)+'.png'))
     plt.close()
     return
 
 
-def example_streamplot():
-    w = 3
-    Y, X = np.mgrid[-w:w:100j, -w:w:100j]
-    U = -1 - X ** 2 + Y
-    V = 1 + X - Y ** 2
-    speed = np.sqrt(U * U + V * V)
-
-    fig = plt.figure(figsize=(7, 9))
-    gs = gridspec.GridSpec(nrows=3, ncols=2, height_ratios=[1, 1, 2])
-
-    #  Varying density along a streamline
-    ax0 = fig.add_subplot(gs[0, 0])
-    ax0.streamplot(X, Y, U, V, density=[0.5, 1])
-    ax0.set_title('Varying Density')
-
-    # # Varying color along a streamline
-    # ax1 = fig.add_subplot(gs[0, 1])
-    # strm = ax1.streamplot(X, Y, U, V, color=U, linewidth=2, cmap='autumn')
-    # fig.colorbar(strm.lines)
-    # ax1.set_title('Varying Color')
-    #
-    # #  Varying line width along a streamline
-    # ax2 = fig.add_subplot(gs[1, 0])
-    # lw = 5 * speed / speed.max()
-    # ax2.streamplot(X, Y, U, V, density=0.6, color='k', linewidth=lw)
-    # ax2.set_title('Varying Line Width')
-    #
-    # # Controlling the starting points of the streamlines
-    # seed_points = np.array([[-2, -1, 0, 1, 2, -1], [-2, -1, 0, 1, 2, 2]])
-    #
-    # ax3 = fig.add_subplot(gs[1, 1])
-    # strm = ax3.streamplot(X, Y, U, V, color=U, linewidth=2,
-    #                       cmap='autumn', start_points=seed_points.T)
-    # fig.colorbar(strm.lines)
-    # ax3.set_title('Controlling Starting Points')
-    #
-    # # Displaying the starting points with blue symbols.
-    # ax3.plot(seed_points[0], seed_points[1], 'bo')
-    # ax3.axis((-w, w, -w, w))
-    #
-    # # Create a mask
-    # mask = np.zeros(U.shape, dtype=bool)
-    # mask[40:60, 40:60] = True
-    # U[:20, :20] = np.nan
-    # U = np.ma.array(U, mask=mask)
-    #
-    # ax4 = fig.add_subplot(gs[2:, :])
-    # ax4.streamplot(X, Y, U, V, color='r')
-    # ax4.set_title('Streamplot with Masking')
-    #
-    # ax4.imshow(~mask, extent=(-w, w, -w, w), alpha=0.5,
-    #            interpolation='nearest', cmap='gray', aspect='auto')
-    # ax4.set_aspect('equal')
-    #
-    # plt.tight_layout()
-    plt.savefig('./streamlines_example.png')
-    plt.close()
-    # plt.show()
-    return
 
 
 # ----------------------------------
@@ -453,10 +457,10 @@ def set_input_parameters(args):
         times.sort()
         files = [str(t) + '.nc' for t in times]
     else:  # 100_k120.nc
-        files = [name for name in os.listdir(path_fields) if name[-2:] == 'nc'
-                 and np.int(name[:-8]) >= time_min and np.int(name[:-8]) <= time_max]
-        times = [np.int(name[:-8]) for name in files]
-        times.sort()
+        times = [np.int(name[:-8]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
+                 and time_min <= np.int(name[:-8]) <= time_max]
+        times = times.sort()
+        files = [str(t) + '.nc' for t in times]
         for it,t0 in enumerate(times):
             files[it] = str(t0)+files[0][3:]
 

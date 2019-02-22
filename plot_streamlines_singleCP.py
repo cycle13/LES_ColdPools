@@ -46,7 +46,9 @@ def main():
     print('')
     ''' --- call plotting functions --- '''
     print(path_out)
-    var_list = ['w', 'temperature', 's', 'temperature_anomaly']
+    # var_list = ['w', 'temperature', 's', 'temperature_anomaly']
+    var_list = ['w', 'temperature_anomaly']
+    var_list = ['w']
 
     # --- 1D ---
     ic1 = ic_arr[0]
@@ -316,18 +318,15 @@ def set_input_parameters(args):
 
     ''' determine file range '''
     if len(files[0]) < 7:  # 100.nc
-        files = [name for name in os.listdir(path_fields) if name[-2:] == 'nc'
-                 and np.int(name[:-3]) >= time_min and np.int(name[:-3]) <= time_max]
-        times = [np.int(name[:-3]) for name in files]
+        times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
+                 and time_min <= np.int(name[:-3]) <= time_max]
         times.sort()
-        # print(type(times), times)
-        for it,t0 in enumerate(times):
-            files[it] = str(t0)+'.nc'
+        files = [str(t) + '.nc' for t in times]
     else:  # 100_k120.nc
-        files = [name for name in os.listdir(path_fields) if name[-2:] == 'nc'
-                 and np.int(name[:-8]) >= time_min and np.int(name[:-8]) <= time_max]
-        times = [np.int(name[:-8]) for name in files]
+        times = [np.int(name[:-8]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
+                 and time_min <= np.int(name[:-8]) <= time_max]
         times = times.sort()
+        files = [str(t) + '.nc' for t in times]
         for it,t0 in enumerate(times):
             files[it] = str(t0)+files[0][3:]
 
