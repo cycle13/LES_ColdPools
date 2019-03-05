@@ -29,6 +29,7 @@ plt.rcParams['ytick.minor.width'] = 1.
 plt.rcParams['pdf.fonttype'] = 42         # Output Type 3 (Type3) or Type 42 (TrueType)
 
 def main():
+    ''' plot contourfigures of collision '''
     path_r1km = '/nbi/ac/cond2/meyerbe/ColdPools_dry/3D_sfc_fluxes_off/double_3D_noise/dTh3K_z2000_r1000_double_sep5r/'
     path_r2km = '/nbi/ac/cond2/meyerbe/ColdPools_dry/3D_sfc_fluxes_off/double_3D_noise/dTh3K_z2000_r2000_double/'
     imin = 70
@@ -43,6 +44,9 @@ def main():
 
     path = '/nbi/ac/cond2/meyerbe/ColdPools_dry/3D_sfc_fluxes_off/triple_3D_noise/dTh3K_triple/'
     plot_streamlines_xy_collision()
+
+
+    ''' plot tracer statistics '''
 
     return
 

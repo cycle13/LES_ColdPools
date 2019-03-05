@@ -12,8 +12,10 @@ def main():
     parser = argparse.ArgumentParser(prog='PyCLES')
     parser.add_argument("casename")
     parser.add_argument("path")
-    parser.add_argument("--kmax")
     parser.add_argument("--kmin")
+    parser.add_argument("--kmax")
+    parser.add_argument("--tmin")
+    parser.add_argument("--tmax")
     parser.add_argument("--k0")
     parser.add_argument("--vert")
     args = parser.parse_args()
@@ -63,18 +65,27 @@ def main():
     # (3) create new fields file, e.g. 100_k_kmax.nc
     # (4) save data[:,:,:k_max] in new variable of new fields file
 
-    times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc']
+    if args.tmin:
+        tmin = np.int(args.tmin)
+    else:
+        tmin = 100
+    if args.tmax:
+        tmax = np.int(args.tmax)
+    else:
+        tmax = 100
+    times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
+             and tmin <= np.int(name[:-3]) <= tmax]
     times.sort()
-    print('times', times)
     nt = len(times)
+    print('times: '+str(times))
     print('nt:', nt)
     files = [str(t) + '.nc' for t in times]
     print(files)
     print('')
 
-    # ''' reduce number of vertical levels; keep all variables and horizontal dimensions '''
-    # convert_file_forall_variables(files, path_fields, path_out, k_min, k_max)
-    #
+    ''' reduce number of vertical levels; keep all variables and horizontal dimensions '''
+    convert_file_forall_variables(files, path_fields, path_out, k_min, k_max)
+
     #''' output all levels for k=k_min..k_max for all variables given in var_list '''
     ## var_list = ['u', 'v', 'w', 's', 'temperature']# , 'phi'
     var_list = ['u', 'v', 'w', 's', 'temperature', 'phi']
@@ -163,12 +174,9 @@ def convert_file_for_varlist_vertsection(var_list, times, files, path_fields, pa
     # dims_keys = rootgrp_in.groups['fields'].dimensions.keys()
     dims = rootgrp_in.groups['fields'].dimensions
     nx = dims['nx'].size
-    ny = dims['ny'].size
     nz = dims['nz'].size
     rootgrp_in.close()
 
-    # if location == 'center':
-    #     ic = np.int(nx/2)
     jc = location
     file_name = 'fields_allt_xz_j' + str(jc) + '.nc'
     fullpath_out = os.path.join(path_out, file_name)
@@ -192,16 +200,27 @@ def convert_file_for_varlist_vertsection(var_list, times, files, path_fields, pa
         time_out.units = 's'
         time_out[:] = times
 
-        for var in var_list:
-            print('var', var)
-            var_out = rootgrp_out.createVariable(var, 'f8', ('time', 'nx', 'nz'))
+        # create variables
+        var_list_all = np.append(var_list, 'theta')
+        for var in np.append(var_list, 'theta'):
+            rootgrp_out.createVariable(var, 'f8', ('time', 'nx', 'nz'))
 
-            for it, file in enumerate(files):
-                print('file: ', file)
-                fullpath_in = os.path.join(path_fields, file)
-                rootgrp_in = nc.Dataset(fullpath_in, 'r')
-                data = rootgrp_in.groups['fields'].variables[var][:, :, :]
-                var_out[it, :, :] = data[:, jc, :]
+        # fill variables
+        for it, file in enumerate(files):
+            print('file: ', file)
+            fullpath_in = os.path.join(path_fields, file)
+            rootgrp_in = nc.Dataset(fullpath_in, 'r')
+            for var in var_list:
+                print('var', var)
+                var_out = rootgrp_out.variables[var]
+                data = rootgrp_in.groups['fields'].variables[var][:, jc, :]
+                var_out[it, :, :] = data[:, :]
+            var = 'theta'
+            data = rootgrp_in.groups['fields'].variables['s'][:, jc, :]
+            data_th = theta_s(data)
+            del data
+            var_out = rootgrp_out.variables[var]
+            var_out[it, :,:] = data_th
 
         rootgrp_out.close()
     return
@@ -449,6 +468,16 @@ def write_field(fname, f, data):
     var[:, :, :] = data
     rootgrp.close()
 
+# _______________________________________________________
+# _______________________________________________________
+# ----------------------------------
+def theta_s(s):
+    T_tilde = 298.15
+    sd_tilde = 6864.8
+    cpd = 1004.0
+    th_s = T_tilde * np.exp( (s - sd_tilde)/cpd )
+    return th_s
+# _______________________________________________________
 
 if __name__ == '__main__':
     main()

@@ -151,7 +151,7 @@ def create_vrad_field(v_rad, kmax):
     path_out = os.path.join(path, 'fields_v_rad')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
-    file_name = 'v_rad'
+    file_name = 'v_rad.nc'
     rootgrp = nc.Dataset(os.path.join(path_out, file_name), 'w', format='NETCDF4')
 
     rootgrp.createDimension('time', None)
