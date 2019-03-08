@@ -28,7 +28,7 @@ def main():
     # (1) read in averaged w
     #       path_data = os.path.join(path, 'data_analysis')
     #       file_name = 'stats_radial_averaged.nc'
-    # (2) start at rmax, find irmax
+    # (2) start at rmax, find irmax_plot
     # - outer radius r0: find first point where w > w0
     #     >> compare to tracer radius
     #     ??? test choice for w0; maybe depending on k
@@ -50,6 +50,7 @@ def main():
     times_ = data_stats.groups['timeseries'].variables['time'][:]
     nt = len(times_)
     r_range = stats_grp['r'][:]
+    nr = len(r_range)
     ''' ----- w ----- '''
     var_name = 'w'
     var = stats_grp[var_name][:, :, :]  # var(t, r, k)
@@ -81,16 +82,21 @@ def main():
     print('tmin etc', tmin, tmax, itmin, itmax)
 
     # declare arrays
-    wmin = np.zeros((nt, kmax - kmin+1))
-    wmax = np.zeros((nt, kmax - kmin+1))
-    rcenter = np.zeros((2, nt, kmax - kmin + 1))
-    rmin = np.zeros((nt, kmax - kmin + 1))
-    rmax = np.zeros((nt, kmax - kmin + 1))
+    wmin = np.zeros((nt, kmax - kmin+1))            # minimum(w)
+    wmax = np.zeros((nt, kmax - kmin+1))            # maximum(w)
+    wint = np.zeros((nt, kmax - kmin+1))            # w at inner rim edge
+    wout = np.zeros((nt, kmax - kmin+1))            # w at outer rim edge
+    wcrit = 1e-2
+    rcenter = np.zeros((2, nt, kmax - kmin + 1))    # radius of w approx zero ('center' of vortex)
+    rmin = np.zeros((nt, kmax - kmin + 1))          # radius of wmin
+    rmax = np.zeros((nt, kmax - kmin + 1))          # radius of wmax
+    rint = np.zeros((nt, kmax-kmin + 1))            # radius of inner rim edge, defined as maximum(w(r<rmin))
+    rout = np.zeros((nt, kmax-kmin + 1))            # radius at outer rim edge, defined as point of w(r>rmax)<wcrit
 
 
 
-    rmax_plot = 6e3
-    irmax = np.where(r_range == rmax_plot)[0][0]
+    rmax_plot = 7e3
+    irmax_plot = np.where(r_range == rmax_plot)[0][0]
 
     for it, t0 in enumerate(times):
         print('---- t0='+str(t0)+' ----')
@@ -101,15 +107,16 @@ def main():
 
         for k0 in range(kmin, kmax+1):
             # indices of max / min
-            wmin[it, k0] = np.amin(var[it, 3:, k0])
-            imin = np.argmin(var[it, 3:, k0])+3
+            delta = np.int(500./dx[2])
+            wmin[it, k0] = np.amin(var[it, delta:, k0])
+            imin = np.argmin(var[it, delta:, k0]) + delta
             rmin[it, k0] = r_range[imin]
             wmax[it, k0] = np.amax(var[it, :, k0])
             imax = np.argmax(var[it, :, k0])
             rmax[it, k0] = r_range[imax]
             print ''
 
-            # find r1 (zero point)
+            # find center of vortex (zero point of w)
             i = imax
             while (i>imin and var[it, i-1, k0]>0):
                 i -= 1
@@ -118,9 +125,23 @@ def main():
             else:
                 icenter = i-1
             wcenter = var[it, icenter, k0]
-
             rcenter[0, it, k0] = icenter
             rcenter[1, it, k0] = r_range[icenter]
+
+            # find inner edge of rim: defined as maximuma(w(r<min))
+            delta = 3
+            wint[it, k0] = np.amax(var[it, delta:imin, k0])
+            iint = np.argmax(var[it, delta:imin, k0]) + delta
+            rint[it, k0] = r_range[iint]
+            # find outer edge of rim: defined as point of w(r>rmax)<wcrit
+            i = imax
+            while (i < nr and var[it, i - 1, k0] > wcrit):
+                i += 1
+            iout = i
+            wout[it, k0] = var[it, iout, k0]
+            rout[it, k0] = r_range[iout]
+
+
             print('wmin', wmin[it, k0])
             print('wcenter', wcenter)
             print('wmax', wmax[it, k0])
@@ -128,8 +149,6 @@ def main():
             # print 'icenter', icenter
             # print 'imin', imin
             print ''
-
-
 
 
             # compute linear fitting functions
@@ -147,48 +166,12 @@ def main():
             print ''
 
 
-            # plotting test_fig
-            # fig_name = 'test_fig_t'+str(t0)+'_z'+str(k0*dx[2])+'m.png'
-            # ncol = 3
-            # fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5 * ncol, 5))
-            # count_color = 2 * np.double(it) / len(times)
-            # ax = axes[0]
-            # ax.plot([0, r_range[irmax]], [0., 0.], 'k')
-            # ax.plot(rmax[k0], wmax[it, k0], 'kx')
-            # ax.plot(rmin[it, k0], wmin[it, k0], 'kx')
-            # ax.plot([rmin[it, k0], rmin[it, k0]], [wmin[it, k0], wmax[it, k0]], '0.5')
-            # ax.plot([rmax[it, k0], rmax[it, k0]], [wmin[it, k0], wmax[it, k0]], '0.5')
-            # ax.plot([rcenter[1,it, k0], rcenter[1,it, k0]], [wmin[it, k0], wmax[it, k0]], 'k')
-            # ax.plot(r_range[:irmax], var[it, :irmax, k0], color=cm.jet(count_color), label='t=' + str(np.int(t0)))
-            # ax = axes[1]
-            # ax.plot([0, r_range[irmax]], [0., 0.], 'k')
-            # ax.plot([0, r_range[irmax]], [wmax[it, k0], wmax[it, k0]], '0.5')
-            # ax.plot([0, r_range[irmax]], [wmin[it, k0], wmin[it, k0]], '0.5')
-            # ax.plot([rmin[it, k0], rmin[it, k0]], [wmin[it, k0], wmax[it, k0]], '0.5')
-            # ax.plot([rmax[it, k0], rmax[it, k0]], [wmin[it, k0], wmax[it, k0]], '0.5')
-            # ax.plot([rcenter[1,it, k0], rcenter[1,it, k0]], [wmin[it, k0], wmax[it, k0]], 'k')
-            # ax.plot(r_range[:irmax], var[it, :irmax, k0], color=cm.jet(count_color), label='t=' + str(np.int(t0)))
-            # ax.plot(r_range[:irmax], lin_plus[:irmax], label='om+='+str(np.round(omega_plus[k0],3)))
-            # ax.plot(r_range[:irmax], lin_minus[:irmax], label='om-='+str(np.round(omega_minus[k0],3)))
-            # ax.legend(fontsize=10)
-            # ax.set_xlim(r_range[imin-10], r_range[imax+10])
-            # ax.set_ylim([wmin[it, k0]-1e-1, wmax[it, k0]+1e-1])
-            # ax.legend(loc=4, fontsize=10)
-            # ax = axes[2]
-            # min = imin -30
-            # max = imax +30
-            # ax.plot([r_range[min], r_range[max]], [0., 0.], 'k')
-            # ax.plot(rmax[it, k0], wmax[it, k0], 'kx')
-            # ax.plot(rmin[it, k0], wmin[it, k0], 'kx')
-            # ax.plot([rmin[it, k0], rmin[it, k0]], [wmin[it, k0], wmax[k0]], '0.5')
-            # ax.plot([rmax[it, k0], rmax[it, k0]], [wmin[it, k0], wmax[k0]], '0.5')
-            # ax.plot([rcenter[1,it, k0], rcenter[1,it, k0]], [wmin[it, k0], wmax[k0]], 'k')
-            # ax.plot(r_range, var[it, :, k0], 'o-',
-            #         color=cm.jet(count_color), label='t=' + str(np.int(t0)))
-            # ax.set_xlim(r_range[imin - 10], r_range[imax + 10])
-            # plt.suptitle('z='+str(k0*dx[2])+'m')
-            # fig.savefig(os.path.join(path_out_figs, fig_name))
-            # plt.close(fig)
+            # plotting test_fig: w(t) for each k and show rmin, rmax, rcenter
+            plot_test_fig(var, wmin, wmax, rmin, rcenter, rmax, imin, imax,
+                          wint, rint, wout, rout, wcrit,
+                  r_range, nr, irmax_plot,
+                  lin_plus, lin_minus, omega_plus, omega_minus,
+                  it, t0, times, k0)
 
 
 
@@ -196,7 +179,7 @@ def main():
         print 'plotting rim geometry'
         # plotting rcenter
         fig_name = 'rim_geometry_t' + str(np.int(t0)) + '.png'
-        ncol = 3
+        ncol = 4
         fig, axes = plt.subplots(1, ncol, sharey='all', figsize=(5 * ncol, 5))
         count_color = 2 * np.double(it) / len(times)
         ax = axes[0]
@@ -216,13 +199,66 @@ def main():
         ax = axes[2]
         ax.plot(omega_minus, krange, '-o', label='om+')
         ax.plot(omega_plus, krange, '-o', label='om-')
-        # ax.plot([0,0], [krange[0], krange[-1]], 'k-')
         ax.legend(fontsize=10)
         ax.set_xlabel('vorticity = dw/dr')
         ax.set_ylabel('height k  (dz=' + str(dx[2]) + 'm)')
+        ax = axes[3]
+        ax.plot(rmin[it, :], krange, '-o', label='r min')
+        ax.plot(rcenter[1,it, :], krange, '-o', label='r center')
+        ax.plot(rmax[it, :], krange, '-o', label='r max')
+        ax.plot(rint[it, :], krange, '-o', label='r int')
+        ax.plot(rout[it, :], krange, '-o', label='r out')
+        ax.legend(fontsize=10)
+        ax.set_title('inner rim edge')
         plt.suptitle('t=' + str(t0) + 's')
         fig.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
+
+
+    fig_name = 'rim_width' + '.png'
+    ncol = 3
+    fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5 * ncol, 5))
+    ax = axes[0]
+    for it, t0 in enumerate(times[2:]):
+        count_color = np.double(it) / len(times)
+        ax.plot(rmin[it, :]-rcenter[1,it,:], krange, '-', label='t='+str(t0), color=plt.cm.get_cmap('coolwarm')(count_color))
+        ax.plot(rmax[it, :]-rcenter[1,it,:], krange, '-', color=plt.cm.get_cmap('coolwarm')(count_color))
+    ax.set_xlim(-3e3,1.2e3)
+    ax.set_title('rmin-rcenter; rmax-rcenter')
+    ax.set_xlabel('r-rcenter')
+    ax.set_ylabel('height k  (dz=' + str(dx[2]) + 'm)')
+    ax.legend(loc='upper left', bbox_to_anchor=(0, 1),
+              fancybox=True, shadow=True, ncol=2, fontsize=6)
+    ax = axes[1]
+    ax.set_title('rmax-rmin')
+    ax.fill_between(times, 200, 500, color='0.8')
+    ax.plot([400,400],[0,3e3],'k', linewidth=1)
+    for k0 in krange:
+        count_color = np.double(k0) / len(krange)
+        ax.plot(times, rmax[:,k0]-rmin[:, k0], '-', label='z='+str(k0*dx[2])+'m',
+                color=plt.cm.get_cmap('coolwarm')(count_color), linewidth=2)
+    ax.set_xlim(0,3500)
+    ax.set_ylim(0,3e3)
+    ax.legend(loc='upper left', bbox_to_anchor=(0,1),
+              fancybox=True, shadow=True, ncol=3, fontsize=8)
+    ax.set_ylabel('radius r  [m]')
+    ax.set_xlabel('times')
+    ax = axes[2]
+    for it, t0 in enumerate(times[2:]):
+        count_color = np.double(it) / len(times)
+        ax.plot(rout[it, :]-rcenter[1,it,:], krange, '-', label='t='+str(t0), color=plt.cm.get_cmap('bone')(count_color))
+        ax.plot(rint[it, :]-rcenter[1,it,:], krange, '-', color=plt.cm.get_cmap('coolwarm')(count_color))
+    # ax.set_xlim(-3e3,1.2e3)
+    ax.set_title('rint-rcenter; rout-rcenter')
+    ax.set_xlabel('r-rcenter')
+    ax.set_ylabel('height k  (dz=' + str(dx[2]) + 'm)')
+    # ax.plot((omega_minus + omega_plus)/2, krange, '-o', label='om')
+    # ax.plot(omega_plus, krange, '-o', label='om-')
+    ax.legend(loc='upper left', bbox_to_anchor=(1, 1),
+              fancybox=True, shadow=True, ncol=2, fontsize=6)
+    ax.set_xlabel('vorticity = dw/dr')
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
 
 
     # output wmin, wmax into data_analysis/stats_radial_averaged.nc
@@ -233,6 +269,8 @@ def main():
     dump_minmax_profiles('r_wmin', rmin, kmin, kmax, tmin, tmax, file_name)
     dump_minmax_profiles('r_wmax', rmax, kmin, kmax, tmin, tmax, file_name)
     dump_minmax_profiles('r_wcenter', rcenter[1,:,:], kmin, kmax, tmin, tmax, file_name)
+    # dump_minmax_profiles('r_int', rint, kmin, kmax, tmin, tmax, file_name)
+    # dump_minmax_profiles('r_out', rout, kmin, kmax, tmin, tmax, file_name)
 
 
 
@@ -267,6 +305,67 @@ def dump_minmax_profiles(var_name, variable, kmin, kmax, tmin, tmax, file_name):
     # var[:, kmin:kmax+1] = wmax
 
     rootgrp.close()
+    return
+
+# _______________________________
+# _______________________________
+
+def plot_test_fig(var, wmin, wmax, rmin, rcenter, rmax, imin, imax,
+                  wint, rint, wout, rout, wcrit,
+                  r_range, nr, irmax,
+                  lin_plus, lin_minus, omega_plus, omega_minus,
+                  it, t0, times, k0):
+    fig_name = 'test_fig_t' + str(t0) + '_z' + str(k0 * dx[2]) + 'm.png'
+
+    ncol = 3
+    fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5 * ncol, 5))
+    count_color = 2 * np.double(it) / len(times)
+    ax = axes[0]
+    ax.plot([0, r_range[irmax]], [0., 0.], 'k')
+    ax.plot(rmin[it, k0], wmin[it, k0], 'kx')
+    ax.plot(rmax[it, k0], wmax[it, k0], 'kx')
+    ax.plot(rint[it, k0], wint[it, k0], 'rx')
+    ax.plot(rout[it, k0], wout[it, k0], 'gx')
+    ax.plot([rmin[it, k0], rmin[it, k0]], [wmin[it, k0], wmax[it, k0]], '0.5')
+    ax.plot([rmax[it, k0], rmax[it, k0]], [wmin[it, k0], wmax[it, k0]], '0.5')
+    ax.plot([rint[it, k0], rint[it, k0]], [wmin[it, k0], wmax[it, k0]], 'r')
+    ax.plot([rout[it, k0], rout[it, k0]], [wmin[it, k0], wmax[it, k0]], 'g')
+    ax.plot([rcenter[1, it, k0], rcenter[1, it, k0]], [wmin[it, k0], wmax[it, k0]], 'k')
+    ax.plot(r_range[:irmax], var[it, :irmax, k0], color=cm.jet(count_color), label='t=' + str(np.int(t0)))
+    ax = axes[1]
+    ax.plot([0, r_range[irmax]], [0., 0.], 'k')
+    ax.plot([0, r_range[irmax]], [wmax[it, k0], wmax[it, k0]], '0.5')
+    ax.plot([0, r_range[irmax]], [wmin[it, k0], wmin[it, k0]], '0.5')
+    ax.plot([rmin[it, k0], rmin[it, k0]], [wmin[it, k0], wmax[it, k0]], '0.5')
+    ax.plot([rmax[it, k0], rmax[it, k0]], [wmin[it, k0], wmax[it, k0]], '0.5')
+    ax.plot([rcenter[1, it, k0], rcenter[1, it, k0]], [wmin[it, k0], wmax[it, k0]], 'k')
+    ax.plot(r_range[:irmax], var[it, :irmax, k0], color=cm.jet(count_color), label='t=' + str(np.int(t0)))
+    ax.plot(r_range[:irmax], lin_plus[:irmax], label='om+=' + str(np.round(omega_plus[k0], 3)))
+    ax.plot(r_range[:irmax], lin_minus[:irmax], label='om-=' + str(np.round(omega_minus[k0], 3)))
+    ax.legend(fontsize=10)
+    ax.set_xlim(r_range[np.maximum(imin - 10, 0)], r_range[np.minimum(imax + 10, nr - 1)])
+    ax.set_ylim([wmin[it, k0] - 1e-1, wmax[it, k0] + 1e-1])
+    ax.legend(loc=4, fontsize=10)
+    ax = axes[2]
+    min = np.maximum(imin - 30, 0)
+    max = np.minimum(imax + 30, nr - 1)
+    ax.plot([r_range[min], r_range[irmax]], [wcrit, wcrit], 'r')
+    ax.plot([r_range[min], r_range[irmax]], [0., 0.], 'k')
+    ax.plot(rmax[it, k0], wmax[it, k0], 'kx')
+    ax.plot(rmin[it, k0], wmin[it, k0], 'kx')
+    ax.plot(rout[it, k0], wout[it, k0], 'rx')
+    ax.plot([rmin[it, k0], rmin[it, k0]], [wmin[it, k0], wmax[it, k0]], '0.5')
+    ax.plot([rmax[it, k0], rmax[it, k0]], [wmin[it, k0], wmax[it, k0]], '0.5')
+    ax.plot([rcenter[1, it, k0], rcenter[1, it, k0]], [wmin[it, k0], wmax[it, k0]], 'k')
+    ax.plot([rout[it, k0], rout[it, k0]], [wout[it, k0], wout[it, k0]], 'r')
+    ax.plot(r_range, var[it, :, k0], '-',
+            color=cm.jet(count_color), label='t=' + str(np.int(t0)))
+    # ax.set_xlim(r_range[np.maximum(imin - 10, 0)], r_range[np.minimum(imax + 10, nr - 1)])
+    ax.set_xlim(r_range[imax - 10], r_range[irmax])
+    ax.set_ylim(-0.1,0.1)
+    plt.suptitle('z=' + str(k0 * dx[2]) + 'm')
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
     return
 
 # _______________________________
