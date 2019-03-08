@@ -32,6 +32,26 @@ def main():
     jrange = np.minimum(ny-jc, jc)
     rmax = np.int(np.ceil(np.sqrt(irange**2 + jrange**2)))
 
+    # plot configuration test file
+    fig_name = 'test_config.png'
+    fullpath_in = os.path.join(path, 'fields', '100.nc')
+    rootgrp = nc.Dataset(fullpath_in, 'r')
+    s = rootgrp.groups['fields'].variables['s'][:, :, :]
+    fig, (ax1,ax2,ax3) = plt.subplots(1, 3, sharey='none', figsize=(16, 5))
+    ax1.contourf(s[:,:,0].T)
+    ax1.plot(ic, jc, 'ko', markersize=5)
+    ax1.plot([ic,ic], [0,ny], 'k-')
+    ax1.plot([0,nx], [jc,jc], 'k-')
+    imin = 300
+    imax = 500
+    ax2.contourf(s[imin:imax,jc,:100].T)
+    ax2.plot([ic-imin,ic-imin], [0,100], 'k-', linewidth=1)
+    ax3.contourf(s[ic, imin:imax,:100].T)
+    ax3.plot([ic-imin,ic-imin], [0,100], 'k-', linewidth=1)
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+    del s
+
     # compute radius
     for i in range(irange):
         for j in range(jrange):
@@ -46,6 +66,7 @@ def main():
             th_field[ic-i, jc+j] = aux
             th_field[ic-i, jc+j] = -aux
             th_field[ic+i, jc-j] = -aux
+
 
 
     # compute radial velocity
@@ -99,43 +120,58 @@ def main():
 
 
 
-
+    print 'plotting'
+    print path_out_figs
+    print ''
 
 
     ''' plotting '''
+    # read in file
+    file_name = 'stats_radial_averaged.nc'
     data_stats = nc.Dataset(os.path.join(path_out_data, file_name), 'r')
     stats_grp = data_stats.groups['stats'].variables
-    times = data_stats.groups['timeseries'].variables['time'][:]
+    times_ = data_stats.groups['timeseries'].variables['time'][:]
+    ta = np.where(times_ == tmin)[0][0]
+    tb = np.where(times_ == tmax)[0][0]
+    print ''
+    print 'times'
+    print times
+    print times_
+    print ta, tb
+
     # var = np.array('nt', 'nr', 'nz')
     r_range = stats_grp['r'][:]
 
     var_list = ['w', 'v_rad', 's']
     ncol = len(var_list)
-    rmax_plot = 10e3
-    irmax = np.where(r_range == rmax_plot)[0]
+    rmax_plot = 9e3
+    irmax = np.where(r_range == rmax_plot)[0][0]
 
     for k0 in range(kmax):
+        print('-- k='+str(k0))
         fig_name = 'radial_average_k'+str(k0)+'.png'
         fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5*ncol, 5))
         for i, ax in enumerate(axes):
             var = stats_grp[var_list[i]][:,:,:]
             if len(times) >= 2:
-                for it, t0 in enumerate(times[1::2]):
-                    count_color = 2 * np.double(it) / len(times)
-                    if var_list[i] == 's':
-                        ax.plot(r_range[:-1], var[2*it+1, :-1, 0], color=cm.jet(count_color), label='t='+str(t0))
-                    else:
-                        ax.plot(r_range, var[2*it+1, :, 0], color=cm.jet(count_color), label='t='+str(t0))
+                for it, t0 in enumerate(times_[1::2]):
+                    if it >= ta and it <= tb:
+                        count_color = 2 * np.double(it) / len(times)
+                        ax.plot(r_range[:irmax], var[2*it+1, :irmax, k0], color=cm.jet(count_color), label='t='+str(np.int(t0)))
             else:
-                for it, t0 in enumerate(times):
-                    count_color = np.double(it) / len(times)
-                    if var_list[i] == 's':
-                        ax.plot(r_range[:rmax_plot], var[it, :rmax_plot, 0], color=cm.jet(count_color), label='t='+str(t0))
-                    else:
-                        ax.plot(r_range[:rmax_plot], var[it, :rmax_plot, 0], color=cm.jet(count_color), label='t='+str(t0))
+                for it, t0 in enumerate(times_):
+                    if it >= ta and it <= tb:
+                        count_color = np.double(it) / len(times)
+                        ax.plot([0, r_range[irmax]], [0.,0.], 'k')
+                        ax.plot(r_range[:irmax], var[it, :irmax, k0], color=cm.jet(count_color), label='t='+str(t0))
             ax.set_title(var_list[i])
+            ax.set_xlabel('radius r  [m]')
+            ax.set_ylabel(var_list[i])
+        # axes[0].legend(loc='lower left', bbox_to_anchor=(0, 0.),
+        #            fancybox=True, shadow=True, ncol=4, fontsize=6)
         axes[2].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
                    fancybox=True, shadow=True, ncol=1, fontsize=10)
+        plt.subplots_adjust(bottom=0.12, right=.9, left=0.04, top=0.9, wspace=0.15)
         plt.suptitle('z='+str(k0*dx[2])+'m')
         fig.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)

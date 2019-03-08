@@ -64,20 +64,27 @@ def main():
         file2 = file1
         file1 = file_aux
         del file_aux
-    print('dx: ', dx1_nml[0], dx2_nml[0], dz1)
-    print('dz: ', dx1_nml[2], dx2_nml[2], dz1)
-    print('nx: ', nx1, nx2)
-    print('nz: ', nz1, nz2)
+    print('dx: ', dx1_nml[0], dx2_nml[0], dx1[0])
+    print('dz: ', dx1_nml[2], dx2_nml[2], dx1[2])
+    print('nx: ', nx1[0], nx2[0])
+    print('nz: ', nx1[2], nx2[2])
 
     grp_stats1 = file1.groups['stats'].variables
     grp_stats2 = file2.groups['stats'].variables
 
     time1 = file1.groups['timeseries'].variables['time'][:]
     time2 = file2.groups['timeseries'].variables['time'][:]
-    print('times')
+    print('times: ')
     print time1
     print time2
+    nt = np.minimum(len(time1), len(time2))
+    time1 = time1[:nt]
+    time2 = time2[:nt]
+    if len(time1) != len(time2):
+        time1 = time1[:nt]
+        time2 = time2[:nt]
     if time1.any() != time2.any():
+        print'problem with times'
         sys.exit()
 
     r1 = file1.groups['stats'].variables['r'][:]
@@ -87,17 +94,23 @@ def main():
 
     try:
         krange1 = file1.groups['dimensions'].variables['krange'][:]
-        krange2 = file1.groups['dimensions'].variables['krange'][:]
+        krange2 = file2.groups['dimensions'].variables['krange'][:]
     except:
         krange1 = np.arange(kmax)
         krange2 = np.arange(kmax)
+    print ''
+    print 'kranges:'
+    print krange1
+    print krange2
 
     if dz1 > dz2:
+        print 'dz1 > dz2'
         dz12 = np.double(dz1) / dz2
-        kmax_ = np.int(np.round(kmax / dz12))
+        kmax_ = np.int(np.minimum(np.int(np.round(kmax / dz12)), len(krange2)/dz12))
         krange1 = krange1[:kmax_]
-        krange2 = krange2[0::2]
+        krange2 = krange2[0::np.int(dz12)]
     elif dz1 < dz2:
+        print 'dz1 < dz2'
         dz12 = np.double(dz2) / dz1
         kmax_ = np.int(np.round(kmax / dz12))
         krange1 = krange1[0::2]
@@ -108,14 +121,16 @@ def main():
 
     print('')
     print 'dz: ', dz1, dz2, dz12
-    print 'zranges'
-    print kmax, kmax_
-    print krange1, krange1*dz1
-    print krange2, krange2*dz2
+    print 'kmax: ', kmax, kmax_
+    print krange1
+    print krange2
+    print 'zranges:'
+    print krange1*dz1
+    print krange2*dz2
 
     var_list = ['w', 'v_rad', 's']
     ncol = len(var_list)
-    rmax = 9e3
+    rmax = 8e3
     irmax1 = np.where(r1 == rmax)[0]
     irmax2 = np.where(r2 == rmax)[0]
     # irmax1 = -1
@@ -140,7 +155,7 @@ def main():
 
             if every_second == True:
                 for it, t0 in enumerate(time1[1::2]):
-                    print('- t='+str(t0))
+                    # print('- t='+str(t0))
                     count_color = 2 * np.double(it) / len(time1)
                     if it == 0:
                         ax.plot(r1[:irmax1], var1[2*it+1, :irmax1, k1], color=cm.copper(count_color), linewidth=3,
@@ -148,15 +163,16 @@ def main():
                     else:
                         ax.plot(r1[:irmax1], var1[2*it+1, :irmax1, k1], color=cm.copper(count_color), linewidth=3,
                                 label='t=' + str(t0))
-                # for it, t0 in enumerate(time1[1::2]):
-                #     print('t=' + str(t0))
-                #     count_color = 2 * np.double(it) / len(time1)
-                #     if it == 0:
-                #         ax.plot(r2[:irmax2], var2[2*it+1, :irmax2, k2], '-', color=cm.jet(count_color), linewidth=2,
-                #                 label='dx='+str(dx2))
-                #     else:
-                #         ax.plot(r2[:irmax2], var2[2*it+1, :irmax2, k2], '-', color=cm.jet(count_color), linewidth=2,
-                #                 label='dx='+str(dx2))
+                for it, t0 in enumerate(time1[1::2]):
+                    # print('t=' + str(t0))
+                    count_color = 2 * np.double(it) / len(time1)
+                    if it == 0:
+                        ax.plot(r2[:irmax2], var2[2*it+1, :irmax2, k2], '-', color=cm.jet(count_color), linewidth=3,
+                                label='dx='+str(dx2))
+                    else:
+                        # ax.plot(r2[:irmax2], )
+                        ax.plot(r2[:irmax2], var2[2*it+1, :irmax2, k2], '-', color=cm.jet(count_color), linewidth=3,
+                                label='dx='+str(dx2))
             else:
                 for it, t0 in enumerate(time1):
                     print('t=' + str(t0))
@@ -224,14 +240,17 @@ def set_input_parameters(args):
     case_name = args.casename
     nml1 = simplejson.loads(open(os.path.join(path1, case_name + '.in')).read())
     nml2 = simplejson.loads(open(os.path.join(path2, case_name + '.in')).read())
-    global nx1, nx2, ny, nz1, nz2, dx1_nml, dx2_nml
+    global nx1, nx2, dx1_nml, dx2_nml
+    nx1 = np.ndarray(3, dtype=np.int)
+    nx2 = np.ndarray(3, dtype=np.int)
     dx1_nml = np.ndarray(3, dtype=np.int)
     dx2_nml = np.ndarray(3, dtype=np.int)
-    nx1 = nml1['grid']['nx']
-    ny1 = nml1['grid']['ny']
-    nz1 = nml1['grid']['nz']
-    nx2 = nml2['grid']['nx']
-    nz2 = nml2['grid']['nz']
+    nx1[0] = nml1['grid']['nx']
+    nx1[1] = nml1['grid']['ny']
+    nx1[2] = nml1['grid']['nz']
+    nx2[0] = nml2['grid']['nx']
+    nx2[1] = nml2['grid']['ny']
+    nx2[2] = nml2['grid']['nz']
     dx1_nml[0] = nml1['grid']['dx']
     dx1_nml[1] = nml1['grid']['dy']
     dx1_nml[2] = nml1['grid']['dz']
@@ -241,7 +260,7 @@ def set_input_parameters(args):
     gw = nml1['grid']['gw']
 
 
-    global ic_arr, jc_arr
+    global ic_arr1, jc_arr1, ic_arr2, jc_arr2
     try:
         print('(ic,jc) from nml')
         ic1 = nml1['init']['ic']
@@ -259,17 +278,21 @@ def set_input_parameters(args):
     except:
         print('(ic,jc) NOT from nml')
         if case_name == 'ColdPoolDry_single_3D':
-            ic = np.int(nx/2)
-            jc = np.int(ny/2)
-            ic_arr = [ic]
-            jc_arr = [jc]
+            ic = np.int(nx1/2)
+            jc = np.int(ny1/2)
+            ic_arr1 = [ic]
+            jc_arr1 = [jc]
+            ic = np.int(nx2/2)
+            jc = np.int(ny2/2)
+            ic_arr2 = [ic]
+            jc_arr2 = [jc]
         else:
             print('ic, jc not defined')
     global kmax
     if args.kmax:
         kmax = np.int(args.kmax)
     else:
-        kmax = nz1
+        kmax = nx1[2]
 
     global tmin, tmax
     if args.tmin:
@@ -282,7 +305,7 @@ def set_input_parameters(args):
         tmax = 100
 
     print('')
-    print('kmax ', kmax, 'nz1 ', nz1)
+    print('kmax ', kmax, 'nz1 ', nx1[2])
     print('')
 
     return
