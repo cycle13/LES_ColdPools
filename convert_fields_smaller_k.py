@@ -18,6 +18,7 @@ def main():
     parser.add_argument("--tmax")
     parser.add_argument("--k0")
     parser.add_argument("--vert")
+    parser.add_argument("--hor")
     args = parser.parse_args()
 
 
@@ -40,7 +41,7 @@ def main():
         k0 = np.int(args.k0)
         path_out = os.path.join(path_root, 'fields_k' + str(k0))
     else:
-        k0 = -1
+        k0 = 0
     print('path out', path_out)
     if not os.path.exists(path_out):
         print('ohoh')
@@ -83,8 +84,8 @@ def main():
     print(files)
     print('')
 
-    ''' reduce number of vertical levels; keep all variables and horizontal dimensions '''
-    convert_file_forall_variables(files, path_fields, path_out, k_min, k_max)
+    # ''' reduce number of vertical levels; keep all variables and horizontal dimensions '''
+    # convert_file_forall_variables(files, path_fields, path_out, k_min, k_max)
 
     #''' output all levels for k=k_min..k_max for all variables given in var_list '''
     ## var_list = ['u', 'v', 'w', 's', 'temperature']# , 'phi'
@@ -94,8 +95,29 @@ def main():
         print '-- vertical crosssection --'
         path_out_ = os.path.join(path_root, 'fields_merged')
         if not os.path.exists(path_out_):
-           os.mkdir(path_out_)
-        convert_file_for_varlist_vertsection(var_list, times, files, path_fields, path_out_, i0_center)
+            os.mkdir(path_out_)
+        print''
+        print('vertical xz-crossection at CP center: j0='+str(j0_center))
+        convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_center)
+        print('vertical xz-crossection at 3-CP collision: j0='+str(j0_coll))
+        convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_coll)
+        print('vertical yz-crossection at 2-CP collision: x0='+str(i0_center))
+        convert_file_for_varlist_vertsection_yz(var_list, times, files, path_fields, path_out_, i0_center)
+        print''
+    if args.hor:
+        print '-- horizontal crosssection: k0 = '+str(k0) +' --'
+        path_out_ = os.path.join(path_root, 'fields_merged')
+        if not os.path.exists(path_out_):
+            os.mkdir(path_out_)
+        # horizontal crosssection
+        convert_file_for_varlist_horsection(var_list, times, files, path_fields, path_out_, k0)
+    #     imin = 100
+    #     imax = 300
+    #     jmin = 100
+    #     jmax = 300
+    #     # horizontal crosssection of subdomin
+    #     convert_file_for_varlist_horsection_minimize(var_list, times, imin, imax, jmin, jmax,
+    #                                         files, path_fields, path_out_, k0)
 
     # # ''' output file with one level of one variable for all times '''
     # # # var_list = ['u', 'v', 'w', 's', 'temperature']# , 'phi'
@@ -132,16 +154,15 @@ def convert_file_for_singlevariable_onelevel(var, times, files, path_fields, pat
         # field_keys = rootgrp_in.groups['fields'].variables.keys()
         # dims_keys = rootgrp_in.groups['fields'].dimensions.keys()
         dims = rootgrp_in.groups['fields'].dimensions
-        nx = dims['nx'].size
-        ny = dims['ny'].size
-        nz = dims['nz'].size
+        nx_ = dims['nx'].size
+        ny_ = dims['ny'].size
         rootgrp_in.close()
 
         rootgrp_out = nc.Dataset(fullpath_out, 'w', format='NETCDF4')
         rootgrp_out.createDimension('time', None)
         # rootgrp_out.createDimension('time', nt)
-        rootgrp_out.createDimension('nx', nx)
-        rootgrp_out.createDimension('ny', ny)
+        rootgrp_out.createDimension('nx', nx_)
+        rootgrp_out.createDimension('ny', ny_)
         time_out = rootgrp_out.createVariable('time', 'f8', ('time',))
         time_out.long_name = 'Time'
         time_out.units = 's'
@@ -165,7 +186,7 @@ def convert_file_for_singlevariable_onelevel(var, times, files, path_fields, pat
 
 
 
-def convert_file_for_varlist_vertsection(var_list, times, files, path_fields, path_out, location):
+def convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out, location):
 
     # read in test fields file
     fullpath_in = os.path.join(path_fields, files[0])
@@ -173,12 +194,12 @@ def convert_file_for_varlist_vertsection(var_list, times, files, path_fields, pa
     # field_keys = rootgrp_in.groups['fields'].variables.keys()
     # dims_keys = rootgrp_in.groups['fields'].dimensions.keys()
     dims = rootgrp_in.groups['fields'].dimensions
-    nx = dims['nx'].size
-    nz = dims['nz'].size
+    nx_ = dims['nx'].size
+    nz_ = dims['nz'].size
     rootgrp_in.close()
 
     jc = location
-    file_name = 'fields_allt_xz_j' + str(jc) + '.nc'
+    file_name = 'fields_allt_xz_j' + str(np.int(jc)) + '.nc'
     fullpath_out = os.path.join(path_out, file_name)
     print('filename', file_name)
 
@@ -189,8 +210,8 @@ def convert_file_for_varlist_vertsection(var_list, times, files, path_fields, pa
     else:
         rootgrp_out = nc.Dataset(fullpath_out, 'w', format='NETCDF4')
         rootgrp_out.createDimension('time', None)
-        rootgrp_out.createDimension('nx', nx)
-        rootgrp_out.createDimension('nz', nz)
+        rootgrp_out.createDimension('nx', nx_)
+        rootgrp_out.createDimension('nz', nz_)
         descr_grp = rootgrp_out.createGroup('description')
         var = descr_grp.createVariable('jc', 'f8', )
         var[:] = jc
@@ -202,7 +223,7 @@ def convert_file_for_varlist_vertsection(var_list, times, files, path_fields, pa
 
         # create variables
         var_list_all = np.append(var_list, 'theta')
-        for var in np.append(var_list, 'theta'):
+        for var in var_list_all:
             rootgrp_out.createVariable(var, 'f8', ('time', 'nx', 'nz'))
 
         # fill variables
@@ -224,6 +245,198 @@ def convert_file_for_varlist_vertsection(var_list, times, files, path_fields, pa
 
         rootgrp_out.close()
     return
+
+
+
+def convert_file_for_varlist_vertsection_yz(var_list, times, files, path_fields, path_out, location):
+
+    # read in test fields file
+    fullpath_in = os.path.join(path_fields, files[0])
+    rootgrp_in = nc.Dataset(fullpath_in, 'r')
+    # field_keys = rootgrp_in.groups['fields'].variables.keys()
+    # dims_keys = rootgrp_in.groups['fields'].dimensions.keys()
+    dims = rootgrp_in.groups['fields'].dimensions
+    nx_ = dims['nx'].size
+    nz_ = dims['nz'].size
+    rootgrp_in.close()
+
+    ic = location
+    file_name = 'fields_allt_yz_i' + str(np.int(ic)) + '.nc'
+    fullpath_out = os.path.join(path_out, file_name)
+    print('filename', file_name)
+
+    if os.path.exists(fullpath_out):
+        print('')
+        print('file ' + fullpath_out + ' already exists! ')
+        print('')
+    else:
+        rootgrp_out = nc.Dataset(fullpath_out, 'w', format='NETCDF4')
+        rootgrp_out.createDimension('time', None)
+        rootgrp_out.createDimension('nx', nx_)
+        rootgrp_out.createDimension('nz', nz_)
+        descr_grp = rootgrp_out.createGroup('description')
+        var = descr_grp.createVariable('ic', 'f8', )
+        var[:] = ic
+
+        time_out = rootgrp_out.createVariable('time', 'f8', ('time',))
+        time_out.long_name = 'Time'
+        time_out.units = 's'
+        time_out[:] = times
+
+        # create variables
+        var_list_all = np.append(var_list, 'theta')
+        for var in var_list_all:
+            rootgrp_out.createVariable(var, 'f8', ('time', 'nx', 'nz'))
+
+        # fill variables
+        for it, file in enumerate(files):
+            print('file: ', file)
+            fullpath_in = os.path.join(path_fields, file)
+            rootgrp_in = nc.Dataset(fullpath_in, 'r')
+            for var in var_list:
+                print('var', var)
+                var_out = rootgrp_out.variables[var]
+                data = rootgrp_in.groups['fields'].variables[var][ic, :, :]
+                var_out[it, :, :] = data[:, :]
+            var = 'theta'
+            data = rootgrp_in.groups['fields'].variables['s'][ic, :, :]
+            data_th = theta_s(data)
+            del data
+            var_out = rootgrp_out.variables[var]
+            var_out[it, :,:] = data_th
+
+        rootgrp_out.close()
+    return
+
+
+
+def convert_file_for_varlist_horsection(var_list, times, files, path_fields, path_out, level):
+
+    # read in test fields file
+    fullpath_in = os.path.join(path_fields, files[0])
+    rootgrp_in = nc.Dataset(fullpath_in, 'r')
+    # field_keys = rootgrp_in.groups['fields'].variables.keys()
+    # dims_keys = rootgrp_in.groups['fields'].dimensions.keys()
+    dims = rootgrp_in.groups['fields'].dimensions
+    nx_ = dims['nx'].size
+    ny_ = dims['ny'].size
+    rootgrp_in.close()
+
+    k0 = level
+    file_name = 'fields_allt_xy_k' + str(np.int(k0)) + '.nc'
+    fullpath_out = os.path.join(path_out, file_name)
+    print('filename', file_name)
+
+    if os.path.exists(fullpath_out):
+        print('')
+        print('file ' + fullpath_out + ' already exists! ')
+        print('')
+    else:
+        rootgrp_out = nc.Dataset(fullpath_out, 'w', format='NETCDF4')
+        rootgrp_out.createDimension('time', None)
+        rootgrp_out.createDimension('nx', nx_)
+        rootgrp_out.createDimension('ny', ny_)
+        descr_grp = rootgrp_out.createGroup('description')
+        var = descr_grp.createVariable('k0', 'f8', )
+        var[:] = k0
+
+        time_out = rootgrp_out.createVariable('time', 'f8', ('time',))
+        time_out.long_name = 'Time'
+        time_out.units = 's'
+        time_out[:] = times
+
+        # create variables
+        var_list_all = np.append(var_list, 'theta')
+        for var in np.append(var_list, 'theta'):
+            rootgrp_out.createVariable(var, 'f8', ('time', 'nx', 'ny'))
+
+        # fill variables
+        for it, file in enumerate(files):
+            print('file: ', file)
+            fullpath_in = os.path.join(path_fields, file)
+            rootgrp_in = nc.Dataset(fullpath_in, 'r')
+            for var in var_list:
+                print('var', var)
+                var_out = rootgrp_out.variables[var]
+                data = rootgrp_in.groups['fields'].variables[var][:, :, k0]
+                var_out[it, :, :] = data[:, :]
+            var = 'theta'
+            data = rootgrp_in.groups['fields'].variables['s'][:, :, k0]
+            data_th = theta_s(data)
+            del data
+            var_out = rootgrp_out.variables[var]
+            var_out[it, :,:] = data_th
+
+        rootgrp_out.close()
+    return
+
+
+
+
+
+def convert_file_for_varlist_horsection_minimize(var_list, times, imin, imax, jmin, jmax,
+                                        files, path_fields, path_out, level):
+
+    # read in test fields file
+    fullpath_in = os.path.join(path_fields, files[0])
+    rootgrp_in = nc.Dataset(fullpath_in, 'r')
+    # field_keys = rootgrp_in.groups['fields'].variables.keys()
+    # dims_keys = rootgrp_in.groups['fields'].dimensions.keys()
+    dims = rootgrp_in.groups['fields'].dimensions
+    nx_ = imax - imin
+    ny_ = jmax - jmin
+    rootgrp_in.close()
+
+    k0 = level
+    file_name = 'fields_allt_xy_k' + str(np.int(k0)) + '.nc'
+    fullpath_out = os.path.join(path_out, file_name)
+    print('filename', file_name)
+
+    if os.path.exists(fullpath_out):
+        print('')
+        print('file ' + fullpath_out + ' already exists! ')
+        print('')
+    else:
+        rootgrp_out = nc.Dataset(fullpath_out, 'w', format='NETCDF4')
+        rootgrp_out.createDimension('time', None)
+        rootgrp_out.createDimension('nx', nx_)
+        rootgrp_out.createDimension('ny', ny_)
+        descr_grp = rootgrp_out.createGroup('description')
+        var = descr_grp.createVariable('k0', 'f8', )
+        var[:] = k0
+
+        time_out = rootgrp_out.createVariable('time', 'f8', ('time',))
+        time_out.long_name = 'Time'
+        time_out.units = 's'
+        time_out[:] = times
+
+        # create variables
+        var_list_all = np.append(var_list, 'theta')
+        for var in np.append(var_list, 'theta'):
+            rootgrp_out.createVariable(var, 'f8', ('time', 'nx', 'ny'))
+
+        # fill variables
+        for it, file in enumerate(files):
+            print('file: ', file)
+            fullpath_in = os.path.join(path_fields, file)
+            rootgrp_in = nc.Dataset(fullpath_in, 'r')
+            for var in var_list:
+                print('var', var)
+                var_out = rootgrp_out.variables[var]
+                data = rootgrp_in.groups['fields'].variables[var][:, :, k0]
+                var_out[it, :, :] = data[:, :]
+            var = 'theta'
+            data = rootgrp_in.groups['fields'].variables['s'][:, :, k0]
+            data_th = theta_s(data)
+            del data
+            var_out = rootgrp_out.variables[var]
+            var_out[it, :,:] = data_th
+
+        rootgrp_out.close()
+    return
+
+
+
 
 
 def convert_file_for_varlist(var_list, times, files, path_fields, path_out, k_min, k_max):
@@ -248,16 +461,15 @@ def convert_file_for_varlist(var_list, times, files, path_fields, path_out, k_mi
         # field_keys = rootgrp_in.groups['fields'].variables.keys()
         # dims_keys = rootgrp_in.groups['fields'].dimensions.keys()
         dims = rootgrp_in.groups['fields'].dimensions
-        nx = dims['nx'].size
-        ny = dims['ny'].size
-        nz = dims['nz'].size
+        nx_ = dims['nx'].size
+        ny_ = dims['ny'].size
         rootgrp_in.close()
 
         rootgrp_out = nc.Dataset(fullpath_out, 'w', format='NETCDF4')
         rootgrp_out.createDimension('time', None)
         # rootgrp_out.createDimension('time', nt)
-        rootgrp_out.createDimension('nx', nx)
-        rootgrp_out.createDimension('ny', ny)
+        rootgrp_out.createDimension('nx', nx_)
+        rootgrp_out.createDimension('ny', ny_)
         rootgrp_out.createDimension('nz', k_max + 1 - k_min)
 
         time_out = rootgrp_out.createVariable('time', 'f8', ('time',))
@@ -292,9 +504,9 @@ def convert_file_forall_variables(files, path_fields, path_out, k_min, k_max):
         field_keys = rootgrp_in.groups['fields'].variables.keys()
         dims_keys = rootgrp_in.groups['fields'].dimensions.keys()
         dims = rootgrp_in.groups['fields'].dimensions
-        nx = dims['nx'].size
-        ny = dims['ny'].size
-        nz = dims['nz'].size
+        nx_ = dims['nx'].size
+        ny_ = dims['ny'].size
+        nz_ = dims['nz'].size
 
         if k_min == k_max:
             print('reducing 3D output fields:')
@@ -306,7 +518,7 @@ def convert_file_forall_variables(files, path_fields, path_out, k_min, k_max):
             fullpath_out = os.path.join(path_out, str(t0)+'_k'+str(k_max)+'.nc')
             if not os.path.exists(fullpath_out):
                 print('t='+str(t0) + ' not existing')
-                create_file(fullpath_out, nx, ny, nz_new)
+                create_file(fullpath_out, nx_, ny_, nz_new)
 
                 # (4)
                 for var in field_keys:
@@ -324,12 +536,11 @@ def convert_file_forall_variables(files, path_fields, path_out, k_min, k_max):
             fullpath_out = os.path.join(path_out, str(t0) + '_kmin' + str(k_min) + '_kmax' + str(k_max-1) + '.nc')
             if not os.path.exists(fullpath_out):
                 print('t=' + str(t0) + ' not existing')
-                create_file(fullpath_out, nx, ny, nz_new)
+                create_file(fullpath_out, nx_, ny_, nz_new)
 
                 for var in field_keys:
-                    print(var)
                     data = rootgrp_in.groups['fields'].variables[var][:,:,:]
-                    print('var: ', data[:,:,k_min:k_max].shape, nx, ny, nz_new)
+                    print('var: ', data[:,:,k_min:k_max].shape, nx_, ny_, nz_new)
                     write_field(fullpath_out, var, data[:,:,k_min:k_max])
             else:
                 print('')
@@ -427,6 +638,8 @@ def define_geometry(path_root, args):
 
 
     ''' plotting parameters '''
+    # at center of CP: (i0_center, j0_center)
+    # at collision point: (i0_coll, j0_coll)
     if case_name == 'ColdPoolDry_single_3D':
         i0_coll = ic_arr[0]
         j0_coll = jc_arr[0]
@@ -439,11 +652,16 @@ def define_geometry(path_root, args):
         j0_center = jc_arr[0]
         # domain boundaries for plotting
     elif case_name == 'ColdPoolDry_triple_3D':
-        i0_coll = ic_arr[2]
+        i0_coll = np.int(np.round(ic1 + np.sqrt(3.)/6*(ic3-ic1)))
+        j0_coll = jc3
         i0_center = ic_arr[0]
-        j0_coll = jc_arr[2]
         j0_center = jc_arr[0]
         # domain boundaries for plotting
+
+    print''
+    print('CP center: ', i0_center, j0_center)
+    print('CP collision: ', i0_coll, j0_coll)
+    print''
 
     return i0_center, j0_center, i0_coll, j0_coll
 
@@ -470,7 +688,6 @@ def write_field(fname, f, data):
 
 # _______________________________________________________
 # _______________________________________________________
-# ----------------------------------
 def theta_s(s):
     T_tilde = 298.15
     sd_tilde = 6864.8
