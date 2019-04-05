@@ -1,6 +1,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import netCDF4 as nc
 import argparse
 import json as simplejson
@@ -30,6 +31,7 @@ def main():
     global path, path_fields, path_figs
     path = '/nbi/ac/cond2/meyerbe/ColdPools_dry/3D_sfc_fluxes_off/' \
            'triple_3D_noise/old_config/dTh3K_z2000_r2000_triple/'
+    path_single = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run4/dTh3_z1000_r1000'
     path_fields = os.path.join(path, 'fields')
     path_figs = '/nbi/ac/cond2/meyerbe/figs_EGU_2019/'
     if not os.path.exists(path_figs):
@@ -60,6 +62,9 @@ def main():
     cm_inf = plt.cm.get_cmap('gnuplot')
     cm_blues = plt.cm.get_cmap('seismic')
     cm_blues_r = plt.cm.get_cmap('seismic_r')
+    cm_spec = plt.cm.get_cmap('spectral')
+    # cm_spec = plt.cm.get_cmap('plasma')
+    # cm_spec = plt.cm.get_cmap('plasma')
 
     # # plots contourfigures
     # plt.rcParams['xtick.labelsize'] = 1
@@ -103,24 +108,68 @@ def main():
     # plot_profile_wmax()
 
 
-    '''plot crosssections'''
+    '''plot max(x) crosssections'''
     x_half, y_half, z_half = define_geometry(case_name, files, path)
     krange_ = [1, 4, 10, 15]
     cm = cm_gray
     # cm = cm_blues_r
-    time_bins = [700, 1100, 1500, 1900]
+    # time_bins = [700, 1100, 1500, 1900]
     # plot_xz_crosssections_multilevel(time_bins, 'w', jc_arr[2], krange_, ic_arr, jc_arr, cm,
     #                                  times, path_figs, path_fields)
+    '''plot CP height'''
+    # time_bins = [time_min, 1100, 1500, time_max]
+    # path = os.path.join(path, 'figs_CP_height', 'CP_height_dTh3K_triple_sth0.5.nc')
+    # CP_top_file = nc.Dataset(path, 'r')
+    # # rootgrp = nc.Dataset(fullpath_in, 'r')
+    # CP_top_time= CP_top_file.groups['timeseries'].variables['time'][:]
+    # CP_top_2d = CP_top_file.groups['fields_2D'].variables['CP_height_2d'][:,:,:]
+    # plot_xz_crosssections_CP_height(CP_top_2d, CP_top_time, time_bins, 'w', jc_arr[2], krange_, ic_arr, jc_arr, cm,
+    #                                  times, path_figs, path_fields)
+    # CP_top_file.close()
 
-    time_bins = [time_min, 1100, 1500, time_max]
-    path = os.path.join(path, 'figs_CP_height', 'CP_height_dTh3K_triple_sth0.5.nc')
-    CP_top_file = nc.Dataset(path, 'r')
-    # rootgrp = nc.Dataset(fullpath_in, 'r')
-    CP_top_time= CP_top_file.groups['timeseries'].variables['time'][:]
-    CP_top_2d = CP_top_file.groups['fields_2D'].variables['CP_height_2d'][:,:,:]
-    plot_xz_crosssections_CP_height(CP_top_2d, CP_top_time, time_bins, 'w', jc_arr[2], krange_, ic_arr, jc_arr, cm,
-                                     times, path_figs, path_fields)
-    CP_top_file.close()
+    '''plot xy-field'''
+    plt.rcParams['xtick.labelsize'] = 18
+    plt.rcParams['ytick.labelsize'] = 18
+    plt.rcParams['axes.labelsize'] = 24
+    path_out = os.path.join(path_figs, 'xy_snapshots')
+    if not os.path.exists(path_out):
+        os.mkdir(path_out)
+    timerange = np.append(np.arange(200, 1000, 200), 1400)
+    timerange = [200, 400, 600, 800, 1000, 1400, 1800, 2400]
+    k0 = 0
+    dx = 25
+    var_name = 'temperature'
+    for it, t0 in enumerate(timerange):
+        var = nc.Dataset(os.path.join(path_single, 'fields', str(t0)+'.nc'), 'r').groups['fields'].variables[var_name][:,:,k0]
+        if it == 0:
+            min = np.amin(var)
+            max = np.amax(var)
+        print min, max
+        min = 297
+        plt.figure(figsize=(12,10))
+        # im = plt.imshow(var.T, origin='lower', cmap =cm_inf, vmin=min, vmax=max, extend='both')
+        # im = plt.contourf(var.T, levels=np.linspace(min, max, 1e2),
+        #                   cmap =cm_gray, vmin=min, vmax=max, extend='both')
+        # cbar = plt.colorbar(im, shrink=0.75, ticks=np.arange(297, 300, 1), aspect=15)
+        # im = plt.pcolor(var.T, cmap =cm_gray, norm=colors.LogNorm(vmin=min, vmax=max))
+        im = plt.pcolor(var.T, norm=colors.colors.PowerNorm(gamma=1./2.), cmap=cm_gray)
+        cbar = plt.colorbar(im, shrink=0.75, aspect=15)
+        plt.axis('equal')
+        cbar.ax.tick_params(labelsize=21)
+        plt.xlim(0, 800)
+        plt.ylim(0, 800)
+        ax = plt.gca()
+        plt.locator_params(nbins=8)
+        x_ticks = [np.int((ti) * dx * 1e-3) for ti in ax.get_xticks()]
+        y_ticks = [np.int((ti) * dx * 1e-3) for ti in ax.get_yticks()]
+        ax.set_xticklabels(x_ticks)
+        ax.set_yticklabels(y_ticks)
+        # plt.tight_layout()
+        plt.xlabel('x  [km]')
+        plt.xlabel('y  [km]')
+
+        plt.savefig(os.path.join(path_out, str(t0) + 's.png'))
+        plt.close()
 
     return
 
