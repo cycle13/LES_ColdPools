@@ -22,7 +22,7 @@ def main():
     path_out = './figs_Initialization/'
 
     Th_g = 300.0  # temperature for neutrally stratified background (value from Soares Surface)
-    dx_ = 100
+    dx_ = 50
     define_geometry(dx_)
     set_parameters()
 
@@ -34,10 +34,16 @@ def main():
     # parameter range
     dTh_min = 1
     dTh_max = 10
+    # dTh_max = 2
     dTh_range = np.arange(dTh_min, dTh_max+1)
     rstar_min = 200
+    # for dx=100m, no matches for r*>4200m;
+    # for dx=50m, matches for r*=..., 3600, 4900, 5000; no matches for r<400m
     rstar_max = 5e3
+    # rstar_min = 1e3
+    # rstar_max = 3e3
     rstar_range = np.arange(rstar_min, rstar_max+100, 100)
+    # rstar_range = np.arange(rstar_min, rstar_max+100, 1e3)
     zstar_range = [zstar_ref]
     n_thermo = len(dTh_range)
     n_geom_z = len(zstar_range)
@@ -191,11 +197,11 @@ def main():
         icol2 = np.double(idTh) / n_thermo
         ax1_.plot(rstar_range, PE[idTh, :], '-o', color=cm(icol2))
         ax2_.plot(rstar_range, PE[idTh, :] / PE_ref, '-o', color=cm(icol2),
-                 label='r*=' + str(np.int(rstar)))
+                 label='dTh*=' + str(np.int(dTh)))
         ax3_.plot(rstar_range, PE[idTh, :] / PE_ref, '-', color='gray')
 
     for i, s in enumerate(scaling):
-        for j in range(np.int(count[i])):
+        for j in range(1,np.int(count[i])):
             pe  = params_dict[str(s)][j, 0]
             dth = params_dict[str(s)][j, 1]
             rs = params_dict[str(s)][j, 2]
@@ -238,9 +244,10 @@ def main():
     ax3.legend(loc='center left', bbox_to_anchor=(1., .5), fontsize=9)#, ncol=2)
     ax1.set_title('error bars: 5%, 10%')
     ax2.set_title('error bars: 0.1*PE_ref')
-    plt.suptitle('z*=' + str(zstar_ref) + 'm, marg=' + str(marg) + 'm', fontsize=15)
-    plt.subplots_adjust(bottom=0.12, right=.85, left=0.1, top=0.9, wspace=0.2)
-    fig1.savefig(os.path.join(path_out, 'PE_scaling_initialization_marg' + str(np.int(marg)) + 'm.png'))
+    fig1.suptitle('z*=' + str(zstar_ref) + 'm, marg=' + str(marg) + 'm (dx='+str(dx)+'m)', fontsize=15)
+    fig1.subplots_adjust(bottom=0.12, right=.85, left=0.1, top=0.9, wspace=0.2)
+    fig1.savefig(os.path.join(path_out, 'PE_scaling_initialization_marg'
+                              + str(np.int(marg)) + 'm_dx' + str(dx) + 'm.png'))
     plt.close(fig1)
 
     ax1_.set_xlabel('r*   [m]', fontsize=fsize)
@@ -273,12 +280,13 @@ def main():
     ax3_.legend(loc='center left', bbox_to_anchor=(1., .5), fontsize=9)  # , ncol=2)
     ax1_.set_title('error bars: 5%, 10%')
     ax2_.set_title('error bars: 0.1*PE_ref')
-    plt.suptitle('z*=' + str(zstar_ref) + 'm, marg=' + str(marg) + 'm', fontsize=15)
-    plt.subplots_adjust(bottom=0.12, right=.85, left=0.1, top=0.9, wspace=0.2)
-    fig2.savefig(os.path.join(path_out, 'PE_scaling_initialization_marg' + str(np.int(marg)) + 'm_rstar.png'))
+    fig2.suptitle('z*=' + str(zstar_ref) + 'm, marg=' + str(marg) + 'm (dx='+str(dx)+'m)', fontsize=15)
+    fig2.subplots_adjust(bottom=0.12, right=.8, left=0.1, top=0.9, wspace=0.2)
+    fig2.savefig(os.path.join(path_out, 'PE_scaling_initialization_marg'
+                              + str(np.int(marg)) + 'm_dx' + str(dx) +'m_rstar.png'))
     plt.close(fig2)
 
-    file_name = 'PE_scaling_marg'+str(np.int(marg))+'m.nc'
+    file_name = 'PE_scaling_marg'+str(np.int(marg))+'m_dx'+str(dx)+'m.nc'
     dump_file(file_name, dTh_range, zstar_range, rstar_range, PE_ref, scaling, PE_range, PE,
               params_dict, count, path_out)
 
