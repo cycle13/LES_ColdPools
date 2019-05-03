@@ -42,8 +42,14 @@ def main():
     ax1.plot(ic, jc, 'ko', markersize=5)
     ax1.plot([ic,ic], [0,ny], 'k-')
     ax1.plot([0,nx], [jc,jc], 'k-')
-    imin = 300
-    imax = 500
+    if nx > 200:
+        imin = 300
+        imax = 500
+
+    else:
+        imin = 50
+        imax = 150
+    print imin, imax, jc, s.shape
     ax2.contourf(s[imin:imax,jc,:100].T)
     ax2.plot([ic-imin,ic-imin], [0,100], 'k-', linewidth=1)
     ax3.contourf(s[ic, imin:imax,:100].T)
@@ -144,7 +150,7 @@ def main():
 
     var_list = ['w', 'v_rad', 's']
     ncol = len(var_list)
-    rmax_plot = 9e3
+    rmax_plot = 10e3
     irmax = np.where(r_range == rmax_plot)[0][0]
 
     for k0 in range(kmax):
@@ -153,6 +159,8 @@ def main():
         fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5*ncol, 5))
         for i, ax in enumerate(axes):
             var = stats_grp[var_list[i]][:,:,:]
+            max = np.amax(var[:, :irmax, :kmax])
+            min = np.amin(var[:, :irmax, :kmax])
             if len(times) >= 2:
                 for it, t0 in enumerate(times_[1::2]):
                     if it >= ta and it <= tb:
@@ -164,6 +172,12 @@ def main():
                         count_color = np.double(it) / len(times)
                         ax.plot([0, r_range[irmax]], [0.,0.], 'k')
                         ax.plot(r_range[:irmax], var[it, :irmax, k0], color=cm.jet(count_color), label='t='+str(t0))
+            if var_list[i] == 's':
+                ax.set_ylim(6850, max+10)
+            elif var_list[i] == 'w':
+                ax.set_ylim(-5, max)
+            else:
+                ax.set_ylim(min, max)
             ax.set_title(var_list[i])
             ax.set_xlabel('radius r  [m]')
             ax.set_ylabel(var_list[i])
