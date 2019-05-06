@@ -128,6 +128,73 @@ def main():
     # CP_top_file.close()
 
     '''plot xy-field'''
+    # plot_xy_field(path_single, cm_gray, cm_inf)
+
+
+    ''' plot vertical field'''
+    # plot_xz_field(path_single, cm_gray, cm_inf)
+
+
+
+    path_macbook = 'Dropbox/ClimatePhysics/Copenhagen/Projects/ColdPool_LES/data_sfc_fluxes_off/single_3D_noise/'
+    path_single = path_macbook
+    data = nc.Dataset(os.path.join(path_single, 'fields_allt_xz_j200.0.nc'), 'r')
+    var = data.variables['s'][0,:,:]
+
+    return
+
+
+
+
+def plot_xz_field(path_single, cm_gray, cm_inf):
+    plt.rcParams['xtick.labelsize'] = 18
+    plt.rcParams['ytick.labelsize'] = 18
+    plt.rcParams['axes.labelsize'] = 24
+    path_out = os.path.join(path_figs, 'xy_snapshots')
+    if not os.path.exists(path_out):
+        os.mkdir(path_out)
+    timerange = np.append(np.arange(200, 1000, 200), 1400)
+    timerange = [200, 400, 600, 800, 1000, 1400, 1800, 2400]
+    timerange = [0]
+    k0 = 0
+    dx = 25
+    var_name = 'temperature'
+    for it, t0 in enumerate(timerange):
+        var = nc.Dataset(os.path.join(path_single, 'fields', str(t0)+'.nc'), 'r').groups['fields'].variables[var_name][:,:,k0]
+        if it == 0:
+            min = np.amin(var)
+            max = np.amax(var)
+        print min, max
+        min = 297
+        plt.figure(figsize=(12,10))
+        # im = plt.imshow(var.T, origin='lower', cmap =cm_inf, vmin=min, vmax=max, extend='both')
+        # im = plt.contourf(var.T, levels=np.linspace(min, max, 1e2),
+        #                   cmap =cm_gray, vmin=min, vmax=max, extend='both')
+        # cbar = plt.colorbar(im, shrink=0.75, ticks=np.arange(297, 300, 1), aspect=15)
+        # im = plt.pcolor(var.T, cmap =cm_gray, norm=colors.LogNorm(vmin=min, vmax=max))
+        im = plt.pcolor(var.T, norm=colors.colors.PowerNorm(gamma=1./2.), cmap=cm_gray)
+        cbar = plt.colorbar(im, shrink=0.75, aspect=15)
+        plt.axis('equal')
+        cbar.ax.tick_params(labelsize=21)
+        plt.xlim(0, 800)
+        plt.ylim(0, 240)
+        ax = plt.gca()
+        plt.locator_params(nbins=8)
+        x_ticks = [np.int((ti) * dx * 1e-3) for ti in ax.get_xticks()]
+        y_ticks = [np.int((ti) * dx * 1e-3) for ti in ax.get_yticks()]
+        ax.set_xticklabels(x_ticks)
+        ax.set_yticklabels(y_ticks)
+        # plt.tight_layout()
+        plt.xlabel('x  [km]')
+        plt.xlabel('y  [km]')
+
+        plt.savefig(os.path.join(path_out, str(t0) + 's.png'))
+        plt.close()
+
+    return
+
+
+def plot_xy_field(path_single, cm_gray, cm_inf):
     plt.rcParams['xtick.labelsize'] = 18
     plt.rcParams['ytick.labelsize'] = 18
     plt.rcParams['axes.labelsize'] = 24
@@ -172,6 +239,7 @@ def main():
         plt.close()
 
     return
+
 
 
 

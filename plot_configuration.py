@@ -268,17 +268,19 @@ def set_geom_parameters(dTh):
 
 def set_input_parameters(args, dTh, z_params, r_params):
 
-    global path_root, path_out_data, path_out_figs
+    global path_root
     path_root = args.path_root
-    path_out_data = os.path.join(path_root, 'data_analysis')
-    if not os.path.exists(path_out_data):
-        os.mkdir(path_out_data)
+    # global path_out_data
+    # path_out_data = os.path.join(path_root, 'data_analysis')
+    # if not os.path.exists(path_out_data):
+    #     os.mkdir(path_out_data)
+    global path_out_figs
     path_out_figs = os.path.join(path_root, 'figs_config')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
     print('path root: ', path_root)
-    print('path out data: ', path_out_data)
     print('path out figs: ', path_out_figs)
+    # print('path out data: ', path_out_data)
     print('')
 
 
