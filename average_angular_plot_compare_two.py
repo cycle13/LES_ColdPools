@@ -64,8 +64,8 @@ def main():
         file2 = file1
         file1 = file_aux
         del file_aux
-    print('dx: ', dx1_nml[0], dx2_nml[0], dx1[0])
-    print('dz: ', dx1_nml[2], dx2_nml[2], dx1[2])
+    print('dx: ', dx1_nml[0], dx2_nml[0], dx1)
+    print('dz: ', dx1_nml[2], dx2_nml[2], dz1)
     print('nx: ', nx1[0], nx2[0])
     print('nz: ', nx1[2], nx2[2])
 
@@ -152,6 +152,8 @@ def main():
         for i, ax in enumerate(axes):
             var1 = grp_stats1[var_list[i]][:, :, :]
             var2 = grp_stats2[var_list[i]][:, :, :]
+            if var_list[i] == 'w':
+               ax.set_ylim(-6,np.maximum(np.amax(var1[:,:,k0]),np.amax(var2[:,:,k0])))
 
             if every_second == True:
                 for it, t0 in enumerate(time1[1::2]):
@@ -164,14 +166,14 @@ def main():
                         ax.plot(r1[:irmax1], var1[2*it+1, :irmax1, k1], color=cm.copper(count_color), linewidth=3,
                                 label='t=' + str(t0))
                 for it, t0 in enumerate(time1[1::2]):
-                    # print('t=' + str(t0))
+                    #print('t=' + str(t0))
                     count_color = 2 * np.double(it) / len(time1)
                     if it == 0:
                         ax.plot(r2[:irmax2], var2[2*it+1, :irmax2, k2], '-', color=cm.jet(count_color), linewidth=3,
                                 label='dx='+str(dx2))
                     else:
                         # ax.plot(r2[:irmax2], )
-                        ax.plot(r2[:irmax2], var2[2*it+1, :irmax2, k2], '-', color=cm.jet(count_color), linewidth=3,
+                        ax.plot(r2[:irmax2], var2[2*it+1, :irmax2, k2], '-', color=cm.jet(count_color), linewidth=2,
                                 label='dx='+str(dx2))
             else:
                 for it, t0 in enumerate(time1):
@@ -199,7 +201,7 @@ def main():
                        fancybox=True, ncol=2, fontsize=8)
         # plt.tight_layout()
         plt.subplots_adjust(bottom=0.12, right=.9, left=0.04, top=0.9, wspace=0.15)
-        fig.suptitle('radially averaged variables   (k='+str(k0)+')')
+        fig.suptitle('Radially averaged variables   (k='+str(k0)+')')
         fig.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
 
