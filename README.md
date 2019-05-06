@@ -41,7 +41,35 @@ INPUT: [--casename CASENAME] [--path PATH] [--tmin TMIN] [--tmax TMAX] [--k0 K0]
 3. Define rim of cold pool as the outline of the mask; based on number of neighbours
 
 
-#### (2) Compute Energy Budget
+
+#### (2) Computation of Cold Pool Height:
+*Computes the CP height based on threshold on entropy anomaly for each column, starting from the top*
+***`plot_CP_height.py`*** [casename CASENAME] [path PATH] [--tmin TMIN] [--tmax TMAX] [--kmax KMAX] [--s_crit S_CRIT]
+> OUTPUT: stats-file and figures in ``PATH/figs_CP_height``
+>
+> stats-file: 
+> - 2D-fields (for each time step) for CP-height, max(w) and height(max(w)) for each column
+> - timeseries with domain maximum values of CP-height, max(w) and height(max(w))
+
+
+ #### (3) Vorticity computation CP rim
+***`conceptual_model/vorticity_rim.py`*** [casename CASENAME][path PATH]
+
+*computes and saves 4D field (k=0,..kmax) for radial velocity and azimuthal average of all variables*
+
+ > OUTPUT: 
+ > - 4D field of radial velocity v_r(t, x, y, z) with z=0,..kmax*dz; filename: `path/fields_v_rad/v_rad.nc`
+ > - stats-file with data of form var(t,r,z) in `path/data_analysis/stats_radial_averaged.nc`
+ 
+ ***`average_angular_plot_compare.py`*** [casename CASENAME]
+ [path_root PATH_ROOT][path1 PATH1][path2 PATH][path_out PATH_OUT][--tmin TMIN][--tmax TMAX][--kmax KMAX]
+ (Note: path1, path2 and path_out are relative paths that are concatenated with path_root)
+ *
+
+
+### _______________________________________
+### ***Energy***
+#### (1) Compute Energy Budget
 
 > (a) compute kinetic energy (KE)
 >
@@ -66,19 +94,6 @@ computed in definition of CP rim (read in file)
 
 
 
-#### (3) Vorticity computation CP rim
-***`conceptual_model/vorticity_rim.py`*** [casename CASENAME][path PATH]
-
-*computes and saves 4D field (k=0,..kmax) for radial velocity and azimuthal average of all variables*
-
- > OUTPUT: 
- > - 4D field of radial velocity v_r(t, x, y, z) with z=0,..kmax*dz; filename: `path/fields_v_rad/v_rad.nc`
- > - stats-file with data of form var(t,r,z) in `path/data_analysis/stats_radial_averaged.nc`
- 
- ***`average_angular_plot_compare.py`*** [casename CASENAME]
- [path_root PATH_ROOT][path1 PATH1][path2 PATH][path_out PATH_OUT][--tmin TMIN][--tmax TMAX][--kmax KMAX]
- (Note: path1, path2 and path_out are relative paths that are concatenated with path_root)
- *
 
 
 ### _______________________________________
@@ -116,3 +131,24 @@ given variable
  [path_root PATH_ROOT][path1 PATH1][path2 PATH][path_out PATH_OUT][--tmin TMIN][--tmax TMAX][--kmax KMAX]
  (Note: path1, path2 and path_out are relative paths that are concatenated with path_root)
  *
+ 
+### _______________________________________
+### ***Initialization***
+#### (1) Test PyCLES Initialization
+***`Initialization_singleCP.py`***
+
+***`Initialization_tripleCP.py`***
+
+#### (2) Initialization of same Potential Energy:
+
+***`Initialization_PE.py`***
+
+> OUTPUT: 
+> - nc-files for each dTh (2, 3, 4K) with z*- and r*-values that correspond to the same reference potential energy
+(PE[dTh=3K, r*=1km, z*=1km])  
+
+
+### _______________________________________
+### ***Thermodynamics***
+#### (1) Thermodynamic functions from PyCLES:
+***`thermodynamic_functions.py`***

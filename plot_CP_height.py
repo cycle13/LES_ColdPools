@@ -25,7 +25,6 @@ def main():
     parser.add_argument("path")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
-    parser.add_argument("--kmin")
     parser.add_argument("--kmax")
     parser.add_argument("--s_crit")
     args = parser.parse_args()
@@ -87,25 +86,26 @@ def main():
     w_max_2D = root.groups['fields_2D'].variables['w_max_2d'][:,:,:]
     w_max_height_2D = root.groups['fields_2D'].variables['w_max_height_2d'][:,:,:]
     root.close()
-    print(CP_top_2D.shape, w_max_2D.shape, w_max_height_2D.shape)
-    for it, t0 in enumerate(times):
-        print('plot --- t: ', it, t0)
-        print(xmin_plt, xmax_plt, ymin_plt, ymax_plt)
-        plot_contourf_xy(CP_top_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt],
-                         w_max_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt],
-                         w_max_height_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt], t0)
-        # plot_contourf_test_yz(s, smin, smax, CP_top_2D[it, :, :], CP_top_grad[it, :, :], kmax, t0)
+    # for it, t0 in enumerate(times):
+    #     print('plot --- t: ', it, t0)
+    #     print(xmin_plt, xmax_plt, ymin_plt, ymax_plt)
+    #     plot_contourf_xy(CP_top_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt],
+    #                      w_max_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt],
+    #                      w_max_height_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt], t0)
+    #     # plot_contourf_test_yz(s, smin, smax, CP_top_2D[it, :, :], CP_top_grad[it, :, :], kmax, t0)
 
 
 
     ''' plotting crosssections '''
-    i1 = ic_arr[0]
+    i1 = i0_center
     i2 = i0_coll
     # i2 =
     # j1 = j0_coll
     # j2 = ic_arr[0]
-    j1 = ic_arr[0]
+    j1 = i0_center
     j2 = j0_coll
+    plot_geometry(s0, i1, j1)
+    plot_x_crosssections(s0, CP_top_2D, w_max_2D, j1, j2)
     plot_x_crosssections(s0, CP_top_2D, w_max_2D, j1, j2)
     plot_x_crosssections_CPtop_w(s0, CP_top_2D, w_max_2D, j1, j2)
     plot_y_crosssections(s0, CP_top_2D, w_max_2D, i1, i2)
@@ -279,9 +279,12 @@ def plot_contourf_xy(CP_top, w_max, w_max_height, t0):
 
     fig, axes = plt.subplots(1,3, figsize=(16,5), sharey=True)
     ax1 = axes[0]
-    a = ax1.contourf(dx[2]*CP_top.T)
+    # if CP_height not from file; it's not in metres but in number of levels
+    # ax1.set_title('CP height  (max='+str(dx[2]*np.amax(CP_top))+'m)')
+    # a = ax1.contourf(dx[2]*CP_top.T)
+    a = ax1.contourf(CP_top.T)
     plt.colorbar(a, ax=ax1)
-    ax1.set_title('CP height  (max='+str(dx[2]*np.amax(CP_top))+'m)')
+    ax1.set_title('CP height  (max='+str(np.amax(CP_top))+'m)')
     ax1.set_xlabel('x  (dx=' + str(dx[0]) + 'm)')
     ax1.set_ylabel('y  (dy=' + str(dx[1]) + 'm)')
 
@@ -299,6 +302,28 @@ def plot_contourf_xy(CP_top, w_max, w_max_height, t0):
     fig.suptitle('t='+str(t0)+'s')
     fig.tight_layout()
     fig.savefig(os.path.join(path_out, 'CP_height_t'+str(t0)+'.png'))
+    plt.close(fig)
+
+    return
+
+
+def plot_geometry(s, i0, j0):
+    fig, axes = plt.subplots(1, 2, figsize=(16, 5), sharey=True)
+    ax1 = axes[0]
+    a = ax1.contourf(s[:,:,kstar].T)
+    eps = 80
+    plt.colorbar(a, ax=ax1)
+    ax1.set_xlim(i0-eps, i0+eps)
+    ax1.set_ylim(j0-eps, j0+eps)
+    ax1.plot(i0, j0, 'ko')
+    ax1.plot([i0, i0],[0, ny], 'k-')
+    ax1.plot([0, ny],[j0, j0], 'k-')
+    ax1.set_aspect('equal')  # ax.set_aspect(1.0)
+    ax1.set_xlabel('x  (dx=' + str(dx[0]) + 'm)')
+    ax1.set_ylabel('y  (dy=' + str(dx[1]) + 'm)')
+
+    fig.tight_layout()
+    fig.savefig(os.path.join(path_out, 'CP_geometry.png'))
     plt.close(fig)
 
     return
@@ -603,14 +628,14 @@ def define_geometry(case_name, nml):
 
     ''' plotting parameters '''
     if case_name == 'ColdPoolDry_single_3D':
-        i0_coll = 10
-        j0_coll = 10
+        i0_coll = ic_arr[0] - 10
+        j0_coll = jc_arr[0] - 10
         i0_center = ic_arr[0]
         j0_center = jc_arr[0]
         if nx > 200:
             xmin_plt = 100
         else:
-            xmin_plt = 50
+            xmin_plt = 0
         xmax_plt = nx - xmin_plt
         ymin_plt = xmin_plt
         ymax_plt = xmax_plt
