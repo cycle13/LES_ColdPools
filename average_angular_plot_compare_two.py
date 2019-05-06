@@ -64,8 +64,8 @@ def main():
         file2 = file1
         file1 = file_aux
         del file_aux
-    print('dx: ', dx1_nml[0], dx2_nml[0], dx1[0])
-    print('dz: ', dx1_nml[2], dx2_nml[2], dx1[2])
+    print('dx: ', dx1_nml[0], dx2_nml[0], dx1)
+    print('dz: ', dx1_nml[2], dx2_nml[2], dx1)
     print('nx: ', nx1[0], nx2[0])
     print('nz: ', nx1[2], nx2[2])
 
