@@ -65,7 +65,7 @@ def main():
 
     ''' (A) Domain '''
     ''' (A1) Potential Energy (PE) '''
-    PE = compute_PE(ic, jc, filename_in, case_name, path, path_fields)
+    PE = compute_PE(ic, jc, filename_in, filename_out, case_name, path, path_fields, path_out)
 
     ''' (A2) Kinetic Energy (KE) '''
     # KE, KEd, KE_x = compute_KE(ic, jc, irstar, times, id, filename, path, path_fields)
@@ -196,7 +196,7 @@ def compute_KE(ic, jc, irstar, times, id, filename, path_in, path_fields):
 
 
 
-def compute_PE(ic, jc, filename, case_name, path, path_fields):
+def compute_PE(ic, jc, filename_in, filename_out, case_name, path, path_fields, path_out):
     # 1. read in initial s-field
     # 2. convert entropy to potential temperature
     # 3. ??? convert potential temperature to density
@@ -204,7 +204,7 @@ def compute_PE(ic, jc, filename, case_name, path, path_fields):
     # 5. integrate
 
     # 1. read in azimuthally averaged s-field
-    file_radav = nc.Dataset(os.path.join(path, 'data_analysis', filename))
+    file_radav = nc.Dataset(os.path.join(path, 'data_analysis', filename_in))
     time_in = file_radav.groups['timeseries'].variables['time'][:]
     radius = file_radav.groups['stats'].variables['r'][:]
     radius_i = file_radav.groups['stats'].variables['ri'][:]
@@ -258,8 +258,8 @@ def compute_PE(ic, jc, filename, case_name, path, path_fields):
     # j = jc
     # k = 10
     # print(z_half[k]*(theta_env[k] - th_s[i,j,k]) * dV*rho0[k])
-    #
-    #
+
+
     # plt.figure()
     # ax1 = plt.subplot(1, 3, 1)
     # plt.imshow(s[:, jc, :].T, origin='lower')
@@ -278,14 +278,14 @@ def compute_PE(ic, jc, filename, case_name, path, path_fields):
     # # plt.show()
     # plt.close()
     # del s, s_
-    #
-    # rootgrp = nc.Dataset(os.path.join(path_out, filename), 'r+', format='NETCDF4')
-    # ts_grp = rootgrp.groups['timeseries']
-    # var = ts_grp.variables['PE']
-    # var[:] = PE[:]
-    # var = ts_grp.variables['PEd']
-    # var[:] = PEd[:]
-    # rootgrp.close()
+
+    rootgrp = nc.Dataset(os.path.join(path_out, filename_out), 'r+', format='NETCDF4')
+    ts_grp = rootgrp.groups['timeseries']
+    var = ts_grp.variables['PE']
+    var[:] = PE[:]
+    var = ts_grp.variables['PEd']
+    var[:] = PEd[:]
+    rootgrp.close()
 
     # return PE
     return
