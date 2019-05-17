@@ -37,7 +37,7 @@ def main():
     # cm_hsv = plt.cm.get_cmap('hsv')
 
     filename_in = 'stats_radial_averaged.nc'
-    
+
     nml, times = set_input_output_parameters(args, filename_in)
     define_geometry(case_name, nml)
     path_fields = os.path.join(path, 'fields')
@@ -56,12 +56,6 @@ def main():
     create_output_file(times, filename_out, path_out)
 
 
-    # file_radav = nc.Dataset(os.path.join(path, 'data_analysis', filename_in))
-    # time_in = file_radav.groups['timeseries'].variables['time'][:]
-    # radius = file_radav.groups['stats'].variables['r'][:]
-    # radius_i = file_radav.groups['stats'].variables['ri'][:]
-    # krange = file_radav.groups['dimensions'].variables['krange'][:]
-    # s_in = file_radav.groups['dimensions'].variables['s'][:, :, :]
 
 
 
@@ -70,7 +64,7 @@ def main():
     PE = compute_PE(ic, jc, filename_in, filename_out, case_name, path, path_fields, path_out)
 
     ''' (A2) Kinetic Energy (KE) '''
-    # KE, KEd, KE_x = compute_KE(ic, jc, irstar, times, id, filename, path, path_fields)
+    KE, KEd, KE_x = compute_KE(ic, jc, irstar, times, id, filename_in, filename_out, path, path_fields)
 
 
     return
@@ -79,12 +73,12 @@ def main():
 
 
 
-def compute_KE(ic, jc, irstar, times, id, filename, path_in, path_fields):
-    # # 1. read in velocity fields
-    # # 2. read in reference rho
-    # # 3. define rim of cold pool
-    # # define_cp_rim()
-    # # 4. integrate: KE = 0.5*sum_i(rho_i*dV*v_i**2) from center (ic,jc) to rim
+def compute_KE(ic, jc, irstar, times, id, filename_in, filename_out, path_in, path_fields):
+    # 1. read in velocity fields
+    # 2. read in reference rho
+    # 3. define rim of cold pool
+    # define_cp_rim()
+    # 4. integrate: KE = 0.5*sum_i(rho_i*dV*v_i**2) from center (ic,jc) to rim
     #
     # nt = len(times)
     # kmax = 100
@@ -98,17 +92,35 @@ def compute_KE(ic, jc, irstar, times, id, filename, path_in, path_fields):
     # # jshift = jd - irstar
     # # th_w = 5e-1
     #
+
+    # 1. read in reference density
+    rootgrp = nc.Dataset(os.path.join(path, 'stats', 'Stats.' + case_name + '.nc'))
+    rho0 = rootgrp.groups['reference'].variables['rho0'][:]
+    # rho_unit = rootgrp.groups['reference'].variables['rho0'].units
+    # z_half = rootgrp.groups['reference'].variables['z'][:]
+    rootgrp.close()
+
+
+    # 1. (A) read in azimuthally averaged s-field
+    file_radav = nc.Dataset(os.path.join(path, 'data_analysis', filename_in))
+    time_in = file_radav.groups['timeseries'].variables['time'][:]
+    radius = file_radav.groups['stats'].variables['r'][:]
+    krange = file_radav.groups['dimensions'].variables['krange'][:]
+    u_in = file_radav.groups['stats'].variables['u'][:, :, :]  # s(nt, nr, nz)
+    v_in = file_radav.groups['stats'].variables['v'][:, :, :]  # s(nt, nr, nz)
+    w_in = file_radav.groups['stats'].variables['w'][:, :, :]  # s(nt, nr, nz)
+    file_radav.close()
+    nk = len(krange)
+    nt = len(time_in)
+
+    # 1. (B) read in 3D fields
     # print 'path_in', path_in
     # print path_fields
-    # try:
-    #     rootgrp = nc.Dataset(os.path.join(path_in, 'Stats.' + case_name + '.nc'))
-    # except:
-    #     rootgrp = nc.Dataset(os.path.join(path_in, 'stats', 'Stats.' + case_name + '.nc'))
-    # rho0 = rootgrp.groups['reference'].variables['rho0'][:]
-    # rho_unit = rootgrp.groups['reference'].variables['rho0'].units
-    # # z_half = rootgrp.groups['reference'].variables['z'][:]
-    # rootgrp.close()
-    #
+
+
+
+
+
     # for it,t0 in enumerate(times):
     #     print('--t='+str(t0)+'--')
     #     u = read_in_netcdf_fields('u', os.path.join(path_fields, str(t0)+'.nc'))[:,:,:kmax]
@@ -183,7 +195,7 @@ def compute_KE(ic, jc, irstar, times, id, filename, path_in, path_fields):
     # plt.close()
     #
     # ''' output '''
-    # rootgrp = nc.Dataset(os.path.join(path_out, filename), 'r+', format='NETCDF4')
+    # rootgrp = nc.Dataset(os.path.join(path_out, filename_out), 'r+', format='NETCDF4')
     # ts_grp = rootgrp.groups['timeseries']
     # var = ts_grp.variables['KE']
     # var[:] = KE[:]
@@ -193,7 +205,8 @@ def compute_KE(ic, jc, irstar, times, id, filename, path_in, path_fields):
     # var[:, :] = KE_x[:, :]
     # rootgrp.close()
 
-    return KE, KEd, KE_x
+    # return KE, KEd, KE_x
+    return
 
 
 
@@ -212,7 +225,6 @@ def compute_PE(ic, jc, filename_in, filename_out, case_name, path, path_fields, 
     krange = file_radav.groups['dimensions'].variables['krange'][:]
     s_in = file_radav.groups['stats'].variables['s'][:, :, :]       # s(nt, nr, nz)
     file_radav.close()
-    nr = len(radius)
     nk = len(krange)
     nt = len(time_in)
 
@@ -293,8 +305,7 @@ def compute_PE(ic, jc, filename_in, filename_out, case_name, path, path_fields, 
     var[:] = PEd[:]
     rootgrp.close()
 
-    # return PE
-    return
+    return PE
 
 # ----------------------------------------------------------------------
 
@@ -340,7 +351,7 @@ def set_input_output_parameters(args, filename_in):
     times = file_radav.groups['timeseries'].variables['time'][:]
     file_radav.close()
     print('times', times)
-    files = [str(t) + '.nc' for t in times]
+    files = [str(np.int(t)) + '.nc' for t in times]
     # print('files', files)
 
     return nml, times
