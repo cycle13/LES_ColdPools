@@ -98,7 +98,7 @@ def main():
             os.mkdir(path_out_)
         print''
         print('vertical xz-crossection at CP center: j0='+str(j0_center))
-        convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_center)
+        #convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_center)
         convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files, path_fields, path_out_, j0_center)
         # print('vertical xz-crossection at 3-CP collision: j0='+str(j0_coll))
         # convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_coll)
