@@ -207,12 +207,12 @@ def compute_PE(ic, jc, filename_in, filename_out, case_name, path, path_fields, 
     file_radav = nc.Dataset(os.path.join(path, 'data_analysis', filename_in))
     time_in = file_radav.groups['timeseries'].variables['time'][:]
     radius = file_radav.groups['stats'].variables['r'][:]
-    radius_i = file_radav.groups['stats'].variables['ri'][:]
     krange = file_radav.groups['dimensions'].variables['krange'][:]
     s_in = file_radav.groups['stats'].variables['s'][:, :, :]       # s(nt, nr, nz)
     file_radav.close()
     nr = len(radius)
     nk = len(krange)
+    nt = len(time_in)
 
     # 2. convert entropy to potential temperature
     th_s = theta_s(s_in)
@@ -239,9 +239,10 @@ def compute_PE(ic, jc, filename_in, filename_out, case_name, path, path_fields, 
     # [PE/kg] = m/s^2*m = (m/s)^2
     # PE = m*a*s        >>  [PE] = kg*m/s^2*m = kg*(m/s)^2
     # KE = 0.5*m*v^2    >>  [KE] = kg*(m/s)^2
+
     # int dz a(z) = sum_i a_i dz_i
-    PE = 0.0
-    PEd = 0.0
+    # PE = np.zeros(nt)
+    # PEd = np.zeros(nt)
 
 
     for i,r in enumerate(radius):
@@ -282,6 +283,9 @@ def compute_PE(ic, jc, filename_in, filename_out, case_name, path, path_fields, 
     rootgrp = nc.Dataset(os.path.join(path_out, filename_out), 'r+', format='NETCDF4')
     ts_grp = rootgrp.groups['timeseries']
     var = ts_grp.variables['PE']
+    print(time_in)
+    print(PE.shape)
+    print(var.shape)
     var[:] = PE[:]
     var = ts_grp.variables['PEd']
     var[:] = PEd[:]
