@@ -126,71 +126,68 @@ def main():
 
 
 
-    print 'plotting'
-    print path_out_figs
-    print ''
-
-
-    ''' plotting '''
-    # read in file
-    file_name = 'stats_radial_averaged.nc'
-    data_stats = nc.Dataset(os.path.join(path_out_data, file_name), 'r')
-    stats_grp = data_stats.groups['stats'].variables
-    times_ = data_stats.groups['timeseries'].variables['time'][:]
-    ta = np.where(times_ == tmin)[0][0]
-    tb = np.where(times_ == tmax)[0][0]
-    print ''
-    print 'times'
-    print times
-    print times_
-    print ta, tb
-
-    # var = np.array('nt', 'nr', 'nz')
-    r_range = stats_grp['r'][:]
-
-    var_list = ['w', 'v_rad', 's']
-    ncol = len(var_list)
-    rmax_plot = 10e3
-    irmax = np.where(r_range == rmax_plot)[0][0]
-
-    for k0 in range(kmax):
-        print('-- k='+str(k0))
-        fig_name = 'radial_average_k'+str(k0)+'.png'
-        fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5*ncol, 5))
-        for i, ax in enumerate(axes):
-            var = stats_grp[var_list[i]][:,:,:]
-            max = np.amax(var[:, :irmax, :kmax])
-            min = np.amin(var[:, :irmax, :kmax])
-            if len(times) >= 2:
-                for it, t0 in enumerate(times_[1::2]):
-                    if it >= ta and it <= tb:
-                        count_color = 2 * np.double(it) / len(times)
-                        ax.plot(r_range[:irmax], var[2*it+1, :irmax, k0], color=cm.jet(count_color), label='t='+str(np.int(t0)))
-            else:
-                for it, t0 in enumerate(times_):
-                    if it >= ta and it <= tb:
-                        count_color = np.double(it) / len(times)
-                        ax.plot([0, r_range[irmax]], [0.,0.], 'k')
-                        ax.plot(r_range[:irmax], var[it, :irmax, k0], color=cm.jet(count_color), label='t='+str(t0))
-            if var_list[i] == 's':
-                ax.set_ylim(6850, max+10)
-            elif var_list[i] == 'w':
-                ax.set_ylim(-5, max)
-            else:
-                ax.set_ylim(min, max)
-            ax.set_title(var_list[i])
-            ax.set_xlabel('radius r  [m]')
-            ax.set_ylabel(var_list[i])
-        # axes[0].legend(loc='lower left', bbox_to_anchor=(0, 0.),
-        #            fancybox=True, shadow=True, ncol=4, fontsize=6)
-        axes[2].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
-                   fancybox=True, shadow=True, ncol=1, fontsize=10)
-        plt.subplots_adjust(bottom=0.12, right=.9, left=0.04, top=0.9, wspace=0.15)
-        plt.suptitle('z='+str(k0*dx[2])+'m')
-        fig.savefig(os.path.join(path_out_figs, fig_name))
-        plt.close(fig)
-
-    data_stats.close()
+    # ''' plotting '''
+    # print path_out_figs
+    # print ''
+    # # read in file
+    # file_name = 'stats_radial_averaged.nc'
+    # data_stats = nc.Dataset(os.path.join(path_out_data, file_name), 'r')
+    # stats_grp = data_stats.groups['stats'].variables
+    # times_ = data_stats.groups['timeseries'].variables['time'][:]
+    # ta = np.where(times_ == tmin)[0][0]
+    # tb = np.where(times_ == tmax)[0][0]
+    # print ''
+    # print 'times'
+    # print times
+    # print times_
+    # print ta, tb
+    #
+    # # var = np.array('nt', 'nr', 'nz')
+    # r_range = stats_grp['r'][:]
+    #
+    # var_list = ['w', 'v_rad', 's']
+    # ncol = len(var_list)
+    # rmax_plot = 10e3
+    # irmax = np.where(r_range == rmax_plot)[0][0]
+    #
+    # for k0 in range(kmax):
+    #     print('-- k='+str(k0))
+    #     fig_name = 'radial_average_k'+str(k0)+'.png'
+    #     fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5*ncol, 5))
+    #     for i, ax in enumerate(axes):
+    #         var = stats_grp[var_list[i]][:,:,:]
+    #         max = np.amax(var[:, :irmax, :kmax])
+    #         min = np.amin(var[:, :irmax, :kmax])
+    #         if len(times) >= 2:
+    #             for it, t0 in enumerate(times_[1::2]):
+    #                 if it >= ta and it <= tb:
+    #                     count_color = 2 * np.double(it) / len(times)
+    #                     ax.plot(r_range[:irmax], var[2*it+1, :irmax, k0], color=cm.jet(count_color), label='t='+str(np.int(t0)))
+    #         else:
+    #             for it, t0 in enumerate(times_):
+    #                 if it >= ta and it <= tb:
+    #                     count_color = np.double(it) / len(times)
+    #                     ax.plot([0, r_range[irmax]], [0.,0.], 'k')
+    #                     ax.plot(r_range[:irmax], var[it, :irmax, k0], color=cm.jet(count_color), label='t='+str(t0))
+    #         if var_list[i] == 's':
+    #             ax.set_ylim(6850, max+10)
+    #         elif var_list[i] == 'w':
+    #             ax.set_ylim(-5, max)
+    #         else:
+    #             ax.set_ylim(min, max)
+    #         ax.set_title(var_list[i])
+    #         ax.set_xlabel('radius r  [m]')
+    #         ax.set_ylabel(var_list[i])
+    #     # axes[0].legend(loc='lower left', bbox_to_anchor=(0, 0.),
+    #     #            fancybox=True, shadow=True, ncol=4, fontsize=6)
+    #     axes[2].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
+    #                fancybox=True, shadow=True, ncol=1, fontsize=10)
+    #     plt.subplots_adjust(bottom=0.12, right=.9, left=0.04, top=0.9, wspace=0.15)
+    #     plt.suptitle('z='+str(k0*dx[2])+'m')
+    #     fig.savefig(os.path.join(path_out_figs, fig_name))
+    #     plt.close(fig)
+    # . 
+    # data_stats.close()
 
     return
 
