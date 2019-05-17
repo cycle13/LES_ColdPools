@@ -68,14 +68,14 @@ def main():
 
     # ''' define CP height & maximal updraft velocity'''
     filename = 'CP_height_' + id + '_sth' + str(s_crit) + '.nc'
-    # create_output_file(id, s_crit, nx, ny, times)
-    # CP_top, w_max = compute_CP_height(s_bg, s_crit, smin, smax,
-    #                   xmin_plt, xmax_plt, ymin_plt, ymax_plt, i0_coll, id)
+    create_output_file(id, s_crit, nx, ny, times)
+    CP_top, w_max = compute_CP_height(s_bg, s_crit, smin, smax,
+                      xmin_plt, xmax_plt, ymin_plt, ymax_plt, i0_coll, id)
     # Output:
     #       CP_top[it, x, y]: 2D-field with CP-height for each xy-value
     #       w_max[0,it,x,y]:  2D-field with maximum value of w for each column
     #       w_max[1,it,x,y]:  height where maximum value of w for each column
-    # print('')
+    print('')
 
 
 
