@@ -44,7 +44,8 @@ def main():
         s_crit = args.scrit
     else:
         s_crit = 5e-1
-    print('threshold for ds=s-s_bg: '+str(s_crit)+ 'J/K')
+    print('threshold for ds=s-s_bg: ' + str(s_crit) + 'J/K')
+    print('')
 
 
     ''' create output file '''

@@ -57,7 +57,6 @@ def main():
 
     i0_center, j0_center, i0_coll, j0_coll = define_geometry(path_root, args)
 
-
     # (1) for each time/file in path_fields do...
     # (2) read in original fields file
     #       >> field_keys
@@ -98,8 +97,8 @@ def main():
             os.mkdir(path_out_)
         print''
         print('vertical xz-crossection at CP center: j0='+str(j0_center))
-        #convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_center)
-        convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files, path_fields, path_out_, j0_center)
+        # convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_center)
+        convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files, k_max, path_fields, path_out_, j0_center)
         # print('vertical xz-crossection at 3-CP collision: j0='+str(j0_coll))
         # convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_coll)
         # print('vertical yz-crossection at 2-CP collision: x0='+str(i0_center))
@@ -250,7 +249,7 @@ def convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields,
 
 
 
-def convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files, path_fields, path_out, location):
+def convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files, kmax, path_fields, path_out, location):
 
     # read in test fields file
     fullpath_in = os.path.join(path_fields, files[0])
@@ -259,7 +258,7 @@ def convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files, p
     # dims_keys = rootgrp_in.groups['fields'].dimensions.keys()
     dims = rootgrp_in.groups['fields'].dimensions
     nx_ = dims['nx'].size
-    nz_ = dims['nz'].size
+    nz_ = np.minimum(kmax, dims['nz'].size)
     rootgrp_in.close()
 
     jc = location
@@ -298,10 +297,10 @@ def convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files, p
             for var in var_list:
                 print('var', var)
                 var_out = rootgrp_out.variables[var]
-                data = rootgrp_in.groups['fields'].variables[var][:, jc, :]
+                data = rootgrp_in.groups['fields'].variables[var][:, jc, :kmax]
                 var_out[it, :, :] = data[:, :].T
             var = 'theta'
-            data = rootgrp_in.groups['fields'].variables['s'][:, jc, :]
+            data = rootgrp_in.groups['fields'].variables['s'][:, jc, :kmax]
             data_th = theta_s(data)
             del data
             var_out = rootgrp_out.variables[var]
