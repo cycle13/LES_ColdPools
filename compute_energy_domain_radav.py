@@ -261,8 +261,8 @@ def compute_PE(ic, jc, times, filename_in, filename_out,
 
     for i,r in enumerate(radius):
         for k in range(nk):
-            PEd += z_half[k]*(theta_env[k] - th_s[:,i,k])
-            PE +=  z_half[k]*(theta_env[k] - th_s[:,i,k]) * dV*rho0[k]
+            PEd += z_half[k]*(theta_env[k] - th_s[:nt,i,k])
+            PE +=  z_half[k]*(theta_env[k] - th_s[:nt,i,k]) * dV*rho0[k]
     PEd = g/th_g * PEd
     PE = g/th_g * PE
     # # PE_ = g*dz*PE
