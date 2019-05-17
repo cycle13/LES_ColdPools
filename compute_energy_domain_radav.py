@@ -211,38 +211,41 @@ def compute_PE(ic, jc, filename, case_name, path, path_fields):
     krange = file_radav.groups['dimensions'].variables['krange'][:]
     s_in = file_radav.groups['stats'].variables['s'][:, :, :]
     file_radav.close()
+    nr = len(radius)
 
     # 2. convert entropy to potential temperature
     th_s = theta_s(s_in)
 
-    # # 4. define background profile (here: take profile at any point outside the anomaly region)
-    # i0 = 0
-    # j0 = 0
-    # theta_env = th_s[i0,j0,:]
-    # th_g = theta_env[0]
-    # rootgrp = nc.Dataset(os.path.join(path, 'Stats.'+case_name+'.nc'))
-    # rho0 = rootgrp.groups['reference'].variables['rho0'][:]
+    # 3. define background profile (here: take profile at any point outside the anomaly region)
+    s_ = read_in_netcdf_fields('s', os.path.join(path_fields, '0.nc'))
+    i0 = 0
+    j0 = 0
+    theta_env = theta_s(s_[i0,j0,:])
+    th_g = theta_env[0]
+    del s_
+
+    rootgrp = nc.Dataset(os.path.join(path, 'Stats.'+case_name+'.nc'))
+    rho0 = rootgrp.groups['reference'].variables['rho0'][:]
     # rho_unit = rootgrp.groups['reference'].variables['rho0'].units
     # z_half = rootgrp.groups['reference'].variables['z'][:]
-    # rootgrp.close()
-    #
-    #
-    # # 5. integrate
-    # g = 9.80665
-    # # PEd = PE/kg = sum(g*dz*dTh_i) = g*dz*sum(dTh_i)
-    # # [PE/kg] = m/s^2*m = (m/s)^2
-    # # PE = m*a*s        >>  [PE] = kg*m/s^2*m = kg*(m/s)^2
-    # # KE = 0.5*m*v^2    >>  [KE] = kg*(m/s)^2
-    # # int dz a(z) = sum_i a_i dz_i
-    # PE = 0.0
-    # PEd = 0.0
-    # for i in range(nx_):
-    #     for j in range(ny_):
-    #         for k in range(nz):
-    #             PEd += z_half[k]*(theta_env[k] - th_s[i,j,k])
-    #             PE +=  z_half[k]*(theta_env[k] - th_s[i,j,k]) * dV*rho0[k]
-    # PEd = g/th_g * PEd
-    # PE = g/th_g * PE
+    rootgrp.close()
+
+
+    # 5. integrate
+    g = 9.80665
+    # PEd = PE/kg = sum(g*dz*dTh_i) = g*dz*sum(dTh_i)
+    # [PE/kg] = m/s^2*m = (m/s)^2
+    # PE = m*a*s        >>  [PE] = kg*m/s^2*m = kg*(m/s)^2
+    # KE = 0.5*m*v^2    >>  [KE] = kg*(m/s)^2
+    # int dz a(z) = sum_i a_i dz_i
+    PE = 0.0
+    PEd = 0.0
+    for i,r in enumerate(radius):
+        for k in range(nz):
+            PEd += z_half[k]*(theta_env[k] - th_s[i,k])
+            PE +=  z_half[k]*(theta_env[k] - th_s[i,k]) * dV*rho0[k]
+    PEd = g/th_g * PEd
+    PE = g/th_g * PE
     # # PE_ = g*dz*PE
     # print('PE', PE, 'PEd', PEd)
     # print('density at 500m: ' + str(rho0[5]) + ' ' + rho_unit)
