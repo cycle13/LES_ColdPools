@@ -33,30 +33,30 @@ def main():
     rmax = np.int(np.ceil(np.sqrt(irange**2 + jrange**2)))
 
     # plot configuration test file
-    fig_name = 'test_config.png'
-    fullpath_in = os.path.join(path, 'fields', '100.nc')
-    rootgrp = nc.Dataset(fullpath_in, 'r')
-    s = rootgrp.groups['fields'].variables['s'][:, :, :]
-    fig, (ax1,ax2,ax3) = plt.subplots(1, 3, sharey='none', figsize=(16, 5))
-    ax1.contourf(s[:,:,0].T)
-    ax1.plot(ic, jc, 'ko', markersize=5)
-    ax1.plot([ic,ic], [0,ny], 'k-')
-    ax1.plot([0,nx], [jc,jc], 'k-')
-    if nx > 200:
-        imin = 300
-        imax = 500
-
-    else:
-        imin = 50
-        imax = 150
-    print imin, imax, jc, s.shape
-    ax2.contourf(s[imin:imax,jc,:100].T)
-    ax2.plot([ic-imin,ic-imin], [0,100], 'k-', linewidth=1)
-    ax3.contourf(s[ic, imin:imax,:100].T)
-    ax3.plot([ic-imin,ic-imin], [0,100], 'k-', linewidth=1)
-    fig.savefig(os.path.join(path_out_figs, fig_name))
-    plt.close(fig)
-    del s
+    # fig_name = 'test_config.png'
+    # fullpath_in = os.path.join(path, 'fields', '100.nc')
+    # rootgrp = nc.Dataset(fullpath_in, 'r')
+    # s = rootgrp.groups['fields'].variables['s'][:, :, :]
+    # fig, (ax1,ax2,ax3) = plt.subplots(1, 3, sharey='none', figsize=(16, 5))
+    # ax1.contourf(s[:,:,0].T)
+    # ax1.plot(ic, jc, 'ko', markersize=5)
+    # ax1.plot([ic,ic], [0,ny], 'k-')
+    # ax1.plot([0,nx], [jc,jc], 'k-')
+    # if nx > 200:
+    #     imin = 300
+    #     imax = 500
+    #
+    # else:
+    #     imin = 50
+    #     imax = 150
+    # print imin, imax, jc, s.shape
+    # ax2.contourf(s[imin:imax,jc,:100].T)
+    # ax2.plot([ic-imin,ic-imin], [0,100], 'k-', linewidth=1)
+    # ax3.contourf(s[ic, imin:imax,:100].T)
+    # ax3.plot([ic-imin,ic-imin], [0,100], 'k-', linewidth=1)
+    # fig.savefig(os.path.join(path_out_figs, fig_name))
+    # plt.close(fig)
+    # del s
 
     # compute radius
     for i in range(irange):
@@ -186,7 +186,7 @@ def main():
     #     plt.suptitle('z='+str(k0*dx[2])+'m')
     #     fig.savefig(os.path.join(path_out_figs, fig_name))
     #     plt.close(fig)
-    # . 
+    # .
     # data_stats.close()
 
     return
