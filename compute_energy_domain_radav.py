@@ -241,8 +241,8 @@ def compute_PE(ic, jc, filename_in, filename_out, case_name, path, path_fields, 
     # KE = 0.5*m*v^2    >>  [KE] = kg*(m/s)^2
 
     # int dz a(z) = sum_i a_i dz_i
-    # PE = np.zeros(nt)
-    # PEd = np.zeros(nt)
+    PE = np.zeros(nt)
+    PEd = np.zeros(nt)
 
 
     for i,r in enumerate(radius):
