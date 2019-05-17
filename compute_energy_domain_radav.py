@@ -209,13 +209,14 @@ def compute_PE(ic, jc, filename, case_name, path, path_fields):
     radius = file_radav.groups['stats'].variables['r'][:]
     radius_i = file_radav.groups['stats'].variables['ri'][:]
     krange = file_radav.groups['dimensions'].variables['krange'][:]
-    s_in = file_radav.groups['stats'].variables['s'][:, :, :]
+    s_in = file_radav.groups['stats'].variables['s'][:, :, :]       # s(nt, nr, nz)
     file_radav.close()
     nr = len(radius)
     nk = len(krange)
 
     # 2. convert entropy to potential temperature
     th_s = theta_s(s_in)
+    print('th_s', th_s.shape)
 
     # 3. define background profile (here: take profile at any point outside the anomaly region)
     s_ = read_in_netcdf_fields('s', os.path.join(path_fields, '0.nc'))
@@ -242,13 +243,11 @@ def compute_PE(ic, jc, filename, case_name, path, path_fields):
     PE = 0.0
     PEd = 0.0
 
-    print('shapes', th_s.shape)
+
     for i,r in enumerate(radius):
         for k in range(nk):
-            PEd += z_half[k]*(theta_env[k] - th_s[i,k])
-            PE +=  z_half[k]*(theta_env[k] - th_s[i,k]) * dV*rho0[k]
-            # PEd += z_half[k]*(theta_env[k])
-            # PE +=  z_half[k]#*(theta_env[k] - th_s[i,k]) * dV*rho0[k]
+            PEd += z_half[k]*(theta_env[k] - th_s[:,i,k])
+            PE +=  z_half[k]*(theta_env[k] - th_s[:,i,k]) * dV*rho0[k]
     PEd = g/th_g * PEd
     PE = g/th_g * PE
     # # PE_ = g*dz*PE
