@@ -91,7 +91,7 @@ def main():
     ## var_list = ['u', 'v', 'w', 's', 'temperature']# , 'phi'
     var_list = ['u', 'v', 'w', 's', 'temperature', 'phi']
     ## convert_file_for_varlist(var_list, times, files, path_fields, path_out, k_min, k_max)
-    if args.vert:
+    if args.vert == 'True' or args.vert == 'true':
         print '-- vertical crosssection --'
         path_out_ = os.path.join(path_root, 'fields_merged')
         if not os.path.exists(path_out_):
@@ -99,25 +99,25 @@ def main():
         print''
         print('vertical xz-crossection at CP center: j0='+str(j0_center))
         convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_center)
-        print('vertical xz-crossection at 3-CP collision: j0='+str(j0_coll))
-        convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_coll)
-        print('vertical yz-crossection at 2-CP collision: x0='+str(i0_center))
-        convert_file_for_varlist_vertsection_yz(var_list, times, files, path_fields, path_out_, i0_center)
+        # print('vertical xz-crossection at 3-CP collision: j0='+str(j0_coll))
+        # convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_coll)
+        # print('vertical yz-crossection at 2-CP collision: x0='+str(i0_center))
+        # convert_file_for_varlist_vertsection_yz(var_list, times, files, path_fields, path_out_, i0_center)
         print''
-    if args.hor:
+    if args.hor == 'True' or args.hor == 'true':
         print '-- horizontal crosssection: k0 = '+str(k0) +' --'
         path_out_ = os.path.join(path_root, 'fields_merged')
         if not os.path.exists(path_out_):
             os.mkdir(path_out_)
         # horizontal crosssection
         convert_file_for_varlist_horsection(var_list, times, files, path_fields, path_out_, k0)
-    #     imin = 100
-    #     imax = 300
-    #     jmin = 100
-    #     jmax = 300
-    #     # horizontal crosssection of subdomin
-    #     convert_file_for_varlist_horsection_minimize(var_list, times, imin, imax, jmin, jmax,
-    #                                         files, path_fields, path_out_, k0)
+        imin = 100
+        imax = 300
+        jmin = 100
+        jmax = 300
+        # horizontal crosssection of subdomin
+        # convert_file_for_varlist_horsection_minimize(var_list, times, imin, imax, jmin, jmax,
+        #                                            files, path_fields, path_out_, k0)
 
     # # ''' output file with one level of one variable for all times '''
     # # # var_list = ['u', 'v', 'w', 's', 'temperature']# , 'phi'
@@ -388,7 +388,7 @@ def convert_file_for_varlist_horsection_minimize(var_list, times, imin, imax, jm
     rootgrp_in.close()
 
     k0 = level
-    file_name = 'fields_allt_xy_k' + str(np.int(k0)) + '.nc'
+    file_name = 'fields_allt_xy_k' + str(np.int(k0)) + '_redsize.nc'
     fullpath_out = os.path.join(path_out, file_name)
     print('filename', file_name)
 
@@ -423,10 +423,10 @@ def convert_file_for_varlist_horsection_minimize(var_list, times, imin, imax, jm
             for var in var_list:
                 print('var', var)
                 var_out = rootgrp_out.variables[var]
-                data = rootgrp_in.groups['fields'].variables[var][:, :, k0]
+                data = rootgrp_in.groups['fields'].variables[var][imin:imax, jmin:jmax, k0]
                 var_out[it, :, :] = data[:, :]
             var = 'theta'
-            data = rootgrp_in.groups['fields'].variables['s'][:, :, k0]
+            data = rootgrp_in.groups['fields'].variables['s'][imin:imax, jmin:jmax, k0]
             data_th = theta_s(data)
             del data
             var_out = rootgrp_out.variables[var]
@@ -566,6 +566,7 @@ def define_geometry(path_root, args):
     dx[2] = nml['grid']['dz']
     gw = nml['grid']['gw']
     dV = dx[0] * dx[1] * dx[2]
+    print('nml: ', dx, nx)
 
     # set coordinates for plots
     if case_name == 'ColdPoolDry_single_3D':
@@ -635,6 +636,8 @@ def define_geometry(path_root, args):
         jc3 = jc1 + np.int(np.round(d / 2))
         ic_arr = [ic1, ic2, ic3]
         jc_arr = [jc1, jc2, jc3]
+
+
 
 
     ''' plotting parameters '''
