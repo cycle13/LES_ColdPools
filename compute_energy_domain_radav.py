@@ -61,7 +61,8 @@ def main():
 
     ''' (A) Domain '''
     ''' (A1) Potential Energy (PE) '''
-    PE = compute_PE(ic, jc, filename_in, filename_out, case_name, path, path_fields, path_out)
+    PE = compute_PE(ic, jc, times, filename_in, filename_out,
+                    case_name, path, path_fields, path_out)
 
     ''' (A2) Kinetic Energy (KE) '''
     KE, KEd, KE_x = compute_KE(ic, jc, irstar, times, id, filename_in, filename_out, path, path_fields)
@@ -209,7 +210,8 @@ def compute_KE(ic, jc, irstar, times, id, filename_in, filename_out, path_in, pa
 
 
 
-def compute_PE(ic, jc, filename_in, filename_out, case_name, path, path_fields, path_out):
+def compute_PE(ic, jc, times, filename_in, filename_out,
+               case_name, path, path_fields, path_out):
     # 1. read in initial s-field
     # 2. convert entropy to potential temperature
     # 3. ??? convert potential temperature to density
@@ -224,7 +226,7 @@ def compute_PE(ic, jc, filename_in, filename_out, case_name, path, path_fields, 
     s_in = file_radav.groups['stats'].variables['s'][:, :, :]       # s(nt, nr, nz)
     file_radav.close()
     nk = len(krange)
-    nt = len(time_in)
+    nt = len(times)
 
     # 2. convert entropy to potential temperature
     th_s = theta_s(s_in)
@@ -350,9 +352,9 @@ def set_input_output_parameters(args, filename_in):
     times = [np.int(t) for t in times_ if np.int(t) >= tmin and np.int(t) <= tmax]
     del times_
     file_radav.close()
-    print('times', times)
     files = [str(np.int(t)) + '.nc' for t in times]
-    # print('files', files)
+    print('times', times)
+    print ('')
 
     return nml, times
 
