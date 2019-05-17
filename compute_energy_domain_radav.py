@@ -106,31 +106,29 @@ def compute_KE(ic, jc, irstar, times, id, filename_in, filename_out, path_in, pa
     time_in = file_radav.groups['timeseries'].variables['time'][:]
     radius = file_radav.groups['stats'].variables['r'][:]
     krange = file_radav.groups['dimensions'].variables['krange'][:]
-    u_in = file_radav.groups['stats'].variables['u'][:, :, :]  # s(nt, nr, nz)
-    v_in = file_radav.groups['stats'].variables['v'][:, :, :]  # s(nt, nr, nz)
-    w_in = file_radav.groups['stats'].variables['w'][:, :, :]  # s(nt, nr, nz)
+    u_rad = file_radav.groups['stats'].variables['u'][:, :, :]  # u(nt, nr, nz)
+    v_rad = file_radav.groups['stats'].variables['v'][:, :, :]  # v(nt, nr, nz)
+    w_rad = file_radav.groups['stats'].variables['w'][:, :, :]  # w(nt, nr, nz)
     file_radav.close()
     nk = len(krange)
     nt = len(time_in)
 
+    u2_rad = u_rad * u_rad
+    v2_rad = v_rad * v_rad
+    w2_rad = w_rad * w_rad
+
+
     # 1. (B) read in 3D fields
-    # print 'path_in', path_in
-    # print path_fields
+    for it,t0 in enumerate(times):
+        print('--t='+str(t0)+'--')
+        u = read_in_netcdf_fields('u', os.path.join(path_fields, str(t0)+'.nc'))[:,:,:kmax]
+        v = read_in_netcdf_fields('v', os.path.join(path_fields, str(t0)+'.nc'))[:,:,:kmax]
+        w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0)+'.nc'))[:,:,:kmax]
+        u2 = u * u
+        v2 = v * v
+        w2 = w * w
+        del u, v, w
 
-
-
-
-
-    # for it,t0 in enumerate(times):
-    #     print('--t='+str(t0)+'--')
-    #     u = read_in_netcdf_fields('u', os.path.join(path_fields, str(t0)+'.nc'))[:,:,:kmax]
-    #     v = read_in_netcdf_fields('v', os.path.join(path_fields, str(t0)+'.nc'))[:,:,:kmax]
-    #     w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0)+'.nc'))[:,:,:kmax]
-    #     u2 = u * u
-    #     v2 = v * v
-    #     w2 = w * w
-    #     del u, v, w
-    #
     #     # # define mask
     #     # u_ = np.roll(u[:, :, :k_max], [ishift, jshift],
     #     #              [0, 1])[ic + ishift - id:ic + ishift + id, jc + jshift - jd:jc + jshift + jd]
@@ -348,7 +346,9 @@ def set_input_output_parameters(args, filename_in):
     #          and np.int(name[:-3]) >= tmin and np.int(name[:-3]) <= tmax]
     # times.sort()
     file_radav = nc.Dataset(os.path.join(path, 'data_analysis', filename_in))
-    times = file_radav.groups['timeseries'].variables['time'][:]
+    times_ = file_radav.groups['timeseries'].variables['time'][:]
+    times = [np.int(t) for t in times_ if np.int(t) >= tmin and np.int(t) <= tmax]
+    del times_
     file_radav.close()
     print('times', times)
     files = [str(np.int(t)) + '.nc' for t in times]
