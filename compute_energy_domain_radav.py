@@ -212,6 +212,7 @@ def compute_PE(ic, jc, filename, case_name, path, path_fields):
     s_in = file_radav.groups['stats'].variables['s'][:, :, :]
     file_radav.close()
     nr = len(radius)
+    nk = len(krange)
 
     # 2. convert entropy to potential temperature
     th_s = theta_s(s_in)
@@ -231,7 +232,7 @@ def compute_PE(ic, jc, filename, case_name, path, path_fields):
     rootgrp.close()
 
 
-    # 5. integrate
+    # 4. integrate
     g = 9.80665
     # PEd = PE/kg = sum(g*dz*dTh_i) = g*dz*sum(dTh_i)
     # [PE/kg] = m/s^2*m = (m/s)^2
@@ -243,11 +244,11 @@ def compute_PE(ic, jc, filename, case_name, path, path_fields):
 
     print('shapes', th_s.shape)
     for i,r in enumerate(radius):
-        for k in range(nz):
-            #PEd += z_half[k]*(theta_env[k] - th_s[i,k])
-            #PE +=  z_half[k]*(theta_env[k] - th_s[i,k]) * dV*rho0[k]
-            PEd += z_half[k]*(theta_env[k])
-            PE +=  z_half[k]#*(theta_env[k] - th_s[i,k]) * dV*rho0[k]
+        for k in range(nk):
+            PEd += z_half[k]*(theta_env[k] - th_s[i,k])
+            PE +=  z_half[k]*(theta_env[k] - th_s[i,k]) * dV*rho0[k]
+            # PEd += z_half[k]*(theta_env[k])
+            # PE +=  z_half[k]#*(theta_env[k] - th_s[i,k]) * dV*rho0[k]
     PEd = g/th_g * PEd
     PE = g/th_g * PE
     # # PE_ = g*dz*PE
