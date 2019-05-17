@@ -99,6 +99,7 @@ def main():
         print''
         print('vertical xz-crossection at CP center: j0='+str(j0_center))
         convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_center)
+        convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files, path_fields, path_out_, j0_center)
         # print('vertical xz-crossection at 3-CP collision: j0='+str(j0_coll))
         # convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_coll)
         # print('vertical yz-crossection at 2-CP collision: x0='+str(i0_center))
@@ -245,6 +246,72 @@ def convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields,
 
         rootgrp_out.close()
     return
+
+
+
+
+def convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files, path_fields, path_out, location):
+
+    # read in test fields file
+    fullpath_in = os.path.join(path_fields, files[0])
+    rootgrp_in = nc.Dataset(fullpath_in, 'r')
+    # field_keys = rootgrp_in.groups['fields'].variables.keys()
+    # dims_keys = rootgrp_in.groups['fields'].dimensions.keys()
+    dims = rootgrp_in.groups['fields'].dimensions
+    nx_ = dims['nx'].size
+    nz_ = dims['nz'].size
+    rootgrp_in.close()
+
+    jc = location
+    file_name = 'fields_allt_xz_j' + str(np.int(jc)) + '_transp.nc'
+    fullpath_out = os.path.join(path_out, file_name)
+    print('filename', file_name)
+
+    if os.path.exists(fullpath_out):
+        print('')
+        print('file ' + fullpath_out + ' already exists! ')
+        print('')
+    else:
+        rootgrp_out = nc.Dataset(fullpath_out, 'w', format='NETCDF4')
+        rootgrp_out.createDimension('time', None)
+        rootgrp_out.createDimension('nx', nz_)
+        rootgrp_out.createDimension('nz', nx_)
+        descr_grp = rootgrp_out.createGroup('description')
+        var = descr_grp.createVariable('jc', 'f8', )
+        var[:] = jc
+
+        time_out = rootgrp_out.createVariable('time', 'f8', ('time',))
+        time_out.long_name = 'Time'
+        time_out.units = 's'
+        time_out[:] = times
+
+        # create variables
+        var_list_all = np.append(var_list, 'theta')
+        for var in var_list_all:
+            rootgrp_out.createVariable(var, 'f8', ('time', 'nx', 'nz'))
+
+        # fill variables
+        for it, file in enumerate(files):
+            print('file: ', file)
+            fullpath_in = os.path.join(path_fields, file)
+            rootgrp_in = nc.Dataset(fullpath_in, 'r')
+            for var in var_list:
+                print('var', var)
+                var_out = rootgrp_out.variables[var]
+                data = rootgrp_in.groups['fields'].variables[var][:, jc, :]
+                var_out[it, :, :] = data[:, :].T
+            var = 'theta'
+            data = rootgrp_in.groups['fields'].variables['s'][:, jc, :]
+            data_th = theta_s(data)
+            del data
+            var_out = rootgrp_out.variables[var]
+            var_out[it, :,:] = data_th.T
+
+        rootgrp_out.close()
+    return
+
+
+
 
 
 
