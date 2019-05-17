@@ -36,7 +36,9 @@ def main():
     # cm_grey = plt.cm.get_cmap('gist_gray_r')
     # cm_hsv = plt.cm.get_cmap('hsv')
 
-    nml, times = set_input_output_parameters(args)
+    filename_in = 'stats_radial_averaged.nc'
+    
+    nml, times = set_input_output_parameters(args, filename_in)
     define_geometry(case_name, nml)
     path_fields = os.path.join(path, 'fields')
     path_stats = os.path.join(path, 'data_analysis')
@@ -53,7 +55,7 @@ def main():
     filename_out = 'CP_energy_' + id + '_domain_radav.nc'
     create_output_file(times, filename_out, path_out)
 
-    filename_in = 'stats_radial_averaged.nc'
+
     # file_radav = nc.Dataset(os.path.join(path, 'data_analysis', filename_in))
     # time_in = file_radav.groups['timeseries'].variables['time'][:]
     # radius = file_radav.groups['stats'].variables['r'][:]
@@ -296,7 +298,7 @@ def compute_PE(ic, jc, filename_in, filename_out, case_name, path, path_fields, 
 
 # ----------------------------------------------------------------------
 
-def set_input_output_parameters(args):
+def set_input_output_parameters(args, filename_in):
     print('--- set input parameters ---')
     global case_name
     global path
@@ -331,9 +333,12 @@ def set_input_output_parameters(args):
     else:
         tmax = np.int(10000)
     path_fields = os.path.join(path, 'fields')
-    times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
-             and np.int(name[:-3]) >= tmin and np.int(name[:-3]) <= tmax]
-    times.sort()
+    # times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
+    #          and np.int(name[:-3]) >= tmin and np.int(name[:-3]) <= tmax]
+    # times.sort()
+    file_radav = nc.Dataset(os.path.join(path, 'data_analysis', filename_in))
+    times = file_radav.groups['timeseries'].variables['time'][:]
+    file_radav.close()
     print('times', times)
     files = [str(t) + '.nc' for t in times]
     # print('files', files)
