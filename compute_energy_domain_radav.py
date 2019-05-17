@@ -224,7 +224,7 @@ def compute_PE(ic, jc, filename, case_name, path, path_fields):
     th_g = theta_env[0]
     del s_
 
-    rootgrp = nc.Dataset(os.path.join(path, 'Stats.'+case_name+'.nc'))
+    rootgrp = nc.Dataset(os.path.join(path, 'stats', 'Stats.'+case_name+'.nc'))
     rho0 = rootgrp.groups['reference'].variables['rho0'][:]
     # rho_unit = rootgrp.groups['reference'].variables['rho0'].units
     # z_half = rootgrp.groups['reference'].variables['z'][:]
@@ -240,10 +240,14 @@ def compute_PE(ic, jc, filename, case_name, path, path_fields):
     # int dz a(z) = sum_i a_i dz_i
     PE = 0.0
     PEd = 0.0
+
+    print('shapes', th_s.shape)
     for i,r in enumerate(radius):
         for k in range(nz):
-            PEd += z_half[k]*(theta_env[k] - th_s[i,k])
-            PE +=  z_half[k]*(theta_env[k] - th_s[i,k]) * dV*rho0[k]
+            #PEd += z_half[k]*(theta_env[k] - th_s[i,k])
+            #PE +=  z_half[k]*(theta_env[k] - th_s[i,k]) * dV*rho0[k]
+            PEd += z_half[k]*(theta_env[k])
+            PE +=  z_half[k]#*(theta_env[k] - th_s[i,k]) * dV*rho0[k]
     PEd = g/th_g * PEd
     PE = g/th_g * PE
     # # PE_ = g*dz*PE
