@@ -196,7 +196,7 @@ def compute_KE(ic, jc, irstar, times, id, filename, path_in, path_fields):
 
 
 
-def compute_PE(ic,jc,id,jd,nx_,ny_, filename, case_name, path, path_fields):
+def compute_PE(ic, jc, filename, case_name, path, path_fields):
     # 1. read in initial s-field
     # 2. convert entropy to potential temperature
     # 3. ??? convert potential temperature to density
@@ -209,7 +209,7 @@ def compute_PE(ic,jc,id,jd,nx_,ny_, filename, case_name, path, path_fields):
     radius = file_radav.groups['stats'].variables['r'][:]
     radius_i = file_radav.groups['stats'].variables['ri'][:]
     krange = file_radav.groups['dimensions'].variables['krange'][:]
-    s_in = file_radav.groups['dimensions'].variables['s'][:, :, :]
+    s_in = file_radav.groups['stats'].variables['s'][:, :, :]
     file_radav.close()
 
     # 2. convert entropy to potential temperature
