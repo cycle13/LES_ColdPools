@@ -16,8 +16,16 @@ plt.rcParams['legend.fontsize'] = 8
 plt.rcParams['axes.labelsize'] = label_size
 # plt.rcParams['xtick.direction']='out'
 # plt.rcParams['ytick.direction']='out'
+plt.rcParams['xtick.major.size'] = 6
+plt.rcParams['xtick.minor.size'] = 3
+plt.rcParams['ytick.major.size'] = 6
+plt.rcParams['ytick.minor.size'] = 3
+plt.rcParams['xtick.major.width'] = 1.5
+plt.rcParams['xtick.minor.width'] = 1.
+plt.rcParams['ytick.major.width'] = 1.5
+plt.rcParams['ytick.minor.width'] = 1.
 # plt.rcParams['figure.titlesize'] = 35
-plt.rcParams['font.family'] = 'Bitstream Vera Sans'
+# plt.rcParams['font.family'] = 'Bitstream Vera Sans'
 # plt.style.use('presentation')
 # plt.style.use('ggplot')
 
@@ -83,27 +91,32 @@ def main():
             #     print('-- k0=' + str(k0) + ' --')
             #     plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel_h,
             #                                      x_half, y_half, speed_h, k0, t0, path_out)
-            #
-            # ''' (b) yz-plane at center of cold pool #1'''
-            # i0 = ic1    # through center of cold pool #1
-            # kmax = 40
-            # jmin = 20
-            # jmax = ny-jmin
-            # plot_streamplot_yz(cont_var_name, cont_var, w, vel_h, speed_yz, y_half, z_half,
-            #                    i0, jmin, jmax, kmax, t0, path_out, True)
-            #
-            ''' (c) xz-plane at center of cold pool #1'''
-            j0 = jc1
-            imin = 20
-            imax = nx - imin
+
+            ''' (b) yz-plane at center of cold pool'''
+            i0 = ic1    # through center of cold pool
             kmax = 60
-            if cont_var_name == 'temperature_anomaly':
-                t_mean = np.average(cont_var[:, j0, :kmax], axis=0)
-                cont_var = cont_var[:, j0, :kmax] - t_mean
+            if t0 < 1200:
+                jmin = 100
+            elif t0 < 2400:
+                jmin = 40
             else:
-                cont_var = cont_var[:, j0, :kmax]
-            plot_streamplot_xz(cont_var_name, cont_var, w, vel_h, speed_xz,
-                               x_half, z_half, j0, imin, imax, kmax, t0, path_out, id, True)
+                jmin = 20
+            jmax = ny-jmin
+            plot_streamplot_yz(cont_var_name, cont_var, w, vel_h, speed_yz, y_half, z_half,
+                               i0, jmin, jmax, kmax, t0, path_out, True)
+
+            # ''' (c) xz-plane at center of cold pool #1'''
+            # j0 = jc1
+            # imin = 20
+            # imax = nx - imin
+            # kmax = 60
+            # if cont_var_name == 'temperature_anomaly':
+            #     t_mean = np.average(cont_var[:, j0, :kmax], axis=0)
+            #     cont_var = cont_var[:, j0, :kmax] - t_mean
+            # else:
+            #     cont_var = cont_var[:, j0, :kmax]
+            # plot_streamplot_xz(cont_var_name, cont_var, w, vel_h, speed_xz,
+            #                    x_half, z_half, j0, imin, imax, kmax, t0, path_out, id, True)
 
     return
 
@@ -184,6 +197,7 @@ def plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed,
     var_ = cont_var[i0,:,:]
     if cont_var_name == 'w':
         varmax = np.maximum(np.abs(np.amin(var_)), np.abs(np.amax(var_)))
+        varmin = -varmax
         levels = np.linspace(-varmax, varmax, 1e3)
     else:
         varmin = np.amin(var_)
@@ -191,9 +205,11 @@ def plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed,
         levels = np.linspace(varmin, varmax, 1e3)
 
     plt.figure(figsize=(12, 10))
-    ax = plt.contourf(y_arr[jmin:jmax], z_arr[:kmax], var_[jmin:jmax,:kmax].T,cmap=cm, levels=levels)
+    cf = plt.contourf(y_arr[jmin:jmax], z_arr[:kmax], var_[jmin:jmax,:kmax].T,cmap=cm, levels=levels)
 
-    plt.colorbar(ax)
+    # plt.colorbar(cf)
+    cb = plt.colorbar(cf, shrink=0.6, ticks=np.arange(np.floor(varmin), np.floor(varmax) + 1, 1), aspect=12)
+    cb.ax.tick_params(width=1, size=4)  # , labelsize=6)
     if not vary:
         plt.streamplot(y_arr[jmin:jmax], z_arr[:kmax], vel[1,i0,jmin:jmax,:kmax].T, w_[:,:kmax].T,
                        color='k', density=1.5, linewidth=1.5)

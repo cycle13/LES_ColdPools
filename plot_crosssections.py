@@ -135,26 +135,28 @@ def main():
     # krange_ = [0, 1, 2, 3]
     # # krange_ = [7, 8, 9, 10]
     # # krange_ = [0, 1, 2, 3]
-    # # krange_ = [4, 5, 6, 7]
-    # if case == 'single':
-    #     jmin = jc_arr[0] - 80
-    #     jmax = jc_arr[0] + 80
-    #     plot_yz_crosssections_multilevel('s', ic_arr[0], krange_, jmin, jmax,  jc_arr, files, path_out, path_fields)
-    # if case == 'double':
-    #     # -- 2D --
-    #     i_collision = np.int(1/2*(ic_arr[0]+ic_arr[1]))
-    #     plot_yz_crosssections_multilevel('w', i_collision, krange, jmin, jmax,  jc_arr, files, path_out, path_fields)
-    # elif case == 'triple':
-    #     # -- 3D --
-    #     jc1 = jc_arr[0]
-    #     j0 = np.int(jc1 + isep)
-    #     # # plot_xz_crosssections_multilevel('w', j0, krange, ic_arr, jc_arr, files, path_out, path_fields)
-    #     ic1 = ic_arr[0]
-    #     ic2 = ic_arr[1]
-    #     ic3 = ic_arr[2]
-    #     i0 = ic3 + np.int(gw/2)
-    #     i0 = 0.5*(ic1+ic2)
-    #     plot_yz_crosssections_multilevel('w', i0, krange_, jmin, jmax,   jc_arr, files, path_out, path_fields)
+    krange_ = [1, 4, 10, 15]
+    if case == 'single':
+        jmin = jc_arr[0] - 80
+        jmax = jc_arr[0] + 80
+        plot_yz_crosssections_multilevel('s', ic_arr[0], krange_, jmin, jmax,  jc_arr, files, path_out, path_fields)
+    if case == 'double':
+        # -- 2D --
+        i_collision = np.int(1/2*(ic_arr[0]+ic_arr[1]))
+        plot_yz_crosssections_multilevel('w', i_collision, krange, jmin, jmax,  jc_arr, files, path_out, path_fields)
+    elif case == 'triple':
+        print 'triple'
+        # -- 3D --
+        jc1 = jc_arr[0]
+        j0 = np.int(jc1 + isep)
+        # # plot_xz_crosssections_multilevel('w', j0, krange, ic_arr, jc_arr, files, path_out, path_fields)
+        ic1 = ic_arr[0]
+        ic2 = ic_arr[1]
+        ic3 = ic_arr[2]
+        i0 = ic3 + np.int(gw/2)
+        i0 = 0.5*(ic1+ic2)
+        # plot_yz_crosssections_multilevel('w', i0, krange_, jmin, jmax,   jc_arr, files, path_out, path_fields)
+        plot_xz_crosssections_multilevel('w', jc_arr[2], krange_, ic_arr, jc_arr, files, path_out, path_fields)
     # print ''
 
     return
@@ -198,12 +200,17 @@ def plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2,
 
     # x_arr = dx*np.arange(0,nx)
 
+    print('j0', j0, 'jc2', jc2)
+    # j0 = jc2
 
     for var_name in var_list:
-        var_min1 = 9999.9
+        var_min1 = 9999.9       # min/max along axis through CP 1
         var_max1 = -9999.9
-        var_min2 = 9999.9
+        var_min2 = 9999.9       # min/max along axis through CP 2 (collision)
         var_max2 = -9999.9
+        var_min3 = 9999.9       # min/max along axis through CP 2 (2 CP collision)
+        var_max3 = -9999.9
+        delta = 20
 
         f1 = plt.figure(figsize=(12,12))
         # f1 = plt.figure(figsize=(6,12))
@@ -224,12 +231,15 @@ def plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2,
             if var_name == 's':
                 # print('s',np.amin(var[:,jc1,k0]), var_min)
                 var_min1 = np.minimum(var_min1,np.maximum(6000,np.amin(var[:,jc1,k0])))
-                var_min2 = np.minimum(var_min2,np.maximum(6000,np.amin(var[:,jc2,k0])))
+                var_min2 = np.minimum(var_min2,np.maximum(6000,np.amin(var[ic1+delta:,jc2,k0])))
+                var_min3 = np.minimum(var_min3,np.maximum(6000,np.amin(var[ic1-delta:ic1+delta,jc2,k0])))
             else:
                 var_min1 = np.minimum(var_min1, np.amin(var[:, jc1, k0]))
-                var_min2 = np.minimum(var_min2, np.amin(var[:, jc2, k0]))
+                var_min2 = np.minimum(var_min2, np.amin(var[ic1+delta:, jc2, k0]))
+                var_min3 = np.minimum(var_min3, np.amin(var[ic1-delta:ic1+delta, jc2, k0]))
             var_max1 = np.maximum(var_max1, np.amax(var[:,jc1,k0]))
-            var_max2 = np.maximum(var_max2, np.amax(var[:,jc2,k0]))
+            var_max2 = np.maximum(var_max2, np.amax(var[ic1+delta:,jc2,k0]))
+            var_max3 = np.maximum(var_max3, np.amax(var[ic1-delta:ic1+delta,jc2,k0]))
             # count_color = np.double(file[:-3]) / np.double(files[-1][:-3])
             count_color = np.double(count) / len(files)
             ax2.plot(x_arr,var[:,jc1,k0], color=cm(count_color), label='t='+str(file[:-3]))
@@ -241,6 +251,10 @@ def plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2,
         ax2.plot([dx*ic2, dx*ic2], [var_min1, var_max1], 'k--', linewidth=1.5)
         ax3.plot([dx*ic1, dx*ic1], [var_min2, var_max2], 'k--', linewidth=1.5)
         ax3.plot([dx*ic2, dx*ic2], [var_min2, var_max2], 'k--', linewidth=1.5)
+        ax3.plot([dx*(ic1-25), dx*(ic1-25)], [var_min2, var_max2], ':', color='navy',
+                 linewidth=2)
+        ax3.plot([dx*(ic1+25), dx*(ic1+25)], [var_min2, var_max2], ':', color='navy',
+                 linewidth=2)
 
         plt.subplot(3, 1, 1)
         plt.xlabel('x')
@@ -251,7 +265,8 @@ def plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2,
         plt.xlabel('y')
         plt.ylabel(var_name)
         plt.subplot(3,1,3)
-        ax3.set_title('through collision point (max='+str(np.round(var_max2,1))+')')
+        ax3.set_title('through collision point (max(2CP)='+str(np.round(var_max3,1))
+                      + ', max(3CP)='+str(np.round(var_max2,1))+')')
         plt.grid()
         plt.xlabel('y')
         plt.ylabel(var_name)
@@ -314,9 +329,10 @@ def plot_y_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, 
 
 
 
-def plot_xz_crosssections_multilevel(var_name, j0, krange, ic_arr, jc_arr, files, path_out, path_fields):
+def plot_xz_crosssections_multilevel(var_name, j0, krange, ic_arr, jc_arr,
+                                     files, path_out, path_fields):
     cm = plt.cm.get_cmap('coolwarm')
-    # cm = plt.cm.get_cmap('coolwarm')
+    cm_cw = plt.cm.get_cmap('coolwarm')
     ic1 = ic_arr[0]
     ic2 = ic_arr[1]
     jc1 = jc_arr[0]
@@ -332,8 +348,11 @@ def plot_xz_crosssections_multilevel(var_name, j0, krange, ic_arr, jc_arr, files
     ax4 = plt.subplot(nline, 1, 4)
     ax5 = plt.subplot(nline, 1, 5)
     s0 = read_in_netcdf_fields('s', os.path.join(path_fields, '0.nc'))
-    ax1.imshow(s0[:, :, 1].T, origin='lower')
+    # ax1.imshow(s0[:, :, 1].T, origin='lower')
+    ax1.imshow(s0[:, :, 1].T, origin='lower', cmap=cm_cw)
     ax1.plot([0, nx], [j0, j0], 'k', linewidth=2)
+    ax1.set_xlim(0, nx)
+    ax1.set_ylim(0, ny)
 
     for file in files:
         var = read_in_netcdf_fields(var_name, os.path.join(path_fields, file))
@@ -357,8 +376,8 @@ def plot_xz_crosssections_multilevel(var_name, j0, krange, ic_arr, jc_arr, files
     plt.subplot(nline,1,nline)
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
                    fancybox=True, shadow=True, ncol=5)
-    plt.suptitle('w multilevel')
-    plt.savefig(os.path.join(path_out, 'yz_multilevel_'+var_name+'.png'))
+    plt.suptitle(var_name + ' multilevel')
+    plt.savefig(os.path.join(path_out, 'xz_multilevel_'+var_name+'.png'))
     plt.close()
     return
 

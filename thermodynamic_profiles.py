@@ -98,7 +98,7 @@ def main():
     # Construct arrays for integration points
     z_ = np.array(np.arange(nz_)*dz_)
     # Perform the integration
-    p = odeint(rhs, p0, z_, hmax=1.0)[:, 0]
+    p = odeint(rhs, p0, z_, hmax=1.0)[:, 0]  # type: object
     # p_half = odeint(rhs, p0, z_half, hmax=1.0)[1:, 0]
     p = np.exp(p)
     # temperature[k], ql[k], qi[k] = Thermodynamics.eos(p_[k], self.sg, self.qtg)
