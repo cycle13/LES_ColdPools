@@ -32,31 +32,8 @@ def main():
     jrange = np.minimum(ny-jc, jc)
     rmax = np.int(np.ceil(np.sqrt(irange**2 + jrange**2)))
 
-    # plot configuration test file
-    # fig_name = 'test_config.png'
-    # fullpath_in = os.path.join(path, 'fields', '100.nc')
-    # rootgrp = nc.Dataset(fullpath_in, 'r')
-    # s = rootgrp.groups['fields'].variables['s'][:, :, :]
-    # fig, (ax1,ax2,ax3) = plt.subplots(1, 3, sharey='none', figsize=(16, 5))
-    # ax1.contourf(s[:,:,0].T)
-    # ax1.plot(ic, jc, 'ko', markersize=5)
-    # ax1.plot([ic,ic], [0,ny], 'k-')
-    # ax1.plot([0,nx], [jc,jc], 'k-')
-    # if nx > 200:
-    #     imin = 300
-    #     imax = 500
-    #
-    # else:
-    #     imin = 50
-    #     imax = 150
-    # print imin, imax, jc, s.shape
-    # ax2.contourf(s[imin:imax,jc,:100].T)
-    # ax2.plot([ic-imin,ic-imin], [0,100], 'k-', linewidth=1)
-    # ax3.contourf(s[ic, imin:imax,:100].T)
-    # ax3.plot([ic-imin,ic-imin], [0,100], 'k-', linewidth=1)
-    # fig.savefig(os.path.join(path_out_figs, fig_name))
-    # plt.close(fig)
-    # del s
+    # # plot configuration test file
+    # plot_configuration(ic, jc)
 
     # compute radius
     for i in range(irange):
@@ -79,22 +56,20 @@ def main():
     print ''
     print('-------- compute radial velocity -------- ')
     uv_list = ['u', 'v']
-    t0 = tmin
-    it = 0
-    k0 = 0
     v_rad = np.zeros((nt, nx, ny, kmax))
+    v_tan = np.zeros((nt, nx, ny, kmax))
     for it, t0 in enumerate(times):
         print('t=' + str(t0))
         fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
         rootgrp = nc.Dataset(fullpath_in, 'r')
         for k0 in range(kmax):
+            print('   k=' + str(k0))
             v_hor = np.zeros((2, nx, ny))
             v_hor[0,:,:] = rootgrp.groups['fields'].variables['u'][:,:,k0]
             v_hor[1,:,:] = rootgrp.groups['fields'].variables['v'][:,:,k0]
-            v_rad[it, :, :, k0] = compute_radial_vel(v_hor, th_field)
+            v_rad[it, :, :, k0], v_tan[it, :, :, k0] = compute_radial_vel(v_hor, th_field)
         rootgrp.close()
-    create_vrad_field(v_rad, kmax)
-
+    create_vrad_field(v_rad, v_tan, kmax)
 
 
 
@@ -109,24 +84,178 @@ def main():
     for var_name in var_list:
         data_dict_av[var_name] = np.zeros((nt, rmax, kmax))
     v_rad_av = np.zeros((nt, rmax, kmax))
+    v_tan_av = np.zeros((nt, rmax, kmax))
 
-    # t0 = tmin
-    # it = 0
-    # k0 = 0
     for it, t0 in enumerate(times):
         fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
         data_dict = read_in_vars(fullpath_in, var_list)
         print('running t='+str(t0))
         for k in range(kmax):
             v_rad_av[it, :, k] = compute_average_var(v_rad[it, :, :, k], rmax, r_field)
+            v_tan_av[it, :, k] = compute_average_var(v_tan[it, :, :, k], rmax, r_field)
             for var_name in var_list:
                 data_dict_av[var_name][it, :, k] = compute_average_var(data_dict[var_name][:,:,k], rmax, r_field)
 
-    dump_statistics_file(data_dict_av, v_rad_av, var_list, file_name)
+    dump_statistics_file(data_dict_av, v_rad_av, v_tan_av, var_list, file_name)
+
+
+    #
+    # # ''' plotting '''
+    plot_radially_averaged_vars()
+
+    return
+
+
+# _______________________________
+
+def create_vrad_field(v_rad, v_tan, kmax):
+    path_out = os.path.join(path, 'fields_v_rad')
+    if not os.path.exists(path_out):
+        os.mkdir(path_out)
+    file_name = 'v_rad.nc'
+    rootgrp = nc.Dataset(os.path.join(path_out, file_name), 'w', format='NETCDF4')
+
+    rootgrp.createDimension('time', None)
+    rootgrp.createDimension('nx', nx)
+    rootgrp.createDimension('ny', ny)
+    rootgrp.createDimension('nz', kmax)
+
+    var = rootgrp.createVariable('v_rad', 'f8', ('time', 'nx', 'ny', 'nz'))
+    var[:,:,:,:] = v_rad
+    var = rootgrp.createVariable('v_tan', 'f8', ('time', 'nx', 'ny', 'nz'))
+    var[:,:,:,:] = v_tan
+    rootgrp.close()
+
+    return
+# _______________________________
+
+def create_statistics_file(var_list, file_name, timerange, rmax):
+    print('-------- create statistics file -------- ')
+    print(path_out_data + ', ' + file_name)
+    print('')
+
+    nt = len(timerange)
+
+    rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'w', format='NETCDF4')
+
+    dims_grp = rootgrp.createGroup('dimensions')
+    dims_grp.createDimension('dx', dx[0])
+    dims_grp.createDimension('dy', dx[1])
+    dims_grp.createDimension('dz', dx[2])
+    dims_grp.createDimension('nz', kmax)
+    var = dims_grp.createVariable('krange', 'f8', ('nz'))
+    var[:] = np.arange(0, kmax, dtype=np.int)
+
+    ts_grp = rootgrp.createGroup('timeseries')
+    ts_grp.createDimension('nt', nt)
+    var = ts_grp.createVariable('time', 'f8', ('nt'))
+    var.unit = "s"
+    var[:] = timerange
+
+    stats_grp = rootgrp.createGroup('stats')
+    stats_grp.createDimension('nt', nt)
+    stats_grp.createDimension('nr', rmax)
+    stats_grp.createDimension('nz', kmax)
+    ri_range = np.arange(0, rmax, dtype=np.int)
+    r_range = np.arange(0, rmax, dtype=np.double)*dx[0]
+    var = stats_grp.createVariable('r', 'f8', ('nr'))
+    var.unit = 'm'
+    var[:] = r_range
+    var = stats_grp.createVariable('ri', 'f8', ('nr'))
+    var.unit = '-'
+    var[:] = ri_range
+
+    var = stats_grp.createVariable('v_rad', 'f8', ('nt', 'nr', 'nz'))
+    var.long_name = 'radial velocity'
+    var.units = "m/s"
+    var = stats_grp.createVariable('v_tan', 'f8', ('nt', 'nr', 'nz'))
+    var.long_name = 'tangential velocity'
+    var.units = "m/s"
+
+    for var_name in var_list:
+        stats_grp.createVariable(var_name, 'f8', ('nt', 'nr', 'nz'))
+        # var.units = "m"
+
+    rootgrp.close()
+
+    return
 
 
 
-    # ''' plotting '''
+def dump_statistics_file(data_dictionary, v_rad_av, v_tan_av, var_list, file_name):
+    print('-------- dump statistics file -------- ')
+    rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'r+', format='NETCDF4')
+
+    # ts_grp = rootgrp.groups['timeseries']
+    # var = ts_grp.variables['r_av']
+    # var[it,ik] = rim_vel_av[0]
+    # var = ts_grp.variables['U_av']
+    # var[it,ik] = rim_vel_av[1]
+
+    stats_grp = rootgrp.groups['stats']
+    for var_name in var_list:
+        var = stats_grp.variables[var_name]
+        var[:,:,:] = data_dictionary[var_name][:,:,:]
+    var = stats_grp.variables['v_rad']
+    var[:, :, :] = v_rad_av[:, :, :]
+    var = stats_grp.variables['v_tan']
+    var[:, :, :] = v_tan_av[:, :, :]
+
+    rootgrp.close()
+    return
+
+
+def read_in_vars(fullpath_in, var_list):
+
+    var_dict = {}
+
+    rootgrp = nc.Dataset(fullpath_in, 'r')
+    for var_name in var_list:
+        var = rootgrp.groups['fields'].variables[var_name]
+        data = var[:, :, :]
+        var_dict[var_name] = data
+    rootgrp.close()
+
+    return var_dict
+
+
+# _______________________________
+
+def compute_average_var(var1, rmax, r_field):
+
+    var1_av = np.zeros(rmax, dtype=np.double)
+    count = np.zeros(rmax, dtype=np.int)
+    for i in range(nx):
+        for j in range(ny):
+            r = r_field[i, j]
+            count[r] += 1
+            var1_av[r] += var1[i, j]
+
+    for r in range(rmax):
+        if count[r] > 0:
+            var1_av[r] /= count[r]
+
+    return var1_av
+# _______________________________
+
+def compute_radial_vel(uv, th_field):
+    ur = np.zeros((nx,ny), dtype=np.double)
+    uth = np.zeros((nx,ny), dtype=np.double)
+    for i in range(nx):
+        for j in range(ny):
+            th = th_field[i,j]
+            # # clockwise rotation
+            # ur[i,j] = uv[0,i,j]*np.cos(th) + uv[1,i,j]*np.sin(th)
+            # counter-clockwise rotation
+            ur[i,j] = uv[0,i,j]*np.cos(th) - uv[1,i,j]*np.sin(th)
+            uth[i,j] = uv[0,i,j]*np.cos(th) + uv[1,i,j]*np.sin(th)
+    return ur, uth
+
+# _______________________________
+# _______________________________
+
+def plot_radially_averaged_vars():
+
     # print path_out_figs
     # print ''
     # # read in file
@@ -190,144 +319,33 @@ def main():
     # data_stats.close()
 
     return
-
-
 # _______________________________
-
-def create_vrad_field(v_rad, kmax):
-    path_out = os.path.join(path, 'fields_v_rad')
-    if not os.path.exists(path_out):
-        os.mkdir(path_out)
-    file_name = 'v_rad.nc'
-    rootgrp = nc.Dataset(os.path.join(path_out, file_name), 'w', format='NETCDF4')
-
-    rootgrp.createDimension('time', None)
-    rootgrp.createDimension('nx', nx)
-    rootgrp.createDimension('ny', ny)
-    rootgrp.createDimension('nz', kmax)
-
-    var = rootgrp.createVariable('v_rad', 'f8', ('time', 'nx', 'ny', 'nz'))
-    var[:,:,:,:] = v_rad
-    rootgrp.close()
-
-    return
-# _______________________________
-
-def create_statistics_file(var_list, file_name, timerange, rmax):
-    print('-------- create statistics file -------- ')
-    print(path_out_data + ', ' + file_name)
-    print('')
-
-    nt = len(timerange)
-
-    rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'w', format='NETCDF4')
-
-    dims_grp = rootgrp.createGroup('dimensions')
-    dims_grp.createDimension('dx', dx[0])
-    dims_grp.createDimension('dy', dx[1])
-    dims_grp.createDimension('dz', dx[2])
-    dims_grp.createDimension('nz', kmax)
-    var = dims_grp.createVariable('krange', 'f8', ('nz'))
-    var[:] = np.arange(0, kmax, dtype=np.int)
-
-    ts_grp = rootgrp.createGroup('timeseries')
-    ts_grp.createDimension('nt', nt)
-    var = ts_grp.createVariable('time', 'f8', ('nt'))
-    var.unit = "s"
-    var[:] = timerange
-
-    stats_grp = rootgrp.createGroup('stats')
-    stats_grp.createDimension('nt', nt)
-    stats_grp.createDimension('nr', rmax)
-    stats_grp.createDimension('nz', kmax)
-    ri_range = np.arange(0, rmax, dtype=np.int)
-    r_range = np.arange(0, rmax, dtype=np.double)*dx[0]
-    var = stats_grp.createVariable('r', 'f8', ('nr'))
-    var.unit = 'm'
-    var[:] = r_range
-    var = stats_grp.createVariable('ri', 'f8', ('nr'))
-    var.unit = '-'
-    var[:] = ri_range
-
-    var = stats_grp.createVariable('v_rad', 'f8', ('nt', 'nr', 'nz'))
-    var.long_name = 'radial velocity'
-    var.units = "m/s"
-
-    for var_name in var_list:
-        stats_grp.createVariable(var_name, 'f8', ('nt', 'nr', 'nz'))
-        # var.units = "m"
-
-    rootgrp.close()
-
-    return
-
-
-
-def dump_statistics_file(data_dictionary, v_rad_av, var_list, file_name):
-    print('-------- dump statistics file -------- ')
-    rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'r+', format='NETCDF4')
-
-    # ts_grp = rootgrp.groups['timeseries']
-    # var = ts_grp.variables['r_av']
-    # var[it,ik] = rim_vel_av[0]
-    # var = ts_grp.variables['U_av']
-    # var[it,ik] = rim_vel_av[1]
-
-    stats_grp = rootgrp.groups['stats']
-    for var_name in var_list:
-        var = stats_grp.variables[var_name]
-        var[:,:,:] = data_dictionary[var_name][:,:,:]
-    var = stats_grp.variables['v_rad']
-    var[:, :, :] = v_rad_av[:, :, :]
-
-    # prof_grp = rootgrp.groups['profiles']
-    # var = prof_grp.variables['k_dumped']
-    # var[ik] = 1
-
-    rootgrp.close()
-    return
-
-
-def read_in_vars(fullpath_in, var_list):
-
-    var_dict = {}
-
+def plot_configuration(ic, jc):
+    fig_name = 'test_config.png'
+    fullpath_in = os.path.join(path, 'fields', '100.nc')
     rootgrp = nc.Dataset(fullpath_in, 'r')
-    for var_name in var_list:
-        var = rootgrp.groups['fields'].variables[var_name]
-        data = var[:, :, :]
-        var_dict[var_name] = data
-    rootgrp.close()
+    s = rootgrp.groups['fields'].variables['s'][:, :, :]
+    fig, (ax1,ax2,ax3) = plt.subplots(1, 3, sharey='none', figsize=(16, 5))
+    ax1.contourf(s[:,:,0].T)
+    ax1.plot(ic, jc, 'ko', markersize=5)
+    ax1.plot([ic,ic], [0,ny], 'k-')
+    ax1.plot([0,nx], [jc,jc], 'k-')
+    if nx > 200:
+        imin = 300
+        imax = 500
 
-    return var_dict
-
-
-# _______________________________
-
-def compute_average_var(var1, rmax, r_field):
-
-    var1_av = np.zeros(rmax, dtype=np.double)
-    count = np.zeros(rmax, dtype=np.int)
-    for i in range(nx):
-        for j in range(ny):
-            r = r_field[i, j]
-            count[r] += 1
-            var1_av[r] += var1[i, j]
-
-    for r in range(rmax):
-        if count[r] > 0:
-            var1_av[r] /= count[r]
-
-    return var1_av
-# _______________________________
-
-def compute_radial_vel(uv, th_field):
-    ur = np.zeros((nx,ny), dtype=np.double)
-    for i in range(nx):
-        for j in range(ny):
-            th = th_field[i,j]
-            ur[i,j] = uv[0,i,j]*np.cos(th) + uv[1,i,j]*np.sin(th)
-    return ur
+    else:
+        imin = 50
+        imax = 150
+    print imin, imax, jc, s.shape
+    ax2.contourf(s[imin:imax,jc,:100].T)
+    ax2.plot([ic-imin,ic-imin], [0,100], 'k-', linewidth=1)
+    ax3.contourf(s[ic, imin:imax,:100].T)
+    ax3.plot([ic-imin,ic-imin], [0,100], 'k-', linewidth=1)
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+    del s
+    return
 
 # _______________________________
 # _______________________________
