@@ -6,6 +6,7 @@ import argparse
 import json as simplejson
 import os
 import sys
+import time
 
 def main():
 
@@ -20,22 +21,52 @@ def main():
     args = parser.parse_args()
 
     times, nml = set_input_parameters(args)
-    nt = len(times)
+
     ic_arr, jc_arr = define_geometry(nml)
-
-    r_field = np.zeros((nx, ny), dtype=np.int)    # radius
-    th_field = np.zeros((nx, ny), dtype=np.int)   # angle
-
     ic = ic_arr[0]
     jc = jc_arr[0]
     irange = np.minimum(nx-ic, ic)
     jrange = np.minimum(ny-jc, jc)
     rmax = np.int(np.ceil(np.sqrt(irange**2 + jrange**2)))
 
-    # # plot configuration test file
-    # plot_configuration(ic, jc)
+    # plot configuration test file
+    plot_configuration(ic, jc)
 
-    # compute radius
+
+    print ''
+    print('----- compute radius ----------- ')
+    # OUTPUT: th_field[nx, ny], r_field[nx, ny]
+    th_field, r_field = compute_radius(ic, jc, irange, jrange)
+
+
+    print ''
+    print('----- compute radial velocity ----------- ')
+    # creates file with v_rad[nt, nx, ny, kmax]
+    file_name_vradfield = 'v_rad.nc'    # in 'fields_v_rad'
+    compute_radial_velocity(th_field, times, file_name_vradfield)
+
+
+    print ''
+    print('----- compute angular average ----------- ')
+    # OUTPUT: file with angular averaged statistics, e.g. v_rad[nt, nr, nz]
+    file_name_stats = 'stats_radial_averaged_test.nc'
+    compute_angular_average(r_field, rmax, times, file_name_stats)
+
+
+    print ''
+    print('----- plotting ----------- ')
+    file_name_stats = 'stats_radial_averaged_test.nc'
+    plot_radially_averaged_vars(times, file_name_stats)
+
+    return
+
+
+# _______________________________
+# _______________________________
+def compute_radius(ic, jc, irange, jrange):
+    r_field = np.zeros((nx, ny), dtype=np.int)  # radius
+    th_field = np.zeros((nx, ny), dtype=np.int)  # angle
+
     for i in range(irange):
         for j in range(jrange):
             r_field[ic+i,jc+j] = np.round(np.sqrt(i**2+j**2))
@@ -49,12 +80,13 @@ def main():
             th_field[ic-i, jc+j] = aux
             th_field[ic-i, jc+j] = -aux
             th_field[ic+i, jc-j] = -aux
+    return th_field, r_field
 
+# _______________________________
 
+def compute_radial_velocity(th_field, times, filename):
+    nt = len(times)
 
-    # compute radial velocity
-    print ''
-    print('-------- compute radial velocity -------- ')
     uv_list = ['u', 'v']
     v_rad = np.zeros((nt, nx, ny, kmax))
     v_tan = np.zeros((nt, nx, ny, kmax))
@@ -69,50 +101,60 @@ def main():
             v_hor[1,:,:] = rootgrp.groups['fields'].variables['v'][:,:,k0]
             v_rad[it, :, :, k0], v_tan[it, :, :, k0] = compute_radial_vel(v_hor, th_field)
         rootgrp.close()
-    create_vrad_field(v_rad, v_tan, kmax)
-
-
-
-
-    # compute angular average
-    var_list = ['w', 's', 'phi', 'temperature']
-
-    file_name = 'stats_radial_averaged.nc'
-    create_statistics_file(var_list, file_name, times, rmax)
-
-    data_dict_av = {}
-    for var_name in var_list:
-        data_dict_av[var_name] = np.zeros((nt, rmax, kmax))
-    v_rad_av = np.zeros((nt, rmax, kmax))
-    v_tan_av = np.zeros((nt, rmax, kmax))
-
-    for it, t0 in enumerate(times):
-        fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
-        data_dict = read_in_vars(fullpath_in, var_list)
-        print('running t='+str(t0))
-        for k in range(kmax):
-            v_rad_av[it, :, k] = compute_average_var(v_rad[it, :, :, k], rmax, r_field)
-            v_tan_av[it, :, k] = compute_average_var(v_tan[it, :, :, k], rmax, r_field)
-            for var_name in var_list:
-                data_dict_av[var_name][it, :, k] = compute_average_var(data_dict[var_name][:,:,k], rmax, r_field)
-
-    dump_statistics_file(data_dict_av, v_rad_av, v_tan_av, var_list, file_name)
-
-
-    #
-    # # ''' plotting '''
-    plot_radially_averaged_vars()
-
+    create_vrad_field(v_rad, v_tan, kmax, filename)
+    del v_rad, v_tan
     return
-
 
 # _______________________________
 
-def create_vrad_field(v_rad, v_tan, kmax):
+def compute_angular_average(r_field, rmax, times, file_name):
+    t0 = time.time()
+    var_list = ['w', 's', 'phi', 'temperature']
+    # file_name = 'stats_radial_averaged_test.nc'
+    create_statistics_file(var_list, file_name, times, rmax)
+
+    print('1', time.time() - t0)
+    t0 = time.time()
+    data_dict_av = {}
+    for var_name in var_list:
+        data_dict_av[var_name] = np.zeros((rmax, kmax))
+    v_rad_av = np.zeros((rmax, kmax))
+    v_tan_av = np.zeros((rmax, kmax))
+    print('2', time.time() - t0)
+    t0 = time.time()
+    # read in v_rad-field
+    file_name_vradfield = 'v_rad.nc'
+    # file_name_vradfield = 'v_rad_kmax20.nc'
+    fullpath_in = os.path.join(path, 'fields_v_rad', file_name_vradfield)
+    rootgrp = nc.Dataset(fullpath_in)
+    v_rad = rootgrp.variables['v_rad'][:, :, :, :]
+    v_tan = rootgrp.variables['v_tan'][:, :, :, :]
+    rootgrp.close()
+    if v_rad.shape[3] < kmax:
+        print('v_rad-fields contain less levels than kmax=' + str(kmax))
+        sys.exit()
+    print('3', time.time() - t0)
+    t0 = time.time()
+    for it, t0 in enumerate(times):
+        fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
+        data_dict = read_in_vars(fullpath_in, var_list)
+        print('running t=' + str(t0))
+        v_rad_av[:, :] = compute_average_var(v_rad[it, :, :, :kmax], rmax, r_field)
+        v_tan_av[:, :] = compute_average_var(v_tan[it, :, :, :kmax], rmax, r_field)
+        for var_name in var_list:
+            data_dict_av[var_name][:, :] = compute_average_var(data_dict[var_name][:, :, :], rmax, r_field)
+
+        dump_statistics_file(data_dict_av, v_rad_av, v_tan_av, var_list, it, file_name)
+    return
+
+# _______________________________
+# _______________________________
+
+def create_vrad_field(v_rad, v_tan, kmax, file_name):
     path_out = os.path.join(path, 'fields_v_rad')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
-    file_name = 'v_rad.nc'
+    # file_name = 'v_rad.nc'
     rootgrp = nc.Dataset(os.path.join(path_out, file_name), 'w', format='NETCDF4')
 
     rootgrp.createDimension('time', None)
@@ -182,7 +224,7 @@ def create_statistics_file(var_list, file_name, timerange, rmax):
 
 
 
-def dump_statistics_file(data_dictionary, v_rad_av, v_tan_av, var_list, file_name):
+def dump_statistics_file(data_dictionary, v_rad_av, v_tan_av, var_list, it, file_name):
     print('-------- dump statistics file -------- ')
     rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'r+', format='NETCDF4')
 
@@ -195,11 +237,11 @@ def dump_statistics_file(data_dictionary, v_rad_av, v_tan_av, var_list, file_nam
     stats_grp = rootgrp.groups['stats']
     for var_name in var_list:
         var = stats_grp.variables[var_name]
-        var[:,:,:] = data_dictionary[var_name][:,:,:]
+        var[it, :, :] = data_dictionary[var_name][:, :]
     var = stats_grp.variables['v_rad']
-    var[:, :, :] = v_rad_av[:, :, :]
+    var[it, :, :] = v_rad_av[:, :]
     var = stats_grp.variables['v_tan']
-    var[:, :, :] = v_tan_av[:, :, :]
+    var[it, :, :] = v_tan_av[:, :]
 
     rootgrp.close()
     return
@@ -212,7 +254,7 @@ def read_in_vars(fullpath_in, var_list):
     rootgrp = nc.Dataset(fullpath_in, 'r')
     for var_name in var_list:
         var = rootgrp.groups['fields'].variables[var_name]
-        data = var[:, :, :]
+        data = var[:, :, :kmax]     # x, y, z
         var_dict[var_name] = data
     rootgrp.close()
 
@@ -221,21 +263,21 @@ def read_in_vars(fullpath_in, var_list):
 
 # _______________________________
 
-def compute_average_var(var1, rmax, r_field):
+def compute_average_var(var, rmax, r_field):
 
-    var1_av = np.zeros(rmax, dtype=np.double)
+    var_av = np.zeros((rmax, kmax), dtype=np.double)
     count = np.zeros(rmax, dtype=np.int)
     for i in range(nx):
         for j in range(ny):
             r = r_field[i, j]
             count[r] += 1
-            var1_av[r] += var1[i, j]
+            var_av[r, :] += var[i, j, :]
 
     for r in range(rmax):
         if count[r] > 0:
-            var1_av[r] /= count[r]
+            var_av[r] /= count[r]
 
-    return var1_av
+    return var_av
 # _______________________________
 
 def compute_radial_vel(uv, th_field):
@@ -254,69 +296,69 @@ def compute_radial_vel(uv, th_field):
 # _______________________________
 # _______________________________
 
-def plot_radially_averaged_vars():
+def plot_radially_averaged_vars(times, file_name):
 
-    # print path_out_figs
-    # print ''
-    # # read in file
+    print path_out_figs
+    print ''
+    # read in file
     # file_name = 'stats_radial_averaged.nc'
-    # data_stats = nc.Dataset(os.path.join(path_out_data, file_name), 'r')
-    # stats_grp = data_stats.groups['stats'].variables
-    # times_ = data_stats.groups['timeseries'].variables['time'][:]
-    # ta = np.where(times_ == tmin)[0][0]
-    # tb = np.where(times_ == tmax)[0][0]
-    # print ''
-    # print 'times'
-    # print times
-    # print times_
-    # print ta, tb
-    #
-    # # var = np.array('nt', 'nr', 'nz')
-    # r_range = stats_grp['r'][:]
-    #
-    # var_list = ['w', 'v_rad', 's']
-    # ncol = len(var_list)
-    # rmax_plot = 10e3
-    # irmax = np.where(r_range == rmax_plot)[0][0]
-    #
-    # for k0 in range(kmax):
-    #     print('-- k='+str(k0))
-    #     fig_name = 'radial_average_k'+str(k0)+'.png'
-    #     fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5*ncol, 5))
-    #     for i, ax in enumerate(axes):
-    #         var = stats_grp[var_list[i]][:,:,:]
-    #         max = np.amax(var[:, :irmax, :kmax])
-    #         min = np.amin(var[:, :irmax, :kmax])
-    #         if len(times) >= 2:
-    #             for it, t0 in enumerate(times_[1::2]):
-    #                 if it >= ta and it <= tb:
-    #                     count_color = 2 * np.double(it) / len(times)
-    #                     ax.plot(r_range[:irmax], var[2*it+1, :irmax, k0], color=cm.jet(count_color), label='t='+str(np.int(t0)))
-    #         else:
-    #             for it, t0 in enumerate(times_):
-    #                 if it >= ta and it <= tb:
-    #                     count_color = np.double(it) / len(times)
-    #                     ax.plot([0, r_range[irmax]], [0.,0.], 'k')
-    #                     ax.plot(r_range[:irmax], var[it, :irmax, k0], color=cm.jet(count_color), label='t='+str(t0))
-    #         if var_list[i] == 's':
-    #             ax.set_ylim(6850, max+10)
-    #         elif var_list[i] == 'w':
-    #             ax.set_ylim(-5, max)
-    #         else:
-    #             ax.set_ylim(min, max)
-    #         ax.set_title(var_list[i])
-    #         ax.set_xlabel('radius r  [m]')
-    #         ax.set_ylabel(var_list[i])
-    #     # axes[0].legend(loc='lower left', bbox_to_anchor=(0, 0.),
-    #     #            fancybox=True, shadow=True, ncol=4, fontsize=6)
-    #     axes[2].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
-    #                fancybox=True, shadow=True, ncol=1, fontsize=10)
-    #     plt.subplots_adjust(bottom=0.12, right=.9, left=0.04, top=0.9, wspace=0.15)
-    #     plt.suptitle('z='+str(k0*dx[2])+'m')
-    #     fig.savefig(os.path.join(path_out_figs, fig_name))
-    #     plt.close(fig)
-    # .
-    # data_stats.close()
+    data_stats = nc.Dataset(os.path.join(path_out_data, file_name), 'r')
+    stats_grp = data_stats.groups['stats'].variables
+    times_ = data_stats.groups['timeseries'].variables['time'][:]
+    ta = np.where(times_ == tmin)[0][0]
+    tb = np.where(times_ == tmax)[0][0]
+    print ''
+    print 'times'
+    print times
+    print times_
+    print ta, tb
+
+    # var = np.array('nt', 'nr', 'nz')
+    r_range = stats_grp['r'][:]
+
+    var_list = ['w', 'v_rad', 's']
+    ncol = len(var_list)
+    rmax_plot = 10e3
+    irmax = np.where(r_range == rmax_plot)[0][0]
+
+    for k0 in range(kmax):
+        print('-- k='+str(k0))
+        fig_name = 'radial_average_k'+str(k0)+'.png'
+        fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5*ncol, 5))
+        for i, ax in enumerate(axes):
+            var = stats_grp[var_list[i]][:,:,:]
+            max = np.amax(var[:, :irmax, :kmax])
+            min = np.amin(var[:, :irmax, :kmax])
+            if len(times) >= 2:
+                for it, t0 in enumerate(times_[1::2]):
+                    if it >= ta and it <= tb:
+                        count_color = 2 * np.double(it) / len(times)
+                        ax.plot(r_range[:irmax], var[2*it+1, :irmax, k0], color=cm.jet(count_color), label='t='+str(np.int(t0)))
+            else:
+                for it, t0 in enumerate(times_):
+                    if it >= ta and it <= tb:
+                        count_color = np.double(it) / len(times)
+                        ax.plot([0, r_range[irmax]], [0.,0.], 'k')
+                        ax.plot(r_range[:irmax], var[it, :irmax, k0], color=cm.jet(count_color), label='t='+str(t0))
+            if var_list[i] == 's':
+                ax.set_ylim(6850, max+10)
+            elif var_list[i] == 'w':
+                ax.set_ylim(-5, max)
+            else:
+                ax.set_ylim(min, max)
+            ax.set_title(var_list[i])
+            ax.set_xlabel('radius r  [m]')
+            ax.set_ylabel(var_list[i])
+        # axes[0].legend(loc='lower left', bbox_to_anchor=(0, 0.),
+        #            fancybox=True, shadow=True, ncol=4, fontsize=6)
+        axes[2].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
+                   fancybox=True, shadow=True, ncol=1, fontsize=10)
+        plt.subplots_adjust(bottom=0.12, right=.9, left=0.04, top=0.9, wspace=0.15)
+        plt.suptitle('z='+str(k0*dx[2])+'m')
+        fig.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
+
+    data_stats.close()
 
     return
 # _______________________________
