@@ -22,9 +22,18 @@ def main():
 
     # times, nml = set_input_parameters(args)
     nml = set_input_parameters(args)
+    path_data = os.path.join(path, 'data_analysis')
+    path_out_figs = os.path.join(path, 'figs_radial_average')
+    if not os.path.exists(path_out_figs):
+        os.mkdir(path_out_figs)
+    print ''
+    print 'paths:'
+    print path_data
+    print path_out_figs
+    print ''
 
 
-
+    # IDEA:
     # (1) read in averaged w
     #       path_data = os.path.join(path, 'data_analysis')
     #       file_name = 'stats_radial_averaged.nc'
@@ -40,9 +49,9 @@ def main():
     # - function of decay of w from rmax to r..
 
     # read in file
-    # file_name = 'stats_radial_averaged.nc'
-    print('!!!!!!!!!!!!!!!!! filename')
-    file_name = 'stats_radial_averaged_.nc'
+    file_name = 'stats_radial_averaged.nc'
+    # print('!!!!!!!!!!!!!!!!! filename')
+    # file_name = 'stats_radial_averaged_.nc'
     data_stats = nc.Dataset(os.path.join(path_data, file_name), 'r')
     nz_stats = data_stats.groups['dimensions'].dimensions['nz']
     krange_ = data_stats.groups['dimensions'].variables['krange'][:]
@@ -65,8 +74,14 @@ def main():
 
     # k0 = np.int(args.k0)
     ''' krange '''
-    kmin = np.int(args.kmin)
-    kmax = np.int(args.kmax)
+    if args.kmin:
+        kmin = np.int(args.kmin)
+    else:
+        kmin = 0
+    if args.kmax:
+        kmax = np.int(args.kmax)
+    else:
+        kmax = 1
     # krange = np.arange(kmin, kmax+1)
     krange = [np.int(k) for k in krange_ if k>=kmin and k<=kmax]
     print('krange: ', krange_)
@@ -84,15 +99,14 @@ def main():
     # declare arrays
     wmin = np.zeros((nt, kmax - kmin+1))            # minimum(w)
     wmax = np.zeros((nt, kmax - kmin+1))            # maximum(w)
-    wint = np.zeros((nt, kmax - kmin+1))            # w at inner rim edge
-    wout = np.zeros((nt, kmax - kmin+1))            # w at outer rim edge
+    wint = np.zeros((nt, kmax - kmin+1))            # w at inner rim edge (defined as inner edge of downdraft zone)
+    wout = np.zeros((nt, kmax - kmin+1))            # w at outer rim edge (defined as outer edge of updraft zone)
     wcrit = 1e-2
-    rcenter = np.zeros((2, nt, kmax - kmin + 1))    # radius of w approx zero ('center' of vortex)
+    rcenter = np.zeros((2, nt, kmax - kmin + 1))    # 'center' of vortex: radius wher w approx zero
     rmin = np.zeros((nt, kmax - kmin + 1))          # radius of wmin
     rmax = np.zeros((nt, kmax - kmin + 1))          # radius of wmax
     rint = np.zeros((nt, kmax-kmin + 1))            # radius of inner rim edge, defined as maximum(w(r<rmin))
     rout = np.zeros((nt, kmax-kmin + 1))            # radius at outer rim edge, defined as point of w(r>rmax)<wcrit
-
 
 
     rmax_plot = 7e3
@@ -107,8 +121,8 @@ def main():
 
         for k0 in range(kmin, kmax+1):
             # indices of max / min
-            delta = np.int(500./dx[2])
-            wmin[it, k0] = np.amin(var[it, delta:, k0])
+            delta = np.int(500./dx[0])
+            wmin[it, k0] = np.amin(var[it, delta:, k0])     # search min(w) in interval r=[500,rmax]
             imin = np.argmin(var[it, delta:, k0]) + delta
             rmin[it, k0] = r_range[imin]
             wmax[it, k0] = np.amax(var[it, :, k0])
@@ -128,7 +142,7 @@ def main():
             rcenter[0, it, k0] = icenter
             rcenter[1, it, k0] = r_range[icenter]
 
-            # find inner edge of rim: defined as maximuma(w(r<min))
+            # find inner edge of rim: defined as maximum(w(r<min))
             delta = 3
             wint[it, k0] = np.amax(var[it, delta:imin, k0])
             iint = np.argmax(var[it, delta:imin, k0]) + delta
@@ -174,101 +188,20 @@ def main():
                   it, t0, times, k0)
 
 
-
-
-        print 'plotting rim geometry'
-        # plotting rcenter
-        fig_name = 'rim_geometry_t' + str(np.int(t0)) + '.png'
-        ncol = 4
-        fig, axes = plt.subplots(1, ncol, sharey='all', figsize=(5 * ncol, 5))
-        count_color = 2 * np.double(it) / len(times)
-        ax = axes[0]
-        ax.plot(rcenter[1,it,:], krange, '-o', label='r center')
-        ax.plot(rmin[it,:], krange, '-o', label='r min')
-        ax.plot(rmax[it,:], krange, '-o', label='r max')
-        ax.legend(fontsize=10)
-        ax.set_xlabel('radius r  [m]')
-        ax.set_ylabel('height k  (dz='+str(dx[2])+'m)')
-        ax = axes[1]
-        ax.plot(wmin[it, :], krange, '-o', label='w min')
-        ax.plot(wmax[it, :], krange, '-o', label='w max')
-        ax.plot([0,0], [krange[0], krange[-1]], 'k-')
-        ax.legend(fontsize=10)
-        ax.set_xlabel('w [m/s]')
-        ax.set_ylabel('height k  (dz=' + str(dx[2]) + 'm)')
-        ax = axes[2]
-        ax.plot(omega_minus, krange, '-o', label='om+')
-        ax.plot(omega_plus, krange, '-o', label='om-')
-        ax.legend(fontsize=10)
-        ax.set_xlabel('vorticity = dw/dr')
-        ax.set_ylabel('height k  (dz=' + str(dx[2]) + 'm)')
-        ax = axes[3]
-        ax.plot(rmin[it, :], krange, '-o', label='r min')
-        ax.plot(rcenter[1,it, :], krange, '-o', label='r center')
-        ax.plot(rmax[it, :], krange, '-o', label='r max')
-        ax.plot(rint[it, :], krange, '-o', label='r int')
-        ax.plot(rout[it, :], krange, '-o', label='r out')
-        ax.legend(fontsize=10)
-        ax.set_title('inner rim edge')
-        plt.suptitle('t=' + str(t0) + 's')
-        fig.savefig(os.path.join(path_out_figs, fig_name))
-        plt.close(fig)
-
-
+    ''' plotting '''
     fig_name = 'rim_width' + '.png'
-    ncol = 3
-    fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5 * ncol, 5))
-    ax = axes[0]
-    for it, t0 in enumerate(times[2:]):
-        count_color = np.double(it) / len(times)
-        ax.plot(rmin[it, :]-rcenter[1,it,:], krange, '-', label='t='+str(t0), color=plt.cm.get_cmap('coolwarm')(count_color))
-        ax.plot(rmax[it, :]-rcenter[1,it,:], krange, '-', color=plt.cm.get_cmap('coolwarm')(count_color))
-    ax.set_xlim(-3e3,1.2e3)
-    ax.set_title('rmin-rcenter; rmax-rcenter')
-    ax.set_xlabel('r-rcenter')
-    ax.set_ylabel('height k  (dz=' + str(dx[2]) + 'm)')
-    ax.legend(loc='upper left', bbox_to_anchor=(0, 1),
-              fancybox=True, shadow=True, ncol=2, fontsize=6)
-    ax = axes[1]
-    ax.set_title('rmax-rmin')
-    ax.fill_between(times, 200, 500, color='0.8')
-    ax.plot([400,400],[0,3e3],'k', linewidth=1)
-    for k0 in krange:
-        count_color = np.double(k0) / len(krange)
-        ax.plot(times, rmax[:,k0]-rmin[:, k0], '-', label='z='+str(k0*dx[2])+'m',
-                color=plt.cm.get_cmap('coolwarm')(count_color), linewidth=2)
-    ax.set_xlim(0,3500)
-    ax.set_ylim(0,3e3)
-    ax.legend(loc='upper left', bbox_to_anchor=(0,1),
-              fancybox=True, shadow=True, ncol=3, fontsize=8)
-    ax.set_ylabel('radius r  [m]')
-    ax.set_xlabel('times')
-    ax = axes[2]
-    for it, t0 in enumerate(times[2:]):
-        count_color = np.double(it) / len(times)
-        ax.plot(rout[it, :]-rcenter[1,it,:], krange, '-', label='t='+str(t0), color=plt.cm.get_cmap('bone')(count_color))
-        ax.plot(rint[it, :]-rcenter[1,it,:], krange, '-', color=plt.cm.get_cmap('coolwarm')(count_color))
-    # ax.set_xlim(-3e3,1.2e3)
-    ax.set_title('rint-rcenter; rout-rcenter')
-    ax.set_xlabel('r-rcenter')
-    ax.set_ylabel('height k  (dz=' + str(dx[2]) + 'm)')
-    # ax.plot((omega_minus + omega_plus)/2, krange, '-o', label='om')
-    # ax.plot(omega_plus, krange, '-o', label='om-')
-    ax.legend(loc='upper left', bbox_to_anchor=(1, 1),
-              fancybox=True, shadow=True, ncol=2, fontsize=6)
-    ax.set_xlabel('vorticity = dw/dr')
-    fig.savefig(os.path.join(path_out_figs, fig_name))
-    plt.close(fig)
+    plot_rim_width(rmin, rmax, rcenter, rint, rout, krange, times, times_, fig_name, path_out_figs)
 
 
+    ''' make output '''
     # output wmin, wmax into data_analysis/stats_radial_averaged.nc
-    print('!!! name output file')
-    file_name = 'stats_radial_averaged_.nc'
-    dump_minmax_profiles('wmax', wmax, kmin, kmax, tmin, tmax, file_name)
-    dump_minmax_profiles('wmin', wmin, kmin, kmax, tmin, tmax, file_name)
-    dump_minmax_profiles('r_wmin', rmin, kmin, kmax, tmin, tmax, file_name)
-    dump_minmax_profiles('r_wmax', rmax, kmin, kmax, tmin, tmax, file_name)
-    dump_minmax_profiles('r_wcenter', rcenter[1,:,:], kmin, kmax, tmin, tmax, file_name)
+    # print('!!! name output file')
+    file_name = 'stats_radial_averaged.nc'
+    dump_minmax_profiles('wmax', wmax, kmin, kmax, tmin, tmax, file_name, path_data)
+    dump_minmax_profiles('wmin', wmin, kmin, kmax, tmin, tmax, file_name, path_data)
+    dump_minmax_profiles('r_wmin', rmin, kmin, kmax, tmin, tmax, file_name, path_data)
+    dump_minmax_profiles('r_wmax', rmax, kmin, kmax, tmin, tmax, file_name, path_data)
+    dump_minmax_profiles('r_wcenter', rcenter[1,:,:], kmin, kmax, tmin, tmax, file_name, path_data)
     # dump_minmax_profiles('r_int', rint, kmin, kmax, tmin, tmax, file_name)
     # dump_minmax_profiles('r_out', rout, kmin, kmax, tmin, tmax, file_name)
 
@@ -277,8 +210,70 @@ def main():
     return
 # _______________________________
 # _______________________________
+def plot_rim_width(rmin, rmax, rcenter, rint, rout, krange, times, times_, fig_name, path_out_figs):
+    ncol = 2
+    nrow = 2
+    fig, axes = plt.subplots(nrow, ncol, sharey='none', figsize=(5 * ncol, 5 * nrow))
+    ax = axes[0, 0]
+    for it, t0 in enumerate(times[2:]):
+        count_color = np.double(it) / len(times)
+        ax.plot(rmin[it, :] - rcenter[1, it, :], krange, '-', label='t=' + str(t0),
+                color=plt.cm.get_cmap('coolwarm')(count_color))
+        ax.plot(rmax[it, :] - rcenter[1, it, :], krange, '-', color=plt.cm.get_cmap('coolwarm')(count_color))
+    ax.set_xlim(-3e3, 1.2e3)
+    ax.set_title('rmin-rcenter; rmax-rcenter')
+    ax.set_xlabel('r-rcenter')
+    ax.set_ylabel('height k  (dz=' + str(dx[2]) + 'm)')
+    ax.legend(loc='upper left', bbox_to_anchor=(0, 1),
+              fancybox=True, shadow=True, ncol=2, fontsize=6)
+    ax = axes[0, 1]
+    ax.set_title('rmax-rmin')
+    ax.fill_between(times, 200, 500, color='0.8')
+    ax.plot([400, 400], [0, 3e3], 'k', linewidth=1)
+    for k0 in krange:
+        count_color = np.double(k0) / len(krange)
+        ax.plot(times_, rmax[:, k0] - rmin[:, k0], '-', label='z=' + str(k0 * dx[2]) + 'm',
+                color=plt.cm.get_cmap('coolwarm')(count_color), linewidth=2)
+    ax.set_xlim(0, 3500)
+    ax.set_ylim(0, 3e3)
+    ax.legend(loc='upper left', bbox_to_anchor=(0, 1),
+              fancybox=True, shadow=True, ncol=3, fontsize=8)
+    ax.set_ylabel('radius r  [m]')
+    ax.set_xlabel('times')
+    ax = axes[1, 0]
+    for it, t0 in enumerate(times[2:]):
+        count_color = np.double(it) / len(times)
+        ax.plot(rout[it, :] - rcenter[1, it, :], krange, '-', label='t=' + str(t0),
+                color=plt.cm.get_cmap('bone')(count_color))
+        ax.plot(rint[it, :] - rcenter[1, it, :], krange, '-', color=plt.cm.get_cmap('coolwarm')(count_color))
+    # ax.set_xlim(-3e3,1.2e3)
+    ax.set_title('rint-rcenter; rout-rcenter')
+    ax.set_xlabel('r-rcenter')
+    ax.set_ylabel('height k  (dz=' + str(dx[2]) + 'm)')
+    ax.legend(loc='upper left', bbox_to_anchor=(-0.3, 1),
+              fancybox=True, shadow=True, ncol=3, fontsize=6)
+    ax.set_xlabel('vorticity = dw/dr')
+    ax = axes[1, 1]
+    ax.set_title('rout-rcenter')
+    ax.fill_between(times, 1000, 2000, color='0.8')
+    ax.plot([400, 400], [0, 3e3], 'k', linewidth=1)
+    for k0 in krange:
+        count_color = np.double(k0) / len(krange)
+        ax.plot(times_, rout[:, k0] - rcenter[1, :, k0], '-', label='z=' + str(k0 * dx[2]) + 'm',
+                color=plt.cm.get_cmap('coolwarm')(count_color), linewidth=2)
+    ax.set_xlim(0, 3500)
+    ax.set_ylim(0, 3e3)
+    # ax.legend(loc='upper left', bbox_to_anchor=(0, 1),
+    #           fancybox=True, shadow=True, ncol=3, fontsize=8)
+    ax.set_ylabel('radius r  [m]')
+    ax.set_xlabel('times')
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+    return
+# _______________________________
+# _______________________________
 
-def dump_minmax_profiles(var_name, variable, kmin, kmax, tmin, tmax, file_name):
+def dump_minmax_profiles(var_name, variable, kmin, kmax, tmin, tmax, file_name, path_data):
     print('do output', var_name, tmin, tmax, kmin, kmax)
     rootgrp = nc.Dataset(os.path.join(path_data, file_name), 'r+')
     # rootgrp = nc.Dataset(os.path.join(path_data, file_name), 'a', format='NETCDF4')
@@ -286,9 +281,9 @@ def dump_minmax_profiles(var_name, variable, kmin, kmax, tmin, tmax, file_name):
     nz = rootgrp.groups['dimensions'].dimensions['nz'].size
     nt = rootgrp.groups['timeseries'].dimensions['nt'].size
     try:
-        prof_grp = rootgrp.groups['profiles']
+        prof_grp = rootgrp.groups['rim_width']
     except:
-        prof_grp = rootgrp.createGroup('profiles')
+        prof_grp = rootgrp.createGroup('rim_width')
         prof_grp.createDimension('nt', nt)
         prof_grp.createDimension('nz', nz)
     try:
@@ -372,18 +367,8 @@ def plot_test_fig(var, wmin, wmax, rmin, rcenter, rmax, imin, imax,
 # _______________________________
 def set_input_parameters(args):
     print ''' setting parameters '''
-    global path, path_data, path_out_figs
+    global path
     path = args.path
-
-    path_data = os.path.join(path, 'data_analysis')
-    path_out_figs = os.path.join(path, 'figs_radial_average')
-    if not os.path.exists(path_out_figs):
-        os.mkdir(path_out_figs)
-    print ''
-    print 'paths:'
-    print path_data
-    print path_out_figs
-    print ''
 
     global case_name
     case_name = args.casename
@@ -469,7 +454,7 @@ def define_geometry(nml):
             rstar = nml['init']['r']
         except:
             rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
+        irstar = np.int(np.round(rstar / dx[0]))
         # zstar = nml['init']['h']
         isep = 4 * irstar
         jsep = 0
@@ -484,7 +469,7 @@ def define_geometry(nml):
             rstar = nml['init']['r']
         except:
             rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
+        irstar = np.int(np.round(rstar / dx[0]))
         d = np.int(np.round(ny / 2))
         dhalf = np.int(np.round(ny / 4))
         a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
