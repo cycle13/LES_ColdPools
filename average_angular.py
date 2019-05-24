@@ -62,20 +62,20 @@ def main():
     print('----- compute radial velocity ----------- ')
     # creates file with v_rad[nt, nx, ny, kmax]
     file_name_vradfield = 'v_rad.nc'    # in 'fields_v_rad'
-    compute_radial_velocity(th_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data, path_out_data_2D)
+    compute_radial_velocity(th_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data_2D)
 
 
     print ''
     print('----- compute angular average ----------- ')
     # OUTPUT: file with angular averaged statistics, e.g. v_rad[nt, nr, nz]
     file_name_stats = 'stats_radial_averaged_test.nc'
-    compute_angular_average(r_field, rmax, times, file_name_stats)
+    compute_angular_average(r_field, rmax, times, file_name_stats, path_out_data, path_out_data_2D)
 
 
     print ''
     print('----- plotting ----------- ')
     file_name_stats = 'stats_radial_averaged_test.nc'
-    plot_radially_averaged_vars(times, file_name_stats, path_out_figs)
+    plot_radially_averaged_vars(times, file_name_stats, path_out_data, path_out_figs)
 
     return
 
@@ -170,45 +170,66 @@ def compute_radial_velocity(th_field, times, filename, ic, jc, rmax, path_out_da
     nt = len(times)
 
     uv_list = ['u', 'v']
-    v_rad = np.zeros((nt, nx, ny, kmax))
-    v_tan = np.zeros((nt, nx, ny, kmax))
+    # v_rad = np.zeros((nt, nx, ny, kmax))
+    # v_tan = np.zeros((nt, nx, ny, kmax))
+    v_rad_int = np.zeros((nt, nx, ny, kmax))
+    v_tan_int = np.zeros((nt, nx, ny, kmax))
     for it, t0 in enumerate(times):
         print('t=' + str(t0))
         fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
         rootgrp = nc.Dataset(fullpath_in, 'r')
         for k0 in range(kmax):
             print('   k=' + str(k0))
-            v_hor = np.zeros((2, nx, ny))
-            v_hor[0,:,:] = rootgrp.groups['fields'].variables['u'][:,:,k0]
-            v_hor[1,:,:] = rootgrp.groups['fields'].variables['v'][:,:,k0]
-            v_rad[it, :, :, k0], v_tan[it, :, :, k0] = compute_radial_vel(v_hor, th_field)
+            v_hor_int = np.zeros((2, nx, ny))
+            u = rootgrp.groups['fields'].variables['u'][:,:,k0]
+            for i in range(1,nx-1):
+                v_hor_int[0,i,:] = 0.5*(u[i,:]+u[i-1,:])
+            del u
+            v = rootgrp.groups['fields'].variables['v'][:,:,k0]
+            for j in range(1,ny-1):
+                v_hor_int[1,:,j] = 0.5*(v[:,j]+v[:,j-1])
+            del v
+            v_rad_int[it, :, :, k0], v_tan_int[it, :, :, k0] = compute_radial_vel(v_hor_int, th_field)
+            # v_hor = np.zeros((2, nx, ny))
+            # v_hor[0,:,:] = rootgrp.groups['fields'].variables['u'][:,:,k0]
+            # v_hor[1,:,:] = rootgrp.groups['fields'].variables['v'][:,:,k0]
+            # v_rad[it, :, :, k0], v_tan[it, :, :, k0] = compute_radial_vel(v_hor, th_field)
         rootgrp.close()
 
-        fig, axis = plt.subplots(2, 2)
-        ax1 = axis[0, 0]
-        ax2 = axis[0, 1]
-        ax3 = axis[1, 0]
-        ax4 = axis[1, 1]
-        circle1 = plt.Circle((ic, jc), rmax-10, fill=False, color='r', linewidth=2)
-        cf = ax1.imshow(v_rad[it, :, :, 0].T, origin='lower')
-        plt.colorbar(cf, ax=ax1, shrink=0.8)
-        ax1.add_artist(circle1)
-        cf = ax2.imshow(v_tan[it, :, :, 0].T, origin='lower')
-        # ax2.contour(v_hor[0, :, :].T)
-        # ax2.contour(v_hor[1, :, :].T, levels=[0.2, 0.5, 1], colors='k')
-        plt.colorbar(cf, ax=ax2, shrink=0.8)
-        cf = ax3.imshow(v_hor[0, :, :].T, origin='lower')
-        plt.colorbar(cf, ax=ax3, shrink=0.8)
-        cf = ax4.imshow(v_hor[1, :, :].T, origin='lower')
-        plt.colorbar(cf, ax=ax4, shrink=0.8)
-        ax1.plot(ic, jc, 'ow', markersize=12)
-        ax1.set_xlim(0, nx)
-        ax1.set_ylim(0, ny)
+        # v_hor_diff = v_hor - v_hor_int
+
+        fig, axis = plt.subplots(2, 2, figsize=(10,10))
+        ax11 = axis[0, 0]
+        ax12 = axis[0, 1]
+        ax21 = axis[1, 0]
+        ax22 = axis[1, 1]
+        circle1 = plt.Circle((ic, jc), rmax/2, fill=False, color='r', linewidth=2)
+        cf = ax11.imshow(v_rad_int[it, :, :, 0].T, origin='lower')
+        plt.colorbar(cf, ax=ax11, shrink=0.8)
+        ax11.set_title('radial velocity')
+        ax11.add_artist(circle1)
+        ax11.plot(ic, jc, 'ow', markersize=7)
+        cf = ax12.imshow(v_tan_int[it, :, :, 0].T, origin='lower')
+        ax12.set_title('tangential velocity')
+        plt.colorbar(cf, ax=ax12, shrink=0.8)
+        ax21.imshow(v_hor_int[0, :, :].T, origin='lower')
+        plt.colorbar(cf, ax=ax21, shrink=0.8)
+        ax21.set_title('u')
+        ax22.imshow(v_hor_int[1, :, :].T, origin='lower')
+        plt.colorbar(cf, ax=ax22, shrink=0.8)
+        ax22.set_title('v')
+        ax11.set_xlim(0, nx)
+        ax11.set_ylim(0, ny)
+        ax12.set_xlim(0, nx)
+        ax12.set_ylim(0, ny)
+        plt.tight_layout()
         plt.savefig(os.path.join(path_out_data_2D, 'test_field_vrad_vtan_t'+str(t0)+'.png'))
         plt.close()
 
-    create_vrad_field(v_rad, v_tan, kmax, filename, path_out_data_2D)
-    del v_rad, v_tan
+
+    create_vrad_field(v_rad_int, v_tan_int, kmax, filename, path_out_data_2D)
+    # del v_rad, v_tan
+    del v_rad_int, v_tan_int
     return
 
 # _______________________________
@@ -230,7 +251,6 @@ def compute_angular_average(r_field, rmax, times, file_name, path_out_data, path
     t0 = time.time()
     # read in v_rad-field
     file_name_vradfield = 'v_rad.nc'
-    # file_name_vradfield = 'v_rad_kmax20.nc'
     fullpath_in = os.path.join(path_out_data_2D, file_name_vradfield)
     rootgrp = nc.Dataset(fullpath_in)
     v_rad = rootgrp.variables['v_rad'][:, :, :, :]
@@ -389,8 +409,8 @@ def compute_radial_vel(uv, th_field):
     for i in range(nx):
         for j in range(ny):
             th = th_field[i,j]
-            # # clockwise rotation
-            # ur[i,j] = uv[0,i,j]*np.cos(th) + uv[1,i,j]*np.sin(th)
+            # # # clockwise rotation
+            # # ur[i,j] = uv[0,i,j]*np.cos(th) + uv[1,i,j]*np.sin(th)
             # counter-clockwise rotation
             ur[i,j] = uv[0,i,j]*np.cos(th) + uv[1,i,j]*np.sin(th)
             uth[i,j] = -uv[0,i,j]*np.sin(th) + uv[1,i,j]*np.cos(th)
@@ -399,7 +419,7 @@ def compute_radial_vel(uv, th_field):
 # _______________________________
 # _______________________________
 
-def plot_radially_averaged_vars(times, file_name, path_out_figs):
+def plot_radially_averaged_vars(times, file_name, path_out_data, path_out_figs):
 
     print path_out_figs
     print ''
@@ -525,7 +545,7 @@ def set_input_parameters(args):
 
     global kmax
     if args.kmax:
-        kmax = np.int(args.kmax)
+        kmax = np.int(args.kmax)+1
     else:
         kmax = nz
 
