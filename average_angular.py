@@ -20,7 +20,25 @@ def main():
     parser.add_argument("--kmax")
     args = parser.parse_args()
 
-    times, nml = set_input_parameters(args)
+    times, nml, id = set_input_parameters(args)
+    radius = np.int(np.double(id[12:]) / dx[0])
+
+    path_out_data = os.path.join(path, 'data_analysis')
+    if not os.path.exists(path_out_data):
+        os.mkdir(path_out_data)
+    path_out_data_2D = os.path.join(path, 'fields_v_rad')
+    if not os.path.exists(path_out_data):
+        os.mkdir(path_out_data)
+    path_out_figs = os.path.join(path, 'figs_radial_average')
+    if not os.path.exists(path_out_figs):
+        os.mkdir(path_out_figs)
+    print ''
+    print 'paths:'
+    print path_out_data
+    print path_out_data_2D
+    print path_out_figs
+    print path_fields
+    print ''
 
     ic_arr, jc_arr = define_geometry(nml)
     ic = ic_arr[0]
@@ -30,20 +48,21 @@ def main():
     rmax = np.int(np.ceil(np.sqrt(irange**2 + jrange**2)))
 
     # plot configuration test file
-    plot_configuration(ic, jc)
+    plot_configuration(ic, jc, path_out_data_2D)
 
 
     print ''
     print('----- compute radius ----------- ')
     # OUTPUT: th_field[nx, ny], r_field[nx, ny]
-    th_field, r_field = compute_radius(ic, jc, irange, jrange)
+    file_name_rthfield = 'r_th_field.nc'    # in 'fields_v_rad'
+    th_field, r_field = compute_radius(ic, jc, irange, jrange, file_name_rthfield, path_out_data_2D)
 
 
     print ''
     print('----- compute radial velocity ----------- ')
     # creates file with v_rad[nt, nx, ny, kmax]
     file_name_vradfield = 'v_rad.nc'    # in 'fields_v_rad'
-    compute_radial_velocity(th_field, times, file_name_vradfield)
+    compute_radial_velocity(th_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data, path_out_data_2D)
 
 
     print ''
@@ -56,35 +75,98 @@ def main():
     print ''
     print('----- plotting ----------- ')
     file_name_stats = 'stats_radial_averaged_test.nc'
-    plot_radially_averaged_vars(times, file_name_stats)
+    plot_radially_averaged_vars(times, file_name_stats, path_out_figs)
 
     return
 
 
 # _______________________________
 # _______________________________
-def compute_radius(ic, jc, irange, jrange):
+def compute_radius(ic, jc, irange, jrange, file_name, path_out_data_2D):
     r_field = np.zeros((nx, ny), dtype=np.int)  # radius
-    th_field = np.zeros((nx, ny), dtype=np.int)  # angle
-
+    th_field = np.zeros((nx, ny), dtype=np.double)  # angle
+    # irange = 10
+    # jrange = 10
     for i in range(irange):
         for j in range(jrange):
-            r_field[ic+i,jc+j] = np.round(np.sqrt(i**2+j**2))
-            r_field[ic-i,jc+j] = r_field[ic+i,jc+j]
-            r_field[ic-i,jc-j] = r_field[ic+i,jc+j]
-            r_field[ic+i,jc-j] = r_field[ic+i,jc+j]
+            r_field[ic+i, jc+j] = np.round(np.sqrt(i**2+j**2))
+            r_field[ic-i, jc+j] = r_field[ic+i,jc+j]
+            r_field[ic-i, jc-j] = r_field[ic+i,jc+j]
+            r_field[ic+i, jc-j] = r_field[ic+i,jc+j]
             if i == 0:
                 i = 1e-9
-            aux = np.arctan(j/i)
+            aux = np.arctan(np.double(j)/i)
+            # print(aux, np.pi-aux, np.pi + aux, 2*np.pi - aux)
             th_field[ic+i, jc+j] = aux
-            th_field[ic-i, jc+j] = aux
-            th_field[ic-i, jc+j] = -aux
-            th_field[ic+i, jc-j] = -aux
+            th_field[ic-i, jc+j] = np.pi - aux
+            th_field[ic-i, jc-j] = np.pi + aux
+            th_field[ic+i, jc-j] = 2*np.pi - aux
+
+    # th_range = np.zeros((2, 4 * nx), dtype=np.double)
+    # th_range_aux = np.zeros((nx, ny), dtype=np.int)
+    # r0 = 45
+    # count = 0
+    # for i in range(nx):
+    #     for j in range(ny):
+    #         if r_field[i,j] < r0 + 1 and r_field[i,j] > r0 -1:
+    #             th_range_aux[i, j] = 1
+    #             th_range[0, count] = r_field[i,j]
+    #             th_range[1, count] = th_field[i,j]
+    #             count += 1
+    #
+
+    fullpath_out = os.path.join(path_out_data_2D, file_name)
+
+
+
+
+    fig, axis = plt.subplots(3, 2)
+    ax1 = axis[0,0]
+    ax2 = axis[0,1]
+    ax3 = axis[1,0]
+    ax4 = axis[1,1]
+    ax5 = axis[2,0]
+    ax6 = axis[2,1]
+    cf = ax1.imshow(r_field[ic-irange:ic+irange+1,jc-jrange:jc+jrange+1].T, origin='lower')
+    plt.colorbar(cf, ax=ax1)
+    cf = ax2.imshow(th_field[ic-irange:ic+irange+1,jc-jrange:jc+jrange+1].T, origin='lower')
+    plt.colorbar(cf, ax=ax2)
+    cf = ax3.imshow(r_field[ic-irange:ic+irange+1,jc-jrange:jc+jrange+1].T, origin='lower')
+    # cf = ax3.imshow(th_range_aux[ic-irange:ic+irange+1,jc-jrange:jc+jrange+1].T, origin='lower')
+    plt.colorbar(cf, ax=ax3)
+    cf = ax5.imshow(np.cos(th_field)[ic-irange:ic+irange+1,jc-jrange:jc+jrange+1].T, origin='lower')
+    cf = ax6.imshow(np.sin(th_field)[ic-irange:ic+irange+1,jc-jrange:jc+jrange+1].T, origin='lower')
+    # plt.colorbar(cf, ax=ax4)
+    # ax4.plot(th_range[1, :])
+    plt.savefig(os.path.join(path_out_data_2D, 'test_field.png'))
+    plt.close()
+
+
+
+
+    # rootgrp = nc.Dataset(fullpath_out, 'w', format='NETCDF4')
+    # nx_ = 200
+    # rootgrp.createDimension('nx', nx_)
+    # rootgrp.createDimension('ny', nx_)
+    #
+    # # var = rootgrp.createVariable('a', 'f8', ('nx'))
+    # # var[:] = np.ones(nx)
+    # var = rootgrp.createVariable('b', 'f8', ('nx', 'nx'))
+    # var[:,:] = np.ones((nx_, nx_))
+    #
+    # # var = rootgrp.createVariable('r_field', 'f8', ('nx', 'ny'))
+    # # var[:, :] = r_field[:,:]
+    # # var = rootgrp.createVariable('th_field', 'f8', ('nx', 'ny'))
+    # # print('aaa', var.shape, th_field.shape)
+    # # var[:,:] = np.ones(shape=var.shape)
+    # # var[:, :] = th_field[:,:]
+    # rootgrp.close()
+
     return th_field, r_field
 
 # _______________________________
 
-def compute_radial_velocity(th_field, times, filename):
+def compute_radial_velocity(th_field, times, filename, ic, jc, rmax, path_out_data_2D):
     nt = len(times)
 
     uv_list = ['u', 'v']
@@ -101,17 +183,41 @@ def compute_radial_velocity(th_field, times, filename):
             v_hor[1,:,:] = rootgrp.groups['fields'].variables['v'][:,:,k0]
             v_rad[it, :, :, k0], v_tan[it, :, :, k0] = compute_radial_vel(v_hor, th_field)
         rootgrp.close()
-    create_vrad_field(v_rad, v_tan, kmax, filename)
+
+        fig, axis = plt.subplots(2, 2)
+        ax1 = axis[0, 0]
+        ax2 = axis[0, 1]
+        ax3 = axis[1, 0]
+        ax4 = axis[1, 1]
+        circle1 = plt.Circle((ic, jc), rmax-10, fill=False, color='r', linewidth=2)
+        cf = ax1.imshow(v_rad[it, :, :, 0].T, origin='lower')
+        plt.colorbar(cf, ax=ax1, shrink=0.8)
+        ax1.add_artist(circle1)
+        cf = ax2.imshow(v_tan[it, :, :, 0].T, origin='lower')
+        # ax2.contour(v_hor[0, :, :].T)
+        # ax2.contour(v_hor[1, :, :].T, levels=[0.2, 0.5, 1], colors='k')
+        plt.colorbar(cf, ax=ax2, shrink=0.8)
+        cf = ax3.imshow(v_hor[0, :, :].T, origin='lower')
+        plt.colorbar(cf, ax=ax3, shrink=0.8)
+        cf = ax4.imshow(v_hor[1, :, :].T, origin='lower')
+        plt.colorbar(cf, ax=ax4, shrink=0.8)
+        ax1.plot(ic, jc, 'ow', markersize=12)
+        ax1.set_xlim(0, nx)
+        ax1.set_ylim(0, ny)
+        plt.savefig(os.path.join(path_out_data_2D, 'test_field_vrad_vtan_t'+str(t0)+'.png'))
+        plt.close()
+
+    create_vrad_field(v_rad, v_tan, kmax, filename, path_out_data_2D)
     del v_rad, v_tan
     return
 
 # _______________________________
 
-def compute_angular_average(r_field, rmax, times, file_name):
+def compute_angular_average(r_field, rmax, times, file_name, path_out_data, path_out_data_2D):
     t0 = time.time()
     var_list = ['w', 's', 'phi', 'temperature']
     # file_name = 'stats_radial_averaged_test.nc'
-    create_statistics_file(var_list, file_name, times, rmax)
+    create_statistics_file(var_list, file_name, times, rmax, path_out_data)
 
     print('1', time.time() - t0)
     t0 = time.time()
@@ -125,7 +231,7 @@ def compute_angular_average(r_field, rmax, times, file_name):
     # read in v_rad-field
     file_name_vradfield = 'v_rad.nc'
     # file_name_vradfield = 'v_rad_kmax20.nc'
-    fullpath_in = os.path.join(path, 'fields_v_rad', file_name_vradfield)
+    fullpath_in = os.path.join(path_out_data_2D, file_name_vradfield)
     rootgrp = nc.Dataset(fullpath_in)
     v_rad = rootgrp.variables['v_rad'][:, :, :, :]
     v_tan = rootgrp.variables['v_tan'][:, :, :, :]
@@ -144,18 +250,15 @@ def compute_angular_average(r_field, rmax, times, file_name):
         for var_name in var_list:
             data_dict_av[var_name][:, :] = compute_average_var(data_dict[var_name][:, :, :], rmax, r_field)
 
-        dump_statistics_file(data_dict_av, v_rad_av, v_tan_av, var_list, it, file_name)
+        dump_statistics_file(data_dict_av, v_rad_av, v_tan_av, var_list, it, file_name, path_out_data)
     return
 
 # _______________________________
 # _______________________________
 
-def create_vrad_field(v_rad, v_tan, kmax, file_name):
-    path_out = os.path.join(path, 'fields_v_rad')
-    if not os.path.exists(path_out):
-        os.mkdir(path_out)
+def create_vrad_field(v_rad, v_tan, kmax, file_name, path_out_data_2D):
     # file_name = 'v_rad.nc'
-    rootgrp = nc.Dataset(os.path.join(path_out, file_name), 'w', format='NETCDF4')
+    rootgrp = nc.Dataset(os.path.join(path_out_data_2D, file_name), 'w', format='NETCDF4')
 
     rootgrp.createDimension('time', None)
     rootgrp.createDimension('nx', nx)
@@ -171,7 +274,7 @@ def create_vrad_field(v_rad, v_tan, kmax, file_name):
     return
 # _______________________________
 
-def create_statistics_file(var_list, file_name, timerange, rmax):
+def create_statistics_file(var_list, file_name, timerange, rmax, path_out_data):
     print('-------- create statistics file -------- ')
     print(path_out_data + ', ' + file_name)
     print('')
@@ -224,7 +327,7 @@ def create_statistics_file(var_list, file_name, timerange, rmax):
 
 
 
-def dump_statistics_file(data_dictionary, v_rad_av, v_tan_av, var_list, it, file_name):
+def dump_statistics_file(data_dictionary, v_rad_av, v_tan_av, var_list, it, file_name, path_out_data):
     print('-------- dump statistics file -------- ')
     rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'r+', format='NETCDF4')
 
@@ -289,14 +392,14 @@ def compute_radial_vel(uv, th_field):
             # # clockwise rotation
             # ur[i,j] = uv[0,i,j]*np.cos(th) + uv[1,i,j]*np.sin(th)
             # counter-clockwise rotation
-            ur[i,j] = uv[0,i,j]*np.cos(th) - uv[1,i,j]*np.sin(th)
-            uth[i,j] = uv[0,i,j]*np.cos(th) + uv[1,i,j]*np.sin(th)
+            ur[i,j] = uv[0,i,j]*np.cos(th) + uv[1,i,j]*np.sin(th)
+            uth[i,j] = -uv[0,i,j]*np.sin(th) + uv[1,i,j]*np.cos(th)
     return ur, uth
 
 # _______________________________
 # _______________________________
 
-def plot_radially_averaged_vars(times, file_name):
+def plot_radially_averaged_vars(times, file_name, path_out_figs):
 
     print path_out_figs
     print ''
@@ -316,7 +419,7 @@ def plot_radially_averaged_vars(times, file_name):
     # var = np.array('nt', 'nr', 'nz')
     r_range = stats_grp['r'][:]
 
-    var_list = ['w', 'v_rad', 's']
+    var_list = ['w', 'v_rad', 'v_tan', 's']
     ncol = len(var_list)
     rmax_plot = 10e3
     irmax = np.where(r_range == rmax_plot)[0][0]
@@ -362,29 +465,38 @@ def plot_radially_averaged_vars(times, file_name):
 
     return
 # _______________________________
-def plot_configuration(ic, jc):
+def plot_configuration(ic, jc, path_out):
     fig_name = 'test_config.png'
-    fullpath_in = os.path.join(path, 'fields', '100.nc')
+    fullpath_in = os.path.join(path, 'fields', '0.nc')
     rootgrp = nc.Dataset(fullpath_in, 'r')
     s = rootgrp.groups['fields'].variables['s'][:, :, :]
     fig, (ax1,ax2,ax3) = plt.subplots(1, 3, sharey='none', figsize=(16, 5))
-    ax1.contourf(s[:,:,0].T)
-    ax1.plot(ic, jc, 'ko', markersize=5)
+    ax1.imshow(s[:,:,0].T, origin='lower')
+    ax1.plot(ic, jc, 'ko', markersize=3)
     ax1.plot([ic,ic], [0,ny], 'k-')
     ax1.plot([0,nx], [jc,jc], 'k-')
-    if nx > 200:
-        imin = 300
-        imax = 500
+    di = 20
+    # print imin, imax, jc, s.shape
+    ax2.imshow(s[:,jc,:100].T, origin='lower')
+    ax2.plot([jc,jc], [0,100], 'k-', linewidth=1)
+    ax3.imshow(s[ic, :,:100].T, origin='lower')
+    ax3.plot([ic,ic], [0,100], 'k-', linewidth=1)
 
-    else:
-        imin = 50
-        imax = 150
-    print imin, imax, jc, s.shape
-    ax2.contourf(s[imin:imax,jc,:100].T)
-    ax2.plot([ic-imin,ic-imin], [0,100], 'k-', linewidth=1)
-    ax3.contourf(s[ic, imin:imax,:100].T)
-    ax3.plot([ic-imin,ic-imin], [0,100], 'k-', linewidth=1)
-    fig.savefig(os.path.join(path_out_figs, fig_name))
+    radius = np.int(np.double(os.path.basename(path[:-1])[12:])/dx[0])
+    circle1 = plt.Circle((ic, jc), radius, fill=False, color='r', linewidth=2)
+    circle2 = plt.Circle((ic+1, jc+1), radius, fill=False, color='r', linewidth=2)
+    circle3 = plt.Circle((ic-1, jc-1), radius, fill=False, color='r', linewidth=2)
+    ax1.add_artist(circle1)
+    ax1.add_artist(circle2)
+    ax1.add_artist(circle3)
+
+    ax1.set_xlim(ic-di,ic+di+1)
+    ax1.set_ylim(jc-di,jc+di+1)
+    ax2.set_xlim(ic-di,ic+di+1)
+    ax2.set_ylim(0,40)
+    ax3.set_xlim(jc-di,jc+di+1)
+    ax3.set_ylim(0,40)
+    fig.savefig(os.path.join(path_out, fig_name))
     plt.close(fig)
     del s
     return
@@ -393,27 +505,15 @@ def plot_configuration(ic, jc):
 # _______________________________
 def set_input_parameters(args):
     print ''' setting parameters '''
-    global path, path_fields, path_out_data, path_out_figs
+    global path, path_fields
     path = args.path
     path_fields = os.path.join(path, 'fields')
-
-    path_out_data = os.path.join(path, 'data_analysis')
-    if not os.path.exists(path_out_data):
-        os.mkdir(path_out_data)
-    path_out_figs = os.path.join(path, 'figs_radial_average')
-    if not os.path.exists(path_out_figs):
-        os.mkdir(path_out_figs)
-    print ''
-    print 'paths:'
-    print path_out_data
-    print path_out_figs
-    print path_fields
-    print ''
 
     global case_name
     case_name = args.casename
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
-    global nx, ny, nz, dx
+    id = os.path.basename(path[:-1])
+    global nx, ny, nz, dx, gw
     dx = np.ndarray(3, dtype=np.int)
     nx = nml['grid']['nx']
     ny = nml['grid']['ny']
@@ -450,7 +550,7 @@ def set_input_parameters(args):
     print('kmax ', kmax, 'nx ', nx)
     print('')
 
-    return times, nml
+    return times, nml, id
 
 # _______________________________
 
