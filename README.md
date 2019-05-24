@@ -12,6 +12,12 @@
 ***`define_cp_rim.py`*** [--casename CASENAME] [--path PATH] [--tmin TMIN] [--tmax TMAX] [--k0 K0] 
 > OUTPUT: figures in ``PATH/figs_cp_rim``
 
+Details:
+1. read in w-field, shift field (roll) and define partial domain where to look for cold pool
+2. mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)
+3. Define rim of cold pool as the outline of the mask; based on number of neighbours
+
+
 **(1b) Find inner and outer rim of mask based on number of neighbours and filling interior of mask**
 
 ***`define_cp_rim_v2.py`*** [--casename CASENAME] [--path PATH] [--tmin TMIN] [--tmax TMAX] [--kmin KMIN] [--kmax KMAX]
@@ -33,16 +39,19 @@
 `define_cp_rim_plottingfct.py`
 
 
-Details:
-(1a) `define_cp_rim.py`: Find outer rim of mask based on number of neighbours
-INPUT: [--casename CASENAME] [--path PATH] [--tmin TMIN] [--tmax TMAX] [--k0 K0]
-1. read in w-field, shift field (roll) and define partial domain where to look for cold pool
-2. mask 2D field and turn mask from boolean (True: w>w_c) into integer (1: w>w_c)
-3. Define rim of cold pool as the outline of the mask; based on number of neighbours
 
 
+#### (2) Definition of Cold Pool rim width:
+*Computes CP rim width based on dipole of vertical updraft w: distance between positions of maximum and 
+minimum vertical velocity at a given level (width=r(max(w))-r(min(w))) 
 
-#### (2) Computation of Cold Pool Height:
+***`rim_width.py`***
+[--casename CASENAME] [--path PATH] [--tmin TMIN] [--tmax TMAX] [--kmin KMIN][--kmax KMAX]
+
+> OUTPUT:
+> - figures in ``PATH/figs_radial_average``  
+
+#### (3) Computation of Cold Pool Height:
 *Computes the CP height based on threshold on entropy anomaly for each column, starting from the top*
 ***`plot_CP_height.py`*** [casename CASENAME] [path PATH] [--tmin TMIN] [--tmax TMAX] [--kmax KMAX] [--s_crit S_CRIT]
 > OUTPUT: stats-file and figures in ``PATH/figs_CP_height``
@@ -52,7 +61,7 @@ INPUT: [--casename CASENAME] [--path PATH] [--tmin TMIN] [--tmax TMAX] [--k0 K0]
 > - timeseries with domain maximum values of CP-height, max(w) and height(max(w))
 
 
- #### (3) Vorticity computation CP rim
+ #### (4) Vorticity computation CP rim
 ***`conceptual_model/vorticity_rim.py`*** [casename CASENAME][path PATH]
 
 *computes and saves 4D field (k=0,..kmax) for radial velocity and azimuthal average of all variables*
@@ -100,7 +109,8 @@ computed in definition of CP rim (read in file)
 ### ***averaging etc.***
 
 #### (1) Fields of reduced Dimension:
-***`convert_fields_smaller_k.py`*** [path PATH] [--kmin KMIN] [--kmax KMAX] [--k0 K0]
+***`convert_fields_smaller_k.py`*** [casename CASENAME] [path PATH] [--tmin TMIN] [--tmax TMAX]
+[--kmin KMIN] [--kmax KMAX] [--k0 K0][--k0 K0] [--vert BOOL] [--hor BOOL]
 
 *make new field of reduced number of levels (k=kmin..kmax) or single level (k=k0) and merged time*
 
@@ -112,8 +122,11 @@ given var_list and for all times
 - ``convert_file_for_varlist_vertsection.py``: one single output file with yz_crosssection for all variables in 
 given var_list and for all times
 
+- ``convert_file_for_varlist_horsection.py``: one single output file with xy_crosssection (at level ``k0``) 
+for all variables in given var_list and for all times
+
 - ``convert_file_for_singlevariable_onelevel.py:`` returns one file with all timesteps at one level (k=k0) for 
-given variable 
+single given variable 
 (used for Olga's tracers) 
 
 

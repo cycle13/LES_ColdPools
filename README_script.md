@@ -17,10 +17,24 @@
 
 
 ***(b) create file with merged time series***
-***`convert_fields_smaller_k.py`*** []
+***`convert_fields_smaller_k.py`*** [casename CASENAME] [path PATH]
+[--tmin TMIN] [--tmax TMAX] [--kmin KMIN] [--kmax KMAX] [--k0 K0] [--vert BOOL] [--hor BOOL]
+
+- ``convert_file_for_varlist.py``: one single output file of n levels (k=kmin..kmax) for all variables in 
+given var_list and for all times
+
+- ``convert_file_for_varlist_vertsection.py``: one single output file with yz_crosssection for all variables in 
+given var_list and for all times
+
+- ``convert_file_for_varlist_horsection.py``: one single output file with xy_crosssection (at level ``k0``) 
+for all variables in given var_list and for all times
+
+- ``convert_file_for_singlevariable_onelevel.py:`` returns one file with all timesteps at one level (``k0``) for 
+one given variable 
+(used for Olga's tracers) 
 
 
-***(b) plot min/max in domain and xy-crosssections:*** 
+***(c) plot min/max in domain and xy-crosssections:*** 
 
 ***`compute_minmax_all.py`***
 
