@@ -27,17 +27,17 @@ def main():
     if not os.path.exists(path_out_data):
         os.mkdir(path_out_data)
     path_out_data_2D = os.path.join(path, 'fields_v_rad')
-    if not os.path.exists(path_out_data):
-        os.mkdir(path_out_data)
+    if not os.path.exists(path_out_data_2D):
+        os.mkdir(path_out_data_2D)
     path_out_figs = os.path.join(path, 'figs_radial_average')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
     print ''
     print 'paths:'
-    print path_out_data
-    print path_out_data_2D
-    print path_out_figs
-    print path_fields
+    print 'data:    ', path_out_data
+    print 'data 2D: ', path_out_data_2D
+    print 'figs:    ', path_out_figs
+    print 'fields:  ', path_fields
     print ''
 
     ic_arr, jc_arr = define_geometry(nml)
@@ -68,7 +68,8 @@ def main():
     print ''
     print('----- compute angular average ----------- ')
     # OUTPUT: file with angular averaged statistics, e.g. v_rad[nt, nr, nz]
-    file_name_stats = 'stats_radial_averaged_test.nc'
+    # file_name_stats = 'stats_radial_averaged_test.nc'
+    file_name_stats = 'stats_radial_averaged.nc'
     compute_angular_average(r_field, rmax, times, file_name_stats, path_out_data, path_out_data_2D)
 
 
@@ -208,7 +209,7 @@ def compute_radial_velocity(th_field, times, filename, ic, jc, rmax, path_out_da
         plt.colorbar(cf, ax=ax11, shrink=0.8)
         ax11.set_title('radial velocity')
         ax11.add_artist(circle1)
-        ax11.plot(ic, jc, 'ow', markersize=7)
+        ax11.plot(ic-0.5, jc-0.5, 'ow', markersize=7)
         cf = ax12.imshow(v_tan_int[it, :, :, 0].T, origin='lower')
         ax12.set_title('tangential velocity')
         plt.colorbar(cf, ax=ax12, shrink=0.8)
@@ -349,6 +350,7 @@ def create_statistics_file(var_list, file_name, timerange, rmax, path_out_data):
 
 def dump_statistics_file(data_dictionary, v_rad_av, v_tan_av, var_list, it, file_name, path_out_data):
     print('-------- dump statistics file -------- ')
+    print(os.path.join(path_out_data, file_name))
     rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'r+', format='NETCDF4')
 
     # ts_grp = rootgrp.groups['timeseries']
@@ -474,7 +476,7 @@ def plot_radially_averaged_vars(times, file_name, path_out_data, path_out_figs):
             ax.set_ylabel(var_list[i])
         # axes[0].legend(loc='lower left', bbox_to_anchor=(0, 0.),
         #            fancybox=True, shadow=True, ncol=4, fontsize=6)
-        axes[2].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
+        axes[-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
                    fancybox=True, shadow=True, ncol=1, fontsize=10)
         plt.subplots_adjust(bottom=0.12, right=.9, left=0.04, top=0.9, wspace=0.15)
         plt.suptitle('z='+str(k0*dx[2])+'m')
