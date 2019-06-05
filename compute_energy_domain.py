@@ -4,6 +4,7 @@ import matplotlib.mlab as mlab
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 import matplotlib.colors as colors
+from matplotlib.colors import LogNorm
 import netCDF4 as nc
 import argparse
 import json as simplejson
@@ -11,6 +12,7 @@ import os
 
 # compute potential temperature by integrating over anomaly
 #   PE = \int dz g * (th_anomaly(z) - th_env(z)) * z
+# KE ~ v**2 = (v_rad**2 + v_tan**2 + w**2)
 
 # label_size = 8
 # plt.rcParams['xtick.labelsize'] = label_size
@@ -29,6 +31,7 @@ def main():
     parser.add_argument("path")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
+    parser.add_argument("--kmax")
     args = parser.parse_args()
 
     global cm_bwr, cm_grey, cm_vir, cm_hsv
@@ -42,8 +45,8 @@ def main():
     ''' create output file '''
     id = os.path.basename(path)
     print('id: ', id)
-    filename = 'CP_energy_' + id + '.nc'
-    create_output_file(filename, path_out)
+    filename_out = 'CP_energy_' + id + '_domain.nc'
+    create_output_file(filename_out, path_out)
 
     ''' (A) Potential Energy (PE) '''
     ''' (A1) for LES gravity current '''
@@ -81,11 +84,83 @@ def main():
 
 
 def compute_KE(ic,jc,irstar, path_in, path_fields):
-    # times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
-    #          and np.int(name[:-3]) >= tmin and np.int(name[:-3]) <= tmax]
-    # times.sort()
-    # files = [str(t) + '.nc' for t in times]
-    nt = len(files)
+    print ''
+    print('--- compute KE from 3D fields ---')
+    nt = len(times)
+    kmax = 100
+    krange = np.arange(0,20)
+
+    KE = np.zeros((nt))
+    KEd = np.zeros((nt))
+    KE_x = np.zeros((nt, nx))       # compute KE[x, jc, :] (columnwise integration over z)
+
+    try:
+        rootgrp = nc.Dataset(os.path.join(path_in, 'Stats.' + case_name + '.nc'))
+    except:
+        rootgrp = nc.Dataset(os.path.join(path_in, 'stats', 'Stats.' + case_name + '.nc'))
+    rho0 = rootgrp.groups['reference'].variables['rho0'][:]
+    # rho_unit = rootgrp.groups['reference'].variables['rho0'].units
+    rootgrp.close()
+
+    # 2. read in 3D fields & compute KE
+    # KE ~ v**2 = (u**2 + v**2 + w**2)
+    for it,t0 in enumerate(times):
+        print('--t=' + str(t0) + '--')
+        u = read_in_netcdf_fields('u', os.path.join(path_fields, str(t0)+'.nc'))[:,:,:kmax]
+        v = read_in_netcdf_fields('v', os.path.join(path_fields, str(t0)+'.nc'))[:,:,:kmax]
+        w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0)+'.nc'))[:,:,:kmax]
+        u2 = u * u
+        v2 = v * v
+        w2 = w * w
+        del u, v, w
+
+        aux = np.sum(np.sum(u2[:, :, :] + v2[:, :, :] + w2[:, :, :], axis=0), axis=0)
+        KEd[it] = 0.5*np.sum(aux)
+        KE[it] = 0.5 * dV * np.sum(rho0[:kmax] * aux)
+        for i in range(nx):
+            KE_x[it, i] = 0.5 * dV * np.sum(rho0[:kmax] * (u2[i,jc,:] + v2[i,jc,:] + w2[i,jc,:]) )
+
+
+    # plt.figure(figsize=(12,6))
+    # ax1 = plt.subplot(1,2,1)
+    # ax2 = plt.subplot(1,2,2)
+    # ax1.set_title('KE density')
+    # ax2.set_title('KE')
+    # ax1.plot(times[1:],KEd[1:])
+    # ax2.plot(times[1:],KE[1:])
+    # ax1.grid()
+    # ax2.grid()
+    # ax1.set_xlabel('time [s]')
+    # ax2.set_xlabel('time [s]')
+    # ax1.set_ylabel('KE density [J/kg]')
+    # ax2.set_ylabel('KE [J]')
+    # plt.suptitle('kinetic energy in rim (w>0.5m/s)')
+    #
+    # plt.savefig(os.path.join(path,'KE_density.png'))
+    # plt.close()
+
+    # fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(10,5), sharey='all')
+    # cf = ax0.contourf(KE_x[:,ic-irstar-100:ic+irstar+100])
+    # plt.colorbar(cf, ax=ax0)
+    # cf = ax1.contourf(KE_x[:,ic-irstar-100:ic+irstar+100],norm = LogNorm())
+    # plt.colorbar(cf, ax=ax1)
+    # ax0.set_xlabel('x')
+    # ax1.set_xlabel('x')
+    # plt.ylabel('time')
+    # plt.suptitle('Kinetic Energy KE[x,jc,:]')
+    # plt.savefig(os.path.join(path_out,'KE_x.png'))
+    # plt.close()
+
+
+    return KE, KEd, KE_x
+
+
+
+
+
+def compute_KE_CP_rim(ic,jc,irstar, path_in, path_fields):
+    print ''
+    print('--- compute KE in CP rim mask ---')
     nt = len(times)
     kmax = 100
     krange = np.arange(0,20)
@@ -182,6 +257,9 @@ def compute_KE(ic,jc,irstar, path_in, path_fields):
 
 
 def compute_PE(ic,jc,id,jd,nx_,ny_,case_name,path,path_fields):
+    print ''
+    print('--- compute PE ---')
+
     # 1. read in initial s-field
     s = read_in_netcdf_fields('s', os.path.join(path_fields,'0.nc'))
     s_ = s[ic-id:ic+id,jc-jd:jc+jd,:]
