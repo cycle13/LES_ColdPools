@@ -62,7 +62,7 @@ def main():
     print('----- compute radial velocity ----------- ')
     # creates file with v_rad[nt, nx, ny, kmax]
     file_name_vradfield = 'v_rad.nc'    # in 'fields_v_rad'
-    compute_radial_velocity(th_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data_2D)
+    compute_radial_velocity(th_field, r_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data_2D)
 
 
     print ''
@@ -75,7 +75,7 @@ def main():
 
     print ''
     print('----- plotting ----------- ')
-    file_name_stats = 'stats_radial_averaged_test.nc'
+    file_name_stats = 'stats_radial_averaged.nc'
     plot_radially_averaged_vars(times, file_name_stats, path_out_data, path_out_figs)
 
     return
@@ -167,7 +167,7 @@ def compute_radius(ic, jc, irange, jrange, file_name, path_out_data_2D):
 
 # _______________________________
 
-def compute_radial_velocity(th_field, times, filename, ic, jc, rmax, path_out_data_2D):
+def compute_radial_velocity(th_field, r_field, times, filename, ic, jc, rmax, path_out_data_2D):
     nt = len(times)
 
     uv_list = ['u', 'v']
@@ -228,7 +228,7 @@ def compute_radial_velocity(th_field, times, filename, ic, jc, rmax, path_out_da
         plt.close()
 
 
-    create_vrad_field(v_rad_int, v_tan_int, kmax, filename, path_out_data_2D)
+    create_vrad_field(v_rad_int, v_tan_int, r_field, kmax, filename, path_out_data_2D)
     # del v_rad, v_tan
     del v_rad_int, v_tan_int
     return
@@ -277,7 +277,7 @@ def compute_angular_average(r_field, rmax, times, file_name, path_out_data, path
 # _______________________________
 # _______________________________
 
-def create_vrad_field(v_rad, v_tan, kmax, file_name, path_out_data_2D):
+def create_vrad_field(v_rad, v_tan, r_field, kmax, file_name, path_out_data_2D):
     # file_name = 'v_rad.nc'
     rootgrp = nc.Dataset(os.path.join(path_out_data_2D, file_name), 'w', format='NETCDF4')
 
@@ -290,6 +290,8 @@ def create_vrad_field(v_rad, v_tan, kmax, file_name, path_out_data_2D):
     var[:,:,:,:] = v_rad
     var = rootgrp.createVariable('v_tan', 'f8', ('time', 'nx', 'ny', 'nz'))
     var[:,:,:,:] = v_tan
+    var = rootgrp.createVariable('r_field', 'f8', ('nx', 'ny'))
+    var[:,:] = r_field
     rootgrp.close()
 
     return

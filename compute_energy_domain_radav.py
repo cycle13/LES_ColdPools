@@ -17,7 +17,7 @@ import os
 # label_size = 8
 # plt.rcParams['xtick.labelsize'] = label_size
 # plt.rcParams['ytick.labelsize'] = label_size
-# plt.rcParams['lines.linewidth'] = 2
+plt.rcParams['lines.linewidth'] = 2
 # plt.rcParams['legend.fontsize'] = 8
 # plt.rcParams['axes.labelsize'] = 12
 # plt.rcParams['xtick.direction']='out'
@@ -117,10 +117,16 @@ def compute_KE_from_fields(times, id, filename_in, filename_out, path_fields, pa
     print('--- compute KE from 3D fields ---')
     nt = len(times)
     print('nt', nt)
-    KE = np.zeros((nt))
-    # KEd = np.zeros((nt))
-    # KE_r = np.zeros((nt, nr))  # compute KE[t, r, :] (columnwise integration over z)
-    # KE_sgs = np.zeros((nt))
+    KE = np.zeros((nt), dtype=np.double)
+    KE_3D = np.zeros((nt, nx, ny ,kmax), dtype=np.double)
+    KE_x = np.zeros((nt, nx), dtype=np.double)  # compute KE[t, r, :] (columnwise integration over z)
+    KE_x_int = np.zeros((nt, nx), dtype=np.double)  # compute KE[t, r, :] (columnwise integration over z)
+    # interpolated velocity fields
+    KE_int = np.zeros((nt), dtype=np.double)
+    KE_3D_int = np.zeros((nt, nx, ny ,kmax), dtype=np.double)
+    u_int = 0.
+    v_int = 0.
+    w_int = 0.
 
     # 1. read in reference density
     rootgrp = nc.Dataset(os.path.join(path, 'stats', 'Stats.' + case_name + '.nc'))
@@ -138,21 +144,107 @@ def compute_KE_from_fields(times, id, filename_in, filename_out, path_fields, pa
         u2 = u * u
         v2 = v * v
         w2 = w * w
-        del u, v, w
+        # del u, v, w
 
-        aux = np.sum(np.sum(u2[:,:,:] + v2[:,:,:] + w2[:,:,:], axis=0), axis=0)
-        KE[it] = 0.5 * dV * np.sum(rho0[:kmax] * aux)
-        # for i in range(nx):
-        #     KE_x[it, i] = 0.5 * dV * np.sum(rho0[:kmax] * (u2[i,jc,:] + v2[i,jc,:] + w2[i,jc,:]) )
+        jc = jc_arr[0]
+        for i in range(nx):
+            for j in range(ny):
+                for k in range(kmax):
+                    if i == 0:
+                        u_int = 0.5* ( u[i,j,k] + u[-1,j,k] )
+                    else:
+                        u_int = 0.5* ( u[i,j,k] + u[i-1,j,k] )  # periodic bcs
+                    if j == 0:
+                        v_int = 0.5* ( v[i,j,k] + v[i,-1,k] )
+                    else:
+                        v_int = 0.5* ( v[i,j,k] + v[i,j-1,k] )  # periodic bcs
+                    if k > 0:
+                        w_int = 0.5* ( w[i,j,k] + w[i,j,k-1] )
+                    else:
+                        w_int = 0.5* w[i,j,k]      # asymmetric bcs: w[i,j,-1]=0
 
-        ''' output '''
-        rootgrp = nc.Dataset(os.path.join(path_stats, filename_out), 'r+', format='NETCDF4')
-        ts_grp = rootgrp.groups['timeseries']
-        var = ts_grp.variables['KE_3D']
-        var[:] = KE[:]
-        rootgrp.close()
+                    KE_3D[it,i,j,k] = 0.5 * dV * rho0[k] * (u2[i,j,k] + v2[i,j,k] + w2[i,j,k])
+                    KE_3D_int[it,i,j,k] = 0.5 * dV * rho0[k] * ( u_int*u_int + v_int*v_int + w_int*w_int )
+            # KE_x[it, i] = 0.5 * dV * np.sum(rho0[:kmax] * (u2[i, jc, :] + v2[i, jc, :] + w2[i, jc, :]))
+            KE_x[it, i] = np.sum(KE_3D[it,i,jc,:])
+            KE_x_int[it, i] = np.sum(KE_3D_int[it,i,jc,:])
+
+        # aux = np.sum(np.sum(u2[:,:,:] + v2[:,:,:] + w2[:,:,:], axis=0), axis=0)
+        # KE[it] = 0.5 * dV * np.sum(rho0[:kmax] * aux)
+        KE[it] = np.sum(KE_3D[it,:,:,:])
+        KE_int[it] = np.sum(KE_3D_int[it,:,:,:])
+
+    # compute KE_r from KE[ijk] average_angular
+    # compare KE_r to KE_x
+    from average_angular import compute_angular_average
+
+    it = 3
+    fig, axis = plt.subplots(2,3, figsize=(25,15))
+    ax = axis[0,0]
+    ax.set_title('diff KE interpolation: max=' + str(np.round(np.amax(KE_3D[it,:,jc,1:]-KE_3D_int[it,:,jc,1:])))
+                 + ', min=' + str(np.round(np.amin(KE_3D[it,:,jc,1:]-KE_3D_int[it,:,jc,1:]))) + ')' )
+    ax.set_xlabel('z')
+    cf = ax.contourf(np.arange(nx)*dx[0], np.arange(kmax)*dx[2], (KE_3D[it,:,jc,:]-KE_3D_int[it,:,jc,:]).T )
+    plt.colorbar(cf, ax=ax, shrink=0.6, aspect=12)
+
+    ax = axis[0, 1]
+    ax.set_title('KE crosssection')
+    ax.set_xlabel('z')
+    ax.set_ylabel('x')
+    cf = ax.contourf(np.arange(nx) * dx[0], np.arange(kmax) * dx[2], KE_3D[it, :, jc, :].T)
+    plt.colorbar(cf, ax=ax, shrink=0.6, aspect=12)
+
+    ax = axis[0, 2]
+    ax.set_title('KE')
+    ax.plot(times, KE, label='no int')
+    ax.plot(times, KE_int, label='int')
+    ax.plot(times, np.sum(np.sum(np.sum(KE_3D[:,:,:,1:],axis=1),axis=1),axis=1), label='no int (k>0)')
+    ax.plot(times, np.sum(np.sum(np.sum(KE_3D_int[:,:,:,1:],axis=1),axis=1),axis=1), label='int (k>0)')
+    ax.legend(loc='best')
+
+    ax = axis[1,0]
+    ax.set_title('diff KE interpolation: max=' + str(np.round(np.amax(KE_x-KE_x_int)))
+                 + ', min=' + str(np.round(np.amin(KE_x-KE_x_int))) + ')')
+    ax.set_xlabel('z')
+    cf = ax.contourf(times, np.arange(nx) * dx[0], (KE_x[:, :]-KE_x_int[:, :]).T)
+    plt.colorbar(cf, ax=ax, shrink=0.6, aspect=12)
+
+    ax = axis[1,1]
+    ax.set_title('KE_x')
+    ax.set_xlabel('time')
+    ax.set_ylabel('x')
+    cf = ax.contourf(times, np.arange(nx)*dx[0], (KE_x[:,:]).T )
+    plt.colorbar(cf, ax=ax, shrink=0.6, aspect=12)
+
+    ax = axis[1,2]
+    ax.set_title('KE_x int')
+    ax.set_xlabel('time')
+    ax.set_ylabel('x')
+    cf = ax.contourf(times, np.arange(nx)*dx[0], (KE_x_int[:,:]).T )
+    plt.colorbar(cf, ax=ax, shrink=0.6, aspect=12)
+
+
+
+    plt.suptitle('t='+str(times[it]))
+    plt.tight_layout()
+    plt.savefig(os.path.join(path_figs, 'KE_3D_' + id + '.png'))
+    plt.close()
+
+
+
+    ''' output '''
+    rootgrp = nc.Dataset(os.path.join(path_stats, filename_out), 'r+', format='NETCDF4')
+    ts_grp = rootgrp.groups['timeseries']
+    var = ts_grp.variables['KE_3D']
+    var[:nt] = KE[:]
+    var = ts_grp.variables['KE_3D_int']
+    var[:nt] = KE_int[:]
+    rootgrp.close()
+
+
 
     return KE
+
 
 
 def compute_KE_from_radav(times, id, filename_in, filename_out, path_fields, path_stats, path_figs):
@@ -439,19 +531,24 @@ def compute_PE_from_fields(times, id, filename_in, filename_out,
     # PE = m*a*s        >>  [PE] = kg*m/s^2*m = kg*(m/s)^2
     PE_unround = np.zeros(nt, dtype=np.double)
     PE = np.zeros(nt, dtype=np.double)
+    PE_t = np.zeros(nt, dtype=np.double)
+    theta_env_t = np.zeros((nt,kmax), dtype=np.double)
     theta_diff_unround = np.zeros((nx,ny,kmax), dtype=np.double)
     theta_diff = np.zeros((nx,ny,kmax), dtype=np.double)
     for it, t0 in enumerate(times):
         print('--t=' + str(t0) + '--')
         s_in = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0) + '.nc'))[:, :, :kmax]
         theta = theta_s(s_in)
+        theta_env_t[it] = np.average(np.average(theta[i0 - di:i0 + di, j0 - di:j0 + di, :kmax], axis=0), axis=0)
         for k in range(kmax):
             diff = theta_env[k] - theta[:,:,k]
+            diff_t = theta_env_t[it,k] - theta[:,:,k]
             # theta_diff_unround[:, :, k] = theta_env[k] - theta[:,:,k]
             theta_diff_unround[:, :, k] = diff
             theta_diff[:,:,k] = np.ma.masked_where(theta_diff_unround[:,:,k] <= 0.02, theta_diff_unround[:,:,k])
             PE += z_half[k] * np.sum(theta_diff[:,:, k]) * dV * rho0[k]
             PE_unround += z_half[k] * np.sum(theta_diff_unround[:,:,k]) * dV * rho0[k]
+            PE_t += z_half[k] * np.sum(diff_t) * dV * rho0[k]
     PE = g/th_g * PE
     PE_unround = g/th_g * PE_unround
 
@@ -492,11 +589,51 @@ def compute_PE_from_fields(times, id, filename_in, filename_out,
     plt.close(fig)
 
 
+
+    fig, axis = plt.subplots(1, 3, figsize=(24, 8))
+    ax0 = axis[0]
+    ax1 = axis[1]
+    ax2 = axis[2]
+    ax1.set_title('PE density')
+    ax2.set_title('PE')
+
+    for it,t0 in enumerate(times):
+        if it == 0 or it == nt-1:
+            ax0.plot(theta_env_t[it], np.arange(kmax)*dx[2], color=cm_bwr(np.double(it)/nt), label='theta_env(t='+str(t0)+')')
+        else:
+            ax0.plot(theta_env_t[it], np.arange(kmax)*dx[2], color=cm_bwr(np.double(it)/nt))
+        ax0.plot([theta_env_t[it,0], theta_env_t[it,0]], [0,kmax*dx[2]], '--', color=cm_bwr(np.double(it)/nt))
+    ax0.legend(loc=1)
+    ax0.set_xlabel('theta  [K]')
+    ax0.set_ylabel('z')
+    ax0.plot(theta_env, np.arange(kmax) * dx[2], 'k', label='theta_env(z)')
+    ax0.plot([th_g, th_g], [0, kmax * dx[2]], 'k', label='theta_env(z=0)')
+
+    ax1.plot(times, PE, label='PE')
+    ax1.plot(times, PE_unround, label='PE unround')
+    ax1.plot(times, PE_t, label='PE_t')
+    # cbar = plt.colorbar(cf, ax=ax1, shrink=0.6, aspect=12)
+    ax1.legend()
+
+    ax2.plot(times, PE)
+
+    ax1.set_xlabel('time [s]')
+    ax2.set_xlabel('time [s]')
+    ax1.set_ylabel('radius [m]')
+    ax2.set_ylabel('PE [J]')
+
+    plt.suptitle('Potential Energy')
+    plt.tight_layout()
+    plt.savefig(os.path.join(path_figs, 'PE_' + id + '.png'))
+    plt.close(fig)
+
+
+
     ''' output '''
     rootgrp = nc.Dataset(os.path.join(path_stats, filename_out), 'r+', format='NETCDF4')
     ts_grp = rootgrp.groups['timeseries']
     var = ts_grp.variables['PE_3D']
-    var[:] = PE[:]
+    var[:nt] = PE[:]
     rootgrp.close()
 
     return
@@ -505,7 +642,7 @@ def compute_PE_from_fields(times, id, filename_in, filename_out,
 def compute_PE_from_radav(times, id, filename_in, filename_out,
                case_name, path, path_fields, path_stats, path_figs):
     print ''
-    print('--- compute PE ---')
+    print('--- compute PE from angular average ---')
     # 1. read in initial s-field
     # 2. convert entropy to potential temperature
     # 3. ??? convert potential temperature to density
@@ -516,7 +653,7 @@ def compute_PE_from_radav(times, id, filename_in, filename_out,
     file_radav = nc.Dataset(os.path.join(path, 'data_analysis', filename_in))
     time_in = file_radav.groups['timeseries'].variables['time'][:]
     radius = file_radav.groups['stats'].variables['r'][:]
-    krange = file_radav.groups['dimensions'].variables['krange'][:]
+    krange = file_radav.groups['dimensions'].variables['krange'][:kmax]
     s_in = file_radav.groups['stats'].variables['s'][:, :, :]       # s(nt, nr, nz)
     file_radav.close()
     nt = len(times)
@@ -588,39 +725,40 @@ def compute_PE_from_radav(times, id, filename_in, filename_out,
     for i,it in enumerate([0, 1, 3, 5, 10]):
         if it < nt:
             ax = axis[0,i]
-            min = np.amin(theta_diff_unround[it, :,:], axis=1)
-            max = np.amax(theta_diff_unround[it,:,:], axis=1)
-            coord = np.argmax(theta_diff_unround[it,:,:], axis=1)
-            print('min, max', np.amin(min), np.amax(max))
-
-            ax = axis[2,i]
-            ax.plot(radius, max, linewidth=3, label='max')
-            ax.plot(radius, -1e2*min, linewidth=3, label='-min')
-            ax.plot(radius, -1e2*np.round(min,1), linewidth=3, label='-min rounded')
-            ax.plot([radius[282],radius[282]], [0,300], 'k-')
-            ax.legend(loc=0)
-            if i==0:
-                ax.set_ylim(0,np.amax(max)+0.1)
-            ax.set_title('t='+str(times[it]) +
-                          ' (max(theta_diff): ir='+str(np.argmax(np.amax(theta_diff[it,:,:], axis=1)))+')')
-
-            ax = axis[0,i]
             min = np.amin(theta[it, :, :kmax])
             max = np.amax(theta[it, :, :kmax])
             cf = ax.contourf(radius[:nr], np.arange(kmax), theta_diff[it,:nr,:kmax].T,
                              levels=np.linspace(-4,4,9))#, norm=LogNorm())
             cbar = plt.colorbar(cf, ax=ax, shrink=0.6, aspect=20)
             ax.set_title('theta[r,z] - theta_env[z]')
-            # ax.plot([radius[282],radius[282]], [0,300], 'k-')
-            # ax.set_title('ir='+str(np.argmax(np.amax(theta_diff[it,:,:], axis=1))))
+            ax.set_xlabel('x')
+            ax.set_ylabel('z')
 
             ax = axis[1, i]
             min = np.amin(theta[it, :, :kmax])
             max = np.amax(theta[it, :, :kmax])
-            cf = ax.contourf(radius[:nr], np.arange(kmax), theta_diff[it, :nr, :kmax].T*radius[:nr],
-                             levels=np.linspace(-4, 10, 9))  # , norm=LogNorm())
+            cf = ax.contourf(radius[:nr], np.arange(kmax), theta_diff[it, :nr, :kmax].T*radius[:nr]*dxi,
+                             levels=np.linspace(-4, 40, 9))  # , norm=LogNorm())
             cbar = plt.colorbar(cf, ax=ax, shrink=0.6, aspect=20)
             ax.set_title('theta[r,z] - theta_env[z]')
+            ax.set_xlabel('x')
+            ax.set_ylabel('z')
+
+
+            ax = axis[2, i]
+            min = np.amin(theta_diff_unround[it, :, :], axis=1)
+            max = np.amax(theta_diff_unround[it, :, :], axis=1)
+            coord = np.argmax(theta_diff_unround[it, :, :], axis=1)
+            print('min, max', np.amin(min), np.amax(max))
+            ax.plot(radius, max, linewidth=3, label='max')
+            ax.plot(radius, -1e2 * min, linewidth=3, label='-min')
+            ax.plot(radius, -1e2 * np.round(min, 1), linewidth=3, label='-min rounded')
+            ax.plot([radius[282], radius[282]], [0, 300], 'k-')
+            ax.legend(loc=0)
+            if i == 0:
+                ax.set_ylim(0, np.amax(max) + 0.1)
+            ax.set_title('t=' + str(times[it]) +
+                         ' (max(theta_diff): ir=' + str(np.argmax(np.amax(theta_diff[it, :, :], axis=1))) + ')')
 
     plt.tight_layout()
     plt.savefig(os.path.join(path_figs, 'PE_theta_test.png'))
@@ -628,11 +766,17 @@ def compute_PE_from_radav(times, id, filename_in, filename_out,
 
 
 
-    fig, axis = plt.subplots(1, 2, figsize=(15, 5))
-    ax1 = axis[0]
-    ax2 = axis[1]
+    fig, axis = plt.subplots(1, 3, figsize=(15, 5))
+    ax0 = axis[0]
+    ax1 = axis[1]
+    ax2 = axis[2]
     ax1.set_title('PE density')
     ax2.set_title('PE')
+
+    ax0.plot(theta_env, krange, label='theta_env(z)')
+    ax0.plot([th_g, th_g], [krange[0],krange[-1]], label='theta_env(z=0)')
+    ax0.plot([theta_env[10], theta_env[10]], [krange[0],krange[-1]], label='theta_env(z=10)')
+    ax0.legend(loc='best')
 
     cf = ax1.contourf(times, radius, PE_r.T, levels=np.linspace(0,np.amax(PE_r), 10))
     cbar = plt.colorbar(cf, ax=ax1, shrink=0.6, aspect=12)
@@ -645,7 +789,7 @@ def compute_PE_from_radav(times, id, filename_in, filename_out,
 
     plt.suptitle('Potential Energy')
     plt.tight_layout()
-    plt.savefig(os.path.join(path_figs, 'PE_' + id + '.png'))
+    plt.savefig(os.path.join(path_figs, 'PE_' + id + '_radav.png'))
     plt.close(fig)
 
 
@@ -867,10 +1011,12 @@ def plot_KE(id, file_data, path_data, path_figs):
     KE_sgs_stats = root.groups['timeseries'].variables['KE_sgs_stats'][:]
     KE_sgs = root.groups['timeseries'].variables['KE_sgs'][:]
     KE_r = root.groups['profiles'].variables['KE_r'][:, :]
+    KE_x = root.groups['profiles'].variables['KE_x'][:, :]
     times = root.groups['dimensions'].variables['time'][:]
     radius = root.groups['dimensions'].variables['radius'][:]
     (nt, nr) = KE_r.shape
     root.close()
+
 
     fig, axis = plt.subplots(2, 3, figsize=(20, 12))
     ax1 = axis[0,0]
@@ -879,7 +1025,6 @@ def plot_KE(id, file_data, path_data, path_figs):
     ax1.set_title('KE(r)')
     ax2.set_title('KE')
     ax3.set_title('KE_3D / KE')
-
 
     cf = ax1.contourf(times, radius, KE_r.T)
     # cbar = plt.colorbar(cf, shrink=0.6, ticks=np.arange(min, max + 1, 1), aspect=12)
@@ -919,6 +1064,8 @@ def plot_KE(id, file_data, path_data, path_figs):
     plt.close(fig)
 
     return
+
+
 
 def plot_PE(id, filename_out, path_stats, path_figs):
 
@@ -987,6 +1134,7 @@ def set_input_output_parameters(args, filename_in):
     times = [np.int(t) for t in times_ if np.int(t) >= tmin and np.int(t) <= tmax]
     files = [str(np.int(t)) + '.nc' for t in times]
     print('times', times)
+    print('kmax', kmax)
     print ('')
     del times_
 
@@ -1130,6 +1278,7 @@ def create_output_file(times, filename_in, path_in, filename_out, path_out):
     dim_grp = rootgrp.createGroup('dimensions')
     dim_grp.createDimension('nt', nt)
     dim_grp.createDimension('nr', nr)
+    dim_grp.createDimension('nx', nx)
     var = dim_grp.createVariable('time', 'f8', ('nt'))
     var.units = "s"
     var[:] = times
@@ -1148,6 +1297,9 @@ def create_output_file(times, filename_in, path_in, filename_out, path_out):
     var = ts_grp.createVariable('KE_3D', 'f8', ('nt'))
     var.units = "(m/s)^2"
     var.title = "KE from 3D velocity fields"
+    var = ts_grp.createVariable('KE_3D_int', 'f8', ('nt'))
+    var.units = "(m/s)^2"
+    var.title = "KE from interpolated 3D velocity fields"
     # SGS KE
     #   KE computed from 3D fields and mean viscosity profile
     var = ts_grp.createVariable('KE_sgs_stats', 'f8', ('nt'))
@@ -1171,7 +1323,10 @@ def create_output_file(times, filename_in, path_in, filename_out, path_out):
     prof_grp = rootgrp.createGroup('profiles')
     prof_grp.createDimension('nt', nt)
     prof_grp.createDimension('nr', nr)
+    prof_grp.createDimension('nx', nx)
     var = prof_grp.createVariable('KE_r', 'f8', ('nt', 'nr'))
+    var.units = "J"
+    var = prof_grp.createVariable('KE_x', 'f8', ('nt', 'nx'))
     var.units = "J"
 
     # field_grp = rootgrp.createGroup('fields_2D')
