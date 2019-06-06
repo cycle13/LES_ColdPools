@@ -24,6 +24,16 @@ plt.rcParams['lines.linewidth'] = 2
 # plt.rcParams['ytick.direction']='out'
 # plt.rcParams['figure.titlesize'] = 35
 
+# COMPUTATION OF POTENTIAL ENERGY (PE) AND KINETIC ENERGY (KE)
+# - compute PE from azimuthally averaged entropy statistics
+# - compute PE from 3D field, using buoyancy
+# - compute absolute PE from 3D field, using density
+# - compute KE from azimuthally averaged velocity statistics
+# - compute KE from 3D velocity fields (with and without interpolation)
+# - compute SGS KE from Stats-file (ww) and using the viscosity
+
+
+
 def main():
     # Parse information from the command line
     parser = argparse.ArgumentParser(prog='LES_CP')
@@ -62,9 +72,10 @@ def main():
     ''' (A) Domain '''
     ''' (A1) Potential Energy (PE) '''
     PE = compute_PE_from_radav(times, id, filename_in, filename_out,
-                    case_name, path, path_fields, path_stats, path_figs)
+                    path_fields, path_stats, path_figs)
     PE = compute_PE_from_fields(times, id, filename_in, filename_out,
-                    case_name, path, path_fields, path_stats, path_figs)
+                    path_fields, path_stats, path_figs)
+    PE_abs = compute_PE_absolute(times, filename_out, path_fields, path_stats, path_figs)
 
     ''' (A2) Kinetic Energy (KE) '''
     KE, KEd, KE_r = compute_KE_from_radav(times, id, filename_in, filename_out, path_fields, path_stats, path_figs)
@@ -504,7 +515,7 @@ def compute_KE_sgs(times, id, filename_in, filename_out, path_fields, path_stats
 
 
 def compute_PE_from_fields(times, id, filename_in, filename_out,
-               case_name, path, path_fields, path_stats, path_figs):
+               path_fields, path_stats, path_figs):
     # 3. define background profile (here: take profile at any point outside the anomaly region)
     print ''
     print('--- compute PE from fields---')
@@ -639,8 +650,9 @@ def compute_PE_from_fields(times, id, filename_in, filename_out,
     return
 
 
+
 def compute_PE_from_radav(times, id, filename_in, filename_out,
-               case_name, path, path_fields, path_stats, path_figs):
+               path_fields, path_stats, path_figs):
     print ''
     print('--- compute PE from angular average ---')
     # 1. read in initial s-field
@@ -804,7 +816,107 @@ def compute_PE_from_radav(times, id, filename_in, filename_out,
 
     return PE
 
+# ----------------------------------------------------------------------
 
+def compute_PE_absolute(times, filename_out, path_fields, path_stats, path_figs):
+    print ''
+    print('--- compute PE absolute ---')
+    nt = len(times)
+    print('kmax', kmax)
+    # PE_ref = from s(t=0)
+    g = 9.80665
+    temp = np.ndarray((nx,ny,kmax+1),dtype=np.double)
+    rho_3D = np.ndarray((nx,ny,kmax+1),dtype=np.double)
+    PE = np.zeros((nt), dtype=np.double)
+    PE_aux = np.zeros((nt,kmax), dtype=np.double)
+    # reference slice
+    dPdk_ref = np.zeros((nt,kmax), dtype=np.double)
+
+    root_stats = nc.Dataset(os.path.join(path, 'stats', 'Stats.' + case_name + '.nc'))
+    p0 = root_stats.groups['reference'].variables['p0'][:]
+    z0 = root_stats.groups['reference'].variables['z'][:]
+    root_stats.close()
+
+    for it,t0 in enumerate(times):
+        print('--t=' + str(t0) + '--')
+        root_field = nc.Dataset(os.path.join(path_fields, str(t0)+'.nc'))
+        temp[:,:,:] = root_field.groups['fields'].variables['temperature'][:,:,:kmax+1]
+        root_field.close()
+        for k in range(kmax):
+            rho_3D[:, :, k] = compute_rho(p0[k], temp[:, :, k], 0., 0.)
+            PE[it] += np.sum(rho_3D[:,:,k]) * z0[k]
+            dPdk_ref[it,k] = g * dV * np.sum(rho_3D[:, :, k]) * z0[k]  # added PE for one slice at level k
+        for kmax_ in range(kmax+1):
+            for k in range(kmax_):
+                PE_aux[it,kmax_-1] += np.sum(rho_3D[:,:,k]) * z0[k]
+
+        # # print rho field
+        # jc = jc_arr[0]
+        # fig, (ax0, ax1, ax2) = plt.subplots(1,3, figsize=(18,5))
+        # cf = ax0.contourf((rho_3D[:,jc,:kmax]-rho_3D[20,jc,:kmax]).T, levels=np.linspace(0.0,0.012,1e2))
+        # plt.colorbar(cf, ax=ax0)
+        # cf = ax1.contourf(rho_3D[:,jc,:kmax].T, levels=np.linspace(0.975,1.175,1e2))
+        # plt.colorbar(cf, ax=ax1)
+        # cf = ax2.contourf(temp[:,jc,:kmax].T, levels=np.linspace(280,300,1e2))
+        # plt.colorbar(cf, ax=ax2)
+        # plt.savefig(os.path.join(path_figs, 'PE_test_rho_t'+str(t0)+'.png'))
+        # plt.close()
+
+    PE = g * dV * PE
+    PE_ref = PE[0]
+    # dPE = PE - PE_ref
+    PE_aux = g * dV * PE_aux
+    PE_ref_aux = PE_aux[0, :]
+    # dPE_aux = PE_aux - PE_ref
+
+    # reference slice
+    dPdk = np.zeros((nt,kmax), dtype=np.double)
+    for k in range(1, kmax):
+        dPdk[:, k] = PE_aux[:, k] - PE_aux[:, k-1]
+
+    fig, axis = plt.subplots(1, 4, figsize=(20, 6), sharey='none')
+    ax0 = axis[0]
+    ax1 = axis[1]
+    ax2 = axis[2]
+    ax3 = axis[3]
+    ax0.plot(times, PE[:], '-x', label='PE')
+    ax0.plot(times, PE_aux[:,kmax-1], '--', label='PE aux')
+    ax0.legend()
+    for k in range(1,kmax):
+        ax1.plot(times, PE_aux[:,k] - PE_ref_aux[k], '-x', color=cm_bwr(np.double(k-2)/kmax), label='k='+str(k))
+        ax2.plot(times, dPdk[:,k]-dPdk_ref[:,k], '-x', color=cm_bwr(np.double(k-2)/kmax))
+    ax1.legend(loc=1, fontsize=8)
+    ax3.plot(np.arange(1,kmax), np.amax(np.abs(dPdk-dPdk_ref), axis=0)[1:], label='max over time')
+    ax3.plot(np.arange(1,kmax), np.average(np.abs(dPdk-dPdk_ref), axis=0)[1:], label='mean over time')
+    ax3.legend(fontsize=8)
+    ax3.legend(loc='best', fontsize=8)
+    ax3.grid()
+    ax0.set_title('PE')
+    ax1.set_title('PE_aux - PE_aux(t=0)')
+    ax2.set_title('dPdk-dPdk_ref')
+    ax3.set_title('max_t(dPdk-dPdk_ref)')
+    ax0.set_xlabel('time')
+    ax1.set_xlabel('time')
+    ax2.set_xlabel('time')
+    ax3.set_xlabel('k')
+    ax0.set_ylabel('PE [J]')
+    ax1.set_ylabel('PE [J]')
+    ax2.set_ylabel('PE [J]')
+    ax3.set_ylabel('PE [J]')
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(path_figs, 'PE_test_abs.png'))
+    plt.close(fig)
+
+
+    ''' output '''
+    rootgrp = nc.Dataset(os.path.join(path_stats, filename_out), 'r+', format='NETCDF4')
+    ts_grp = rootgrp.groups['timeseries']
+    var = ts_grp.variables['PE_abs']
+    var[:] = PE[:]
+    rootgrp.close()
+
+    return
 
 
 
@@ -1256,6 +1368,19 @@ def theta_s(s):
     th_s = T_tilde * np.exp( (s - sd_tilde)/cpd )
     return th_s
 
+
+def compute_rho(p0, T, qt, qv):
+    Rd = 287.1
+    eps_vi = 1.60745384883
+    return p0 / (Rd * T) * 1./(1.0 - qt + eps_vi * qv)
+
+
+def compute_alpha(p0, T, qt, qv):
+    Rd = 287.1
+    eps_vi = 1.60745384883
+    return (Rd * T)/p0 * (1.0 - qt + eps_vi * qv)
+
+
 # ----------------------------------
 def create_output_file(times, filename_in, path_in, filename_out, path_out):
     # output for each CP:
@@ -1315,10 +1440,14 @@ def create_output_file(times, filename_in, path_in, filename_out, path_out):
     var.title = "PE from azimuthally averaged entropy field"
     var = ts_grp.createVariable('PEd', 'f8', ('nt'))
     var.units = "(m/s)^2"
-    # PE from 3D velocity fields
+    # PE from 3D fields
     var = ts_grp.createVariable('PE_3D', 'f8', ('nt'))
     var.units = "J"
     var.title = "PE from 3D entropy field"
+    # absolute PE from 3D fields
+    var = ts_grp.createVariable('PE_abs', 'f8', ('nt'))
+    var.units = "J"
+    var.title = "absolute PE from 3D temperature field"
 
     prof_grp = rootgrp.createGroup('profiles')
     prof_grp.createDimension('nt', nt)
