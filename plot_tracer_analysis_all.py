@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import netCDF4 as nc
 import argparse
@@ -32,10 +33,11 @@ def main():
     else:
         k0 = 0
 
-    global cm_bwr, cm_grey, cm_vir, cm_hsv
+    global cm_bwr, cm_grey, cm_vir, cm_hsv, cm_grey2
     cm_bwr = plt.cm.get_cmap('bwr')
     cm_grey = plt.cm.get_cmap('gist_gray_r')
     cm_hsv = plt.cm.get_cmap('hsv')
+    cm_grey2 = plt.cm.get_cmap('bone_r')
     cm_fall = plt.cm.get_cmap('winter')
     cm_summer = plt.cm.get_cmap('spring')
 
@@ -48,6 +50,7 @@ def main():
     n_cps = get_number_cps(fullpath_in)
     print('number of CPs: ', n_cps)
     print('number of tracers per CP: ', n_tracers)
+    print ''
     nt = len(times)
 
     krange = [0]
@@ -56,6 +59,7 @@ def main():
 
     # --------------------------------------
     ''' ---------------- for each dTh ---------------- '''
+    ''' (a) read in data from tracer output (text-file)'''
     n_params = len(z_params)
     dist_av = np.zeros((n_params, nt, nk))
     r_av = np.zeros((n_params, nt, nk))
@@ -69,69 +73,240 @@ def main():
         id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
         print('id', id)
         fullpath_in = os.path.join(path_root, id, 'tracer_k'+str(k0), 'output')
-        print(fullpath_in)
+        # print(fullpath_in)
+
         # read_in_txtfile(fullpath_in)
-        print 'times', times
-        print''
         for it, t0 in enumerate(times):
             print('---t0: '+str(t0)+'---', it)
             cp_id = 2
             # get_radius(fullpath_in, it, cp_id)
             dist_av[istar, it, k0], U_rad_av[istar, it, k0] = get_radius_vel(fullpath_in, it, cp_id, n_tracers, n_cps)
-            print('..', dist_av[istar, it, k0])
         r_av = dist_av * dx[0]
         for it, t0 in enumerate(times[1:]):
             drdt_av[:,it,:] = 1./dt_fields * (r_av[:,it,:] - r_av[:,it-1,:])
+        print ''
+    print ''
 
+
+    ''' (b) plot r_av, dtdt_av, U_rad_av'''
     figname = 'CP_rim_dTh' + str(dTh) + '.png'
     title = 'CP rim (dTh=' + str(dTh) + ')'
     plot_dist_vel(r_av, drdt_av, U_rad_av, [dTh], z_params, r_params, n_params, k0, title, figname)
 
 
-    # -----------------------------------------------
-    ''' ---------------- r = 1km ---------------- '''
-    dTh_params = [2, 3, 4]
-    z_params = args.zparams_r1km
-    r_params = args.rparams_r1km
-    print('r=1km')
-    print('dTh: ', dTh_params)
-    print('z*: ', z_params)
-    print('r*: ', r_params)
-    n_params = len(dTh_params)
-    dist_av = np.zeros((n_params, nt, nk))
-    r_av = np.zeros((n_params, nt, nk))
-    drdt_av = np.zeros((n_params, nt, nk))
-    U_rad_av = np.zeros((n_params, nt, nk))
-    dU_rad_av = np.zeros((n_params, nt, nk))
+
+    ''' (c) plot normalized radius / velocity'''
+    # (i) for vertical velocity from crosssection in 3D field
+    # (ii) for azimuthally averaged vertical vleocity
+    print('plotting normalized')
     for istar in range(n_params):
-        dTh = dTh_params[istar]
         zstar = z_params[istar]
         rstar = r_params[istar]
         id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
         print('id', id)
-        fullpath_in = os.path.join(path_root, id, 'tracer_k'+str(k0), 'output')
-        print 'times', times
-        print''
-        for it, t0 in enumerate(times):
-            print('---t0: '+str(t0)+'---', it)
-            cp_id = 1
-            dist_av[istar, it, k0], U_rad_av[istar, it, k0] = get_radius_vel(fullpath_in, it, cp_id, n_tracers, n_cps)
-        r_av = dist_av * dx[0]
-        for it, t0 in enumerate(times[1:]):
-            drdt_av[:,it,:] = 1./dt_fields * (r_av[:,it,:] - r_av[:,it-1,:])
-
-    print('path', path_out_figs)
-    figname = 'CP_rim_r1km.png'
-    title = 'CP rim (r=1km)'
-    plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_params, k0, title, figname)
-    figname = 'CP_rim_vel_r1km.png'
-    plot_vel(r_av, U_rad_av, dTh_params, z_params, r_params, n_params, k0, figname)
+        figname_norm = 'CP_rim_normalized_' + id + '.png'
+        plot_vel_normalized(r_av, times, istar, k0, id, figname_norm)
+        # figname_norm = 'CP_rim_normalized_' + id + '_av.png'
+        # plot_vel_normalized_w_av(r_av, times, istar, k0, id, figname_norm)
 
 
 
+    # print ''
+    # print ''
+    # print ''
+    # print ''
+
+    # # -----------------------------------------------
+    # ''' ---------------- r = 1km ---------------- '''
+    # # dTh_params = [2, 3, 4]
+    # # z_params = args.zparams_r1km
+    # # r_params = args.rparams_r1km
+    # # print('r=1km')
+    # # print('dTh: ', dTh_params)
+    # # print('z*: ', z_params)
+    # # print('r*: ', r_params)
+    # # print ''
+    # # n_params = len(dTh_params)
+    # # '''(a) read in data from textfiles'''
+    # # dist_av = np.zeros((n_params, nt, nk))
+    # # r_av = np.zeros((n_params, nt, nk))
+    # # drdt_av = np.zeros((n_params, nt, nk))
+    # # U_rad_av = np.zeros((n_params, nt, nk))
+    # # dU_rad_av = np.zeros((n_params, nt, nk))
+    # # for istar in range(n_params):
+    # #     dTh = dTh_params[istar]
+    # #     zstar = z_params[istar]
+    # #     rstar = r_params[istar]
+    # #     id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+    # #     print('id', id)
+    # #     fullpath_in = os.path.join(path_root, id, 'tracer_k'+str(k0), 'output')
+    # #     for it, t0 in enumerate(times):
+    # #         print('---t0: '+str(t0)+'---', it)
+    # #         cp_id = 1
+    # #         dist_av[istar, it, k0], U_rad_av[istar, it, k0] = get_radius_vel(fullpath_in, it, cp_id, n_tracers, n_cps)
+    # #     r_av = dist_av * dx[0]
+    # #     for it, t0 in enumerate(times[1:]):
+    # #         drdt_av[:,it,:] = 1./dt_fields * (r_av[:,it,:] - r_av[:,it-1,:])
+    # #     print''
+    # #
+    # # ''' (b) plot r_av, dtdt_av, U_rad_av'''
+    # # # print('path', path_out_figs)
+    # # # figname = 'CP_rim_r1km.png'
+    # # # title = 'CP rim (r=1km)'
+    # # # plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_params, k0, title, figname)
+    # # # figname = 'CP_rim_vel_r1km.png'
+    # # # plot_vel(r_av, U_rad_av, dTh_params, z_params, r_params, n_params, k0, figname)
+    #
 
 
     return
+
+
+# ----------------------------------------------------------------------
+def plot_vel_normalized_w_av(r_av, times, istar, k0, id, fig_name):
+    # read in azimuthally averaged vertical velocity
+    rootgrp = nc.Dataset(os.path.join(path_root, id, 'data_analysis', 'stats_radial_averaged.nc'))
+    ts_grp = rootgrp.groups['timeseries']
+    t_out = ts_grp.variables['time'][:]
+    stats_grp = rootgrp.groups['stats']
+    w = stats_grp.variables['w'][:,:,:] # dimensions (nt, nr, nz)
+    nr = stats_grp.dimensions['nr'].size
+    n_times = ts_grp.dimensions['nt'].size
+    rootgrp.close()
+
+    # defining geometry for single CP
+    x_array = np.arange(0, nx) * dx[0]
+    ic = nx / 2
+    # r_array = x_array - dx[0] * ic
+    r_array = np.arange(0,nr)*dx[0]
+
+    # plotting parameters
+    imin = 0
+    imax = 80
+    k0 = 0
+
+    fig, axes = plt.subplots(2, 2, sharex='none', figsize=(20, 12))
+    ax0 = axes[0, 0]
+    ax1 = axes[1, 0]
+    ax2 = axes[0, 1]
+    ax3 = axes[1, 1]
+    ax0.plot(r_av[istar, :, k0], times, '-o', label=id)
+    ax0.set_xlim(r_array[imin], r_array[imax])
+    ax0.grid()
+    it = 0
+    for t0 in t_out[1::2]:
+        if t0 >= np.int(times[0]) and t0 <= times[-1]:
+            count = np.double(t0) / times[-1]
+            print '>> it', it, t0, count
+            iR = r_av[istar, it, k0] / dx[0]
+            ax1.plot(r_array[imin:imax], w[it, imin:imax, k0], '-', color=cm_grey2(count),
+                     label='t=' + str(t0) + 's')
+            ax1.plot(r_array[iR], w[it, iR, k0], 'd', color=cm_grey2(count), markersize=12)
+            R_array = r_array / r_av[istar, it, k0]
+            ax2.plot(R_array[imin:imax], w[it, imin:imax, k0], '-', color=cm_grey2(count), linewidth=3,
+                     label='t=' + str(t0) + 's')
+            ax3.plot(R_array[imin:imax], w[it, imin:imax, k0], '-', color=cm_grey2(count), linewidth=3,
+                     label='t=' + str(t0) + 's')
+            ax3.plot(R_array[iR], w[it, iR, k0], 'd', color=cm_grey(count), markersize=12)
+            it += 1
+    fig.suptitle(id)
+    ax0.legend(loc=3)
+    ax1.legend(loc='lower center', bbox_to_anchor=(0.5, 0.1),
+               fancybox=True, shadow=True, ncol=6, fontsize=11)
+    ax1.set_xlim(r_array[imin], r_array[imax])
+    ax2.set_xlim([0., 1.5])
+    ax3.set_xlim([0.75, 1.25])
+    ax3.set_ylim([-1.1, 2.])
+    ax0.set_xlabel('r_av  [m]')
+    ax1.set_xlabel('r [m]')
+    ax2.set_xlabel('r/r_av [m]')
+    ax3.set_xlabel('r/r_av [m]')
+    ax0.set_ylabel('times [s]')
+    ax1.set_ylabel('w  [m/s]')
+    ax2.set_ylabel('w  [m/s]')
+    ax3.set_ylabel('w  [m/s]')
+    ax2.set_title('w normalized by tracer radius')
+    ax3.set_title('w normalized by tracer radius')
+    ax1.grid()
+    ax2.grid()
+    ax3.grid()
+    fig.tight_layout()
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+    return
+
+
+def plot_vel_normalized(r_av, times, istar, k0, id, fig_name):
+    print('')
+    print os.path.join(path_root, id, 'fields_merged', 'fields_allt_yz_i200.nc')
+    # read in vertical velocity for all times
+    rootgrp = nc.Dataset(os.path.join(path_root, id, 'fields_merged', 'fields_allt_yz_i200.nc'))
+    w = rootgrp.variables['w'][:, :, :]
+    t_out = rootgrp.variables['time'][:]
+    rootgrp.close()
+
+    # defining geometry for single CP
+    x_array = np.arange(0, nx)*dx[0]
+    ic = nx/2
+    r_array = x_array - dx[0]*ic
+
+
+    #plotting parameters
+    imin = ic - 5
+    imax = ic + 80
+
+    fig, axes = plt.subplots(2, 2, sharex='none', figsize=(20, 12))
+    ax0 = axes[0,0]
+    ax1 = axes[1,0]
+    ax2 = axes[0,1]
+    ax3 = axes[1,1]
+    ax0.plot(r_av[istar, :, k0], times, '-o', label=id)
+    ax0.set_xlim(r_array[imin], r_array[imax])
+    ax0.grid()
+    it = 0
+    for t0 in t_out[0::2]:
+        if t0 >= np.int(times[0]) and t0 <= times[-1]:
+            count = np.double(t0) / times[-1]
+            print '>> it', it, t0, count
+            iR = r_av[istar, it, k0] / dx[0] + ic
+            ax1.plot(r_array[imin:imax], w[it, imin:imax, k0], '-', color=cm_grey2(count),
+                     label='t=' + str(t0) + 's')
+            ax1.plot(r_array[iR], w[it, iR, k0], 'd', color=cm_grey2(count), markersize=12)
+            R_array = r_array / r_av[istar, it, k0]
+            ax2.plot(R_array[imin:imax], w[it, imin:imax, k0], '-', color=cm_grey2(count), linewidth=3,
+                     label='t=' + str(t0) + 's')
+            ax3.plot(R_array[imin:imax], w[it, imin:imax, k0], '-', color=cm_grey2(count), linewidth=3,
+                     label='t=' + str(t0) + 's')
+            ax3.plot(R_array[iR], w[it, iR, k0], 'd', color=cm_grey(count), markersize=12)
+            it += 1
+    fig.suptitle(id)
+    ax0.legend(loc=3)
+    ax1.legend(loc='lower center', bbox_to_anchor=(0.5, 0.1),
+               fancybox=True, shadow=True, ncol=6, fontsize=11)
+    # ax2.legend()
+    ax1.set_xlim(r_array[imin], r_array[imax])
+    ax2.set_xlim([-0.2, 1.2])
+    ax3.set_xlim([0.75, 1.2])
+    ax3.set_ylim([-1.1, 2.])
+    ax0.set_xlabel('r_av  [m]')
+    ax1.set_xlabel('r [m]')
+    ax2.set_xlabel('r/r_av [m]')
+    ax3.set_xlabel('r/r_av [m]')
+    ax0.set_ylabel('times [s]')
+    ax1.set_ylabel('w  [m/s]')
+    ax2.set_ylabel('w  [m/s]')
+    ax3.set_ylabel('w  [m/s]')
+    ax2.set_title('w normalized by tracer radius')
+    ax3.set_title('w normalized by tracer radius')
+    ax1.grid()
+    ax2.grid()
+    ax3.grid()
+    fig.tight_layout()
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+    return
+
+
 # ----------------------------------------------------------------------
 def plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_params, k0,
                   title, fig_name):
@@ -154,9 +329,9 @@ def plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_par
     ax0.set_xlabel('times [s]')
     ax1.set_xlabel('times [s]')
     ax2.set_xlabel('times [s]')
-    ax0.set_ylabel('r_av')
+    ax0.set_ylabel('r_av  [m]')
     ax1.set_ylabel('drdt_av')
-    ax2.set_ylabel('U_rad_av')
+    ax2.set_ylabel('U_rad_av  [m/s]')
     ax1.legend()
     # fig.suptitle('CP rim (dTh=' + str(dTh) + ')')
     fig.suptitle(title)
@@ -193,6 +368,7 @@ def plot_vel(r_av, U_rad_av, dTh_params, z_params, r_params, n_params, k0, fig_n
     plt.close(fig)
 
     return
+
 # ----------------------------------------------------------------------
 def read_in_txtfile(fullpath_in):
     f = open(fullpath_in+'/coldpool_tracer_out.txt', 'r')
@@ -235,7 +411,7 @@ def read_in_txtfile(fullpath_in):
 
 
 def get_radius_vel(fullpath_in, t0, cp_id, n_tracers, n_cps):
-    print('in', fullpath_in)
+    # print('in', fullpath_in)
     f = open(fullpath_in + '/coldpool_tracer_out.txt', 'r')
     # f = open(DIR+EXPID+'/'+child+'/output/irt_tracks_output_pure_sort.txt', 'r')
     lines = f.readlines()
@@ -247,7 +423,7 @@ def get_radius_vel(fullpath_in, t0, cp_id, n_tracers, n_cps):
     # while CP age is 0 and CP ID is cp_id
     timestep = int(lines[count].split()[0])
     cp_ID = int(lines[count].split()[3])
-    print(timestep, cp_ID)
+    # print(timestep, cp_ID)
     while (timestep-1 == t0 and int(lines[count].split()[3])==cp_id):
         columns = lines[count].split()
         dist.append(float(columns[8]))
@@ -258,7 +434,6 @@ def get_radius_vel(fullpath_in, t0, cp_id, n_tracers, n_cps):
     f.close()
     r_av = np.average(dist)
     vel_av = np.average(vel)
-    print(count, 'av', r_av, vel_av)
 
     return r_av, vel_av
 
@@ -321,16 +496,20 @@ def set_input_parameters(args):
             z_params = [3465, 1730, 1155]  # run1
         elif dTh == 2:
             # z_params = [2450, 1225, 815]  # run1
-            z_params = [500, 900, 1600, 1900, 2500]  # run2
-            r_params_ = [1900, 1300, 900, 800, 600]  # run2
+            z_params = [500, 900, 1600, 1900, 2500]  # run2, run3
+            r_params_ = [1900, 1300, 900, 800, 600]  # run2, run3
         elif dTh == 3:
             # z_params = [4000, 2000, 1500, 1000, 670, 500, 250] # run1
-            z_params = [500, 1000, 1600, 2000, 2500]  # run2
-            r_params_ = [1500, 1000, 700, 600, 500]  # run2
+            z_params = [500, 1000, 1600, 2000, 2500]  # run2, run3
+            r_params_ = [1500, 1000, 700, 600, 500]  # run2, run3
+            z_params = [500, 1000, 2000]  # run2
+            r_params_ = [1500, 1000, 600]  # run2
+            z_params = [1000]  # run2
+            r_params_ = [1000]  # run2
         elif dTh == 4:
             # z_params = [1730, 870, 430]     # run1
-            z_params = [500, 900, 1600, 2000, 2500]  # run2
-            r_params_ = [1300, 900, 600, 500, 400]  # run2
+            z_params = [500, 900, 1600, 2000, 2500]  # run2, run3
+            r_params_ = [1300, 900, 600, 500, 400]  # run2, run3
     if args.rparams:
         r_params = args.rparams
     else:
@@ -339,10 +518,6 @@ def set_input_parameters(args):
             del r_params_
         except:
             r_params = z_params[::-1]
-
-
-
-
 
 
     print('dTh: ', dTh)
@@ -375,6 +550,7 @@ def set_input_parameters(args):
     # times = [np.int(name[:-3]) for name in files]
     times.sort()
     print('times', times)
+    print ''
 
 
     return dTh, z_params, r_params
