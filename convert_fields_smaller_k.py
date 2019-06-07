@@ -33,22 +33,14 @@ def main():
         k_max = 120     # leads to about 20% reduction of size for fields of original size 200x200x150
     if args.kmin:
         k_min = np.int(args.kmin)
-        path_out = os.path.join(path_root, 'fields_k' + str(k_min) + '_' + str(k_max))
     else:
         k_min = k_max
-        path_out = os.path.join(path_root, 'fields_k' + str(k_max))
     if args.k0:
         k0 = np.int(args.k0)
-        path_out = os.path.join(path_root, 'fields_k' + str(k0))
     else:
         k0 = 0
-    print('path out', path_out)
-    if not os.path.exists(path_out):
-        print('ohoh')
-        os.mkdir(path_out)
     print('')
     print('path: ', path_root)
-    print('path out: ', path_out)
     print('')
     print('k0', k0)
     print('kmin', k_min)
@@ -100,9 +92,9 @@ def main():
         # convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_center)
         convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files, k_max, path_fields, path_out_, j0_center)
         # print('vertical xz-crossection at 3-CP collision: j0='+str(j0_coll))
-        # convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_coll)
-        # print('vertical yz-crossection at 2-CP collision: x0='+str(i0_center))
-        # convert_file_for_varlist_vertsection_yz(var_list, times, files, path_fields, path_out_, i0_center)
+        convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files, k_max, path_fields, path_out_, j0_coll)
+        print('vertical yz-crossection at 2-CP collision: x0='+str(i0_center))
+        convert_file_for_varlist_vertsection_yz(var_list, times, files, path_fields, path_out_, i0_center)
         print''
     if args.hor == 'True' or args.hor == 'true':
         print '-- horizontal crosssection: k0 = '+str(k0) +' --'
