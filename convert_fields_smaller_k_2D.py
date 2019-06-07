@@ -70,14 +70,27 @@ def main():
              and tmin <= np.int(name[:-3]) <= tmax]
     times.sort()
     nt = len(times)
-    print('times: '+str(times))
+    print('times: ' + str(times))
     print('nt:', nt)
     files = [str(t) + '.nc' for t in times]
     print(files)
     print('')
 
+    # path_fields = os.path.join(path_root, 'fields_k120')
+    # print os.listdir(path_fields)
+    # times = [np.int(name[:-8]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
+    #          and tmin <= np.int(name[:-8]) <= tmax]
+    # times.sort()
+    # nt = len(times)
+    # print('times: '+str(times))
+    # print('nt:', nt)
+    # files = [str(t) + '_k120.nc' for t in times]
+    # print(files)
+    # print('')
+
     ''' output vertical crosssections for all times and k=0..k_max for all variables given in var_list '''
     var_list = ['u', 'v', 'w', 's', 'temperature', 'phi']
+    var_list = ['u', 'v', 'w', 's', 'temperature']
 
     path_out = os.path.join(path_root, 'fields_merged')
     if not os.path.exists(path_out):
@@ -239,8 +252,11 @@ def define_geometry(path_root, args):
 
     # set coordinates for plots
     if case_name == 'ColdPoolDry_single_2D':
-        rstar = nml['init']['r']
-        zstar = nml['init']['h']
+        # try:
+        #     rstar = nml['init']['r']
+        # except:
+        #     rstar = 5000.0  # half of the width of initial cold-pools [m]
+        # zstar = nml['init']['h']
         try:
             ic = nml['init']['ic']
         except:
