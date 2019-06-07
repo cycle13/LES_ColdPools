@@ -26,7 +26,6 @@ def main():
     path_out_figs = os.path.join(path, 'figs_radial_average')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
-    print ''
     print 'paths:'
     print path_data
     print path_out_figs
@@ -49,15 +48,12 @@ def main():
     # - function of decay of w from rmax to r..
 
     # read in file
-    file_name = 'stats_radial_averaged.nc'
-    # print('!!!!!!!!!!!!!!!!! filename')
-    # file_name = 'stats_radial_averaged_.nc'
-    data_stats = nc.Dataset(os.path.join(path_data, file_name), 'r')
+    file_name_in = 'stats_radial_averaged.nc'
+    data_stats = nc.Dataset(os.path.join(path_data, file_name_in), 'r')
     nz_stats = data_stats.groups['dimensions'].dimensions['nz']
-    krange_ = data_stats.groups['dimensions'].variables['krange'][:]
+    krange_stats = data_stats.groups['dimensions'].variables['krange'][:]
     stats_grp = data_stats.groups['stats'].variables
-    times_ = data_stats.groups['timeseries'].variables['time'][:]
-    nt = len(times_)
+    times_stats = data_stats.groups['timeseries'].variables['time'][:]
     r_range = stats_grp['r'][:]
     nr = len(r_range)
     ''' ----- w ----- '''
@@ -65,60 +61,43 @@ def main():
     var = stats_grp[var_name][:, :, :]  # var(t, r, k)
     data_stats.close()
 
-
-    # if args.t0:
-    #     t0 = np.int(args.t0)
-    # else:
-    #     t0 = 800
-    # it = np.where(times_ == t0)[0][0]
-
-    # k0 = np.int(args.k0)
-    ''' krange '''
-    if args.kmin:
-        kmin = np.int(args.kmin)
-    else:
-        kmin = 0
-    if args.kmax:
-        kmax = np.int(args.kmax)
-    else:
-        kmax = 1
     # krange = np.arange(kmin, kmax+1)
-    krange = [np.int(k) for k in krange_ if k>=kmin and k<=kmax]
-    print('krange: ', krange_)
-    print('krange: ', krange)
+    krange = [np.int(k) for k in krange_stats if k>=kmin and k<=kmax]
+    print('krange radial stats: ', krange_stats)
+    print('krange:              ', krange)
     print ''
 
     ''' time range '''
-    times = [np.int(t) for t in times_ if t>=tmin and t<=tmax]
-    itmin = np.where(times_ == tmin)
-    itmax = np.where(times_ == tmax)
-    print times
-    print times_
-    print('tmin etc', tmin, tmax, itmin, itmax)
+    times = [np.int(t) for t in times_stats if t>=tmin and t<=tmax]
+    itmin = np.where(times_stats == tmin)
+    itmax = np.where(times_stats == tmax)
+    print 'times radial stats: ', times_stats
+    print 'times:              ', times
+    print('tmin, tmax: ', tmin, tmax)
+    print ''
 
     # declare arrays
-    wmin = np.zeros((nt, kmax - kmin+1))            # minimum(w)
-    wmax = np.zeros((nt, kmax - kmin+1))            # maximum(w)
-    wint = np.zeros((nt, kmax - kmin+1))            # w at inner rim edge (defined as inner edge of downdraft zone)
-    wout = np.zeros((nt, kmax - kmin+1))            # w at outer rim edge (defined as outer edge of updraft zone)
+    nt = len(times)
+    nk = kmax+1 - kmin
+    wmin = np.zeros((nt, nk))            # minimum(w)
+    wmax = np.zeros((nt, nk))            # maximum(w)
+    wint = np.zeros((nt, nk))            # w at inner rim edge (defined as inner edge of downdraft zone)
+    wout = np.zeros((nt, nk))            # w at outer rim edge (defined as outer edge of updraft zone)
     wcrit = 1e-2
-    rcenter = np.zeros((2, nt, kmax - kmin + 1))    # 'center' of vortex: radius wher w approx zero
-    rmin = np.zeros((nt, kmax - kmin + 1))          # radius of wmin
-    rmax = np.zeros((nt, kmax - kmin + 1))          # radius of wmax
-    rint = np.zeros((nt, kmax-kmin + 1))            # radius of inner rim edge, defined as maximum(w(r<rmin))
-    rout = np.zeros((nt, kmax-kmin + 1))            # radius at outer rim edge, defined as point of w(r>rmax)<wcrit
+    rcenter = np.zeros((2, nt, nk))    # 'center' of vortex: radius wher w approx zero
+    rmin = np.zeros((nt, nk))          # radius of wmin
+    rmax = np.zeros((nt, nk))          # radius of wmax
+    rint = np.zeros((nt, nk))            # radius of inner rim edge, defined as maximum(w(r<rmin))
+    rout = np.zeros((nt, nk))            # radius at outer rim edge, defined as point of w(r>rmax)<wcrit
 
+    omega_plus = np.zeros((nt, nk))    # vorticity from linear fit on (wmax-wcenter)/(rmax-rcenter)
+    omega_minus = np.zeros((nt, nk))   # vorticity from linear fit on (wcenter-wmin)/(rcenter-wmin)
 
     rmax_plot = 7e3
     irmax_plot = np.where(r_range == rmax_plot)[0][0]
 
     for it, t0 in enumerate(times):
         print('---- t0='+str(t0)+' ----')
-
-
-        omega_plus = np.zeros((kmax-kmin+1))
-        omega_minus = np.zeros((kmax-kmin+1))
-
         for k0 in range(kmin, kmax+1):
             # indices of max / min
             delta = np.int(500./dx[0])
@@ -167,50 +146,61 @@ def main():
 
             # compute linear fitting functions
             # solid body rotation: u = r*omega
-            omega_plus[k0] = (wmax[it, k0] - wcenter) / (rmax[it, k0] - rcenter[1, it, k0])
-            omega_minus[k0] = (wcenter - wmin[it, k0]) / (rcenter[1, it, k0] - rmin[it, k0])
-            dyplus = -omega_plus[k0]*rcenter[1,it, k0]
-            dyminus = -omega_minus[k0]*rcenter[1,it, k0]
-            lin_plus = omega_plus[k0]*r_range + dyplus
-            lin_minus = omega_minus[k0]*r_range + dyminus
-            print('mplus', omega_plus[k0])
-            print('mminus', omega_minus[k0])
+            omega_plus[it, k0] = (wmax[it, k0] - wcenter) / (rmax[it, k0] - rcenter[1, it, k0])
+            omega_minus[it, k0] = (wcenter - wmin[it, k0]) / (rcenter[1, it, k0] - rmin[it, k0])
+            dyplus = -omega_plus[it, k0]*rcenter[1,it, k0]
+            dyminus = -omega_minus[it, k0]*rcenter[1,it, k0]
+            lin_plus = omega_plus[it, k0]*r_range + dyplus
+            lin_minus = omega_minus[it, k0]*r_range + dyminus
+            print('mplus', omega_plus[it, k0])
+            print('mminus', omega_minus[it, k0])
             print('dyplus', dyplus)
             print('dyminus', dyminus)
             print ''
 
 
-            # plotting test_fig: w(t) for each k and show rmin, rmax, rcenter
-            plot_test_fig(var, wmin, wmax, rmin, rcenter, rmax, imin, imax,
-                          wint, rint, wout, rout, wcrit,
-                  r_range, nr, irmax_plot,
-                  lin_plus, lin_minus, omega_plus, omega_minus,
-                  it, t0, times, k0)
+            # # plotting test_fig: w(t) for each k and show rmin, rmax, rcenter
+            # plot_test_fig(var, wmin, wmax, rmin, rcenter, rmax, imin, imax,
+            #               wint, rint, wout, rout, wcrit,
+            #       r_range, nr, irmax_plot,
+            #       lin_plus, lin_minus, omega_plus, omega_minus,
+            #       it, t0, times, k0)
 
 
     ''' plotting '''
     fig_name = 'rim_width' + '.png'
-    plot_rim_width(rmin, rmax, rcenter, rint, rout, krange, times, times_, fig_name, path_out_figs)
+    plot_rim_width(rmin, rmax, rcenter, rint, rout, krange, times, times_stats, fig_name, path_out_figs)
 
 
     ''' make output '''
-    # output wmin, wmax into data_analysis/stats_radial_averaged.nc
-    # print('!!! name output file')
-    file_name = 'stats_radial_averaged.nc'
-    dump_minmax_profiles('wmax', wmax, kmin, kmax, tmin, tmax, file_name, path_data)
-    dump_minmax_profiles('wmin', wmin, kmin, kmax, tmin, tmax, file_name, path_data)
-    dump_minmax_profiles('r_wmin', rmin, kmin, kmax, tmin, tmax, file_name, path_data)
-    dump_minmax_profiles('r_wmax', rmax, kmin, kmax, tmin, tmax, file_name, path_data)
-    dump_minmax_profiles('r_wcenter', rcenter[1,:,:], kmin, kmax, tmin, tmax, file_name, path_data)
-    # dump_minmax_profiles('r_int', rint, kmin, kmax, tmin, tmax, file_name)
-    # dump_minmax_profiles('r_out', rout, kmin, kmax, tmin, tmax, file_name)
+    file_name_out = 'stats_radial_averaged_rimwidth.nc'
+    create_output_file(times, nk, file_name_out, path_data)
 
+    rootgrp_out = nc.Dataset(os.path.join(path_data, file_name_out), 'r+')
+    nz_out = rootgrp_out.groups['dimensions'].dimensions['nz'].size
+    nt_out = rootgrp_out.groups['timeseries'].dimensions['nt'].size
+    rootgrp_out.close()
 
+    rootgrp_in = nc.Dataset(os.path.join(path_data, file_name_in), 'r+')
+    nz_in = rootgrp_in.groups['dimensions'].dimensions['nz'].size
+    nt_in = rootgrp_in.groups['timeseries'].dimensions['nt'].size
+    rootgrp_in.close()
+    print ''
+
+    dump_minmax_profiles('wmax', wmax, kmin, kmax, tmin, tmax, file_name_out, path_data)
+    dump_minmax_profiles('wmin', wmin, kmin, kmax, tmin, tmax, file_name_out, path_data)
+    dump_minmax_profiles('r_wmin', rmin, kmin, kmax, tmin, tmax, file_name_out, path_data)
+    dump_minmax_profiles('r_wmax', rmax, kmin, kmax, tmin, tmax, file_name_out, path_data)
+    dump_minmax_profiles('r_wcenter', rcenter[1,:,:], kmin, kmax, tmin, tmax, file_name_out, path_data)
+    # dump_minmax_profiles('r_int', rint, kmin, kmax, tmin, tmax, file_name_out, path_data)
+    # dump_minmax_profiles('r_out', rout, kmin, kmax, tmin, tmax, file_name_out, path_data)
+    dump_minmax_profiles('omega_plus', omega_plus, kmin, kmax, tmin, tmax, file_name_out, path_data)
+    dump_minmax_profiles('omega_minus', omega_minus, kmin, kmax, tmin, tmax, file_name_out, path_data)
 
     return
 # _______________________________
 # _______________________________
-def plot_rim_width(rmin, rmax, rcenter, rint, rout, krange, times, times_, fig_name, path_out_figs):
+def plot_rim_width(rmin, rmax, rcenter, rint, rout, krange, times, times_stats, fig_name, path_out_figs):
     ncol = 2
     nrow = 2
     fig, axes = plt.subplots(nrow, ncol, sharey='none', figsize=(5 * ncol, 5 * nrow))
@@ -232,7 +222,7 @@ def plot_rim_width(rmin, rmax, rcenter, rint, rout, krange, times, times_, fig_n
     ax.plot([400, 400], [0, 3e3], 'k', linewidth=1)
     for k0 in krange:
         count_color = np.double(k0) / len(krange)
-        ax.plot(times_, rmax[:, k0] - rmin[:, k0], '-', label='z=' + str(k0 * dx[2]) + 'm',
+        ax.plot(times, rmax[:, k0] - rmin[:, k0], '-', label='z=' + str(k0 * dx[2]) + 'm',
                 color=plt.cm.get_cmap('coolwarm')(count_color), linewidth=2)
     ax.set_xlim(0, 3500)
     ax.set_ylim(0, 3e3)
@@ -259,7 +249,7 @@ def plot_rim_width(rmin, rmax, rcenter, rint, rout, krange, times, times_, fig_n
     ax.plot([400, 400], [0, 3e3], 'k', linewidth=1)
     for k0 in krange:
         count_color = np.double(k0) / len(krange)
-        ax.plot(times_, rout[:, k0] - rcenter[1, :, k0], '-', label='z=' + str(k0 * dx[2]) + 'm',
+        ax.plot(times, rout[:, k0] - rcenter[1, :, k0], '-', label='z=' + str(k0 * dx[2]) + 'm',
                 color=plt.cm.get_cmap('coolwarm')(count_color), linewidth=2)
     ax.set_xlim(0, 3500)
     ax.set_ylim(0, 3e3)
@@ -272,31 +262,59 @@ def plot_rim_width(rmin, rmax, rcenter, rint, rout, krange, times, times_, fig_n
     return
 # _______________________________
 # _______________________________
+def create_output_file(timerange, nk, filename_out, path_out):
+    print ''
+    print('-------- create statistics file -------- ')
+    print(path_out + ', ' + filename_out)
+    print('')
+
+    nt = len(timerange)
+
+    rootgrp = nc.Dataset(os.path.join(path_out, filename_out), 'w', format='NETCDF4')
+
+    dims_grp = rootgrp.createGroup('dimensions')
+    dims_grp.createDimension('dx', dx[0])
+    dims_grp.createDimension('dy', dx[1])
+    dims_grp.createDimension('dz', dx[2])
+    dims_grp.createDimension('nz', nk)
+    var = dims_grp.createVariable('krange', 'f8', ('nz'))
+    var[:] = np.arange(kmin, kmax+1, dtype=np.int)
+
+    ts_grp = rootgrp.createGroup('timeseries')
+    ts_grp.createDimension('nt', nt)
+    var = ts_grp.createVariable('time', 'f8', ('nt'))
+    var.unit = "s"
+    var[:] = timerange
+
+    prof_grp = rootgrp.createGroup('rim_width')
+    prof_grp.createDimension('nt', nt)
+    prof_grp.createDimension('nz', nk)
+    # prof_grp.createVariable(var_name, 'f8', ('nt', 'nz'))
+
+    rootgrp.close()
+    return
+
 
 def dump_minmax_profiles(var_name, variable, kmin, kmax, tmin, tmax, file_name, path_data):
-    print('do output', var_name, tmin, tmax, kmin, kmax)
+    # print('do output', var_name, tmin, tmax, kmin, kmax)
     rootgrp = nc.Dataset(os.path.join(path_data, file_name), 'r+')
     # rootgrp = nc.Dataset(os.path.join(path_data, file_name), 'a', format='NETCDF4')
     # root_grp = nc.Dataset(os.path.join(path_data, file_name), 'r+', format='NETCDF4')
     nz = rootgrp.groups['dimensions'].dimensions['nz'].size
     nt = rootgrp.groups['timeseries'].dimensions['nt'].size
-    try:
-        prof_grp = rootgrp.groups['rim_width']
-    except:
-        prof_grp = rootgrp.createGroup('rim_width')
-        prof_grp.createDimension('nt', nt)
-        prof_grp.createDimension('nz', nz)
+
+    prof_grp = rootgrp.groups['rim_width']
     try:
         var = prof_grp.variables[var_name]
     except:
         var = prof_grp.createVariable(var_name, 'f8', ('nt', 'nz'))
+
     var[:, kmin:kmax+1] = variable
 
     # try:
     #     var = prof_grp.variables['wmax']
     # except:
     #     var = prof_grp.createVariable('wmax', 'f8', ('nt', 'nz'))
-    # # print var.shape, wmax.shape
     # var[:, kmin:kmax+1] = wmax
 
     rootgrp.close()
@@ -309,7 +327,7 @@ def plot_test_fig(var, wmin, wmax, rmin, rcenter, rmax, imin, imax,
                   wint, rint, wout, rout, wcrit,
                   r_range, nr, irmax,
                   lin_plus, lin_minus, omega_plus, omega_minus,
-                  it, t0, times, k0):
+                  it, t0, times, k0, path_out_figs):
     fig_name = 'test_fig_t' + str(t0) + '_z' + str(k0 * dx[2]) + 'm.png'
 
     ncol = 3
@@ -383,11 +401,16 @@ def set_input_parameters(args):
     dx[2] = nml['grid']['dz']
     gw = nml['grid']['gw']
 
-    global kmax
+    global kmin, kmax
+    ''' krange '''
+    if args.kmin:
+        kmin = np.int(args.kmin)
+    else:
+        kmin = 0
     if args.kmax:
         kmax = np.int(args.kmax)
     else:
-        kmax = nz
+        kmax = 0
 
     global tmin, tmax
     if args.tmin:
@@ -408,7 +431,9 @@ def set_input_parameters(args):
     # print('times', times)
     print('')
     print('tmin, tmax', tmin, tmax)
-    print('kmax ', kmax, 'nx ', nx)
+    print('kmin: ', kmin)
+    print('kmax:', kmax)
+    print('nx ', nx)
     print('')
 
     # return times, nml
