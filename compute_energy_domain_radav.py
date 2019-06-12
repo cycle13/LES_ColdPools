@@ -67,14 +67,14 @@ def main():
     filename_out = 'CP_energy_' + id + '_domain_radav.nc'
 
     ''' create output file '''
-    create_output_file(times, filename_in, path_stats, filename_out, path_stats)
+    # create_output_file(times, filename_in, path_stats, filename_out, path_stats)
 
     ''' (A) Domain '''
     ''' (A1) Potential Energy (PE) '''
-    PE = compute_PE_from_radav(times, id, filename_in, filename_out,
-                    path_fields, path_stats, path_figs)
-    PE = compute_PE_from_fields(times, id, filename_in, filename_out,
-                    path_fields, path_stats, path_figs)
+    # PE = compute_PE_from_radav(times, id, filename_in, filename_out,
+    #                 path_fields, path_stats, path_figs)
+    # PE_3D = compute_PE_from_fields(times, id, filename_in, filename_out,
+    #                 path_fields, path_stats, path_figs)
     PE_abs = compute_PE_absolute(times, filename_out, path_fields, path_stats, path_figs)
 
     ''' (A2) Kinetic Energy (KE) '''
@@ -111,10 +111,6 @@ def compute_KE_from_v_rad_2D(times, id, filename_in, filename_out, path_fields, 
     # prof_grp = rootgrp.groups['profiles']
     # var = ts_grp.variables['KE']
     # var[:] = KE[:]
-    # var = ts_grp.variables['KEd']
-    # var[:] = KEd[:]
-    # var = ts_grp.variables['KE_sgs_stats']
-    # var[:] = KE_sgs[:]
     # var = prof_grp.variables['KE_r']
     # var[:, :] = KE_r[:, :]
     # rootgrp.close()
@@ -296,37 +292,26 @@ def compute_KE_from_radav(times, id, filename_in, filename_out, path_fields, pat
     rad2 = radius * radius * dxi * dxi
     print 'radius', radius*dxi
 
-    # 3. read in and compute SGS momentum fluxes
-    file_stats = nc.Dataset(os.path.join(path, 'stats', 'Stats.'+case_name+'.nc'), 'r')
-    # uu_sgs_stats = file_stats.groups['profiles'].variables['u_sgs_flux_x'][:,:]
-    # vv_sgs_stats = file_stats.groups['profiles'].variables['v_sgs_flux_y'][:,:]
-    ww_sgs_stats = file_stats.groups['profiles'].variables['w_sgs_flux_z'][:,:]
-    # visc_mean = file_stats.groups['profiles'].variables['viscosity_mean'][:,:]
-    file_stats.close()
 
 
-    # 4. compute KE
+    # 3. compute KE
     # KE ~ v**2 = (v_rad**2 + v_tan**2 + w**2)
     KE = np.zeros((nt))
     # KE_aux = np.zeros((nt))
     KEd = np.zeros((nt))
     KE_r = np.zeros((nt, nr))           # compute KE[t, r, :] (columnwise integration over z)
-    KE_sgs = np.zeros((nt))
     for it, t0 in enumerate(times):
         print('--t=' + str(t0) + '--')
         # aux = np.sum(v2_rad[it,:,:kmax]+v2_tan[it,:,:kmax]+w2_av[it,:,:kmax], 0)
         aux = 4*np.pi**2 * np.sum(v2_rad[it,:,:kmax].T*rad2[:] + v2_tan[it,:,:kmax].T*rad2[:] + w2_av[it,:,:kmax].T*rad2[:], 1)
         KEd[it] = 0.5*np.sum(aux)
         KE[it] = 0.5 * dV * np.sum(rho0[:kmax] * aux)
-        KE_sgs[it] = 0.5 * dV * np.sum(rho0[:kmax] * ww_sgs_stats[it,:kmax])
 
         for i in range(nr):
             KE_r[it, i] = 0.5 * dV * np.sum(rho0[:kmax] * (v2_rad[it,i,:kmax]*rad2[i]
                                                            + v2_tan[it,i,:kmax]*rad2[i]
                                                            + w2_av[it,i,:kmax]*rad2[i]) )
             # KE_aux[it] += KE_r[it, i]
-
-
 
 
 
@@ -401,13 +386,12 @@ def compute_KE_from_radav(times, id, filename_in, filename_out, path_fields, pat
     var[:] = KE[:]
     var = ts_grp.variables['KEd']
     var[:] = KEd[:]
-    var = ts_grp.variables['KE_sgs_stats']
-    var[:] = KE_sgs[:]
     var = prof_grp.variables['KE_r']
     var[:, :] = KE_r[:, :]
     rootgrp.close()
 
     return KE, KEd, KE_r
+
 
 
 
@@ -428,10 +412,13 @@ def compute_KE_sgs(times, id, filename_in, filename_out, path_fields, path_stats
 
 
     # 1. read in reference density and mean viscosity
-    rootgrp = nc.Dataset(os.path.join(path, 'stats', 'Stats.' + case_name + '.nc'))
-    rho0 = rootgrp.groups['reference'].variables['rho0'][:kmax]
-    visc_mean = rootgrp.groups['profiles'].variables['viscosity_mean'][:,:]
-    rootgrp.close()
+    file_stats = nc.Dataset(os.path.join(path, 'stats', 'Stats.' + case_name + '.nc'))
+    rho0 = file_stats.groups['reference'].variables['rho0'][:kmax]
+    visc_mean = file_stats.groups['profiles'].variables['viscosity_mean'][:,:]
+    # uu_sgs_stats = file_stats.groups['profiles'].variables['u_sgs_flux_x'][:,:]
+    # vv_sgs_stats = file_stats.groups['profiles'].variables['v_sgs_flux_y'][:,:]
+    ww_sgs_stats = file_stats.groups['profiles'].variables['w_sgs_flux_z'][:, :]
+    file_stats.close()
 
     # 2. compute fluxes and KE
     # uu_sgs_flux = np.zeros((nt, nx, ny, nk))
@@ -441,6 +428,7 @@ def compute_KE_sgs(times, id, filename_in, filename_out, path_fields, path_stats
     vv_sgs_flux = np.zeros((nt, kmax))
     ww_sgs_flux = np.zeros((nt, kmax))
     KE_sgs = np.zeros((nt))
+    KE_sgs_stats = np.zeros((nt))
     for it, t0 in enumerate(times):
         print('--t=' + str(t0) + '----')
         # strain_rate = compute_strain_rate(d_ing, d_ed, nx, ny, nk, dx, t0, path_fields)
@@ -461,8 +449,10 @@ def compute_KE_sgs(times, id, filename_in, filename_out, path_fields, path_stats
         KE_sgs[it] = np.sum(rho0*uu_sgs_flux[it,:kmax]) \
                      + np.sum(rho0*vv_sgs_flux[it,:kmax])\
                      + np.sum(rho0*ww_sgs_flux[it,:kmax])
+        KE_sgs_stats[it] = 0.5 * dV * np.sum(rho0[:kmax] * ww_sgs_stats[it, :kmax])
     del aux
     KE_sgs = 0.5 * dV * KE_sgs
+
 
     ''' output '''
     rootgrp = nc.Dataset(os.path.join(path_stats, filename_out), 'r+', format='NETCDF4')
@@ -471,7 +461,10 @@ def compute_KE_sgs(times, id, filename_in, filename_out, path_fields, path_stats
     var[:] = KE_sgs[:]
 
     KE = ts_grp.variables['KE'][:]
-    KE_sgs_stats = ts_grp.variables['KE_sgs_stats'][:]
+    KE_sgs_stats = ts_grp.variables['KE_sgs'][:]
+    var[:] = KE_sgs_stats[:]
+    var = ts_grp.variables['KE_sgs_viscosity']
+    var[:] = KE_sgs[:]
     rootgrp.close()
 
 
@@ -913,7 +906,7 @@ def compute_PE_absolute(times, filename_out, path_fields, path_stats, path_figs)
     rootgrp = nc.Dataset(os.path.join(path_stats, filename_out), 'r+', format='NETCDF4')
     ts_grp = rootgrp.groups['timeseries']
     var = ts_grp.variables['PE_abs']
-    var[:] = PE[:]
+    var[:nt] = PE[:]
     rootgrp.close()
 
     return
@@ -925,9 +918,10 @@ def compute_PE_absolute(times, filename_out, path_fields, path_stats, path_figs)
 # ----------------------------------------------------------------------
 
 def plot_KE_PE_radav(id, file_data, path_data, path_figs):
-
     root = nc.Dataset(os.path.join(path_data, file_data), 'r')
     PE = root.groups['timeseries'].variables['PE'][:]
+    PE_3D = root.groups['timeseries'].variables['PE_3D'][:]
+    PE_abs = root.groups['timeseries'].variables['PE_abs'][:]
     KE = root.groups['timeseries'].variables['KE'][:]
     KE_sgs_stats = root.groups['timeseries'].variables['KE_sgs_stats'][:]
     KE_sgs = root.groups['timeseries'].variables['KE_sgs'][:]
@@ -1018,49 +1012,69 @@ def plot_KE_PE_radav(id, file_data, path_data, path_figs):
 
 
 
-
 def plot_KE_PE(id, file_data, path_data, path_figs):
+    print('plotting KE PE')
 
     root = nc.Dataset(os.path.join(path_data, file_data), 'r')
     PE = root.groups['timeseries'].variables['PE'][:]
-    PE = root.groups['timeseries'].variables['PE_3D'][:]
-    KE = root.groups['timeseries'].variables['KE'][:]
+    # PE = root.groups['timeseries'].variables['PE_3D'][:]
+    PE_3D = root.groups['timeseries'].variables['PE_3D'][:]
+    PE_abs = root.groups['timeseries'].variables['PE_abs'][:]
+    PE_ref = np.amin(PE_abs)
+    # KE = root.groups['timeseries'].variables['KE'][:]
     KE = root.groups['timeseries'].variables['KE_3D'][:]
     KE_sgs_stats = root.groups['timeseries'].variables['KE_sgs_stats'][:]
     KE_sgs = root.groups['timeseries'].variables['KE_sgs'][:]
-    KE_r = root.groups['profiles'].variables['KE_r'][:,:]
+    # KE_r = root.groups['profiles'].variables['KE_r'][:,:]
     times = root.groups['dimensions'].variables['time'][:]
     radius = root.groups['dimensions'].variables['radius'][:]
-    (nt, nr) = KE_r.shape
+    # (nt, nr) = KE_r.shape
     root.close()
     print path_figs
 
 
-    fig, axis = plt.subplots(1, 4, figsize=(15,5))
-    ax1 = axis[0]
-    ax2 = axis[1]
-    ax3 = axis[2]
-    ax4 = axis[3]
+    fig, axis = plt.subplots(2, 4, figsize=(20,10))
+    ax1 = axis[0,0]
+    ax2 = axis[0,1]
+    ax3 = axis[0,2]
+    ax4 = axis[0,3]
+    ax5 = axis[1,0]
+    ax6 = axis[1,1]
+    ax7 = axis[1,2]
     ax1.set_title('PE')
-    ax2.set_title('KE')
-    ax3.set_title('KE, PE')
-    ax4.set_title('KE + PE')
+    ax3.set_title('KE')
+    ax5.set_title('KE, PE')
+    ax6.set_title('KE + PE')
 
-    ax2.plot(times, KE, '-o')
-    ax1.plot(times, PE, '-o')
-    ax3.plot(times, PE, '-o', label='PE')
-    ax3.plot(times, KE, '-o', label='KE')
-    ax3.legend(loc='best')
-    ax4.plot(times, PE+KE, label='KE+PE')
-    ax4.plot(times, PE, label='PE')
+    ax1.plot(times, PE, '-', label='PE radav')
+    ax1.plot(times, PE_3D, '-', label='PE 3D')
+    ax1.plot(times, PE_abs-PE_ref, '-', label='PE abs')
+    ax2.plot(times, PE, '-', label='PE radav')
+    ax2.plot(times, PE_abs - PE_ref, '-', label='PE abs')
+    ax3.plot(times, KE, '-')
+    # ax4.plot(times, KE, '-', label='KE')
+    ax4.plot(times, KE_sgs_stats, '-', label='KE SGS (stats)')
+    ax4.plot(times, KE_sgs, '-', label='KE SGS')
+
+    ax5.plot(times, PE, label='PE radav')
+    ax5.plot(times, KE, label='KE')
+    ax5.plot(times, PE+KE, label='KE+PE', linewidth=4)
+    ax6.plot(times, PE_abs-PE_ref, label='PE abs')
+    ax6.plot(times, KE, label='KE')
+    ax6.plot(times, PE_abs-PE_ref+KE, label='KE+PE', linewidth=4)
+    ax1.legend(loc='best')
+    ax2.legend(loc='best')
     ax4.legend(loc='best')
+    ax5.legend(loc='best')
+    ax6.legend(loc='best')
 
-    ax1.set_xlabel('time [s]')
-    ax2.set_xlabel('time [s]')
-    ax3.set_xlabel('time [s]')
+    # ax4.set_xlabel('time [s]')
     ax4.set_xlabel('time [s]')
+    ax5.set_xlabel('time [s]')
+    ax6.set_xlabel('time [s]')
     ax1.set_ylabel('PE [J]')
-    ax2.set_ylabel('KE [J]')
+    ax2.set_ylabel('PE [J]')
+    ax3.set_ylabel('KE [J]')
     ax4.set_ylabel('KE + PE [J]')
 
     ax1.grid()
@@ -1427,11 +1441,12 @@ def create_output_file(times, filename_in, path_in, filename_out, path_out):
     var.title = "KE from interpolated 3D velocity fields"
     # SGS KE
     #   KE computed from 3D fields and mean viscosity profile
-    var = ts_grp.createVariable('KE_sgs_stats', 'f8', ('nt'))
+    var = ts_grp.createVariable('KE_sgs_viscosity', 'f8', ('nt'))
+    var.title = "SGS KE from viscosity-profile"
     var.units = "(m/s)^2"
     #   KE from SGS <ww> profile in stats output
     var = ts_grp.createVariable('KE_sgs', 'f8', ('nt'))
-    var.title = "SGS KE"
+    var.title = "SGS KE from ww_flux-profile"
     var.units = "(m/s)^2"
 
     # PE from radially averaged velocity fields
