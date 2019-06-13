@@ -59,7 +59,7 @@ def main():
         id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
         print('id', id)
         filename = 'CP_height_' + id + '_sth' + str(s_crit) + '.nc'
-        fullpath_in = os.path.join(path_root, id, filename)
+        fullpath_in = os.path.join(path_root, id, 'data_analysis', filename)
         print(fullpath_in)
         rootgrp = nc.Dataset(fullpath_in, 'r')
         time = rootgrp.groups['timeseries'].variables['time'][:]

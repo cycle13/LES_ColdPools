@@ -485,7 +485,7 @@ def set_input_output_parameters(args):
     path = args.path
     if os.path.exists(os.path.join(path, 'fields')):
         path_fields = os.path.join(path, 'fields')
-    path_out = os.path.join(path, 'figs_CP_height')
+    path_out = os.path.join(path, 'data_analysis')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
 
