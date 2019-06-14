@@ -60,7 +60,7 @@ def main():
 
     print ''
     print('----- compute radial velocity ----------- ')
-    # creates file with v_rad[nt, nx, ny, kmax]
+    # creates output-file with v_rad[nt, nx, ny, kmax], v_ran[nt, nx, ny, kmax] and r_field[nx, ny]
     file_name_vradfield = 'v_rad.nc'    # in 'fields_v_rad'
     compute_radial_velocity(th_field, r_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data_2D)
 
@@ -70,7 +70,7 @@ def main():
     # OUTPUT: file with angular averaged statistics, e.g. v_rad[nt, nr, nz]
     # file_name_stats = 'stats_radial_averaged_test.nc'
     file_name_stats = 'stats_radial_averaged.nc'
-    compute_angular_average(r_field, rmax, times, file_name_stats, path_out_data, path_out_data_2D)
+    compute_angular_average(rmax, times, file_name_stats, path_out_data, path_out_data_2D)
 
 
     print ''
@@ -120,7 +120,6 @@ def compute_radius(ic, jc, irange, jrange, file_name, path_out_data_2D):
 
 
 
-
     fig, axis = plt.subplots(3, 2)
     ax1 = axis[0,0]
     ax2 = axis[0,1]
@@ -143,18 +142,10 @@ def compute_radius(ic, jc, irange, jrange, file_name, path_out_data_2D):
     plt.close()
 
 
-
-
     # rootgrp = nc.Dataset(fullpath_out, 'w', format='NETCDF4')
     # nx_ = 200
     # rootgrp.createDimension('nx', nx_)
     # rootgrp.createDimension('ny', nx_)
-    #
-    # # var = rootgrp.createVariable('a', 'f8', ('nx'))
-    # # var[:] = np.ones(nx)
-    # var = rootgrp.createVariable('b', 'f8', ('nx', 'nx'))
-    # var[:,:] = np.ones((nx_, nx_))
-    #
     # # var = rootgrp.createVariable('r_field', 'f8', ('nx', 'ny'))
     # # var[:, :] = r_field[:,:]
     # # var = rootgrp.createVariable('th_field', 'f8', ('nx', 'ny'))
@@ -235,7 +226,7 @@ def compute_radial_velocity(th_field, r_field, times, filename, ic, jc, rmax, pa
 
 # _______________________________
 
-def compute_angular_average(r_field, rmax, times, file_name, path_out_data, path_out_data_2D):
+def compute_angular_average(rmax, times, file_name, path_out_data, path_out_data_2D):
     t0 = time.time()
     var_list = ['w', 's', 'phi', 'temperature']
     # file_name = 'stats_radial_averaged_test.nc'
@@ -256,6 +247,7 @@ def compute_angular_average(r_field, rmax, times, file_name, path_out_data, path
     rootgrp = nc.Dataset(fullpath_in)
     v_rad = rootgrp.variables['v_rad'][:, :, :, :]
     v_tan = rootgrp.variables['v_tan'][:, :, :, :]
+    r_field = rootgrp.variables['r_field'][:, :]
     rootgrp.close()
     if v_rad.shape[3] < kmax:
         print('v_rad-fields contain less levels than kmax=' + str(kmax))
