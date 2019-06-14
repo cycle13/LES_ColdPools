@@ -97,17 +97,17 @@ def main():
     irmax_plot = np.where(r_range == rmax_plot)[0][0]
 
     for it, t0 in enumerate(times):
-        print('---- t0='+str(t0)+' ----')
+        print('---- t0='+str(t0)+', '+str(it)+' ----')
         for k0 in range(kmin, kmax+1):
+            # print('   ---- k0='+str(k0)+' ----')
             # indices of max / min
             delta = np.int(500./dx[0])
             wmin[it, k0] = np.amin(var[it, delta:, k0])     # search min(w) in interval r=[500,rmax]
             imin = np.argmin(var[it, delta:, k0]) + delta
             rmin[it, k0] = r_range[imin]
-            wmax[it, k0] = np.amax(var[it, :, k0])
-            imax = np.argmax(var[it, :, k0])
+            wmax[it, k0] = np.amax(var[it, delta:, k0])
+            imax = np.argmax(var[it, delta:, k0]) + delta
             rmax[it, k0] = r_range[imax]
-            print ''
 
             # find center of vortex (zero point of w)
             i = imax
@@ -122,9 +122,9 @@ def main():
             rcenter[1, it, k0] = r_range[icenter]
 
             # find inner edge of rim: defined as maximum(w(r<min))
-            delta = 3
-            wint[it, k0] = np.amax(var[it, delta:imin, k0])
-            iint = np.argmax(var[it, delta:imin, k0]) + delta
+            delta_int = 3
+            wint[it, k0] = np.amax(var[it, delta_int:imin, k0])
+            iint = np.argmax(var[it, delta_int:imin, k0]) + delta_int
             rint[it, k0] = r_range[iint]
             # find outer edge of rim: defined as point of w(r>rmax)<wcrit
             i = imax
@@ -134,14 +134,14 @@ def main():
             wout[it, k0] = var[it, iout, k0]
             rout[it, k0] = r_range[iout]
 
-
-            print('wmin', wmin[it, k0])
-            print('wcenter', wcenter)
-            print('wmax', wmax[it, k0])
-            # print 'imax', imax
-            # print 'icenter', icenter
-            # print 'imin', imin
-            print ''
+            # print ''
+            # print('wmin', wmin[it, k0])
+            # print('wcenter', wcenter)
+            # print('wmax', wmax[it, k0])
+            # # print 'imax', imax
+            # # print 'icenter', icenter
+            # # print 'imin', imin
+            # print ''
 
 
             # compute linear fitting functions
@@ -152,29 +152,35 @@ def main():
             dyminus = -omega_minus[it, k0]*rcenter[1,it, k0]
             lin_plus = omega_plus[it, k0]*r_range + dyplus
             lin_minus = omega_minus[it, k0]*r_range + dyminus
-            print('mplus', omega_plus[it, k0])
-            print('mminus', omega_minus[it, k0])
-            print('dyplus', dyplus)
-            print('dyminus', dyminus)
-            print ''
+            # print('mplus', omega_plus[it, k0])
+            # print('mminus', omega_minus[it, k0])
+            # print('dyplus', dyplus)
+            # print('dyminus', dyminus)
+            # print ''
 
 
-            # # plotting test_fig: w(t) for each k and show rmin, rmax, rcenter
+            # # # plotting test_fig: w(t) for each k and show rmin, rmax, rcenter
+            # fig_name = 'test_fig_t' + str(t0) + '_z' + str(k0 * dx[2]) + 'm.png'
             # plot_test_fig(var, wmin, wmax, rmin, rcenter, rmax, imin, imax,
             #               wint, rint, wout, rout, wcrit,
-            #       r_range, nr, irmax_plot,
-            #       lin_plus, lin_minus, omega_plus, omega_minus,
-            #       it, t0, times, k0)
+            #             r_range, nr, irmax_plot,
+            #             lin_plus, lin_minus, omega_plus, omega_minus,
+            #             it, t0, times, k0, fig_name, path_out_figs)
+
 
 
     ''' plotting '''
+    fig_name = 'w_rmin_rmax_test.png'
+    plot_w_rmin_rmax_rc(var, wmin, wmax, wcenter, r_range, rmin, rmax, rcenter, rint, rout,
+                        delta, times, fig_name, path_out_figs)
+
     fig_name = 'rim_width' + '.png'
     plot_rim_width(rmin, rmax, rcenter, rint, rout, krange, times, times_stats, fig_name, path_out_figs)
 
 
     ''' make output '''
     file_name_out = 'stats_radial_averaged_rimwidth.nc'
-    create_output_file(times, nk, file_name_out, path_data)
+    create_output_file(times, krange, nk, file_name_out, path_data)
 
     rootgrp_out = nc.Dataset(os.path.join(path_data, file_name_out), 'r+')
     nz_out = rootgrp_out.groups['dimensions'].dimensions['nz'].size
@@ -200,6 +206,28 @@ def main():
     return
 # _______________________________
 # _______________________________
+def plot_w_rmin_rmax_rc(w, wmin, wmax, wcenter,
+                        r_range, rmin, rmax, rcenter, rint, rout,
+                        delta, times, fig_name, path_out_figs):
+    ncol = 1
+    nrow = 2
+    k0 = 0
+    irmax = np.int((np.amax(rmax[:,k0])+2000.)/dx[0])
+    print(irmax, np.amax(rmax[:,k0]))
+    fig, axis = plt.subplots(nrow, ncol, sharey='none', figsize=(10*ncol, 5 * nrow))
+    ax1 = axis[0]
+    ax1.plot([r_range[delta], r_range[delta]], [-2, 2], 'k--', linewidth=1, label='delta')
+    for it, t0 in enumerate(times[1::2]):
+        count_color = 2 * np.double(it) / len(times)
+        ax1.plot(r_range[:], w[2*it+1, :, k0], color=cm.jet(count_color), label='t='+str(t0))
+        ax1.plot(rmax[2*it+1,k0], wmax[2*it+1,k0], 'ko')
+        ax1.plot(rmin[2*it+1,k0], wmin[2*it+1,k0], 'kd')
+        ax1.set_xlim(0, np.amax(rmax[:,k0])+1000)
+    ax1.legend(loc='best', fontsize=8, ncol=4)
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+    return
+
 def plot_rim_width(rmin, rmax, rcenter, rint, rout, krange, times, times_stats, fig_name, path_out_figs):
     ncol = 2
     nrow = 2
@@ -262,7 +290,7 @@ def plot_rim_width(rmin, rmax, rcenter, rint, rout, krange, times, times_stats, 
     return
 # _______________________________
 # _______________________________
-def create_output_file(timerange, nk, filename_out, path_out):
+def create_output_file(timerange, krange, nk, filename_out, path_out):
     print ''
     print('-------- create statistics file -------- ')
     print(path_out + ', ' + filename_out)
@@ -278,7 +306,8 @@ def create_output_file(timerange, nk, filename_out, path_out):
     dims_grp.createDimension('dz', dx[2])
     dims_grp.createDimension('nz', nk)
     var = dims_grp.createVariable('krange', 'f8', ('nz'))
-    var[:] = np.arange(kmin, kmax+1, dtype=np.int)
+    # var[:] = np.arange(kmin, kmax+1, dtype=np.int)
+    var[:] = krange
 
     ts_grp = rootgrp.createGroup('timeseries')
     ts_grp.createDimension('nt', nt)
@@ -327,8 +356,7 @@ def plot_test_fig(var, wmin, wmax, rmin, rcenter, rmax, imin, imax,
                   wint, rint, wout, rout, wcrit,
                   r_range, nr, irmax,
                   lin_plus, lin_minus, omega_plus, omega_minus,
-                  it, t0, times, k0, path_out_figs):
-    fig_name = 'test_fig_t' + str(t0) + '_z' + str(k0 * dx[2]) + 'm.png'
+                  it, t0, times, k0, fig_name, path_out_figs):
 
     ncol = 3
     fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5 * ncol, 5))
