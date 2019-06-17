@@ -25,7 +25,7 @@ def main():
     parser.add_argument("path")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
-    parser.add_argument("--kmax")
+    # parser.add_argument("--kmax")
     parser.add_argument("--s_crit")
     args = parser.parse_args()
 
@@ -52,29 +52,28 @@ def main():
     id = os.path.basename(path)
     print('id: ', id)
 
-    # kstar = np.round(np.int(zstar / dx[2]))
 
     ''' background entropy '''
     try:
         s0 = read_in_netcdf_fields('s', os.path.join(path_fields, '0.nc'))
     except:
         s0 = read_in_netcdf_fields('s', os.path.join(path_fields, '100.nc'))[ic_arr[2],jc_arr[0],5]
-    s_bg = s0[i0_coll,jc_arr[0],5]
+    s_bg = np.average(s0[:10,:10,:kstar])
     smax = np.amax(s0)
     smin = np.amin(s0)
-    # del s
+    plot_geometry(s0, i0_center, j0_center)
     print('sminmax', smin, smax)
     print ''
 
     # ''' define CP height & maximal updraft velocity'''
-    filename = 'CP_height_' + id + '_sth' + str(s_crit) + '.nc'
-    create_output_file(id, s_crit, nx, ny, times)
-    CP_top, w_max = compute_CP_height(s_bg, s_crit, smin, smax,
-                      xmin_plt, xmax_plt, ymin_plt, ymax_plt, i0_coll, id)
     # Output:
     #       CP_top[it, x, y]: 2D-field with CP-height for each xy-value
     #       w_max[0,it,x,y]:  2D-field with maximum value of w for each column
     #       w_max[1,it,x,y]:  height where maximum value of w for each column
+    filename = 'CP_height_' + id + '_sth' + str(s_crit) + '.nc'
+    create_output_file(filename, s_crit, nx, ny, times)
+    compute_dump_CP_height(s_bg, s_crit, smin, smax,
+                           xmin_plt, xmax_plt, ymin_plt, ymax_plt, i0_coll, id)
     print('')
 
 
@@ -105,7 +104,6 @@ def main():
     # j2 = ic_arr[0]
     j1 = i0_center
     j2 = j0_coll
-    plot_geometry(s0, i1, j1)
     plot_x_crosssections(s0, CP_top_2D, w_max_2D, j1, j2)
     plot_x_crosssections(s0, CP_top_2D, w_max_2D, j1, j2)
     plot_x_crosssections_CPtop_w(s0, CP_top_2D, w_max_2D, j1, j2)
@@ -124,61 +122,92 @@ def main():
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 
-def compute_CP_height(s_bg, s_crit, smin, smax,
+def compute_dump_CP_height(s_bg, s_crit, smin, smax,
                       xmin_plt, xmax_plt, ymin_plt, ymax_plt, i0_coll, id):
+    print('')
+    print('compute & dump CP height')
     ''' define CP height & maximal updraft velocity'''
     nt = len(times)
     dzi = 1. / dx[2]
 
     w_max = np.zeros((2, nt, nx, ny))
     # define CP height by threshold in entropy directly (s > s_crit)
-    CP_top = np.zeros((nt, nx, ny))
+    CP_top = np.zeros((nt, nx, ny), dtype=np.int)
     # define CP height by threshold in gradient of entropy
     CP_top_grad = np.zeros((nt, nx, ny))
     CP_top_max = np.zeros((2, nt))
 
-    print('computing: shapes nt', nt, CP_top_max.shape )
     xmax = nx
     kmax = kstar + 20
-
-    # irstar used for determining the averaging domain
-    if case_name == 'ColdPoolDry_single_3D':
-        i_eps_min = i0_coll - irstar
-        j_eps_min = jc_arr[0] - 2 * irstar
-        deltax = 3 * irstar
-        deltay = irstar
-    elif case_name == 'ColdPoolDry_double_3D':
-        i_eps_min = i0_coll - irstar
-        j_eps_min = jc_arr[0] - 2 * irstar
-        deltax = 3 * irstar
-        deltay = irstar
-    elif case_name == 'ColdPoolDry_triple_3D':
-        i_eps_min = ic_arr[2] - irstar
-        j_eps_min = jc_arr[0] - 2 * irstar
-        deltax = 3 * irstar
-        deltay = irstar
+    print('kstar', kstar, 'kmax', kmax)
 
     for it, t0 in enumerate(times):
         print('--- t: ', it, t0)
-        s = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0) + '.nc'))[:xmax, :, :]
-        w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))[:xmax, :, :]
-
+        s = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0) + '.nc'))[:xmax, :, :kmax+1]
+        w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))[:xmax, :, :kmax+1]
         s_grad = np.zeros((nx, ny, kmax))
-        # t_start = time.clock()
+
+
+
+        s_diff = s - s_bg
         for i in range(nx):
             for j in range(ny):
-                # maxi = -9999.9
-                # maxik = 0
-                for k in range(kmax - 1, 0, -1):
-                    if np.abs(s[i, j, k] - s_bg) > s_crit and CP_top[it, i, j] == 0:
+                # for k in range(kmax-1, 0, -1):
+                k = kmax
+                while k >= 0:
+                    k -= 1
+                    if np.abs(s_diff[i, j, k]) > s_crit and CP_top[it, i, j] == 0:
                         CP_top[it, i, j] = k
+                        k = -1
                     s_grad[i, j, k] = dzi * (s[i, j, k + 1] - s[i, j, k])
+        # s_ = np.ma.masked_outside(s, s_bg - s_crit, s_bg + s_crit)
+        # s_m = np.ma.getmask(s_)
+        # xmax = 1
+        # ymax = 1
+        # kmax = 50
+        # for k in
+        # for i in range(i0_center-xmax,i0_center+xmax):
+        #     for j in range(j0_center-ymax,j0_center+ymax):
+        #         k = kmax - 1
+        #         print('ij', i, j, k)
+        #         while k>= 0:
+        #             k -= 1
+        #             if CP_top[it,i,j] == 0:
+        #                 # if s_[i,j,k]:
+        #                 if not s_m[i,j,k]:
+        #                     print(i,j,k, s_.data[i,j,k], s_bg - s_crit, s_bg + s_crit)
+        #                     k = -1
+        #                 else:
+        #                     print('...', s_m[i,j,k], s_.data[i,j,k], s_bg - s_crit, s_bg + s_crit)
+        #
+        #             print 'k', k
+        # for k in range(kmax):
+        #     s_grad[:,:,k] = dzi * (s[:,:,k+1] - s[i,j,k])
+
         w_ = np.array(w, copy=True)
         w_[w_ < 0.5] = 0
         w_max[0, it, :, :] = np.amax(w, axis=2)     # maximum value
         w_max[1, it, :, :] = np.argmax(w_, axis=2)  # height of maximum value
-        del w_
 
+
+        del w_, w
+
+        # irstar used for determining the averaging domain
+        if case_name == 'ColdPoolDry_single_3D':
+            i_eps_min = i0_coll - irstar
+            j_eps_min = jc_arr[0] - 2 * irstar
+            deltax = 3 * irstar
+            deltay = irstar
+        elif case_name == 'ColdPoolDry_double_3D':
+            i_eps_min = i0_coll - irstar
+            j_eps_min = jc_arr[0] - 2 * irstar
+            deltax = 3 * irstar
+            deltay = irstar
+        elif case_name == 'ColdPoolDry_triple_3D':
+            i_eps_min = ic_arr[2] - irstar
+            j_eps_min = jc_arr[0] - 2 * irstar
+            deltax = 3 * irstar
+            deltay = irstar
         epsilon = np.average(np.average(s_grad[i_eps_min:i_eps_min + deltax, j_eps_min:j_eps_min + deltay, :], axis=0),
                              axis=0)
         for i in range(nx):
@@ -196,7 +225,9 @@ def compute_CP_height(s_bg, s_crit, smin, smax,
 
         print ''
 
-    return CP_top, w_max
+
+    # return CP_top_max, CP_top, w_max
+    return
 
 
 
@@ -266,7 +297,7 @@ def plot_contourf_test_yz(s, smin, smax, CP_top, CP_top_grad, kmax, t0):
     ax3.set_title('CP top (gradient)')
     fig.suptitle('t=' + str(t0) + 's')
     fig.tight_layout()
-    fig.savefig(os.path.join(path_out, 'CP_height_yz_t' + str(t0) + '.png'))
+    fig.savefig(os.path.join(path_out_figs, 'CP_height_yz_t' + str(t0) + '.png'))
     plt.close(fig)
     return
 
@@ -302,29 +333,38 @@ def plot_contourf_xy(CP_top, w_max, w_max_height, t0):
     ax3.set_xlabel('x  (dx='+str(dx[0])+')')
     fig.suptitle('t='+str(t0)+'s')
     fig.tight_layout()
-    fig.savefig(os.path.join(path_out, 'CP_height_t'+str(t0)+'.png'))
+    fig.savefig(os.path.join(path_out_figs, 'CP_height_t'+str(t0)+'.png'))
     plt.close(fig)
 
     return
 
 
 def plot_geometry(s, i0, j0):
-    fig, axes = plt.subplots(1, 2, figsize=(16, 5), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
     ax1 = axes[0]
-    a = ax1.contourf(s[:,:,kstar].T)
-    eps = 80
-    plt.colorbar(a, ax=ax1)
+    ax2 = axes[1]
+    a1 = ax1.contourf(s[:,:,kstar].T)
+    a2 = ax2.contourf(s[:,:,0].T)
+    eps = 20
+    plt.colorbar(a1, ax=ax1)
+    plt.colorbar(a2, ax=ax2)
     ax1.set_xlim(i0-eps, i0+eps)
     ax1.set_ylim(j0-eps, j0+eps)
+    ax2.set_xlim(i0-eps, i0+eps)
+    ax2.set_ylim(j0-eps, j0+eps)
     ax1.plot(i0, j0, 'ko')
+    ax2.plot(i0, j0, 'ko')
     ax1.plot([i0, i0],[0, ny], 'k-')
+    ax2.plot([i0, i0],[0, ny], 'k-')
     ax1.plot([0, ny],[j0, j0], 'k-')
+    ax2.plot([0, ny],[j0, j0], 'k-')
     ax1.set_aspect('equal')  # ax.set_aspect(1.0)
+    ax2.set_aspect('equal')  # ax.set_aspect(1.0)
     ax1.set_xlabel('x  (dx=' + str(dx[0]) + 'm)')
     ax1.set_ylabel('y  (dy=' + str(dx[1]) + 'm)')
 
     fig.tight_layout()
-    fig.savefig(os.path.join(path_out, 'CP_geometry.png'))
+    fig.savefig(os.path.join(path_out_figs, 'CP_geometry.png'))
     plt.close(fig)
 
     return
@@ -359,7 +399,7 @@ def plot_x_crosssections(s0, CP_top, w_max, jp1, jp2):
     ax3.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
                fancybox=True, shadow=True, ncol=5)
     plt.suptitle('CP height', fontsize=21)
-    plt.savefig(os.path.join(path_out, 'CP_height_xz_plane.png'))
+    plt.savefig(os.path.join(path_out_figs, 'CP_height_xz_plane.png'))
     plt.close()
     return
 
@@ -395,7 +435,7 @@ def plot_y_crosssections(s0, CP_top, w_max, ip1, ip2):
     ax3.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
                fancybox=True, shadow=True, ncol=5)
     plt.suptitle('CP height', fontsize=21)
-    plt.savefig(os.path.join(path_out, 'CP_height_yz_plane.png'))
+    plt.savefig(os.path.join(path_out_figs, 'CP_height_yz_plane.png'))
     plt.close()
     return
 
@@ -428,7 +468,7 @@ def plot_x_crosssections_CPtop_w(s0, CP_top, w_max, jp1, jp2):
     ax3.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
                fancybox=True, shadow=True, ncol=5)
     plt.suptitle('x-crossection through collision point', fontsize=21)
-    plt.savefig(os.path.join(path_out, 'CP_height_wmax_xz_plane.png'))
+    plt.savefig(os.path.join(path_out_figs, 'CP_height_wmax_xz_plane.png'))
     plt.close()
     return
 
@@ -462,7 +502,7 @@ def plot_y_crosssections_CPtop_w(s0, CP_top, w_max, ip1, ip2):
     ax3.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
                fancybox=True, shadow=True, ncol=5)
     plt.suptitle('y-crossection through 2 CP-collision point', fontsize=21)
-    plt.savefig(os.path.join(path_out, 'CP_height_wmax_yz_plane.png'))
+    plt.savefig(os.path.join(path_out_figs, 'CP_height_wmax_yz_plane.png'))
     plt.close()
 
     return
@@ -474,7 +514,7 @@ def plot_y_crosssections_CPtop_w(s0, CP_top, w_max, ip1, ip2):
 def set_input_output_parameters(args):
     print('--- set input parameters ---')
     global case_name
-    global path, path_fields, path_out
+    global path, path_fields, path_out, path_out_figs
     global times, files
 
     if args.casename:
@@ -486,8 +526,15 @@ def set_input_output_parameters(args):
     if os.path.exists(os.path.join(path, 'fields')):
         path_fields = os.path.join(path, 'fields')
     path_out = os.path.join(path, 'data_analysis')
+    path_out_figs = os.path.join(path, 'figs_CP_height')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
+    if not os.path.exists(path_out):
+        os.mkdir(path_out_figs)
+    print ''
+    print('path data: ' + path_out)
+    print('path figs: ' + path_out_figs)
+    print ''
 
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
     global nx, ny, nz, dx, dV, gw
@@ -520,10 +567,10 @@ def set_input_output_parameters(args):
     files = [str(t) + '.nc' for t in times]
     print('files', files)
 
-    if args.kmax:
-        kmax = np.int(args.kmax)
-    else:
-        kmax = 50
+    # if args.kmax:
+    #     kmax = np.int(args.kmax)
+    # else:
+    #     kmax = 50
     print ''
 
     return nml
@@ -535,6 +582,7 @@ def define_geometry(case_name, nml):
     print('--- define geometry ---')
     global x_half, y_half, z_half
     global ic_arr, jc_arr
+    global i0_center, j0_center
     global rstar, irstar, zstar, kstar
 
     # test file:
@@ -573,8 +621,8 @@ def define_geometry(case_name, nml):
             # print('(ic,jc) NOT from nml')
         ic_arr = np.zeros(1)
         jc_arr = np.zeros(1)
-        ic_arr[0] = ic
-        jc_arr[0] = jc
+        ic_arr[0] = np.int(ic)
+        jc_arr[0] = np.int(jc)
     elif case_name == 'ColdPoolDry_double_2D':
         try:
             rstar = nml['init']['r']
@@ -629,10 +677,10 @@ def define_geometry(case_name, nml):
 
     ''' plotting parameters '''
     if case_name == 'ColdPoolDry_single_3D':
-        i0_coll = ic_arr[0] - 10
-        j0_coll = jc_arr[0] - 10
-        i0_center = ic_arr[0]
-        j0_center = jc_arr[0]
+        i0_coll = 1
+        j0_coll = 1
+        i0_center = np.int(ic_arr[0])
+        j0_center = np.int(jc_arr[0])
         if nx > 200:
             xmin_plt = 100
         else:
@@ -728,7 +776,7 @@ def create_output_file(filename, s_crit, nx, ny, times):
 def dump_output_file(CP_top_max, CP_top, w_max, it, id, s_crit):
     print id
     filename = 'CP_height_' + id + '_sth' + str(s_crit) + '.nc'
-    print('dumping', os.path.join(path_out, filename))
+    # print('dumping', os.path.join(path_out, filename))
     rootgrp = nc.Dataset(os.path.join(path_out, filename), 'r+', format='NETCDF4')
 
     ts_grp = rootgrp.groups['timeseries']
@@ -736,13 +784,12 @@ def dump_output_file(CP_top_max, CP_top, w_max, it, id, s_crit):
     var = ts_grp.variables['CP_height']
     var[it] = CP_top_max[0, it]*dx[2]
     var = ts_grp.variables['CP_height_gradient']
-    print CP_top_max.shape, var.shape
     var[it] = CP_top_max[1, it]*dx[2]
 
     var = ts_grp.variables['w_max']
-    var[it] = np.average(w_max[0, :, :])
+    var[it] = np.average(w_max[0, it, :, :])
     var = ts_grp.variables['w_max_height']
-    var[it] = np.average(w_max[1, :, :])*dx[2]
+    var[it] = np.average(w_max[1, it, :, :])*dx[2]
 
 
 
@@ -754,9 +801,9 @@ def dump_output_file(CP_top_max, CP_top, w_max, it, id, s_crit):
     # var[it,:,:] = CP_top[it,:,:]
 
     var = field_grp.variables['w_max_2d']
-    var[it, :, :] = w_max[0, :, :]
+    var[it, :, :] = w_max[0, it, :, :]
     var = field_grp.variables['w_max_height_2d']
-    var[it, :, :] = w_max[1, :, :]*dx[2]
+    var[it, :, :] = w_max[1, it, :, :]*dx[2]
 
     rootgrp.close()
     return
