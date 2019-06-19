@@ -217,7 +217,7 @@ def plot_timeseries(s0, i0_coll, j0_coll, filename):
     ts_grp = rootgrp.groups['timeseries']
     field_grp = rootgrp.groups['fields_2D']
     time_range = ts_grp.variables['time'][:]
-    CP_height = ts_grp.variables['CP_height'][:]
+    CP_height = ts_grp.variables['CP_height_max'][:]
     w_max = ts_grp.variables['w_max'][:]
     w_max_height = ts_grp.variables['w_max_height'][:]
     CP_height_2d = field_grp.variables['CP_height_2d'][:, :]
@@ -725,9 +725,11 @@ def create_output_file(filename, s_crit, nx, ny, times):
     var.units = "s"
     var[:] = times
 
-    var = ts_grp.createVariable('CP_height', 'f8', ('nt'))
+    var = ts_grp.createVariable('CP_height_max', 'f8', ('nt'))
+    var.long_name = 'domain max CP height (from threshold)'
     var.units = "m"
-    var = ts_grp.createVariable('CP_height_gradient', 'f8', ('nt'))
+    var = ts_grp.createVariable('CP_height_gradient_max', 'f8', ('nt'))
+    var.long_name = 'domain max CP height (from gradient)'
     var.units = "m"
 
     var = ts_grp.createVariable('w_max', 'f8', ('nt'))
@@ -759,9 +761,9 @@ def dump_output_file(CP_top_max, CP_top, w_max, it, id, s_crit):
 
     ts_grp = rootgrp.groups['timeseries']
 
-    var = ts_grp.variables['CP_height']
+    var = ts_grp.variables['CP_height_max']
     var[it] = CP_top_max[0, it]*dx[2]
-    var = ts_grp.variables['CP_height_gradient']
+    var = ts_grp.variables['CP_height_gradient_max']
     var[it] = CP_top_max[1, it]*dx[2]
 
     var = ts_grp.variables['w_max']

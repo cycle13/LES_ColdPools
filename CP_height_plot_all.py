@@ -67,8 +67,8 @@ def main():
         print(fullpath_in)
         rootgrp = nc.Dataset(fullpath_in, 'r')
         time = rootgrp.groups['timeseries'].variables['time'][:]
-        CP_height_max = rootgrp.groups['timeseries'].variables['CP_height'][:]
-        CP_height_grad = rootgrp.groups['timeseries'].variables['CP_height_gradient'][:]
+        CP_height_max = rootgrp.groups['timeseries'].variables['CP_height_max'][:]
+        CP_height_grad = rootgrp.groups['timeseries'].variables['CP_height_gradient_max'][:]
         w_max = rootgrp.groups['fields_2D'].variables['w_max_2d'][:,:,:]
         w_max_height = rootgrp.groups['fields_2D'].variables['w_max_height_2d'][:,:,:]
         rootgrp.close()
