@@ -6,7 +6,6 @@
 read -p "dTh: " dTh; 
 read -p "tmin: " tmin; 
 read -p "tmax: " tmax;
-read -p "kmax: " kmax;
 
 # if no input for tmin, tmax
 if [[ $tmin = "" ]]
@@ -19,52 +18,41 @@ if [[ $tmax = "" ]]
 fi
 echo "tmin=" $tmin ", tmax=" $tmax
 
-if [[ $kmax = "" ]]
-  then
-  kmax=120
-fi
-echo "kmax=" $kmax
-echo" "
 
-
-path="/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2_dx100m/"
+path="/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run4_dx25m/"
 casename="ColdPoolDry_single_3D"
 
 # to run over different dTh, use input dTh=0
 if [ $dTh -eq 0 ]
 then
   do_r1km=1
+  #dTh_params=( 2 3 4 )
 else
   do_r1km=0
+  #dTh_params=( $dTh )
 fi
 #echo "dTh_params: " ${dTh_params[@]}
 
 
 # set geometry parameters
-if [ $dTh -eq 4 ]
-then 
-  z_params=( 2500 2000 900 500 )
-  r_params=( 400 500 900 1300 )
-elif [ $dTh -eq 3 ]
+if [ $dTh -eq 1 ]
 then
-  z_params=( 2500 2000 1600 1000 500 )
-  r_params=( 500 600 700 1000 1500 )
-  #z_params=( 4000 )
-  #r_params=( 250 )
-elif [ $dTh -eq 2 ]
-then
-  z_params=( 2500 1900 1600 900 500 )
-  r_params=( 600 800 900 1300 1900 )
-  #z_params=( 815 )
-  #r_params=( 2450 )
-elif [ $dTh -eq 1 ]
-then 
   z_params=( 3465 1730 1155 )
   r_params=( 1155 1730 3465 )
-elif [ $dTh -eq 10 ]
-then 
-  z_params=( 2000 )
-  r_params=( 2000 )
+elif [ $dTh -eq 2 ]
+then
+  z_params=( 500 900 1600 1900 2500 ) #run2
+  r_params=( 1900 1300 900 800 600 )  #run2
+elif [ $dTh -eq 3 ]
+then
+  z_params=( 1000 ) # run4
+  r_params=( 1000 ) # run4
+elif [ $dTh -eq 4 ]
+then
+  z_params=( 500 900 1600 2000 2500 ) #run2
+  r_params=( 1300 900 600 500 400 )   #run2
+  #z_params=( 2500 )
+  #r_params=( 400 )
 fi
 
 
@@ -110,7 +98,7 @@ do
   #python plot_crosssections.py $casename $fullpath --tmin 100 --tmax 800
 
   #echo "ANGULAR AVERAGE"
-  #python average_angular.py $casename $fullpath --kmax 10 --tmin $tmin --tmax $tmax
+  #python average_angular.py $casename $fullpath --kmax 40 --tmin $tmin --tmax $tmax
 
   echo "compute CP HEIGHT"
   python CP_height_compute.py $casename $fullpath --tmin $tmin --tmax $tmax
@@ -156,6 +144,31 @@ done
 
 #echo "VORTICITY all"
 #python vorticity_streamfct_plotting_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
+
+
+
+
+
+# -------------------------------------------
+do_r1km=0
+
+if [ $do_r1km -eq 1 ]
+then
+# r=1km
+dTh_params=( 2 3 4 )
+z_params=( 900 1000 900 )
+r_params=( 1300 1000 900 )
+echo "dTh-parameters:" ${dTh_params[@]}
+echo "z-parameters:" ${z_params[@]} 
+echo "r-parameters:" ${r_params[@]}
+
+
+#echo "MIN MAX r1km"
+#python compute_minmax_r1km.py $casename $path ${dTh_params[*]} ${z_params[*]} ${r_params[*]} --tmin $tmin --tmax $tmax
+#echo " "
+
+
+fi #end r=1km
 
 echo "finished bash script"
 
