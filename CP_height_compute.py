@@ -160,29 +160,7 @@ def compute_dump_CP_height(s_bg, s_crit, smin, smax,
                         CP_top[it, i, j] = k
                         k = -1
                     s_grad[i, j, k] = dzi * (s[i, j, k + 1] - s[i, j, k])
-        # s_ = np.ma.masked_outside(s, s_bg - s_crit, s_bg + s_crit)
-        # s_m = np.ma.getmask(s_)
-        # xmax = 1
-        # ymax = 1
-        # kmax = 50
-        # for k in
-        # for i in range(i0_center-xmax,i0_center+xmax):
-        #     for j in range(j0_center-ymax,j0_center+ymax):
-        #         k = kmax - 1
-        #         print('ij', i, j, k)
-        #         while k>= 0:
-        #             k -= 1
-        #             if CP_top[it,i,j] == 0:
-        #                 # if s_[i,j,k]:
-        #                 if not s_m[i,j,k]:
-        #                     print(i,j,k, s_.data[i,j,k], s_bg - s_crit, s_bg + s_crit)
-        #                     k = -1
-        #                 else:
-        #                     print('...', s_m[i,j,k], s_.data[i,j,k], s_bg - s_crit, s_bg + s_crit)
-        #
-        #             print 'k', k
-        # for k in range(kmax):
-        #     s_grad[:,:,k] = dzi * (s[:,:,k+1] - s[i,j,k])
+
 
         w_ = np.array(w, copy=True)
         w_[w_ < 0.5] = 0
@@ -270,7 +248,7 @@ def plot_timeseries(s0, i0_coll, j0_coll, filename):
     ax2.legend(loc='best', fontsize=12)
     ax3.legend(loc='best', fontsize=12)
     plt.suptitle('CP height', fontsize=21)
-    plt.savefig(os.path.join(path_out, 'CP_height_timeseries.png'))
+    plt.savefig(os.path.join(path_out_figs, 'CP_height_timeseries.png'))
     plt.close()
 
     del CP_height, CP_height_2d, w_max, w_max_height
@@ -529,7 +507,7 @@ def set_input_output_parameters(args):
     path_out_figs = os.path.join(path, 'figs_CP_height')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
-    if not os.path.exists(path_out):
+    if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
     print ''
     print('path data: ' + path_out)

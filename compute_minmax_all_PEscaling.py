@@ -32,14 +32,77 @@ def main():
     args = parser.parse_args()
 
     dTh, z_params, r_params, ic_arr, jc_arr, marg, times = set_input_parameters(args)
+    nt = len(times)
 
     if len(z_params) != len(r_params):
         print('wrong number of parameters! ')
         # sys.exit()
 
-    save_name = 'dTh' + str(dTh) + '_minmax_all.png'
-    minmax_domain = plot_domain_minmax(dTh, z_params, r_params, dx, times,
-                                       case_name, path_root, save_name, path_out_figs)
+    # save_name = 'dTh' + str(dTh) + '_minmax_all.png'
+    # minmax_domain = plot_domain_minmax(dTh, z_params, r_params, dx, times,
+    #                                    case_name, path_root, save_name, path_out_figs)
+
+
+    # read in azimuthally averaged fields
+    ng = len(r_params)
+    zstar = z_params[0]
+
+    id_list = []
+    for i, rstar in enumerate(r_params):
+        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        id_list = np.append(id_list, id)
+    n_id = len(id_list)
+
+    path_data = 'data_analysis'
+    stats_file_name = 'stats_radial_averaged.nc'
+    var_list = ['w', 's', 'temperature', 'v_rad']
+    # test-file
+    root = nc.Dataset(os.path.join(path_root, id_list[0], path_data, stats_file_name), 'r')
+    rad = root.groups['stats'].variables['r'][:]
+    nr = len(rad)
+    rmax = nr-30
+    print('radius: ', rad)
+    dims = root.groups['dimensions'].dimensions
+    nk = dims['nz'].size
+    root.close()
+    del dims
+
+    for var_name in var_list:
+        var = np.zeros((n_id, nt, nr, nk))
+        for i, id in enumerate(id_list):
+            fullpath_in = os.path.join(path_root, id, path_data, stats_file_name)
+            root = nc.Dataset(fullpath_in, 'r')
+            var[i, :,:,:] = root.groups['stats'].variables[var_name][:nt,:,:]
+            root.close()
+        var_max_arr = np.amax(var, axis=3)
+        var_min_arr = np.amin(var, axis=3)
+        var_max = np.amax(var_max_arr, axis=2)
+        var_min = np.amax(var_min_arr, axis=2)
+
+        figname = var_name + '_minmax_all.png'
+        fig, axes = plt.subplots(2,1, figsize=(6, 12))
+        ax1 = axes[0]
+        ax2 = axes[1]
+
+        for i, id in enumerate(id_list):
+            pass
+            maxx = ax1.plot(times, var_max[i, :], 'o-', label=id)
+            minn = ax2.plot(times, var_min[i, :], 'o-', label=id)
+        ax1.legend(loc='best', fontsize=10)
+        ax2.legend(loc='best', fontsize=10)
+        ax1.set_xlim(0, times[-1])
+        ax2.set_xlim(0, times[-1])
+        ax1.set_title('max(' + var_name + ')')
+        ax1.set_ylabel('max(' + var_name + ')')
+        ax2.set_title('min(' + var_name + ')')
+        ax2.set_ylabel('min(' + var_name + ')', fontsize=18)
+        ax2.set_xlabel('time [s]', fontsize=18)
+        fig.suptitle(var_name)
+        fig.savefig(os.path.join(path_out_figs, figname))
+        plt.close(fig)
+
+        # plot for each id
+        plot_minmax_radial(var_name, rad, var_max_arr, var_min_arr, rmax, times, id_list)
 
 
     # minmax_xz = plot_xz_minmax(dTh, z_params, r_params,
@@ -56,6 +119,34 @@ def main():
 
 
 
+# ----------------------------------
+# ----------------------------------
+def plot_minmax_radial(var_name, rad, var_max_arr, var_min_arr, rmax, times, id_list):
+    cm = plt.cm.get_cmap('coolwarm')
+    for i, id in enumerate(id_list):
+        print id
+        fullpath_out = os.path.join(path_root, id, 'figs_minmax')
+        if not os.path.exists(fullpath_out):
+            os.mkdir(fullpath_out)
+        figname = var_name + '_minmax_' + id + '_rad.png'
+        fig, axes = plt.subplots(2, 1, figsize=(6, 12))
+        ax1 = axes[0]
+        ax2 = axes[1]
+        for it, t0 in enumerate(times):
+            count_color = np.double(it) / len(times)
+            maxx = ax1.plot(rad[:rmax], var_max_arr[i, it, :rmax], '-', color=cm(count_color), label='t=' + str(t0))
+            minn = ax2.plot(rad[:rmax], var_min_arr[i, it, :rmax], '-', color=cm(count_color), label='t=' + str(t0))
+        ax1.legend(loc='best', fontsize=10)
+        ax1.set_xlim(0, rmax * dx[0])
+        ax2.set_xlim(0, rmax * dx[0])
+        ax1.set_title('max(' + var_name + ')')
+        ax1.set_ylabel('max(' + var_name + ')')
+        ax2.set_title('min(' + var_name + ')')
+        ax2.set_xlabel('radius [m]', fontsize=18)
+        fig.suptitle(var_name + '  (' + id + ')')
+        fig.savefig(os.path.join(fullpath_out, figname))
+        plt.close(fig)
+    return
 # ----------------------------------
 # ----------------------------------
 

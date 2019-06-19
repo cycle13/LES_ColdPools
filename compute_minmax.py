@@ -90,7 +90,7 @@ def plot_domain_minmax(id, times):
     print('compting min/max domain')
 
     var_list = ['w', 's', 'temperature', 'theta']
-    var_list = ['theta']
+    # var_list = ['theta']
     minmax = {}
     minmax['time'] = times
     for var_name in var_list:
@@ -124,7 +124,7 @@ def plot_domain_minmax(id, times):
         ax2.set_ylabel('min('+var_name+')')
         ax2.set_xlabel('time [s]')
         fig.suptitle(id)
-        fig.savefig(os.path.join(path_out_figs, var_name+'_'+str(id)+'_minmax_all.png'))
+        fig.savefig(os.path.join(path_out_figs, var_name+'_'+str(id)+'_minmax.png'))
         plt.close(fig)
         print('')
 
@@ -143,7 +143,9 @@ def theta_s(s):
 
 # ----------------------------------
 def set_input_parameters(args):
-    print ''' setting parameters '''
+    ''' setting parameters '''
+    print''
+    print'paths: '
     global path_in, path_out_data, path_out_figs, path_fields
     path_in = args.path
     if os.path.exists(os.path.join(path_in, 'fields')):

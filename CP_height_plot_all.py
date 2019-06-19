@@ -52,7 +52,11 @@ def main():
     print('start')
     ng = len(z_params)
     kmax = np.amax(z_params) + 2000./dx[2]
-    fig, (ax0, ax1, ax2, ax3) = plt.subplots(1, 4, sharex='all', figsize=(18, 5))
+    fig, axis = plt.subplots(1, 4, sharex='all', figsize=(18, 5))
+    ax0 = axis[0]
+    ax1 = axis[1]
+    ax2 = axis[2]
+    ax3 = axis[3]
     for istar in range(ng):
         zstar = z_params[istar]
         rstar = r_params[istar]
@@ -65,8 +69,8 @@ def main():
         time = rootgrp.groups['timeseries'].variables['time'][:]
         CP_height_max = rootgrp.groups['timeseries'].variables['CP_height'][:]
         CP_height_grad = rootgrp.groups['timeseries'].variables['CP_height_gradient'][:]
-        w_max = rootgrp.groups['fields_2D'].variables['w_max'][:,:,:]
-        w_max_height = rootgrp.groups['fields_2D'].variables['w_max_height'][:,:,:]
+        w_max = rootgrp.groups['fields_2D'].variables['w_max_2d'][:,:,:]
+        w_max_height = rootgrp.groups['fields_2D'].variables['w_max_height_2d'][:,:,:]
         rootgrp.close()
         print('max', CP_height_max)
         print('max', time)
@@ -76,10 +80,9 @@ def main():
         ax1.plot(time, CP_height_max, '-o', label=id)
         ax2.plot(time, w_max_height_max, '-o', label=id)
         ax3.plot(time, w_max_max, '-o', label=id)
-
-    ax1.legend()
-    ax2.legend()
-    ax3.legend()
+    for i in range(4):
+        axis[i].legend(loc='best')
+        axis[i].set_xlabel('time  [s]')
     ax0.set_title('max(CP_height_grad)')
     ax1.set_title('max(CP_height)')
     ax2.set_title('max(height of w_max[i,j])')
@@ -87,6 +90,52 @@ def main():
     fig.suptitle('dTh=' + str(dTh))
     fig.tight_layout()
     fig.savefig(os.path.join(path_out_figs, 'CP_height_dTh' + str(dTh) + '.png'))
+    plt.close(fig)
+
+
+
+    fig, axis = plt.subplots(2, 2, sharex='all', figsize=(10, 10))
+    ax0 = axis[0,0]
+    ax1 = axis[0,1]
+    ax2 = axis[1,0]
+    ax3 = axis[1,1]
+    for istar in range(ng):
+        zstar = z_params[istar]
+        rstar = r_params[istar]
+        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        print('id', id)
+        filename = 'CP_height_' + id + '_sth' + str(s_crit) + '.nc'
+        fullpath_in = os.path.join(path_root, id, 'data_analysis', filename)
+        print(fullpath_in)
+        rootgrp = nc.Dataset(fullpath_in, 'r')
+        time = rootgrp.groups['timeseries'].variables['time'][:]
+        w_max = rootgrp.groups['fields_2D'].variables['w_max_2d'][:, :, :]
+        w_max_height = rootgrp.groups['fields_2D'].variables['w_max_height_2d'][:, :, :]
+        rootgrp.close()
+        print('max', CP_height_max)
+        print('max', time)
+        w_max_height_max = np.amax(np.amax(w_max_height, axis=2), axis=1)
+        w_max_height_av = np.mean(np.mean(w_max_height, axis=2), axis=1)
+        w_max_max = np.amax(np.amax(w_max, axis=2), axis=1)
+        w_max_av = np.mean(np.mean(w_max, axis=1), axis=1)
+        ax0.plot(time, w_max_max, '-o', label=id)
+        ax1.plot(time, w_max_av, '-o', label=id)
+        ax2.plot(time, w_max_height_max, '-o', label=id)
+        ax3.plot(time, w_max_height_av, '-o', label=id)
+
+    for i in range(4):
+        axis[0, np.mod(i,2)].legend(loc='best')
+        axis[1, np.mod(i,2)].legend(loc='best')
+        axis[1, np.mod(i,2)].set_xlabel('time  [s]')
+    axis[0,0].set_ylabel('w  [m/s]')
+    axis[1,0].set_ylabel('z  [m]')
+    ax0.set_title('max(w_max[ij])')
+    ax1.set_title('mean(w_max[ij])')
+    ax2.set_title('max(height of w_max[i,j])')
+    ax3.set_title('mean(height of w_max[i,j])')
+    fig.suptitle('dTh=' + str(dTh))
+    fig.tight_layout()
+    fig.savefig(os.path.join(path_out_figs, 'w_max_height_dTh' + str(dTh) + '.png'))
     plt.close(fig)
 
     return
@@ -105,6 +154,10 @@ def set_input_parameters(args):
     path_out_figs = os.path.join(path_root, 'figs_CP_height')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
+    print('')
+    print('path figs out: ')
+    print('   ' + path_out_figs)
+    print('')
 
     dTh = args.dTh
     z_params = args.zparams
@@ -270,7 +323,7 @@ def define_geometry(case_name, nml):
 
     return i0_center, j0_center, xmin_plt, xmax_plt, ymin_plt, ymax_plt
 
-
+# _____________________________________________________________________
 # ----------------------------------
 # ----------------------------------
 def read_in_netcdf_fields(variable_name, fullpath_in):
@@ -283,6 +336,6 @@ def read_in_netcdf_fields(variable_name, fullpath_in):
     rootgrp.close()
     return data
 
-
+# _____________________________________________________________________
 if __name__ == '__main__':
     main()
