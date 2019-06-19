@@ -683,7 +683,7 @@ def set_input_parameters(args):
     if args.zparams:
         z_params = args.zparams
     else:
-            z_params = [1000]  # run1
+        z_params = [1000]  # run1
     if args.rparams:
         r_params = args.rparams
     else:

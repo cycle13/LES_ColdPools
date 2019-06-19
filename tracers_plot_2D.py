@@ -22,6 +22,12 @@ def main():
     parser.add_argument("--tmax")
     args = parser.parse_args()
     set_input_parameters(args)
+
+    global cm_bwr, cm_grey, cm_vir, cm_hsv
+    cm_bwr = plt.cm.get_cmap('bwr')
+    cm_grey = plt.cm.get_cmap('gist_gray_r')
+    cm_hsv = plt.cm.get_cmap('hsv')
+
     dt_fields = 100
 
     if args.k0:
@@ -41,30 +47,33 @@ def main():
     n_tracers = get_number_tracers(path_tracer_file)
     coordinates = get_tracer_coords(cp_id, n_cps, n_tracers, times, dt_fields, path_tracer_file)
 
-    # var_list = ['s', 'w']
-    # for it,t0 in enumerate(times):
-    #     print('-plot time: '+str(t0))
-    #     fig_name = 's_w' + '_t' + str(t0) + '_tracers.png'
-    #     fig, axis = plt.subplots(1, 2, figsize=(10, 5), sharey='all')
-    #     rootgrp = nc.Dataset(os.path.join(path_fields, str(t0)+'.nc'))
-    #     for j, var_name in enumerate(var_list):
-    #         print var_name, j
-    #         var = rootgrp.groups['fields'].variables[var_name][:,:,k0]
-    #         max = np.amax(var)
-    #         if var_name in ['w', 'v_rad', 'v_tan']:
-    #             min = -max
-    #         else:
-    #             min = np.amin(var)
-    #         axis[j].contourf(var.T, levels=np.linspace(min, max, 1e2))
-    #         axis[j].set_title(var_name)
-    #         # axis[j].set_xlabel('x')
-    #     rootgrp.close()
-    #     for i in range(n_tracers):
-    #         for j in range(len(var_list)):
-    #             axis[j].plot(coordinates[it,i,0], coordinates[it,i,1], 'ok', markersize=3)
-    #     plt.tight_layout()
-    #     fig.savefig(os.path.join(path_out_figs, fig_name))
-    #     plt.close(fig)
+    var_list = ['s', 'w']
+    for it,t0 in enumerate(times):
+        print('-plot time: '+str(t0))
+        fig_name = 's_w' + '_t' + str(t0) + '_tracers.png'
+        fig, axis = plt.subplots(1, 2, figsize=(11, 6), sharey='all')
+        rootgrp = nc.Dataset(os.path.join(path_fields, str(t0)+'.nc'))
+        for j, var_name in enumerate(var_list):
+            print var_name, j
+            var = rootgrp.groups['fields'].variables[var_name][:,:,k0]
+            max = np.amax(var)
+            if var_name in ['w', 'v_rad', 'v_tan']:
+                min = -max
+                cm_ = cm_bwr
+            else:
+                min = np.amin(var)
+                cm_ = cm_hsv
+            axis[j].contourf(var.T, levels=np.linspace(min, max, 1e2), cmap=cm_)
+            axis[j].set_title(var_name)
+            # axis[j].set_xlabel('x')
+            axis[j].set_aspect('equal')
+        rootgrp.close()
+        for i in range(n_tracers):
+            for j in range(len(var_list)):
+                axis[j].plot(coordinates[it,i,0], coordinates[it,i,1], 'ok', markersize=3)
+        plt.tight_layout()
+        fig.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
 
 
     var_list = ['v_rad', 'v_tan']
@@ -72,7 +81,7 @@ def main():
     for it, t0 in enumerate(times):
         print('-plot time: ' + str(t0))
         fig_name = 'v_rad_tan' + '_t' + str(t0) + '_tracers.png'
-        fig, axis = plt.subplots(1, 2, figsize=(10, 5))
+        fig, axis = plt.subplots(1, 2, figsize=(11, 6))
         for j, var_name in enumerate(var_list):
             print var_name, j
             var = rootgrp.variables[var_name][it, :, :, k0]
@@ -81,8 +90,10 @@ def main():
                 min = -max
             else:
                 min = np.amin(var)
-            axis[j].contourf(var.T, levels=np.linspace(min, max, 1e2))
+            axis[j].contourf(var.T, levels=np.linspace(min, max, 1e2), cmap=cm_bwr)
+            axis[j].contourf(var.T, levels=np.linspace(min, max, 1e2), cmap=cm_bwr)
             axis[j].set_title(var_name)
+            axis[j].set_aspect('equal')
         for i in range(n_tracers):
             for j in range(len(var_list)):
                 axis[j].plot(coordinates[it, i, 0], coordinates[it, i, 1], 'ok', markersize=3)
@@ -116,14 +127,11 @@ def get_tracer_coords(cp_id, n_cps, n_tracers, times, dt_fields, fullpath_in):
         count = t0 * n_cps * n_tracers + (cp_id - 1) * n_tracers
         count = it * n_cps * n_tracers + (cp_id - 1) * n_tracers
         count = t0/dt_fields * n_cps * n_tracers + (cp_id - 1) * n_tracers
-        print 'count', count
         # while CP age is 0 and CP ID is cp_id
         timestep = int(lines[count].split()[0])
         cp_ID = int(lines[count].split()[3])
-        print 'timestep', timestep, it, t0, t0/dt_fields
         # while (timestep - 1 == it and cp_ID == cp_id):
         while (timestep - 1 == t0/dt_fields and cp_ID == cp_id):
-            # print('timestep', timestep)
             columns = lines[count].split()
             coords[it,i,0] = float(columns[4])
             coords[it,i,1] = float(columns[5])
@@ -133,7 +141,7 @@ def get_tracer_coords(cp_id, n_cps, n_tracers, times, dt_fields, fullpath_in):
             timestep = int(lines[count].split()[0])
 
     f.close()
-    print ''
+    # print ''
     return coords
 
 

@@ -1,0 +1,198 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as patch
+import netCDF4 as nc
+import argparse
+import json as simplejson
+import os
+import time
+
+label_size = 8
+plt.rcParams['xtick.labelsize'] = label_size
+plt.rcParams['ytick.labelsize'] = label_size
+plt.rcParams['lines.linewidth'] = 2
+plt.rcParams['legend.fontsize'] = 8
+plt.rcParams['axes.labelsize'] = 12
+# plt.rcParams['xtick.direction']='out'
+# plt.rcParams['ytick.direction']='out'
+# plt.rcParams['figure.titlesize'] = 35
+
+def main():
+    # Parse information from the command line
+    parser = argparse.ArgumentParser(prog='LES_CP')
+    parser.add_argument("casename")
+    parser.add_argument("path_root")
+    parser.add_argument("dTh", type=int)
+    parser.add_argument("--zparams", nargs='+', type=int)
+    parser.add_argument('--rparams', nargs='+', type=int)
+    parser.add_argument("--tmin")
+    parser.add_argument("--tmax")
+    args = parser.parse_args()
+
+    global cm_bwr, cm_grey, cm_vir, cm_hsv
+    cm_bwr = plt.cm.get_cmap('bwr')
+    cm_grey = plt.cm.get_cmap('gist_gray_r')
+    cm_hsv = plt.cm.get_cmap('hsv')
+    cm_fall = plt.cm.get_cmap('winter')
+    cm_summer = plt.cm.get_cmap('spring')
+
+    nml, dTh, z_params, r_params = set_input_parameters(args)
+    n_params = len(r_params)
+    id_ref = 'dTh3_z1000_r1000'
+    path_ref = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2_dx100m/dTh3_z1000_r1000'
+
+    aux = np.arange(-1, 4)
+    PE_array = 2.**aux
+    print('PE: ' + str(PE_array))
+
+    # --------------------------------------
+
+    ''' CP height '''
+    fig_name = 'CP_height.png'
+    # path_out = 'figs_CP_height'
+    path_out = path_out_figs
+    plot_CP_height(dTh, z_params, r_params, n_params, PE_array, id_ref, path_ref, path_out, fig_name)
+
+
+    ''' PE array '''
+    print r_params
+    print PE_array
+    fig_name = 'PE_array.png'
+    r_params_ = np.zeros(len(r_params) + 1)
+    PE_array_ = np.zeros(len(r_params))
+    fig, axes = plt.subplots(1, 2, sharex='none', figsize=(12, 5))
+    for istar,r in enumerate(r_params):
+        if istar == 0:
+            r_params_[istar] = r_params[istar]
+            PE_array_[istar] = PE_array[istar]
+        elif istar == 1:
+            r_params_[1] = 1000.
+        if istar >= 1:
+            r_params_[istar+1] = r_params[istar]
+            PE_array_[istar] = PE_array[istar+1]
+            # axes[0].plot(r_params[istar], PE_array[istar+1], 'o', markersize=10, markeredgecolor='w', )
+    # axes[0].plot(r_params_, PE_array, 'k', linewidth=0.5)
+    print np.log2(PE_array)
+    axes[0].plot(np.log2(PE_array), r_params_, 'k', linewidth=0.5)
+    axes[0].plot(np.log2(PE_array_), r_params, '--k', linewidth=0.5)
+    axes[1].plot(r_params_, PE_array, 'k', linewidth=0.5)
+    axes[1].plot(r_params, PE_array_, '--k', linewidth=0.5)
+    for istar in range(n_params+1):
+        axes[0].plot(np.log2(PE_array[istar]), r_params_[istar], 'o', markersize=10, markeredgecolor='w', )
+        axes[1].plot(r_params_[istar], PE_array[istar], 'o', markersize=10, markeredgecolor='w', )
+    axes[0].plot(np.log2(PE_array[1]), r_params_[1], 'ko', markersize=10, markeredgecolor='w', )
+    axes[1].plot(r_params_[1], PE_array[1], 'ko', markersize=10, markeredgecolor='w', )
+
+    axes[0].set_xlim(-1.2,3.2)
+    axes[0].set_ylim(400,2500)
+    axes[1].set_xlim(400,2500)
+    axes[1].set_ylim(0,8.5)
+    axes[0].set_xlabel('PE / PE_ref')
+    axes[0].set_ylabel('radius')
+    axes[1].set_xlabel('radius')
+    axes[1].set_ylabel('PE / PE_ref')
+    fig.tight_layout()
+    fig.savefig(os.path.join(path_root, path_out, fig_name))
+    plt.close(fig)
+
+    return
+
+
+# --------------------------------------
+
+def plot_CP_height(dTh, z_params, r_params, n_params, PE_array, id_ref, path_ref, path_out, fig_name):
+    min_CP_height = np.zeros(n_params + 1)
+    for istar in range(n_params):
+        zstar = z_params[0]
+        rstar = r_params[istar]
+        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        sth = 0.5
+        file_name = 'CP_height_' + id +'_sth' + str(sth) + '.nc'
+        fullpath_in = os.path.join(path_root, id, 'data_analysis', file_name)
+        print('')
+        print(fullpath_in)
+        print('')
+
+        file = nc.Dataset(fullpath_in, 'r')
+        # CP_height_2d = file.groups['fields_2D'].variables['CP_height_2d'][:,:,:]
+        CP_height = file.groups['timeseries'].variables['CP_height'][:]
+        if istar == 0:
+            min_CP_height[istar] = np.amin(CP_height)
+        elif istar >= 1:
+            min_CP_height[istar+1] = np.amin(CP_height)
+        file.close()
+    file_name = 'CP_height_' + id_ref + '_sth' + str(sth) + '.nc'
+    fullpath_in = os.path.join(path_ref, 'data_analysis', file_name)
+    file = nc.Dataset(fullpath_in, 'r')
+    CP_height = file.groups['timeseries'].variables['CP_height'][:]
+    min_CP_height[1] = np.amin(CP_height)
+    file.close()
+
+    fig, axes = plt.subplots(1, 2, sharex='none', figsize=(12, 5))
+    axes[0].plot(PE_array, min_CP_height)
+    # axes[0].plot(min_CP_height)
+    fig.tight_layout()
+    fig.savefig(os.path.join(path_root, path_out, fig_name))
+    plt.close(fig)
+
+    return
+
+# --------------------------------------
+# --------------------------------------
+
+def set_input_parameters(args):
+    print('--- set input parameters ---')
+    global case_name
+    global path_root, path_out_figs
+    global times
+
+    path_root = args.path_root
+    path_out_figs = os.path.join(path_root, 'figs_comparison')
+    if not os.path.exists(path_out_figs):
+        os.mkdir(path_out_figs)
+    print('')
+    print('path figs out: ')
+    print('   ' + path_out_figs)
+    print('')
+
+    dTh = args.dTh
+    z_params = args.zparams
+    r_params = args.rparams
+    print('z*: ', z_params)
+    print('r*: ', r_params)
+
+    case_name = args.casename
+    id0 = 'dTh' + str(dTh) + '_z' + str(z_params[0]) + '_r' + str(r_params[0])
+    nml = simplejson.loads(open(os.path.join(path_root, id0, case_name + '.in')).read())
+    global nx, ny, nz, dx, dV, gw
+    nx = nml['grid']['nx']
+    ny = nml['grid']['ny']
+    nz = nml['grid']['nz']
+    dx = np.zeros(3, dtype=np.int)
+    dx[0] = nml['grid']['dx']
+    dx[1] = nml['grid']['dy']
+    dx[2] = nml['grid']['dz']
+    gw = nml['grid']['gw']
+    dV = dx[0] * dx[1] * dx[2]
+
+    ''' determine file range '''
+    if args.tmin:
+        tmin = np.int(args.tmin)
+    else:
+        tmin = np.int(100)
+    if args.tmax:
+        tmax = np.int(args.tmax)
+    else:
+        tmax = np.int(100)
+    times = np.arange(tmin, tmax + 100, 100)
+    # times = [np.int(name[:-3]) for name in files]
+    times.sort()
+    print('times', times)
+
+    return nml, dTh, z_params, r_params
+
+
+
+# _____________________________________________________________________
+if __name__ == '__main__':
+    main()
