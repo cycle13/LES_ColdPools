@@ -3,11 +3,10 @@
 # set range of parameters for z*, r*, th' (3 values per index)
 
 # read in parameters
-# read -p "dTh: " dTh; 
 dTh=5;
 read -p "tmin: " tmin; 
 read -p "tmax: " tmax;
-read -p "kmax: " kmax; 
+read -p "kmax: " kmax;
 
 # if no input for tmin, tmax
 if [[ $tmin = "" ]]
@@ -21,18 +20,18 @@ fi
 echo "tmin=" $tmin ", tmax=" $tmax
 
 if [[ $kmax = "" ]]
-  then 
+  then
   kmax=120
 fi
 echo "kmax=" $kmax
 echo" "
 
 
-path="/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run5_PE_scaling_dx100m/"
+path="/nbi/ac/conv3/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/single_3D_noise/run5_PE_scaling_dx100m/"
 casename="ColdPoolDry_single_3D"
 
 z_params=( 1000 )
-r_params=( 500 1100 1600 2300 ) 
+r_params=( 500 1100 1600 2300 )
 
 n_geom=${#r_params[@]}
 echo "dTh:" $dTh
@@ -72,11 +71,11 @@ do
   #echo "CROSSSECTIONS"
   #python plot_crosssections.py $casename $fullpath --tmin 100 --tmax 800
 
-  #echo "ANGULAR AVERAGE"
-  #python average_angular.py $casename $fullpath --tmin $tmin --tmax $tmax --kmax $kmax
+  #echo "compute CP HEIGHT"
+  #python CP_height_compute.py $casename $fullpath --tmin $tmin --tmax $tmax
 
-  echo "CP HEIGHT"
-  python CP_height_compute.py $casename $fullpath --tmin $tmin --tmax $tmax
+  echo "ANGULAR AVERAGE"
+  python average_angular.py $casename $fullpath --tmin $tmin --tmax $tmax --kmax 20
 
   #echo "PLOT STREAMLINES"
   #python plot_streamlines_singleCP.py ColdPoolDry_single_3D $fullpath --tmin $tmin --tmax $tmax
@@ -92,7 +91,7 @@ done
 #echo " "
 
 #echo "CP height all"
-#python plot_CP_height_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
+#python CP_height_plot_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
 
 #echo "plot CP RIM all"
 #python plot_CP_rim_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax

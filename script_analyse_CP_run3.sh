@@ -19,7 +19,7 @@ fi
 echo "tmin=" $tmin ", tmax=" $tmax
 
 
-path="/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run3_dx50m/"
+path="/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run3_dx50m/"
 casename="ColdPoolDry_single_3D"
 
 # to run over different dTh, use input dTh=0
@@ -97,15 +97,15 @@ do
   #echo "CROSSSECTIONS"
   #python plot_crosssections.py $casename $fullpath --tmin 100 --tmax 800
 
-  #echo "ANGULAR AVERAGE"
-  #python average_angular.py $casename $fullpath --kmax 20 --tmin $tmin --tmax $tmax
+  #echo "compute CP HEIGHT"
+  #python CP_height_compute.py $casename $fullpath --tmin $tmin --tmax $tmax
 
-  echo "compute CP HEIGHT"
-  python CP_height_compute.py $casename $fullpath --tmin $tmin --tmax $tmax
-  
+  echo "ANGULAR AVERAGE"
+  python average_angular.py $casename $fullpath --kmax 40 --tmin $tmin --tmax $tmax
+
   #echo "PLOT STREAMLINES"
   #python plot_streamlines_singleCP.py ColdPoolDry_single_3D $fullpath --tmin $tmin --tmax $tmax
-  
+
   #echo "CP RIM"
   ## for each simulation compute CP rim (a) Bettina, (b) Marielle
   ##     >> r(phi,t), U_r(phi,t), r_av(phi,t), U_r,av(phi,t)
@@ -129,7 +129,7 @@ done
 #echo " "
 
 #echo "CP height all"
-#python plot_CP_height_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
+#python CP_height_plot_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
 
 #echo "plot CP RIM all"
 #python plot_CP_rim_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
