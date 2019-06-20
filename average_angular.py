@@ -21,6 +21,7 @@ def main():
     args = parser.parse_args()
 
     times, nml, id = set_input_parameters(args)
+    print('id: '+ id)
     radius = np.int(np.double(id[12:]) / dx[0])
 
     path_out_data = os.path.join(path, 'data_analysis')
@@ -74,9 +75,20 @@ def main():
 
 
     print ''
+    print('----- compute angular average CP height ----------- ')
+    sth = 0.5
+    file_name_CP_height = 'CP_height_' + id + '_sth' + str(sth) + '.nc' # in path_out_data
+    compute_CP_height_radial_av(rmax, times, file_name_CP_height, path_out_data, path_out_data_2D)
+
+
+
+    print ''
     print('----- plotting ----------- ')
     file_name_stats = 'stats_radial_averaged.nc'
     plot_radially_averaged_vars(times, file_name_stats, path_out_data, path_out_figs)
+    # ----- plot CP height radially averaged
+    file_name_CP_height = 'CP_height_' + id + '_sth' + str(sth) + '.nc' # in path_out_data
+    plot_radially_averaged_CP_height(times, file_name_CP_height, path_out_data)
 
     return
 
@@ -258,15 +270,14 @@ def compute_angular_average(rmax, times, file_name, path_out_data, path_out_data
         fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
         data_dict = read_in_vars(fullpath_in, var_list)
         print('running t=' + str(t0))
-        v_rad_av[:, :] = compute_average_var(v_rad[it, :, :, :kmax], rmax, r_field)
-        v_tan_av[:, :] = compute_average_var(v_tan[it, :, :, :kmax], rmax, r_field)
+        v_rad_av[:, :] = compute_average_var(v_rad[it, :, :, :kmax], rmax, kmax, r_field)
+        v_tan_av[:, :] = compute_average_var(v_tan[it, :, :, :kmax], rmax, kmax, r_field)
         for var_name in var_list:
-            data_dict_av[var_name][:, :] = compute_average_var(data_dict[var_name][:, :, :], rmax, r_field)
+            data_dict_av[var_name][:, :] = compute_average_var(data_dict[var_name][:, :, :], rmax, kmax, r_field)
 
         dump_statistics_file(data_dict_av, v_rad_av, v_tan_av, var_list, it, file_name, path_out_data)
     return
 
-# _______________________________
 # _______________________________
 
 def create_vrad_field(v_rad, v_tan, r_field, kmax, file_name, path_out_data_2D):
@@ -365,6 +376,7 @@ def dump_statistics_file(data_dictionary, v_rad_av, v_tan_av, var_list, it, file
     rootgrp.close()
     return
 
+# _______________________________
 
 def read_in_vars(fullpath_in, var_list):
 
@@ -379,18 +391,26 @@ def read_in_vars(fullpath_in, var_list):
 
     return var_dict
 
-
 # _______________________________
 
-def compute_average_var(var, rmax, r_field):
-
-    var_av = np.zeros((rmax, kmax), dtype=np.double)
+def compute_average_var(var, rmax, kmax_, r_field):
     count = np.zeros(rmax, dtype=np.int)
-    for i in range(nx):
-        for j in range(ny):
-            r = r_field[i, j]
-            count[r] += 1
-            var_av[r, :] += var[i, j, :]
+
+    if kmax_ == 1:
+        var_av = np.zeros((rmax), dtype=np.double)
+        for i in range(nx):
+            for j in range(ny):
+                r = r_field[i, j]
+                count[r] += 1
+                var_av[r] += var[i, j]
+
+    elif kmax_ > 1:
+        var_av = np.zeros((rmax, kmax_), dtype=np.double)
+        for i in range(nx):
+            for j in range(ny):
+                r = r_field[i, j]
+                count[r] += 1
+                var_av[r, :] += var[i, j, :]
 
     for r in range(rmax):
         if count[r] > 0:
@@ -413,6 +433,68 @@ def compute_radial_vel(uv, th_field):
     return ur, uth
 
 # _______________________________
+
+def compute_CP_height_radial_av(rmax, times, file_name_in, path_out_data, path_out_data_2D):
+    # (1) compute angular average (compute_average_var)
+    # (2) append CP_height(t,r) to stats-file data_analysis/CP_height_dTh3_z2000_r600_sth0.5.nc
+
+    # ----- read in CP height 2D field
+    print(os.path.join(path_out_data, file_name_in))
+    file = nc.Dataset(os.path.join(path_out_data, file_name_in))
+    time_CP_height = file.groups['timeseries'].variables['time'][:]
+
+    if len(times) != len(time_CP_height) or (time_CP_height - times).any() != 0:
+        if time_CP_height[0] != times[0] or len(times) > len(time_CP_height):
+            print('time dimensions not fitting')
+            print times[0], time_CP_height[0]
+            sys.exit()
+        else:
+            itmax = np.where(time_CP_height == times[-1])[0][0] + 1
+    else:
+        itmax = len(time_CP_height)
+    CP_height_2d = file.groups['fields_2D'].variables['CP_height_2d'][:itmax, :, :]
+    file.close()
+
+    # ----- read in r_field
+    file_name_vradfield = 'v_rad.nc'
+    fullpath_in = os.path.join(path_out_data_2D, file_name_vradfield)
+    rootgrp = nc.Dataset(fullpath_in)
+    r_field = rootgrp.variables['r_field'][:, :]
+    rootgrp.close()
+
+    # ----- azimuthally average CP_height_field
+    CP_height_av = np.zeros((itmax, rmax))
+    for it, t0 in enumerate(times):
+        print CP_height_2d[it, :, :].shape
+        CP_height_av[it, :] = compute_average_var(CP_height_2d[it, :, :], rmax, 1, r_field)
+
+    # ----- dump
+    file = nc.Dataset(os.path.join(path_out_data, file_name_in), 'r+')
+    if not 'stats' in file.groups.keys():
+        stats_grp = file.createGroup('stats')
+        stats_grp.createDimension('nt', len(time_CP_height))
+        stats_grp.createDimension('nr', rmax)
+    else:
+        stats_grp = file.groups['stats']
+    if not 'r' in stats_grp.variables.keys():
+        ri_range = np.arange(0, rmax, dtype=np.int)
+        r_range = np.arange(0, rmax, dtype=np.double) * dx[0]
+        var = stats_grp.createVariable('r', 'f8', ('nr'))
+        var.unit = 'm'
+        var[:] = r_range
+        var = stats_grp.createVariable('ri', 'f8', ('nr'))
+        var.unit = '-'
+        var[:] = ri_range
+    if not 'CP_height_rad' in stats_grp.variables.keys():
+        var = stats_grp.createVariable('CP_height_rad', 'f8', ('nt', 'nr'))
+        var.long_name = 'CP height, azimuthally averaged'
+        var.units = "m/s"
+    else:
+        var = stats_grp.variables['CP_height_rad'][:, :]
+    var[:itmax, :] = CP_height_av[:, :]
+    file.close()
+    return
+# _______________________________
 # _______________________________
 
 def plot_radially_averaged_vars(times, file_name, path_out_data, path_out_figs):
@@ -423,6 +505,7 @@ def plot_radially_averaged_vars(times, file_name, path_out_data, path_out_figs):
     # file_name = 'stats_radial_averaged.nc'
     data_stats = nc.Dataset(os.path.join(path_out_data, file_name), 'r')
     stats_grp = data_stats.groups['stats'].variables
+    r_range = stats_grp['r'][:]
     times_ = data_stats.groups['timeseries'].variables['time'][:]
     ta = np.where(times_ == tmin)[0][0]
     tb = np.where(times_ == tmax)[0][0]
@@ -433,8 +516,6 @@ def plot_radially_averaged_vars(times, file_name, path_out_data, path_out_figs):
     print ta, tb
 
     # var = np.array('nt', 'nr', 'nz')
-    r_range = stats_grp['r'][:]
-
     var_list = ['w', 'v_rad', 'v_tan', 's']
     ncol = len(var_list)
     rmax_plot = 10e3
@@ -480,6 +561,44 @@ def plot_radially_averaged_vars(times, file_name, path_out_data, path_out_figs):
     data_stats.close()
 
     return
+
+
+
+def plot_radially_averaged_CP_height(times, file_name_in, path_out_data):
+    data = nc.Dataset(os.path.join(path_out_data, file_name_in), 'r')
+    time_CP_height = data.groups['timeseries'].variables['time'][:]
+    CP_height_av = data.groups['stats'].variables['CP_height_rad'][:, :]
+    r_range = data.groups['stats'].variables['r'][:]
+    data.close()
+    ta = np.where(time_CP_height == tmin)[0][0]
+    tb = np.where(time_CP_height == tmax)[0][0]
+    rmax_plot = 10e3
+    irmax = np.where(r_range == rmax_plot)[0][0]
+    fig_name = 'CP_height_radial_average.png'
+    fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(10, 5))
+    print CP_height_av.shape
+    print time_CP_height.shape
+    if len(times) >= 2:
+        for it, t0 in enumerate(time_CP_height[1::2]):
+            if it >= ta and it <= tb:
+                count_color = 2 * np.double(it) / len(times)
+                ax0.plot(r_range[:irmax], CP_height_av[2 * it + 1, :irmax], color=cm.jet(count_color),
+                         label='t=' + str(np.int(t0)))
+    else:
+        for it, t0 in enumerate(time_CP_height):
+            if it >= ta and it <= tb:
+                count_color = np.double(it) / len(times)
+                ax0.plot([0, r_range[irmax]], [0., 0.], 'k')
+                ax0.plot(r_range[:irmax], CP_height_av[it, :irmax], color=cm.jet(count_color), label='t=' + str(t0))
+    ax0.set_xlabel('radius r  [m]')
+    ax0.set_ylabel('CP height  [m]')
+    ax0.legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
+               fancybox=True, shadow=True, ncol=1, fontsize=10)
+    plt.subplots_adjust(bottom=0.12, right=.9, left=0.04, top=0.9, wspace=0.15)
+    fig.savefig(os.path.join(path, 'figs_CP_height', fig_name))
+    plt.close(fig)
+    return
+
 # _______________________________
 def plot_configuration(ic, jc, path_out):
     fig_name = 'test_config.png'
@@ -528,7 +647,9 @@ def set_input_parameters(args):
     global case_name
     case_name = args.casename
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
-    id = os.path.basename(path[:-1])
+    id = os.path.basename(path[:])
+    if id == '':
+        id = os.path.basename(path[:-1])
     global nx, ny, nz, dx, gw
     dx = np.ndarray(3, dtype=np.int)
     nx = nml['grid']['nx']
