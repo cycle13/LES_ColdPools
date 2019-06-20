@@ -32,12 +32,12 @@ def main():
 
     files, times, krange, nml = set_input_parameters(args)
 
-    id = os.path.split(path_in)[1]
-    print ('id: ', id)
+    ID = os.path.split(path_in)[1]
+    print ('id: ', ID)
 
-    minmax_domain = plot_domain_minmax(id, times)
+    minmax_domain = plot_domain_minmax(ID, times)
 
-    minmax_xz = plot_xz_minmax(id, jc_arr, times)
+    minmax_xz = plot_xz_minmax(ID, jc_arr, times)
 
 
     return
@@ -48,7 +48,7 @@ def main():
 # ----------------------------------
 
 
-def plot_xz_minmax(id, jc_arr, times):
+def plot_xz_minmax(ID, jc_arr, times):
     print('')
     print('compting min/max xz')
     var_list = ['u', 'w', 's', 'temperature']
@@ -68,8 +68,8 @@ def plot_xz_minmax(id, jc_arr, times):
             minmax[var_name]['max'][it] = np.amax(var[:,jc_arr[0],:])
             minmax[var_name]['min'][it] = np.amin(var[:,jc_arr[0],:])
             del var
-        maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=id)
-        minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=id)
+        maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=ID)
+        minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=ID)
         ax1.legend(loc='best', fontsize=10)
         ax2.legend(loc='best', fontsize=10)
         ax1.set_title('max(' + var_name + ')')
@@ -77,7 +77,7 @@ def plot_xz_minmax(id, jc_arr, times):
         ax2.set_title('min(' + var_name + ')')
         ax2.set_ylabel('min(' + var_name + ')')
         ax2.set_xlabel('time [s]')
-        fig.suptitle(id)
+        fig.suptitle(ID)
         fig.savefig(os.path.join(path_out_figs, var_name + '_dTh' + str(dTh) + '_minmax_xz.png'))
         plt.close(fig)
 
@@ -86,7 +86,7 @@ def plot_xz_minmax(id, jc_arr, times):
 
 
 # compute domain minimum and maximum of variables (s, temperature, w) for each timestep
-def plot_domain_minmax(id, times):
+def plot_domain_minmax(ID, times):
     print('compting min/max domain')
 
     var_list = ['w', 's', 'temperature', 'theta']
@@ -114,8 +114,8 @@ def plot_domain_minmax(id, times):
             minmax[var_name]['max'][it] = np.amax(var[:,:,:])
             minmax[var_name]['min'][it] = np.amin(var[:,:,:])
             del var
-        maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=id)
-        minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=id)
+        maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=ID)
+        minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=ID)
         ax1.legend(loc='best', fontsize=10)
         ax2.legend(loc='best', fontsize=10)
         ax1.set_title('max('+var_name+')')
@@ -123,8 +123,8 @@ def plot_domain_minmax(id, times):
         ax2.set_title('min('+var_name+')')
         ax2.set_ylabel('min('+var_name+')')
         ax2.set_xlabel('time [s]')
-        fig.suptitle(id)
-        fig.savefig(os.path.join(path_out_figs, var_name+'_'+str(id)+'_minmax.png'))
+        fig.suptitle(ID)
+        fig.savefig(os.path.join(path_out_figs, var_name+'_'+str(ID)+'_minmax.png'))
         plt.close(fig)
         print('')
 

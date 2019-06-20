@@ -81,9 +81,9 @@ def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
         for istar in range(ng):
             zstar = z_params[istar]
             rstar = r_params[istar]
-            id = 'dTh' + str(dTh)+ '_z' + str(zstar) + '_r' + str(rstar)
-            print('id', id)
-            path_fields = os.path.join(path_root, id, 'fields')
+            ID = 'dTh' + str(dTh)+ '_z' + str(zstar) + '_r' + str(rstar)
+            print('ID', ID)
+            path_fields = os.path.join(path_root, ID, 'fields')
             print(path_fields)
 
             for it, t0 in enumerate(times):
@@ -95,8 +95,8 @@ def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
                 minmax[var_name]['max'][it] = np.amax(var[:,jc_arr[0], :kmax])
                 minmax[var_name]['min'][it] = np.amin(var[:,jc_arr[0], :kmax])
                 del var
-            maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=id)
-            minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=id)
+            maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=ID)
+            minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=ID)
         ax1.legend(loc='best', fontsize=10)
         ax2.legend(loc='best', fontsize=10)
         ax1.set_title('max(' + var_name + ')')

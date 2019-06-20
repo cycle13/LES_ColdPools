@@ -47,8 +47,8 @@ def main():
     # set_input_parameters(args)
     files, times, nml = set_input_parameters(args)
     x_half, y_half, z_half = define_geometry(case_name, nml, files)
-    id = os.path.split(path_in)[1]
-    print ('id: ', id)
+    ID = os.path.split(path_in)[1]
+    print ('id: ', ID)
 
 
     print('')
@@ -116,13 +116,13 @@ def main():
             # else:
             #     cont_var = cont_var[:, j0, :kmax]
             # plot_streamplot_xz(cont_var_name, cont_var, w, vel_h, speed_xz,
-            #                    x_half, z_half, j0, imin, imax, kmax, t0, path_out, id, True)
+            #                    x_half, z_half, j0, imin, imax, kmax, t0, path_out, ID, True)
 
     return
 
 
 def plot_streamplot_xz(cont_var_name, cont_var, w, vel, speed, x_arr, z_arr, j0, imin, imax, kmax,
-                       t0, path_out, id, vary=False):
+                       t0, path_out, ID, vary=False):
     # print(path_out)
     if t0 <= 100:
         plt.figure()
@@ -140,10 +140,10 @@ def plot_streamplot_xz(cont_var_name, cont_var, w, vel, speed, x_arr, z_arr, j0,
         max = np.ceil(np.maximum(np.abs(np.amin(cont_var)), np.abs(np.amax(cont_var))))
         min = -max
     elif cont_var_name == 'temperature_anomaly':
-        if id[4] == '_':
-            dTh = np.int(id[3:4])
+        if ID[4] == '_':
+            dTh = np.int(ID[3:4])
         else:
-            dTh = np.int(id[3:5])
+            dTh = np.int(ID[3:5])
         max = dTh
         min = -max
     else:
