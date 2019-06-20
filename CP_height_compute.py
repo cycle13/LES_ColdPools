@@ -47,10 +47,10 @@ def main():
     print('threshold for ds=s-s_bg: ' + str(s_crit) + 'J/K')
     print('')
 
-
-    ''' create output file '''
-    id = os.path.basename(path)
-    print('id: ', id)
+    ID = os.path.basename(path)
+    if ID == '':
+        ID = os.path.basename(path[:-1])
+    print('id: ', ID)
 
 
     ''' background entropy '''
@@ -65,22 +65,23 @@ def main():
     print('sminmax', smin, smax)
     print ''
 
+    ''' create output file '''
     # ''' define CP height & maximal updraft velocity'''
     # Output:
     #       CP_top[it, x, y]: 2D-field with CP-height for each xy-value
     #       w_max[0,it,x,y]:  2D-field with maximum value of w for each column
     #       w_max[1,it,x,y]:  height where maximum value of w for each column
-    filename = 'CP_height_' + id + '_sth' + str(s_crit) + '.nc'
+    filename = 'CP_height_' + ID + '_sth' + str(s_crit) + '.nc'
     create_output_file(filename, s_crit, nx, ny, times)
     compute_dump_CP_height(s_bg, s_crit, smin, smax,
-                           xmin_plt, xmax_plt, ymin_plt, ymax_plt, i0_coll, id)
+                           xmin_plt, xmax_plt, ymin_plt, ymax_plt, i0_coll, ID)
     print('')
 
 
 
     '''plot contour-figure of CP_top, w_max, height of w_max (xy-plane)'''
     print('plotting')
-    filename = 'CP_height_' + id + '_sth' + str(s_crit) + '.nc'
+    filename = 'CP_height_' + ID + '_sth' + str(s_crit) + '.nc'
     root = nc.Dataset(os.path.join(path_out, filename), 'r')
     CP_top_2D = root.groups['fields_2D'].variables['CP_height_2d'][:,:,:]
     w_max_2D = root.groups['fields_2D'].variables['w_max_2d'][:,:,:]
@@ -111,7 +112,7 @@ def main():
     plot_y_crosssections_CPtop_w(s0, CP_top_2D, w_max_2D, i1, i2)
 
     ''' plotting timeseries '''
-    input_file_name = 'CP_height_' + id + '_sth' + str(s_crit) + '.nc'
+    input_file_name = 'CP_height_' + ID + '_sth' + str(s_crit) + '.nc'
     plot_timeseries(s0, i0_coll, j0_coll, input_file_name)
 
 
@@ -123,7 +124,7 @@ def main():
 # ----------------------------------------------------------------------
 
 def compute_dump_CP_height(s_bg, s_crit, smin, smax,
-                      xmin_plt, xmax_plt, ymin_plt, ymax_plt, i0_coll, id):
+                      xmin_plt, xmax_plt, ymin_plt, ymax_plt, i0_coll, ID):
     print('')
     print('compute & dump CP height')
     ''' define CP height & maximal updraft velocity'''
@@ -198,7 +199,7 @@ def compute_dump_CP_height(s_bg, s_crit, smin, smax,
         CP_top_max[1, it] = np.amax(CP_top_grad[it, :, :])
         ''' dump outputs '''
         t_start = time.clock()
-        dump_output_file(CP_top_max, CP_top, w_max, it, id, s_crit)
+        dump_output_file(CP_top_max, CP_top, w_max, it, ID, s_crit)
         print('time', time.clock() - t_start)
 
         print ''
