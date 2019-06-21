@@ -61,10 +61,11 @@ def main():
     dr = dx[0]
     CP_vol = 2*np.pi*dr*CP_vol
 
-    # # plotting
-    # plot_CP_volume(CP_vol, CP_height_radav, time_CP_height, r_range, ID)
+    # plotting
+    plot_CP_volume(CP_vol, CP_height_radav, time_CP_height, r_range, ID)
 
     # output CP volume
+    s_crit = 5e-1
     var_name = 'CP_vol_sth' + str(s_crit)
     dump_CP_height(CP_vol, var_name, filename_CP_vol)
 
@@ -84,11 +85,12 @@ def plot_CP_volume(CP_vol, CP_height_radav, time_CP_height, r_range, ID):
     time_list = np.arange(0, 3700, 600)
 
     for it_, t0 in enumerate(time_list):
-        it = np.where(time_CP_height == t0)[0][0]
-        ax0.plot(r_range, CP_height_radav[it, :], label='h_max=' + str(np.amax(CP_height_radav[it, :])))
-        ax1.plot([t0, t0], [0, 1e4], '.25', linewidth=0.5)
-        ax2.plot([t0, t0], [0, 1e10], '.25', linewidth=0.5)
-        ax2.plot([0, tmax], [CP_vol[it], CP_vol[it]], '.25', linewidth=0.5, label='V=' + str(CP_vol[it]))
+        if t0 <= tmin and t0 <= tmax:
+            it = np.where(time_CP_height == t0)[0][0]
+            ax0.plot(r_range, CP_height_radav[it, :], label='h_max=' + str(np.amax(CP_height_radav[it, :])))
+            ax1.plot([t0, t0], [0, 1e4], '.25', linewidth=0.5)
+            ax2.plot([t0, t0], [0, 1e10], '.25', linewidth=0.5)
+            ax2.plot([0, tmax], [CP_vol[it], CP_vol[it]], '.25', linewidth=0.5, label='V=' + str(CP_vol[it]))
 
     ca = 'k'
     ax1.plot(time_CP_height, np.amax(CP_height_radav, axis=1), color=ca, label='max(CP height)')
@@ -128,13 +130,16 @@ def plot_CP_volume(CP_vol, CP_height_radav, time_CP_height, r_range, ID):
 def dump_CP_height(CP_vol, var_name, filename_CP_vol):
     rootgrp = nc.Dataset(os.path.join(path_out_data, filename_CP_vol), 'r+')
     tsgrp = rootgrp.groups['timeseries']
+    print var_name
     if not var_name in tsgrp.variables.keys():
         var = tsgrp.createVariable(var_name, 'f8', ('nt'))
         var.long_name = 'CP volume from CP_height_sth'
         var.units = "m"
-    var = tsgrp.variables[var_name][:]
+    else:
+        var = tsgrp.variables[var_name]
     var[:] = CP_vol[:]
     rootgrp.close()
+
     return
 
 # ----------------------------------------------------------------------

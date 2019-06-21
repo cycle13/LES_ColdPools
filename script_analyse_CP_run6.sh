@@ -71,11 +71,14 @@ do
   #echo "CROSSSECTIONS"
   #python plot_crosssections.py $casename $fullpath --tmin 100 --tmax 800
 
-  echo "CP HEIGHT"
-  python CP_height_compute.py $casename $fullpath --tmin $tmin --tmax $tmax
+#  echo "CP HEIGHT"
+#  python CP_height_compute.py $casename $fullpath --tmin $tmin --tmax $tmax
 
-  echo "ANGULAR AVERAGE"
-  python average_angular.py $casename $fullpath --tmin $tmin --tmax $tmax --kmax 20
+  echo "compute CP VOLUME"
+  python CP_volume_compute.py $casename $fullpath --tmin $tmin --tmax $tmax
+
+#  echo "ANGULAR AVERAGE"
+#  python average_angular.py $casename $fullpath --tmin $tmin --tmax $tmax --kmax 20
 
   #echo "PLOT STREAMLINES"
   #python plot_streamlines_singleCP.py ColdPoolDry_single_3D $fullpath --tmin $tmin --tmax $tmax
@@ -90,8 +93,8 @@ done
 #python compute_minmax_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
 #echo " "
 
-#echo "CP height all"
-#python CP_height_plot_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
+echo "CP height all"
+python CP_height_volume_plot_all.py $casename $path $dTh --rmax_plot 9000 --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
 
 #echo "plot CP RIM all"
 #python plot_CP_rim_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax

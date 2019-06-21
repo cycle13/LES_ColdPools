@@ -52,8 +52,11 @@ then
   #r_params=( 2000 4000 2000 1500 1000 670 500 250 ) #run1
   z_params=( 500 1000 1600 2000 2500 ) #run2
   r_params=( 1500 1000 700 600 500 )   #run2
-  #z_params=( 2000 2500 )
-  #r_params=( 600 500 )
+  z_params=( 500 1000 2000 ) #run3
+  r_params=( 1500 1000 600 ) #run3
+  z_params=( 1000 )
+  r_params=( 1000 )
+
 elif [ $dTh -eq 4 ]
 then
   #z_params=( 430 870 1730 ) #run1
@@ -104,11 +107,16 @@ do
   echo $fullpath
   echo " "
 
-  #echo "make smaller files"
+  echo "make smaller files"
   #python convert_fields_smaller_k.py $casename $fullpath --kmax 80
+  #python convert_fields_smaller_k.py $casename $fullpath --vert True
 
   #echo "MIN MAX VALUES (w, s)"
   #python compute_minmax.py $casename $fullpath --tmin 100 --tmax 3600
+
+  #echo "CROSSSECTIONS"
+  #python plot_crosssections.py $casename $fullpath --tmin 100 --tmax 800
+
 
   #echo "CP HEIGHT"
   #python plot_CP_height.py $casename $fullpath --tmin $tmin --tmax $tmax
@@ -127,7 +135,7 @@ do
   ##python compute_energy_domain.py $casename $fullpath --tmin $tmin --tmax $tmax
 
   #echo "VORTICITY"
-  #python vorticity_streamfct_compute.py --casename $casename --path $fullpath --tmin $tmin --tmax $tmax
+  #python vorticity_streamfct_compute.py $casename $fullpath --tmin $tmin --tmax $tmax
 
   echo " "
   ((count_geom++))

@@ -30,6 +30,7 @@ def main():
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
     parser.add_argument("--s_crit")
+    parser.add_argument("--rmax_plot")
     args = parser.parse_args()
 
     global cm_bwr, cm_grey, cm_vir, cm_hsv
@@ -50,23 +51,32 @@ def main():
     print('threshold for ds=s-s_bg: ' + str(s_crit) + 'J/K')
     print('')
 
-    # plot_CP_height_dTh(z_params, r_params, dTh, s_crit)
-    plot_CP_height_rad_av_dTh(z_params, r_params, dTh, s_crit)
+    colorlist = ['black', 'navy', 'darkgreen', 'mediumseagreen', 'indianred', 'darkcyan']
+    if args.rmax_plot:
+        rmax_plot = np.int(args.rmax_plot)
+    else:
+        rmax_plot = 7.5e3
 
-    # plot_w_max_height_dTh(z_params, r_params, dTh, s_crit)
 
+    ''' plot CP height '''
+    figname = 'CP_height_dTh' + str(dTh) + '.png'
+    plot_CP_height_dTh(z_params, r_params, dTh, s_crit, colorlist, figname)
+    figname = 'CP_height_radav_dTh' + str(dTh) + '_stats.png'
+    plot_CP_height_rad_av_dTh(z_params, r_params, dTh, s_crit, rmax_plot, colorlist, figname)
 
+    plot_w_max_height_dTh(z_params, r_params, dTh, s_crit, colorlist)
 
+    ''' plot CP volume '''
+    figname = 'CP_volume_dTh' + str(dTh) + '.png'
+    s_crit = 5e-1
+    plot_CP_volume_dTh(z_params, r_params, dTh, s_crit, colorlist, figname)
     return
 
 
 # ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
 
-def plot_CP_height_dTh(z_params, r_params, dTh, s_crit):
-    print('start')
+def plot_CP_height_dTh(z_params, r_params, dTh, s_crit, colorlist, figname):
     ng = len(z_params)
-    kmax = np.amax(z_params) + 2000./dx[2]
     fig, axis = plt.subplots(1, 4, sharex='all', figsize=(18, 5))
     ax0 = axis[0]
     ax1 = axis[1]
@@ -75,10 +85,10 @@ def plot_CP_height_dTh(z_params, r_params, dTh, s_crit):
     for istar in range(ng):
         zstar = z_params[istar]
         rstar = r_params[istar]
-        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-        print('id', id)
-        filename = 'CP_height_' + id + '_sth' + str(s_crit) + '.nc'
-        fullpath_in = os.path.join(path_root, id, 'data_analysis', filename)
+        ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        print('id', ID)
+        filename = 'CP_height_' + ID + '_sth' + str(s_crit) + '.nc'
+        fullpath_in = os.path.join(path_root, ID, 'data_analysis', filename)
         print(fullpath_in)
         rootgrp = nc.Dataset(fullpath_in, 'r')
         time_CP_height = rootgrp.groups['timeseries'].variables['time'][:]
@@ -91,10 +101,10 @@ def plot_CP_height_dTh(z_params, r_params, dTh, s_crit):
         print('max', time_CP_height)
         w_max_height_max = np.amax(np.amax(w_max_height, axis=2), axis=1)
         w_max_max = np.amax(np.amax(w_max, axis=2), axis=1)
-        ax0.plot(time_CP_height, CP_height_grad, '-o', label=id)
-        ax1.plot(time_CP_height, CP_height_max, '-o', label=id)
-        ax2.plot(time_CP_height, w_max_height_max, '-o', label=id)
-        ax3.plot(time_CP_height, w_max_max, '-o', label=id)
+        ax0.plot(time_CP_height, CP_height_grad, '-o', label=ID)
+        ax1.plot(time_CP_height, CP_height_max, '-o', label=ID)
+        ax2.plot(time_CP_height, w_max_height_max, '-o', label=ID)
+        ax3.plot(time_CP_height, w_max_max, '-o', label=ID)
     for i in range(4):
         axis[i].legend(loc='best')
         axis[i].set_xlabel('time  [s]')
@@ -104,28 +114,27 @@ def plot_CP_height_dTh(z_params, r_params, dTh, s_crit):
     ax3.set_title('max(w_max[ij])')
     fig.suptitle('dTh=' + str(dTh))
     fig.tight_layout()
-    fig.savefig(os.path.join(path_out_figs, 'CP_height_dTh' + str(dTh) + '.png'))
+    fig.savefig(os.path.join(path_out_figs, figname))
     plt.close(fig)
 
     return
 
 
-def plot_CP_height_rad_av_dTh(z_params, r_params, dTh, s_crit):
+def plot_CP_height_rad_av_dTh(z_params, r_params, dTh, s_crit, rmax_plot, colorlist, figname):
     ng = len(z_params)
     fig, axis = plt.subplots(1, 3, sharex='none', figsize=(18, 5))
     ax0 = axis[0]
     ax1 = axis[1]
     ax2 = axis[2]
     # ax3 = axis[3]
-    colorlist = ['black', 'firebrick', 'navy', 'darkgreen', 'darkcyan']
 
     for istar in range(ng):
         zstar = z_params[istar]
         rstar = r_params[istar]
-        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-        print('id', id)
-        filename = 'CP_height_' + id + '_sth' + str(s_crit) + '.nc'
-        fullpath_in = os.path.join(path_root, id, 'data_analysis', filename)
+        ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        print('id', ID)
+        filename = 'CP_height_' + ID + '_sth' + str(s_crit) + '.nc'
+        fullpath_in = os.path.join(path_root, ID, 'data_analysis', filename)
         rootgrp = nc.Dataset(fullpath_in, 'r')
         time_CP_height = rootgrp.groups['timeseries'].variables['time'][:]
         CP_height_max = rootgrp.groups['timeseries'].variables['CP_height_max'][:]
@@ -134,7 +143,7 @@ def plot_CP_height_rad_av_dTh(z_params, r_params, dTh, s_crit):
         rootgrp.close()
 
         ax0.set_title('max_ijk(CP_height)')
-        ax0.plot(time_CP_height, CP_height_max, '-o', color=colorlist[istar], label=id)
+        ax0.plot(time_CP_height, CP_height_max, '-o', color=colorlist[istar], label=ID)
         ax0.set_xlabel('time')
         ax0.set_ylabel('max(CP_height)')
         # ax0.set_xlim(tmin, tmax)
@@ -143,45 +152,108 @@ def plot_CP_height_rad_av_dTh(z_params, r_params, dTh, s_crit):
         ax1.set_title('max_r(CP_height(r))')
         ax1.set_xlabel('time')
         ax1.set_ylabel('max(CP_height(r))')
-        ax1.plot(time_CP_height, np.amax(CP_height_radav, axis=1), '-o', color=colorlist[istar], label=id)
+        ax1.plot(time_CP_height, np.amax(CP_height_radav, axis=1), '-o', label=ID,
+                 color=colorlist[istar], markersize=6, markeredgecolor='w')
         ax1.legend()
 
 
         ax2.set_title('CP_height(r,t)')
         ax2.set_xlabel('radius')
         ax2.set_ylabel('CP_height')
+        ax2.set_ylim(0,600)
 
 
         ta = np.where(time_CP_height == tmin)[0][0]
         tb = np.where(time_CP_height == tmax)[0][0]
-        rmax_plot = 9e3
         irmax = np.where(r_range == rmax_plot)[0][0]
         count_color = np.double(istar)/ng
         if len(times) >= 2:
             for it, t0 in enumerate(time_CP_height[1::2]):
                 if it >= ta and it <= tb:
                     # count_color = 2 * np.double(it) / len(times)
-                    ax2.plot(r_range[:irmax], CP_height_radav[2*it+1, :irmax],
-                             color=colorlist[istar])#color=cm.jet(count_color))
+                    if it == ta:
+                        ax2.plot(r_range[:irmax], CP_height_radav[2 * it + 1, :irmax],
+                                 color=colorlist[istar], linewidth=3, label=ID)
+                    else:
+                        ax2.plot(r_range[:irmax], CP_height_radav[2*it+1, :irmax],
+                             color=colorlist[istar], linewidth=3)#color=cm.jet(count_color))
         else:
             for it, t0 in enumerate(time_CP_height):
                 if it >= ta and it <= tb:
                     # count_color = np.double(it) / len(times)
                     # ax2.plot([0, r_range[irmax]], [0.,0.], 'k')
-                    ax2.plot(r_range[:irmax], CP_height_radav[it, :irmax],
-                             color=colorlist[istar])  #color=cm.jet(count_color))
+                    if it == ta:
+                        ax2.plot(r_range[:irmax], CP_height_radav[it, :irmax],
+                             color=colorlist[istar], linewidth=3, label=ID)  #color=cm.jet(count_color))
+                    else:
+                        ax2.plot(r_range[:irmax], CP_height_radav[it, :irmax],
+                                 color=colorlist[istar], linewidth=3)
     #  ax2.legend()
     ax2.legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
-                    fancybox=True, shadow=True, ncol=1, fontsize=10)
+                    fancybox=True, shadow=False, ncol=1, fontsize=10)
+    fig.suptitle('dTh=' + str(dTh), fontsize=18)
+    fig.tight_layout()
+    plt.subplots_adjust(bottom=0.12, right=.9, left=0.04, top=0.8, wspace=0.15)
+    fig.savefig(os.path.join(path_out_figs, figname))
+    plt.close(fig)
+
+
+
+
+    fig, ax = plt.subplots(1, 1, sharex='none', figsize=(12, 5))
+    for istar in range(ng):
+        zstar = z_params[istar]
+        rstar = r_params[istar]
+        ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        print('id', ID)
+        filename = 'CP_height_' + ID + '_sth' + str(s_crit) + '.nc'
+        fullpath_in = os.path.join(path_root, ID, 'data_analysis', filename)
+        rootgrp = nc.Dataset(fullpath_in, 'r')
+        time_CP_height = rootgrp.groups['timeseries'].variables['time'][:]
+        CP_height_max = rootgrp.groups['timeseries'].variables['CP_height_max'][:]
+        CP_height_radav = rootgrp.groups['stats'].variables['CP_height_rad'][:,:]
+        r_range = rootgrp.groups['stats'].variables['r'][:]
+        rootgrp.close()
+        count_color = np.double(istar) / ng
+        if len(times) >= 2:
+            for it, t0 in enumerate(time_CP_height[1::2]):
+                if it >= ta and it <= tb:
+                    # count_al = 2 * np.double(len(times) - it) / len(times)
+                    if it == ta:
+                        ax.plot(r_range[:irmax], CP_height_radav[2 * it + 1, :irmax],
+                                 color=colorlist[istar], linewidth=3, label=ID)
+                    else:
+                        ax.plot(r_range[:irmax], CP_height_radav[2 * it + 1, :irmax],
+                                 color=colorlist[istar], linewidth=3)  # , alpha=count_al, color=cm.jet(count_color))
+        else:
+            for it, t0 in enumerate(time_CP_height):
+                if it >= ta and it <= tb:
+                    # count_color = np.double(it) / len(times)
+                    # ax2.plot([0, r_range[irmax]], [0.,0.], 'k')
+                    if it == ta:
+                        ax.plot(r_range[:irmax], CP_height_radav[it, :irmax],
+                                 color=colorlist[istar], linewidth=3, label=ID)  # color=cm.jet(count_color))
+                    else:
+                        ax.plot(r_range[:irmax], CP_height_radav[it, :irmax],
+                                 color=colorlist[istar], linewidth=3)
+
+    ax.legend(loc='upper left', bbox_to_anchor=(.8, 1.),
+           fancybox=True, shadow=False, ncol=1, fontsize=10)
+    ax.set_title('CP_height(r,t)')
+    ax.set_xlabel('radius')
+    ax.set_ylabel('CP_height')
+    ax.set_ylim(0, 600)
+
     fig.suptitle('dTh=' + str(dTh), fontsize=18)
     fig.tight_layout()
     plt.subplots_adjust(bottom=0.12, right=.9, left=0.04, top=0.8, wspace=0.15)
     fig.savefig(os.path.join(path_out_figs, 'CP_height_radav_dTh' + str(dTh) + '.png'))
     plt.close(fig)
+
     return
 
 
-def plot_w_max_height_dTh(z_params, r_params, dTh, s_crit):
+def plot_w_max_height_dTh(z_params, r_params, dTh, s_crit, colorlist):
     ng = len(z_params)
     fig, axis = plt.subplots(2, 2, sharex='all', figsize=(10, 10))
     ax0 = axis[0, 0]
@@ -191,10 +263,10 @@ def plot_w_max_height_dTh(z_params, r_params, dTh, s_crit):
     for istar in range(ng):
         zstar = z_params[istar]
         rstar = r_params[istar]
-        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-        print('id', id)
-        filename = 'CP_height_' + id + '_sth' + str(s_crit) + '.nc'
-        fullpath_in = os.path.join(path_root, id, 'data_analysis', filename)
+        ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        print('id', ID)
+        filename = 'CP_height_' + ID + '_sth' + str(s_crit) + '.nc'
+        fullpath_in = os.path.join(path_root, ID, 'data_analysis', filename)
         print(fullpath_in)
         rootgrp = nc.Dataset(fullpath_in, 'r')
         time = rootgrp.groups['timeseries'].variables['time'][:]
@@ -206,10 +278,10 @@ def plot_w_max_height_dTh(z_params, r_params, dTh, s_crit):
         w_max_height_av = np.mean(np.mean(w_max_height, axis=2), axis=1)
         w_max_max = np.amax(np.amax(w_max, axis=2), axis=1)
         w_max_av = np.mean(np.mean(w_max, axis=1), axis=1)
-        ax0.plot(time, w_max_max, '-o', label=id)
-        ax1.plot(time, w_max_av, '-o', label=id)
-        ax2.plot(time, w_max_height_max, '-o', label=id)
-        ax3.plot(time, w_max_height_av, '-o', label=id)
+        ax0.plot(time, w_max_max, '-o', label=ID)
+        ax1.plot(time, w_max_av, '-o', label=ID)
+        ax2.plot(time, w_max_height_max, '-o', label=ID)
+        ax3.plot(time, w_max_height_av, '-o', label=ID)
 
     for i in range(4):
         axis[0, np.mod(i, 2)].legend(loc='best')
@@ -228,7 +300,66 @@ def plot_w_max_height_dTh(z_params, r_params, dTh, s_crit):
     return
 
 
-# ----------------------------------------------------------------------
+# ----------------------------------
+
+def plot_CP_volume_dTh(z_params, r_params, dTh, s_crit, colorlist, figname):
+    print('start')
+    ng = len(z_params)
+
+
+    nplots = 3
+    fig, axis = plt.subplots(1, nplots, sharex='all', figsize=(18, 5))
+    ax0 = axis[0]
+    ax1 = axis[1]
+    ax2 = axis[2]
+    for istar in range(ng):
+        zstar = z_params[istar]
+        rstar = r_params[istar]
+        ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        print('id', ID)
+
+        filename_vol = 'CP_volume_' + ID + '.nc'
+        fullpath_in = os.path.join(path_root, ID, 'data_analysis', filename_vol)
+        print(fullpath_in)
+        rootgrp = nc.Dataset(fullpath_in, 'r')
+        time_CP_vol = rootgrp.groups['timeseries'].variables['time'][:]
+        CP_vol_sth = rootgrp.groups['timeseries'].variables['CP_vol_sth'+str(s_crit)][:]
+        rootgrp.close()
+
+        filename_height = 'CP_height_' + ID + '_sth' + str(s_crit) + '.nc'
+        fullpath_in = os.path.join(path_root, ID, 'data_analysis', filename_height)
+        rootgrp = nc.Dataset(fullpath_in, 'r')
+        time_CP_height = rootgrp.groups['timeseries'].variables['time'][:]
+        CP_height_radav = rootgrp.groups['stats'].variables['CP_height_rad'][:,:]
+        # CP_height_max = rootgrp.groups['timeseries'].variables['CP_height_max'][:]
+        w_max = rootgrp.groups['fields_2D'].variables['w_max_2d'][:, :, :]
+        w_max_height = rootgrp.groups['fields_2D'].variables['w_max_height_2d'][:, :, :]
+        rootgrp.close()
+
+        ax0.plot(time_CP_height, np.amax(CP_height_radav, axis=1), '-o', label=ID,
+                 color=colorlist[istar], markersize=6, markeredgecolor='w')
+        ax1.plot(time_CP_vol, CP_vol_sth, '-o', label=ID,
+                 color=colorlist[istar], markersize=6, markeredgecolor='w')
+        ax2.plot(time_CP_vol, np.amax(np.amax(w_max_height, axis=1), axis=1), '-o', label=ID,
+                 color=colorlist[istar], markersize=6, markeredgecolor='w')
+    ax0.set_xlim(0, tmax)
+    for i in range(nplots):
+        axis[i].legend(loc='best')
+        axis[i].set_xlabel('time  [s]')
+    ax0.set_ylabel('max(CP_height)  [m]')
+    ax1.set_ylabel('CP volume  [m3]')
+    ax2.set_ylabel('height (max w)  [m]')
+    ax0.set_title('max(CP_height)')
+    ax1.set_title('CP vol from height (s_crit)')
+    ax2.set_title('max(height of w_max[i,j])')
+    fig.suptitle('dTh=' + str(dTh))
+    fig.tight_layout()
+    plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.85, wspace=0.17)
+    fig.savefig(os.path.join(path_out_figs, figname))
+    plt.close(fig)
+
+    return
+
 # ----------------------------------------------------------------------
 
 def set_input_parameters(args):

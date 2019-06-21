@@ -53,8 +53,6 @@ elif [ $dTh -eq 3 ]
 then
   z_params=( 2500 2000 1600 1000 500 )
   r_params=( 500 600 700 1000 1500 )
-  z_params=( 2500 2000 1000 500 )
-  r_params=( 500 600 1000 1500 )
 elif [ $dTh -eq 4 ]
 then 
   z_params=( 2500 2000 900 500 )
@@ -110,6 +108,9 @@ do
   #echo "compute CP HEIGHT"
   #python CP_height_compute.py $casename $fullpath --tmin $tmin --tmax $tmax
 
+  #echo "compute CP VOLUME"
+  #python CP_volume_compute.py $casename $fullpath --tmin $tmin --tmax $tmax
+
 #  echo "ANGULAR AVERAGE"
 #  python average_angular.py $casename $fullpath --kmax 20 --tmin $tmin --tmax $tmax
 
@@ -139,7 +140,7 @@ done
 #echo " "
 
 echo "CP height all"
-python CP_height_plot_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
+python CP_height_volume_plot_all.py $casename $path $dTh --rmax_plot 7500 --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
 
 #echo "plot CP RIM all"
 #python plot_CP_rim_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
