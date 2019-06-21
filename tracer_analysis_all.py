@@ -111,10 +111,7 @@ def main():
 
 
 
-    # print ''
-    # print ''
-    # print ''
-    # print ''
+
 
     # # -----------------------------------------------
     # ''' ---------------- r = 1km ---------------- '''
@@ -486,7 +483,10 @@ def set_input_parameters(args):
     path_out_figs = os.path.join(path_root, 'figs_tracers')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
+    print ''
     print 'path_root: ', path_root
+    print 'path figs: ', path_out_figs
+    print ''
 
     dTh = args.dTh
     if args.zparams:
