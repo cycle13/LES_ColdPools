@@ -58,7 +58,7 @@ def main():
     rootgrp.close()
 
     # create file for output time arrays
-    stats_file_name = 'Stats_rotational.nc'
+    stats_file_name = 'Stats_vorticity.nc'
     create_statistics_file(stats_file_name, path_out_fields, nt, timerange)
     add_statistics_variable('vort_yz_max', 's^-1', 'timeseries', stats_file_name, path_out_fields)
     add_statistics_variable('vort_yz_min', 's^-1', 'timeseries', stats_file_name, path_out_fields)
@@ -84,11 +84,13 @@ def main():
     #           >> w[ks=-1] = -w[ks=0]
     #           >> w[kr=0] = 0.5*(w[kr=-1/2]+w[kr=1/2]) = 0.5*(w[ks=0]+w[ks=-1]) = 0
 
+
+    # compute_vorticity()
+    #
+    # compute_vorticity_stats()
+
+
     ''' COMPUTE VORTICITY '''
-    vort_yz_max = np.zeros((len(timerange)))
-    vort_yz_min = np.zeros((len(timerange)))
-    vort_yz_sum = np.zeros((len(timerange)))
-    vort_yz_env = np.zeros((len(timerange)))
     for it, t0 in enumerate(timerange):
         print('--- time: t='+str(t0)+'s ---')
         # read in fields
@@ -147,33 +149,41 @@ def main():
         ''' dump vorticity yz-field '''
         dump_vort_field(vort_yz, it, t0, fields_file_name)
 
-        ''' compute vorticity statistics '''
-        # compute vorticity statistics
-        vort_yz_max[it] = np.amax(vort_yz)
-        vort_yz_min[it] = np.amin(vort_yz)
-        vort_yz_sum[it] = np.sum(vort_yz[jcshift:,:])
-        vort_yz_env[it] = np.sum(vort_yz[jcshift+50:,:])       # profile outside of coldpool
 
 
 
         ''' PLOTTING '''
-        # plot_configuration(u_, v_, icshift, jcshift)
+        # plot_configuration(u_, v_, icshift, jcshift, t0)
         # # compare vorticities
         # plot_comparison_vort_vort_stag(vort_yz, vort_yz_, vort_yz_stag, jcshift, jc, kmax, t0)
         # # compare vort_yz and vort_xz
         # comparison_vort_yz_vort_xz(vort_xz, vort_yz, kmax, t0)
         # plot fields
-        plot_vorticity_field(vort_xz, vort_yz, icshift, jcshift, t0, kmax)
+        plot_vorticity_field(vort_xz, vort_yz, t0, kmax)
 
 
 
-    plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env, timerange)
-
+    ''' compute vorticity statistics '''
+    # read in vorticity field
+    file = nc.Dataset(os.path.join(path_out_fields, fields_file_name), 'r')
+    vort_yz = file.groups['fields'].variables['vort_yz'][:,:,:]
+    file.close()
+    # compute vorticity statistics
+    vort_yz_max = np.amax(np.amax(vort_yz, axis=1), axis=1)
+    vort_yz_min = np.amin(np.amin(vort_yz, axis=1), axis=1)
+    vort_yz_sum = np.sum(np.sum(vort_yz[:, jc_arr[0]:, :], axis=1), axis=1)
+    vort_yz_env = np.sum(np.sum(vort_yz[:, nx-1, :], axis=1), axis=1)  # profile outside of coldpool
     # output vorticity timeseries
     dump_statistics_variable(vort_yz_max, 'vort_yz_max', 'timeseries', stats_file_name, path_out_fields)
     dump_statistics_variable(vort_yz_min, 'vort_yz_min', 'timeseries', stats_file_name, path_out_fields)
     dump_statistics_variable(vort_yz_sum, 'vort_yz_sum', 'timeseries', stats_file_name, path_out_fields)
     dump_statistics_variable(vort_yz_env, 'vort_yz_env', 'timeseries', stats_file_name, path_out_fields)
+
+
+
+    ''' PLOTTING '''
+    figname = 'vort_yz_max_sum.png'
+    plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env, timerange, figname)
 
 
 
@@ -184,8 +194,11 @@ def main():
 
 
 
+# ---------------------------------- COMPUTATION ------------------------------------
+
+
 # ---------------------------------- PLOTTING ------------------------------------
-def plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env, timerange):
+def plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env, timerange, figname):
     fig, axes = plt.subplots(1,3, figsize=(15,5))
     ax1 = axes[0]
     ax1.plot(timerange, vort_yz_max, 'o-', label = 'max')
@@ -205,12 +218,13 @@ def plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env
     ax3.set_title('sum vort_yz env')
     ax3.set_xlabel('time t  [s]')
     ax3.set_ylabel('sum vort_yz  [1/s]')
-    fig.savefig(os.path.join(path_out_figs, 'vort_yz_max_sum.png'))
+    # fig.savefig(os.path.join(path_out_figs, 'vort_yz_max_sum.png'))
+    fig.savefig(os.path.join(path_out_figs, figname))
 
     return
 
 
-def plot_vorticity_field(vort_xz, vort_yz, icshift, jcshift, t0, kmax):
+def plot_vorticity_field(vort_xz, vort_yz, t0, kmax):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10,5))
     cf = ax1.imshow(vort_xz.T, origin='lower')
     plt.colorbar(cf, ax=ax1, shrink=0.65, aspect=12)
@@ -235,7 +249,7 @@ def plot_vorticity_field(vort_xz, vort_yz, icshift, jcshift, t0, kmax):
     return
 
 
-def plot_configuration(u_, v_, icshift, jcshift):
+def plot_configuration(u_, v_, icshift, jcshift, t0):
     ''' FIELDS / GEOMETRY '''
     plt.figure()
     plt.subplot(131)
@@ -261,7 +275,6 @@ def plot_configuration(u_, v_, icshift, jcshift):
 
 
 
-# ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 def compute_vorticity_yz(v_, w_, kmax):
     # compute vorticity on staggered grid, i.e. on y- and k-faces of boxes

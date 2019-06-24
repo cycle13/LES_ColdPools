@@ -4,6 +4,7 @@ import netCDF4 as nc
 import argparse
 import json as simplejson
 import os
+import sys
 
 
 label_size = 8
@@ -34,6 +35,7 @@ def main():
     nml = set_input_parameters(args)
     # nt = len(times)
 
+    # read in vort-field
     file_name = 'field_vort_yz.nc'
     rootgrp = nc.Dataset(os.path.join(path_in, file_name), 'r')
     grp_descr =rootgrp.groups['description'].variables
@@ -55,14 +57,23 @@ def main():
     it = 0
     t0 = 100
 
+    vort_c = 2e-2
+    circ = np.zeros(nt)
+    area = np.zeros(nt)
+    area_ = np.zeros(nt)
+    vort_mean = np.zeros(nt)    # mean
+    vort_var = np.zeros(nt)     # variance
+    vort_max = np.zeros(nt)
+    vort_min = np.zeros(nt)
+    vort_max_cond = np.zeros(nt)    # max conditioned on vort>vort_c
+    vort_mean2 = 0.0            # to compute variance
     for it, t0 in enumerate(time_range):
+        print('--- time: t0='+str(t0)+' ---')
         # location of maximum / minimum
-        vort_max = np.amax(vort_yz[it,:,:])
-        vort_min = np.amin(vort_yz[it,:,:])
+        vort_max[it] = np.amax(vort_yz[it,:,:])
+        vort_min[it] = np.amin(vort_yz[it,:,:])
         vort_max_i = np.unravel_index(np.argmax(vort_yz[it,:,:]), (ny,nz))
         vort_min_i = np.unravel_index(np.argmin(vort_yz[it,:,:]), (ny,nz))
-        # print vort_max, vort_yz[it, vort_max_i]
-        # print('location maximum: ', vort_max_i)
 
         jmin = 50
         jmax = 350
@@ -70,36 +81,134 @@ def main():
 
         # computing circulation
         # !!!!!!!! need to define limits of search area?! (dynamically as it moves with time, maybe read in radius)
-        circ = np.zeros(nt)
-        vort_c = 2e-2
+
+
         test_field = np.zeros((jmax-jmin, kmax), dtype = np.int)
         for j in range(jmin, jmax):
             for k in range(kmax):
                 if vort_yz[it, j,k] >= vort_c:
                     circ[it] += vort_yz[it, j,k]
                     test_field[j-jmin, k] = 1
+                    vort_mean[it] += vort_yz[it,j,k]
+                    vort_mean2 += vort_yz[it,j,k]*vort_yz[it,j,k]
+                    if vort_yz[it, j, k] > vort_max_cond[it]:
+                        vort_max_cond[it] = vort_yz[it, j, k]
+        area[it] = np.sum(test_field)
+        if area[it] > 0:
+            vort_mean[it] /= area[it]
+            vort_mean2 /= area[it]
+            vort_var[it] = vort_mean2 - vort_mean[it]*vort_mean[it]
+        else:
+            vort_mean[it] =  0.0
+            vort_var[it] = 0.0
+        area[it] = np.sum(test_field)*dx[0]*dx[1]
+        area_[it] = circ[it] / vort_mean[it]*dx[0]*dx[1]
 
-        # plotting
-        lvls = np.linspace(vort_min, vort_max, 1e3)
-        fig, axes = plt.subplots(1, 2, figsize=(15, 4))
-        ax = axes[0]
-        ax.contourf(vort_yz[it, jmin:jmax, :kmax].T, levels=lvls)
-        ax.plot(vort_max_i[0] - jmin, vort_max_i[1], 'kx', markersize=20)
-        # ax.contourf(vort_yz[it, :, :kmax].T, levels=lvls)
-        # ax.plot(vort_max_i[0], vort_max_i[1], 'kx', markersize=20)
-        # ax.plot(vort_min_i[0]- jmin, vort_min_i[1], 'kx', markersize=20)
-        ax = axes[1]
-        ax.imshow(test_field[vort_max_i[0]-50-jmin:vort_max_i[0]+25-jmin,:].T, origin='lower')
-        ax.set_title('circulation: C='+str(circ[it]))
-        # for ax in axes:
-        #     ax.legend(loc='best')
-        plt.tight_layout
-        plt.suptitle('t='+str(t0)+'s')
-        fig_name = 'vort_max_t' + str(np.int(t0)) + '.png'
-        plt.savefig(os.path.join(path_out_figs, fig_name))
-        plt.close(fig)
+        # # plotting circulation
+        # lvls = np.linspace(vort_min[it], vort_max[it], 1e3)
+        # fig, axes = plt.subplots(1, 2, figsize=(15, 4))
+        # ax = axes[0]
+        # ax.contourf(vort_yz[it, jmin:jmax, :kmax].T, levels=lvls)
+        # ax.plot(vort_max_i[0] - jmin, vort_max_i[1], 'kx', markersize=20)
+        # ax = axes[1]
+        # ax.imshow(test_field[vort_max_i[0]-50-jmin:vort_max_i[0]+25-jmin,:].T, origin='lower')
+        # ax.set_title('circulation: C='+str(circ[it]))
+        # plt.tight_layout
+        # plt.suptitle('t='+str(t0)+'s')
+        # fig_name = 'vort_max_t' + str(np.int(t0)) + '.png'
+        # plt.savefig(os.path.join(path_out_figs, fig_name))
+        # plt.close(fig)
+
+
+    # plotting time series
+    fig_name = 'vort_ts.png'
+    ncol = 4
+    fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5 * ncol, 5))
+    count_color = 2 * np.double(it) / len(time_range)
+    ax = axes[0]
+    ax.plot(time_range, circ, '-o', label='circulation')
+    # ax.legend(fontsize=10)
+    ax.set_xlabel('time')
+    ax.set_title('circulation')
+    ax = axes[1]
+    ax.plot(time_range, area, '-o', label='area vort>crit')
+    ax.plot(time_range, area_, '-o', label='area=circ/<vort>')
+    ax.legend(loc='best')
+    ax.set_title('area of vort>crit')
+    ax.set_xlabel('time')
+    ax.set_ylabel('area  [m2]')
+    ax = axes[2]
+    ax.plot(time_range, np.sqrt(area/(np.pi)), '-o', label='effective radius')
+    ax.set_title('effective radius')
+    ax.set_ylabel('radius [m]')
+    ax.set_xlabel('time')
+    ax.set_ylabel('r  [m]')
+    ax = axes[3]
+    ax.plot(time_range, vort_mean, '-o', label='mean vorticity')
+    ax.plot(time_range, vort_max, '-o', label='max vorticity')
+    ax.plot(time_range, -vort_min, '-o', label='-min vorticity')
+    ax.plot(time_range, vort_max_cond, '-o', label='max vorticity cond')
+    ax.plot(time_range, vort_var*1e2, '-o', label='variance vorticity (*1e2)')
+    ax.plot([time_range[0],time_range[-1]],[vort_c, vort_c], 'k-')
+    plt.legend(loc='best')
+    ax.set_title('mean vorticity')
+    ax.set_xlabel('time')
+    ax.set_ylabel('vort  [1/s]')
+    plt.tight_layout()
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+
+
+    file_name = 'Stats_vorticity_rim.nc'
+    create_statsfile(time_range, file_name)
+    dump_timeseries('area', area, time_range, file_name)
+    dump_timeseries('circulation', circ, time_range, file_name)
+    dump_timeseries('vort_mean', vort_mean, time_range, file_name)
+    dump_timeseries('vort_max', vort_max, time_range, file_name)
+    dump_timeseries('vort_min', vort_min, time_range, file_name)
 
     return
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+def create_statsfile(time_range, file_name):
+    if os.path.exists(os.path.join(path_out_data, file_name)):
+        print''
+        print('Stats-file already existing, not dumping')
+        # rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'r+')    # append data
+        print''
+        return
+    else:
+        rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'w')
+        ts_grp = rootgrp.createGroup('timeseries')
+        ts_grp.createDimension('nt', len(time_range))
+        var = ts_grp.createVariable('time', 'f8', ('nt'))
+        var[:] = time_range[:]
+    return
+
+
+def dump_timeseries(var_name, var, time_range, file_name):
+    rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'r+')
+    ts_grp = rootgrp.groups['timeseries']
+    try:
+        var_ = ts_grp.createVariable(var_name, 'f8', ('nt'))
+    except:
+        var_ = ts_grp.variables[var_name][:]
+    var_[:] = var[:]
+    rootgrp.close()
+    return
+
+# def dump_timeseries(circ, area, time_range, file_name):
+#     rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'r+')
+#     ts_grp = rootgrp.groups['timeseries']
+#     var = ts_grp.createVariable('circ', 'f8', ('nt'))
+#     var[:] = circ[:]
+#     var = ts_grp.createVariable('area', 'f8', ('nt'))
+#     var[:] = area[:]
+#
+#     rootgrp.close()
+#
+#     return
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
