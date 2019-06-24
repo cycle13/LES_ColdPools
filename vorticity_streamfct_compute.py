@@ -10,6 +10,15 @@ import sys
 import time
 
 
+'''
+COMPUTE VORTICITY & STREAMFUNCTION
+compute_vorticity_yz: computes vorticity on yz-crosssection on Euclidian grid 
+    > location: on grid faces, i.e. y- and z-faces of grid boxes
+compute_vorticity_yz_staggered: computes vorticity on yz-crosssection on Euclidian grid
+    (!! without interpolating v, w onto centered grid, i.e. vorticity location not well defined)
+ 
+'''
+
 def main():
     parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("casename")
@@ -55,10 +64,6 @@ def main():
     # create file for output time arrays
     stats_file_name = 'Stats_rotational.nc'
     create_statistics_file(stats_file_name, path_out_fields, nt, timerange)
-    vort_yz_max = np.zeros((len(timerange)))
-    vort_yz_min = np.zeros((len(timerange)))
-    vort_yz_sum = np.zeros((len(timerange)))
-    vort_yz_env = np.zeros((len(timerange)))
     add_statistics_variable('vort_yz_max', 's^-1', 'timeseries', stats_file_name, path_out_fields)
     add_statistics_variable('vort_yz_min', 's^-1', 'timeseries', stats_file_name, path_out_fields)
     add_statistics_variable('vort_yz_sum', 's^-1', 'timeseries', stats_file_name, path_out_fields)
@@ -68,8 +73,26 @@ def main():
     fields_file_name = 'field_vort_yz.nc'
     create_vort_field_file(timerange, fields_file_name, kmax, n_CPs)
 
+    # Note: interpolation for k < 0
+    # - centered grid: (ir, jr, kr)
+    # - velocities are on staggered grid (is,js,ks) = (ir+1/2, jr+1/2, kr+1/2)
+    #           >> u[is,jr,kr] = vel[ir+1/2, jr, kr]
+    #           >> v[ir,js,kr] = vel[ir, jr+1/2, kr]
+    #           >> w[ir,jr,ks] = vel[ir, jr, kr+1/2]
+    #           >> vel[is,js,ks] = vel[ir+1/2, jr+1/2, kr+1/2]
+    # - therefore, the vertical velocity at the lowest output level ks=0
+    #           is actually at the level kr=1/2 and so w[ks=0]!=0
+    # - to guarantee zero vertical velocity at actual surfae, i.e. w[kr=0]=0,
+    #           must have reflected field on vertical ghost points:
+    #           >> w[kr=-1/2] = -w[ks=1/2]
+    #           >> w[ks=-1] = -w[ks=0]
+    #           >> w[kr=0] = 0.5*(w[kr=-1/2]+w[kr=1/2]) = 0.5*(w[ks=0]+w[ks=-1]) = 0
 
-
+    ''' COMPUTE VORTICITY '''
+    vort_yz_max = np.zeros((len(timerange)))
+    vort_yz_min = np.zeros((len(timerange)))
+    vort_yz_sum = np.zeros((len(timerange)))
+    vort_yz_env = np.zeros((len(timerange)))
     for it, t0 in enumerate(timerange):
         print('--- time: t='+str(t0)+'s ---')
 
@@ -86,21 +109,6 @@ def main():
         # w_ = w_roll[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
         # del u, v, w, u_roll, v_roll, w_roll
 
-
-        # Note: interpolation for k < 0
-        # - centered grid: (ir, jr, kr)
-        # - velocities are on staggered grid (is,js,ks) = (ir+1/2, jr+1/2, kr+1/2)
-        #           >> u[is,jr,kr] = vel[ir+1/2, jr, kr]
-        #           >> v[ir,js,kr] = vel[ir, jr+1/2, kr]
-        #           >> w[ir,jr,ks] = vel[ir, jr, kr+1/2]
-        #           >> vel[is,js,ks] = vel[ir+1/2, jr+1/2, kr+1/2]
-        # - therefore, the vertical velocity at the lowest output level ks=0
-        #           is actually at the level kr=1/2 and so w[ks=0]!=0
-        # - to guarantee zero vertical velocity at actual surfae, i.e. w[kr=0]=0,
-        #           must have reflected field on vertical ghost points:
-        #           >> w[kr=-1/2] = -w[ks=1/2]
-        #           >> w[ks=-1] = -w[ks=0]
-        #           >> w[kr=0] = 0.5*(w[kr=-1/2]+w[kr=1/2]) = 0.5*(w[ks=0]+w[ks=-1]) = 0
         fullpath_in = os.path.join(path_fields, str(t0) + '.nc')
         rootgrp = nc.Dataset(fullpath_in, 'r')
         grp_fields = rootgrp.groups['fields']
@@ -121,16 +129,14 @@ def main():
         # v[:,:,0] = -v[:,:,1]
         w[:,:,0] = -w[:,:,1]
 
-        u_roll = np.roll(np.roll(u[:, :, :], ishift, axis=0), jshift, axis=1)
-        u_ = u_roll[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
-        v_roll = np.roll(np.roll(v[:, :, :], ishift, axis=0), jshift, axis=1)
-        v_ = v_roll[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
-        w_roll = np.roll(np.roll(w[:, :, :], ishift, axis=0), jshift, axis=1)
-        w_ = w_roll[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
-        del u_roll, v_roll, w_roll
+        u_ = np.roll(np.roll(u[:, :, :], ishift, axis=0), jshift,
+                     axis=1)[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
+        v_ = np.roll(np.roll(v[:, :, :], ishift, axis=0), jshift,
+                         axis=1)[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
+        w_ = np.roll(np.roll(w[:, :, :], ishift, axis=0), jshift,
+                     axis=1)[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
+
         # del u, v, w
-
-
 
 
         # plot_configuration(u_, v_, icshift, jcshift)
@@ -139,37 +145,35 @@ def main():
         # compute and plot vorticity in yz-cross section
         vort_yz = compute_vorticity_yz(v[ic,:,:], w[ic,:,:], kmax)
         vort_yz_ = compute_vorticity_yz(v_[icshift,:,:], w_[icshift,:,:], kmax)
-        vort_yz_stag = compute_vorticity_yz_staggrid(v[ic,:,:], w[ic,:,:], kmax)
+        vort_yz_stag = compute_vorticity_yz_staggered(v[ic,:,:], w[ic,:,:], kmax)
+        vort_yz_stag_ = compute_vorticity_yz_staggered(v_[icshift,:,:], w_[icshift,:,:], kmax)
 
         # compute and plot vorticity in xz-crosssection
-        vort_xz = compute_vorticity_xz(u[:,jc,:], w[:,jc,:], kmax)
-        vort_xz_ = compute_vorticity_xz(u_[:,jcshift,:], w_[:,jcshift,:], kmax)
+        vort_xz_stag = compute_vorticity_xz(u[:,jc,:], w[:,jc,:], kmax)
+        vort_xz_stag_ = compute_vorticity_xz(u_[:,jcshift,:], w_[:,jcshift,:], kmax)
         # print('vorticity', vort_yz.shape, vort_yz_.shape, vort_xz.shape, nx, ny, nz)
 
 
         # compare vorticities
-        plot_comparison_vort_vort_stag(vort_yz, vort_yz_, vort_yz_stag, jcshift, jc, kmax, t0)
-
-
-
-
+        plot_comparison_vort_vort_stag(vort_yz, vort_yz_stag, vort_yz_stag_, jcshift, jc, kmax, t0)
 
 
         # compute vorticity statistics
         vort_yz_max[it] = np.amax(vort_yz)
         vort_yz_min[it] = np.amin(vort_yz)
-        vort_yz_sum[it] = np.sum(vort_yz_[jcshift:,:])
-        vort_yz_env[it] = np.sum(vort_yz_[jcshift+50:,:])       # profile outside of coldpool
+        vort_yz_sum[it] = np.sum(vort_yz[jcshift:,:])
+        vort_yz_env[it] = np.sum(vort_yz[jcshift+50:,:])       # profile outside of coldpool
 
         # dump vorticity_yz field
         dump_vort_field(vort_yz_stag, it, t0, fields_file_name)
 
-        # # compare vort_yz and vort_xz
-        # comparison_vort_yz_vort_xz(vort_xz_, vort_yz_, kmax, t0)
+        # compare vort_yz and vort_xz
+        comparison_vort_yz_vort_xz(vort_xz_stag_, vort_yz_stag_, kmax, t0)
 
-    # PLOTTING
-    # plot_vorticity_field(vort_xz_, vort_yz_, icshift, jcshift, t0)
-    # plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env, timerange)
+        # PLOTTING
+        plot_vorticity_field(vort_xz_stag_, vort_yz, icshift, jcshift, t0)
+
+    plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env, timerange)
 
     # output vorticity timeseries
     dump_statistics_variable(vort_yz_max, 'vort_yz_max', 'timeseries', stats_file_name, path_out_fields)
@@ -377,8 +381,9 @@ def plot_configuration(u_, v_, icshift, jcshift):
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-def compute_vorticity_yz_staggrid(v_, w_, kmax):
-    # compute vorticity on staggered grid (return vort_yz_stag[i, j_half, k_half])
+def compute_vorticity_yz(v_, w_, kmax):
+    # compute vorticity on staggered grid, i.e. on y- and k-faces of boxes
+    # >> return vort_yz_stag[i, j_half, k_half], (where j_half, k_half are the faces of the boxes, i.e. the location of v and w)
     [ly, lz] = v_.shape
     vort_yz = np.zeros((ly, kmax+2*gwz), dtype=np.double)
     dyi = 1. / dx[1]
@@ -390,7 +395,7 @@ def compute_vorticity_yz_staggrid(v_, w_, kmax):
 
 
 
-def compute_vorticity_yz(v_, w_, kmax):
+def compute_vorticity_yz_staggered(v_, w_, kmax):
     [ly, lz] = v_.shape
     if lz < kmax+gwz:
         kmax = lz-gwz
@@ -403,6 +408,7 @@ def compute_vorticity_yz(v_, w_, kmax):
             vort_yz[j, k] = (w_[j + 1, k] - w_[j - 1, k]) * dyi2 \
                                 - (v_[j, k + 1] - v_[j, k - 1]) * dzi2
     return vort_yz[:,gwz:kmax+gwz]
+
 
 def compute_vorticity_xz(u_, w_, kmax):
     [lx, lz] = u_.shape
@@ -691,50 +697,56 @@ def test_num_integration():
 # ----------------------------------------------------------------------
 # PLOTTING
 
-def plot_comparison_vort_vort_stag(vort_yz, vort_yz_, vort_yz_stag, jcshift, jc, kmax, t0):
-    fig, axes = plt.subplots(2, 3, figsize=(15, 5))
+def plot_comparison_vort_vort_stag(vort_yz, vort_yz_stag, vort_yz_stag_, jcshift, jc, kmax, t0):
+    fig, axes = plt.subplots(3, 3, figsize=(15, 12))
+
     ax = axes[0, 0]
     cf = ax.imshow(vort_yz.T, origin='lower')
     ax.set_title('vort_yz')
     ax.plot([jc, jc], [1, ny_ - 2], 'k')
-    plt.colorbar(cf, ax=ax, shrink=0.8)
+    plt.colorbar(cf, ax=ax, shrink=0.6)
+
     ax = axes[0, 1]
-    cf = ax.imshow(vort_yz_.T, origin='lower')
-    ax.set_title('vort_yz_')
-    ax.plot([jcshift, jcshift], [1, ny_ - 2], 'k')
-    plt.colorbar(cf, ax=ax, shrink=0.8)
-    ax = axes[0, 2]
     cf = ax.imshow(vort_yz_stag.T, origin='lower')
-    ax.set_title('vort_yz stag')
+    ax.set_title('vort_yz staggered')
+    plt.colorbar(cf, ax=ax, shrink=0.6)
     ax.plot([jc, jc], [1, ny_ - 2], 'k')
-    plt.colorbar(cf, ax=ax, shrink=0.8)
-    for i in [0,2]:
+
+    ax = axes[0, 2]
+    cf = ax.imshow(vort_yz_stag_.T, origin='lower')
+    ax.set_title('vort_yz_ staggered')
+    ax.plot([jcshift, jcshift], [1, ny_ - 2], 'k')
+    plt.colorbar(cf, ax=ax, shrink=0.6)
+
+    for i in [0, 1]:
         axes[0, i].set_xlim([jc - np.int(ny_ / 2), jc + np.int(ny_ / 2)])
-    for i in [1]:
+    for i in [2]:
         axes[0, i].set_xlim([0, ny_])
     for i in range(3):
         axes[0, i].set_ylim([0, kmax])
-    ax = axes[1, 0]
-    ax.plot(vort_yz[jc - np.int(ny_ / 2):jc + np.int(ny_ / 2), 0], np.arange(0, ny_), label='vort_yz')
-    ax.plot(vort_yz_[:ny_, 0], np.arange(0, ny_), label='vort_yz_')
-    ax.plot(vort_yz_stag[jc - np.int(ny_ / 2):jc + np.int(ny_ / 2), 0], np.arange(0, ny_), label='vort_yz_stag')
-    ax.legend(loc='best', fontsize=8)
-    ax.set_title('k=0')
-    ax = axes[1, 1]
-    ax.plot(vort_yz[jc - np.int(ny_ / 2):jc + np.int(ny_ / 2), 1], np.arange(0, ny_), label='vort_yz')
-    ax.plot(vort_yz_[:ny_, 1], np.arange(0, ny_), label='vort_yz_')
-    ax.plot(vort_yz_stag[jc - np.int(ny_ / 2):jc + np.int(ny_ / 2), 1], np.arange(0, ny_), label='vort_yz_stag')
-    ax.legend(loc='best', fontsize=8)
-    ax.set_title('k=1')
-    ax = axes[1, 2]
-    ax.plot(vort_yz[jc - np.int(ny_ / 2):jc + np.int(ny_ / 2), 2], np.arange(0, ny_), label='vort_yz')
-    ax.plot(vort_yz_[:ny_, 2], np.arange(0, ny_), label='vort_yz_')
-    ax.plot(vort_yz_stag[jc - np.int(ny_ / 2):jc + np.int(ny_ / 2), 2], np.arange(0, ny_), label='vort_yz_stag')
-    ax.legend(loc='best', fontsize=8)
-    ax.set_title('k=2')
+
+    for i in range(3):
+        ax = axes[1, i]
+        ax.plot(np.arange(0, ny_), vort_yz[jc - np.int(ny_ / 2):jc + np.int(ny_ / 2), i], label='vort_yz')
+        ax.plot(np.arange(0, ny_), vort_yz_stag[jc - np.int(ny_ / 2):jc + np.int(ny_ / 2), i], label='vort_yz stag')
+        ax.plot(np.arange(0, ny_), vort_yz_stag_[:ny_, i], label='vort_yz_ stag')
+        ax.legend(loc='best', fontsize=8)
+        ax.set_title('k='+str(i))
+        ax.set_xlabel('y')
+
+
+    for i in range(3):
+        ax = axes[2, i]
+        ax.plot(np.arange(0, ny_), vort_yz_stag[jc - np.int(ny_ / 2):jc + np.int(ny_ / 2), i] - vort_yz_stag_[:ny_, i],
+                label='diff')
+        ax.set_title('diff k='+str(i))
+        ax.set_xlabel('y')
+
+    plt.suptitle('comparison vort_yz unstaggered vs. staggered')
     fig.savefig(os.path.join(path_out_figs, 'test_vort_t' + str(t0) + 's.png'))
     plt.close(fig)
     return
+
 
 def comparison_vort_yz_vort_xz(vort_xz_, vort_yz_, kmax, t0):
     fig, axes = plt.subplots(1,3, figsize=(14,4), sharey='all')
