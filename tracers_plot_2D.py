@@ -70,7 +70,10 @@ def main():
         rootgrp.close()
         for i in range(n_tracers):
             for j in range(len(var_list)):
-                axis[j].plot(coordinates[it,i,0], coordinates[it,i,1], 'ok', markersize=3)
+                # normal interpolations
+                # axis[j].plot(coordinates[it,i,0], coordinates[it,i,1], 'ok', markersize=3)
+                # trying out shifted by +1
+                axis[j].plot(coordinates[it,i,0]-dx[0], coordinates[it,i,1]-dx[1], 'ok', markersize=3)
         plt.tight_layout()
         fig.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
