@@ -19,6 +19,14 @@ compute_vorticity_yz_staggered: computes vorticity on yz-crosssection on Euclidi
  
 '''
 
+label_size = 8
+plt.rcParams['xtick.labelsize'] = label_size
+plt.rcParams['ytick.labelsize'] = label_size
+plt.rcParams['lines.linewidth'] = 2
+plt.rcParams['legend.fontsize'] = 8
+plt.rcParams['axes.labelsize'] = 12
+
+
 def main():
     parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("casename")
@@ -57,17 +65,7 @@ def main():
     z_half = rootgrp.groups['reference'].variables['z'][:]
     rootgrp.close()
 
-    # create file for output time arrays
-    stats_file_name = 'Stats_vorticity.nc'
-    create_statistics_file(stats_file_name, path_out_fields, nt, timerange)
-    add_statistics_variable('vort_yz_max', 's^-1', 'timeseries', stats_file_name, path_out_fields)
-    add_statistics_variable('vort_yz_min', 's^-1', 'timeseries', stats_file_name, path_out_fields)
-    add_statistics_variable('vort_yz_sum', 's^-1', 'timeseries', stats_file_name, path_out_fields)
-    add_statistics_variable('vort_yz_env', 's^-1', 'timeseries', stats_file_name, path_out_fields)
 
-    # # create fields file
-    fields_file_name = 'field_vort_yz.nc'
-    create_vort_field_file(timerange, fields_file_name, kmax, n_CPs)
 
     # Note: interpolation for k < 0
     # - centered grid: (ir, jr, kr)
@@ -84,13 +82,10 @@ def main():
     #           >> w[ks=-1] = -w[ks=0]
     #           >> w[kr=0] = 0.5*(w[kr=-1/2]+w[kr=1/2]) = 0.5*(w[ks=0]+w[ks=-1]) = 0
 
-
-    # compute_vorticity()
-    #
-    # compute_vorticity_stats()
-
-
     ''' COMPUTE VORTICITY '''
+    # create fields file
+    fields_file_name = 'field_vort_yz.nc'
+    create_vort_field_file(timerange, fields_file_name, kmax, n_CPs)
     for it, t0 in enumerate(timerange):
         print('--- time: t='+str(t0)+'s ---')
         # read in fields
@@ -164,7 +159,16 @@ def main():
 
 
     ''' compute vorticity statistics '''
+    # create file for output time arrays
+    stats_file_name = 'Stats_vorticity.nc'
+    create_statistics_file(stats_file_name, path_out_fields, nt, timerange)
+    add_statistics_variable('vort_yz_max', 's^-1', 'timeseries', stats_file_name, path_out_fields)
+    add_statistics_variable('vort_yz_min', 's^-1', 'timeseries', stats_file_name, path_out_fields)
+    add_statistics_variable('vort_yz_sum', 's^-1', 'timeseries', stats_file_name, path_out_fields)
+    add_statistics_variable('vort_yz_env', 's^-1', 'timeseries', stats_file_name, path_out_fields)
+
     # read in vorticity field
+    fields_file_name = 'field_vort_yz.nc'
     file = nc.Dataset(os.path.join(path_out_fields, fields_file_name), 'r')
     vort_yz = file.groups['fields'].variables['vort_yz'][:,:,:]
     file.close()
@@ -172,7 +176,8 @@ def main():
     vort_yz_max = np.amax(np.amax(vort_yz, axis=1), axis=1)
     vort_yz_min = np.amin(np.amin(vort_yz, axis=1), axis=1)
     vort_yz_sum = np.sum(np.sum(vort_yz[:, jc_arr[0]:, :], axis=1), axis=1)
-    vort_yz_env = np.sum(np.sum(vort_yz[:, nx-1, :], axis=1), axis=1)  # profile outside of coldpool
+    vort_yz_env = np.sum(vort_yz[:, nx-1, :], axis=1)  # profile outside of coldpool
+
     # output vorticity timeseries
     dump_statistics_variable(vort_yz_max, 'vort_yz_max', 'timeseries', stats_file_name, path_out_fields)
     dump_statistics_variable(vort_yz_min, 'vort_yz_min', 'timeseries', stats_file_name, path_out_fields)
@@ -185,16 +190,10 @@ def main():
     figname = 'vort_yz_max_sum.png'
     plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env, timerange, figname)
 
-
-
-
-
-
     return
 
 
 
-# ---------------------------------- COMPUTATION ------------------------------------
 
 
 # ---------------------------------- PLOTTING ------------------------------------
@@ -218,6 +217,7 @@ def plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env
     ax3.set_title('sum vort_yz env')
     ax3.set_xlabel('time t  [s]')
     ax3.set_ylabel('sum vort_yz  [1/s]')
+    plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, wspace=0.25)
     # fig.savefig(os.path.join(path_out_figs, 'vort_yz_max_sum.png'))
     fig.savefig(os.path.join(path_out_figs, figname))
 
@@ -617,12 +617,14 @@ def add_statistics_variable(var_name, units, grp_name, file_name, path):
     if grp_name == 'timeseries':
         var = grp.createVariable(var_name, 'f8', ('nt'))
         var.units = units
+    rootgrp.close()
     return
 
 
 def dump_statistics_variable(var_in, var_name, grp_name, file_name, path):
     rootgrp = nc.Dataset(os.path.join(path, file_name), 'r+', format='NETCDF4')
     grp = rootgrp.groups[grp_name]
+    var = rootgrp.groups['timeseries'].variables['vort_yz_max']
     if grp_name == 'timeseries':
         var = grp.variables[var_name]
         var[:] = var_in[:]

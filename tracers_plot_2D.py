@@ -124,8 +124,8 @@ def get_tracer_coords(cp_id, n_cps, n_tracers, times, dt_fields, fullpath_in):
     for it, t0 in enumerate(times):
         print('----t0='+str(t0), it, '----')
         i = 0
-        count = t0 * n_cps * n_tracers + (cp_id - 1) * n_tracers
-        count = it * n_cps * n_tracers + (cp_id - 1) * n_tracers
+        # count = t0 * n_cps * n_tracers + (cp_id - 1) * n_tracers
+        # count = it * n_cps * n_tracers + (cp_id - 1) * n_tracers
         count = t0/dt_fields * n_cps * n_tracers + (cp_id - 1) * n_tracers
         # while CP age is 0 and CP ID is cp_id
         timestep = int(lines[count].split()[0])
