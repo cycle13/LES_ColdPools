@@ -167,12 +167,75 @@ def main():
     R = 0.5*(r_wmax - r_wmin)
     rootgrp.close()
 
+    # fig_name = 'model_urad_w.png'
+    # k0_plot = 0
+    # t0 = 1800
+    # plot_model_figure(r_tracers_av, U_rad_av, r_av,
+    #                   v_rad_av, w_av,
+    #                   r_wmin, r_wcenter, r_wmax,
+    #                   times, t0, k0_plot, fig_name, path_out_figs)
 
-    # plot different radii from tracers and rim_width.py
-    k0 = 0
-    plot_rim_width(r_tracers_av, U_rad_av, r_av, v_rad_av, w_av,
-                   r_wmax, r_wmin, r_wcenter,
-                   k0, k0_tracer, time_av, irmax, path_out_figs)
+
+    # # plot different radii from tracers and rim_width.py
+    # k0 = 0
+    # plot_rim_width(r_tracers_av, U_rad_av, r_av, v_rad_av, w_av,
+    #                r_wmax, r_wmin, r_wcenter,
+    #                k0, k0_tracer, time_av, irmax, path_out_figs)
+
+
+
+    # v_rot=omega*R defined as difference between max(v_rad)=v_rad(r_c) and v_rad(r_tracer)
+    v_rot = np.zeros(nt)
+    v_rad_max = np.amax(v_rad_av[:, :, 0], axis=1)
+    for it,t0 in enumerate(times):
+        ir_tracer = np.where(r_av == np.int(np.round(r_tracers_av[it, k0_tracer], -2)))[0][0]
+        v_rot[it] = v_rad_max[it] - v_rad_av[it, ir_tracer, 0]
+    # radius of vortex ring defined as R=rw_max - rw_center (or R*=0.5*(rw_max - rw_min))
+    R_ = r_wmax[:,0] - r_wcenter[:,0]
+    R = 0.5*(r_wmax - r_wmin)
+    # iR_ = np.double(R)/dx[2]
+    ir = np.zeros(nt)
+    w_rot = np.zeros(nt)
+    w_rot_ = np.zeros(nt)
+    w_rot_max = np.zeros(nt)
+    print('eeeeeeeeeeeeeeeeeeee times: ', times)
+    for it,t0 in enumerate(times):
+        print('---t0: ' + str(t0) + '---', it)
+        ir_tracer = np.where(r_av == np.int(np.round(r_tracers_av[it, k0_tracer], -2)))[0][0]
+        if R[it,0] >= 0:
+            ir[it] = np.int(np.double(R[it,0])/dx[0])
+            print it, R[it,0], ir[it]
+            w_rot[it] = w_av[it, ir_tracer, ir[it]]
+        else:
+            print R[it,:]
+            R[it,:] = 0.0
+            w_rot[it] = w_av[it, ir_tracer, 0]
+            # w_rot_[it] = w_av[it, ir_tracer, 0]
+        w_rot_[it] = np.amax(w_av[it, ir_tracer, :])
+        w_rot_max[it] = np.amax(w_av[it, :, :])
+
+    fig_name = 'model_urot.png'
+    fig, axis = plt.subplots(1, 2, figsize=(10, 4), sharex='all')
+    ax = axis[0]
+    ax.plot(times, v_rot, label='v_rot')
+    ax.plot(times, w_rot, label='w_av[r=r_tracer, z=R]')
+    ax.legend()
+    ax.set_xlabel('time')
+    ax.grid()
+    ax = axis[1]
+    ax.plot(times, v_rot, label='v_rot')
+    ax.plot(times, w_rot, label='w_av[r=r_tracer, z=R]')
+    ax.plot(times, w_rot_, label='max(w_av[r=r_tracer])')
+    ax.plot(times, w_rot_max, label='max(w_av)')
+    ax.legend()
+    ax.grid()
+    ax.set_xlabel('time')
+    plt.suptitle('v_rot = max(v_rad)-v_rad[r_tracer,z=0] = omega*R')
+    # ax.plot(times, w_rot_)
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+
+
 
 
     # # e) compute residual if only linear velocity (assume that U maximum
@@ -238,13 +301,61 @@ def main():
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
+def plot_model_figure(r_tracers_av, U_rad_av, r_av,
+                      v_rad_av, w_av,
+                      r_wmin, r_wcenter, r_wmax,
+                      times, t0, k0, fig_name, path_out_figs):
+    irmax = np.int(7e3/dx[0])
+    it = np.int(t0/dt_fields)
+    k0_tracer = 0
+    ir_tracer = np.where(r_av == np.int(np.round(r_tracers_av[it, k0_tracer], -2)))[0][0]
+    ir_max = np.where(r_av == np.int(np.round(r_wmax[it, k0], -2)))[0][0]
+    ir_min = np.where(r_av == np.int(np.round(r_wmin[it, k0], -2)))[0][0]
+    ir_c = np.where(r_av == np.int(np.round(r_wcenter[it, k0], -2)))[0][0]
+
+    romps = np.zeros(r_av.shape)
+    romps[:ir_tracer+1] = v_rad_av[it, ir_tracer, k0] / r_tracers_av[it,k0] * r_av[:ir_tracer+1]
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 6), sharex='all')
+    ax.plot([0, r_av[-1]], [0,0], 'k', linewidth=1)
+    ax.plot([r_av[ir_tracer], r_av[ir_tracer]], [-1,5], 'k', linewidth=1)
+    ax.plot([r_av[ir_min], r_av[ir_min]], [-1,5], 'k', linewidth=1)
+    ax.plot([r_av[ir_c], r_av[ir_c]], [-1,5], 'k', linewidth=1)
+    ax.plot(r_av, v_rad_av[it, :, k0], color='k', label='v_rad', linewidth=3)
+    ax.plot(r_av, w_av[it, :, k0], color='0.5', label='w', linewidth=3)
+
+    ax.plot(r_av, romps, 'b', label='linear model (Romps)')
+
+    ax.plot(r_av[ir_tracer], v_rad_av[it, ir_tracer, k0],'s', color='0.5', markersize=9, markeredgewidth=0., label='r tracer')
+    ax.plot(r_av[ir_tracer], w_av[it, ir_tracer, k0],'s', color='0.5', markersize=9, markeredgewidth=0., )
+    ax.plot(r_wmax[it, k0], v_rad_av[it, ir_max, k0], 'ko', markersize=6, label='r(w=max)')
+    ax.plot(r_wmax[it, k0], w_av[it, ir_max, k0], 'ko', markersize=6)
+    ax.plot(r_wmin[it, k0], v_rad_av[it, ir_min, k0], 'b^', markersize=9, label='r(w=min)')
+    ax.plot(r_wmin[it, k0], w_av[it, ir_min, k0], 'b^', markersize=9)
+    ax.plot(r_wcenter[it, k0], v_rad_av[it, ir_c, k0], 'kv', markersize=9, label='r(w=0)')
+    ax.plot(r_wcenter[it, k0], w_av[it, ir_c, k0], 'kv', markersize=9)
+    ax.set_xlabel('radius r [m]')
+    ax.set_ylabel('radial / vertical velocity [m/s]')
+    ax.set_xlim(0, r_av[irmax])
+    if dx[0] == 100:
+        ax.set_ylim(-0.6, 3.)
+    elif dx[0] == 50:
+        ax.set_ylim(-0.6, 4)
+    else:
+        ax.set_ylim(-0.6, 4)
+    ax.legend(loc='best')
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+
+    return
+
+
 def plot_vel_at_rim(r_av, U_rad_av, radius_rad_av,
                     v_rad_av, w_av, vel_at_rim, time_rad_av,
                     k0_tracer, krange, irmax, path_out_figs):
     nt = len(times)
     for k0 in krange:
         fig_name = 'v_rad_test_k'+str(k0)+'.png'
-        print path_out_figs
         fig, axis = plt.subplots(2,1, figsize=(9,10), sharex='all')
         ax0 = axis[0]
         ax1 = axis[1]
@@ -394,7 +505,6 @@ def plot_rim_width(r_tracers_av, U_rad_av, r_av, v_rad_av, w_av,
     # var_list = ['v_rad']
     for var_name in var_list:
         fig_name = 'rim_width_test_'+var_name+'.png'
-        print('----------', fig_name)
         if var_name == 'w':
             var = w_av
         elif var_name == 'v_rad':
@@ -405,6 +515,7 @@ def plot_rim_width(r_tracers_av, U_rad_av, r_av, v_rad_av, w_av,
             krange = [0, 1, 2, 3]
         elif dx[0] == 50:
             krange = [1, 3, 5, 7]
+            krange = [0, 1, 2, 3]
         elif dx[0] == 25:
             krange = [2, 6, 10, 14]
         for k,k_ in enumerate(krange):
@@ -415,7 +526,7 @@ def plot_rim_width(r_tracers_av, U_rad_av, r_av, v_rad_av, w_av,
                 ir_min = np.where(r_av == np.int(np.round(r_wmin[2*it + 1, k0], -2)))[0][0]
                 ir_c = np.where(r_av == np.int(np.round(r_wcenter[2*it + 1, k0], -2)))[0][0]
                 ir_tracer = np.where(r_av == np.int(np.round(r_tracers_av[2 * it + 1, k0_tracer], -2)))[0][0]
-                ax.plot(r_av[:irmax], var[2*it+1,:irmax,k], color=cm.jet(count_color))
+                ax.plot(r_av[:irmax], var[2*it+1,:irmax,k], color=cm.jet(count_color), label='t='+str(t0))
 
                 if it == 0:
                     ax.plot(r_av[ir_tracer], var[2*it+1, ir_tracer, k], 'o', color='0.5', markersize=10, label='r tracer (k=0)')
@@ -427,10 +538,10 @@ def plot_rim_width(r_tracers_av, U_rad_av, r_av, v_rad_av, w_av,
                     ax.plot(r_wmax[2*it+1, k0], var[2*it+1, ir_max, k], 'ko', markersize=6)
                     ax.plot(r_wmin[2*it+1, k0], var[2*it+1, ir_min, k], 'kd', markersize=6)
                     ax.plot(r_wcenter[2*it+1, k0], var[2*it+1, ir_c, k], 'kx', markersize=6)
-            ax.legend()
+            # ax.legend()
             ax.set_title('z='+str((k_+1)*dx[2])+ ' (k='+str(k_)+')')
             ax.set_xlim(0, r_av[irmax])
-        print(irmax, r_av[irmax])
+        axis[-1].legend(loc='best', ncol=4)
         if var_name == 'w':
             if dx[0] == 100:
                 axis[0].set_ylim(-1.5,1.6)
@@ -540,6 +651,10 @@ def set_input_parameters(args):
     dx[2] = nml['grid']['dz']
     gw = nml['grid']['gw']
     dV = dx[0] * dx[1] * dx[2]
+
+    global dt_fields
+    dt_fields = nml['fields_io']['frequency']
+
 
     global tmin, tmax
     if args.tmin:
