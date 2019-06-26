@@ -119,8 +119,11 @@ def main():
                     path_out_figs)
 
 
+    # c) compute gradient of radial velocity
+    # >> are tracers at position of maximum radial velocity??
 
-    # c) compute vertical gradient of updrafts:  w_grad_av[t,r,z]
+
+    # d) compute vertical gradient of updrafts:  w_grad_av[t,r,z]
     #       >> w_grad_av is at levels z (like u_rad, u, v  and scalars)
     #       - read in zrange from Stats-file to get right position for gradient
     #           >> Positions in PyCLES: half-levels = box centres (scalars, u, v); full levels = box sides (w)
@@ -158,7 +161,7 @@ def main():
     plt.close(fig)
 
 
-    # d) read in width of CP torus ring
+    # e) read in width of CP torus ring
     fullpath_in = os.path.join(path, 'data_analysis', 'stats_radial_averaged_rimwidth.nc')
     rootgrp = nc.Dataset(fullpath_in, 'r')
     r_wmin = rootgrp.groups['rim_width'].variables['r_wmin'][:, :]      # r_wmin[nt, nz]
@@ -167,24 +170,22 @@ def main():
     R = 0.5*(r_wmax - r_wmin)
     rootgrp.close()
 
-    # fig_name = 'model_urad_w.png'
-    # k0_plot = 0
-    # t0 = 1800
-    # plot_model_figure(r_tracers_av, U_rad_av, r_av,
-    #                   v_rad_av, w_av,
-    #                   r_wmin, r_wcenter, r_wmax,
-    #                   times, t0, k0_plot, fig_name, path_out_figs)
-
-
-    # # plot different radii from tracers and rim_width.py
-    # k0 = 0
-    # plot_rim_width(r_tracers_av, U_rad_av, r_av, v_rad_av, w_av,
-    #                r_wmax, r_wmin, r_wcenter,
-    #                k0, k0_tracer, time_av, irmax, path_out_figs)
+    fig_name = 'model_urad_w.png'
+    k0_plot = 0
+    t0 = 1800
+    plot_model_figure(r_tracers_av, U_rad_av, r_av,
+                      v_rad_av, w_av,
+                      r_wmin, r_wcenter, r_wmax,
+                      times, t0, k0_plot, fig_name, path_out_figs)
+    # plot different radii from tracers and rim_width.py
+    k0 = 0
+    plot_rim_width(r_tracers_av, U_rad_av, r_av, v_rad_av, w_av,
+                   r_wmax, r_wmin, r_wcenter,
+                   k0, k0_tracer, time_av, irmax, path_out_figs)
 
 
 
-    # v_rot=omega*R defined as difference between max(v_rad)=v_rad(r_c) and v_rad(r_tracer)
+    # f) v_rot=omega*R defined as difference between max(v_rad)=v_rad(r_c) and v_rad(r_tracer)
     v_rot = np.zeros(nt)
     v_rad_max = np.amax(v_rad_av[:, :, 0], axis=1)
     for it,t0 in enumerate(times):
@@ -238,7 +239,7 @@ def main():
 
 
 
-    # # e) compute residual if only linear velocity (assume that U maximum
+    # # g) compute residual if only linear velocity (assume that U maximum
     # # !!! need to define width of CP torus
     # dUdr = np.zeros((nt, nk))
     # # for it, t0 in enumerate(times):
@@ -265,7 +266,7 @@ def main():
     #
     #
     #
-    # # # f) compute residual
+    # # # h) compute residual
     # # omega_res = np.zeros()
     # # for it, t0 in enumerate(times_stats):
     # #     omega_res[it,:] = w_grad_av[it, r_wcenter[it,k0],:] - dUdr[it,:]        # [t,r,z]
@@ -370,11 +371,11 @@ def plot_vel_at_rim(r_av, U_rad_av, radius_rad_av,
             ax1.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
                      ':', color='0.25', linewidth=1)
             if it == 0:
-                ax0.plot(radius_rad_av[ir_tracer],U_rad_av[2*it+1,k0_tracer], 'o', color='0.5', markersize=6, label='tracer velocity')
+                ax0.plot(radius_rad_av[ir_tracer],U_rad_av[2*it+1,k0_tracer], 'o', color='0.5', markersize=8, label='tracer velocity')
                 ax0.plot(radius_rad_av[ir_tracer],v_rad_av[2*it+1,ir_tracer,k0], 'ko', markersize=6, label='tracer radius')
                 ax1.plot(radius_rad_av[ir_tracer],w_av[2*it+1,ir_tracer,k0], 'ko', markersize=6, label='tracer radius')
             else:
-                ax0.plot(radius_rad_av[ir_tracer],U_rad_av[2*it+1,k0_tracer], 'o', color='0.5', markersize=6)
+                ax0.plot(radius_rad_av[ir_tracer],U_rad_av[2*it+1,k0_tracer], 'o', color='0.5', markersize=8)
                 ax0.plot(radius_rad_av[ir_tracer],v_rad_av[2*it+1,ir_tracer,k0], 'ko', markersize=6)
                 ax1.plot(radius_rad_av[ir_tracer],w_av[2*it+1,ir_tracer,k0], 'ko', markersize=6)
         ax0.set_ylim(np.amin(v_rad_av[:,:irmax,k0]), np.amax(v_rad_av[:,:irmax,k0]))
