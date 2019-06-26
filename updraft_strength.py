@@ -122,6 +122,50 @@ def main():
 
     # c) compute gradient of radial velocity
     # >> are tracers at position of maximum radial velocity??
+    v_rad_gradient = np.zeros(shape=v_rad_av.shape)
+    for ir, r in enumerate(r_av[1:-1]):
+        dri = 1./ (r_av[ir+1] - r_av[ir-1])
+        v_rad_gradient[:,ir,:] = dri * (v_rad_av[:, ir+1, :] - v_rad_av[:, ir-1, :])
+    ir_vrad_grad_max = np.argmax(v_rad_gradient, axis=1)
+    print('control: ', v_rad_gradient.shape, ir_vrad_grad_max.shape)
+    k0 = 0
+    fig_name = 'v_rad_gradient_k'+str(k0)+'.png'
+    fig, axis = plt.subplots(2,1, figsize=(9,10), sharex='all')
+    ax0 = axis[0]
+    ax1 = axis[1]
+    for it,t0 in enumerate(times[1::2]):
+        count_color = 2 * np.double(it) / len(time_av)
+        ir_tracer = np.where(r_av == np.int(np.round(r_av[2*it+1,k0_tracer],-2)))[0][0]
+        ax0.plot(r_av[:irmax], v_rad_av[2*it+1,:irmax,k0], color=cm.jet(count_color), label='t='+str(t0)+'s')
+        ax1.plot(r_av[:irmax], w_av[2*it+1,:irmax,k0], color=cm.jet(count_color), label='t='+str(t0)+'s')
+        ax0.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
+                 ':', color='0.25', linewidth=1)
+        ax1.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
+                 ':', color='0.25', linewidth=1)
+        if it == 0:
+            ax0.plot(r_av[ir_vrad_grad_max[it,k0]],v_rad_av[2*it+1,ir_vrad_grad_max[it,k0],k0], 'o', color='0.5', markersize=8, label='max gradient')
+            # ax0.plot(r_av[ir_tracer],U_rad_av[2*it+1,k0_tracer], 'o', color='0.5', markersize=8, label='tracer velocity')
+            # ax0.plot(r_av[ir_tracer],v_rad_av[2*it+1,ir_tracer,k0], 'ko', markersize=6, label='tracer radius')
+            # ax1.plot(r_av[ir_tracer],w_av[2*it+1,ir_tracer,k0], 'ko', markersize=6, label='tracer radius')
+
+        else:
+            ax0.plot(r_av[ir_vrad_grad_max[it,k0]],v_rad_av[2*it+1,ir_vrad_grad_max[it,k0],k0], 'o', color='0.5', markersize=8)
+            # ax0.plot(r_av[ir_tracer],U_rad_av[2*it+1,k0_tracer], 'o', color='0.5', markersize=8)
+            # ax0.plot(r_av[ir_tracer],v_rad_av[2*it+1,ir_tracer,k0], 'ko', markersize=6)
+            # ax1.plot(r_av[ir_tracer],w_av[2*it+1,ir_tracer,k0], 'ko', markersize=6)
+    ax0.set_ylim(np.amin(v_rad_av[:,:irmax,k0]), np.amax(v_rad_av[:,:irmax,k0]))
+    ax1.set_ylim(np.minimum(np.amin(w_av[:,:irmax,k0]), -np.amax(w_av[:,:irmax,k0])), np.amax(w_av[:,:irmax,k0]))
+    ax0.legend(loc=1,ncol=2)
+    ax1.legend(loc=4,ncol=2)
+    ax0.set_title('radial velocity: v_rad')
+    ax1.set_title('vertical velocity: w')
+    ax1.set_xlabel('radius r  [m]')
+    ax0.set_ylabel('v_rad  [m/s]')
+    ax1.set_ylabel('w    [m/s]')
+    plt.tight_layout()
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+
 
 
     # d) compute vertical gradient of updrafts:  w_grad_av[t,r,z]
@@ -357,41 +401,41 @@ def plot_vel_at_rim(r_av, U_rad_av, radius_rad_av,
                     k0_tracer, krange, irmax, path_out_figs):
     nt = len(times)
     for k0 in krange:
-        fig_name = 'v_rad_test_k'+str(k0)+'.png'
-        fig, axis = plt.subplots(2,1, figsize=(9,10), sharex='all')
-        ax0 = axis[0]
-        ax1 = axis[1]
-        # for it,t0 in enumerate(time_rad_av[1::2]):
-        for it,t0 in enumerate(times[1::2]):
-            count_color = 2 * np.double(it) / len(time_rad_av)
-            ir_tracer = np.where(radius_rad_av == np.int(np.round(r_av[2*it+1,k0_tracer],-2)))[0][0]
-            ax0.plot(radius_rad_av[:irmax], v_rad_av[2*it+1,:irmax,k0], color=cm.jet(count_color), label='t='+str(t0)+'s')
-            ax1.plot(radius_rad_av[:irmax], w_av[2*it+1,:irmax,k0], color=cm.jet(count_color), label='t='+str(t0)+'s')
-            ax0.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
-                     ':', color='0.25', linewidth=1)
-            ax1.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
-                     ':', color='0.25', linewidth=1)
-            if it == 0:
-                ax0.plot(radius_rad_av[ir_tracer],U_rad_av[2*it+1,k0_tracer], 'o', color='0.5', markersize=8, label='tracer velocity')
-                ax0.plot(radius_rad_av[ir_tracer],v_rad_av[2*it+1,ir_tracer,k0], 'ko', markersize=6, label='tracer radius')
-                ax1.plot(radius_rad_av[ir_tracer],w_av[2*it+1,ir_tracer,k0], 'ko', markersize=6, label='tracer radius')
-            else:
-                ax0.plot(radius_rad_av[ir_tracer],U_rad_av[2*it+1,k0_tracer], 'o', color='0.5', markersize=8)
-                ax0.plot(radius_rad_av[ir_tracer],v_rad_av[2*it+1,ir_tracer,k0], 'ko', markersize=6)
-                ax1.plot(radius_rad_av[ir_tracer],w_av[2*it+1,ir_tracer,k0], 'ko', markersize=6)
-        ax0.set_ylim(np.amin(v_rad_av[:,:irmax,k0]), np.amax(v_rad_av[:,:irmax,k0]))
-        ax1.set_ylim(np.minimum(np.amin(w_av[:,:irmax,k0]), -np.amax(w_av[:,:irmax,k0])), np.amax(w_av[:,:irmax,k0]))
-        ax0.legend(loc=1,ncol=2)
-        ax1.legend(loc=4,ncol=2)
-        ax0.set_title('radial velocity: v_rad')
-        ax1.set_title('vertical velocity: w')
-        # ax0.set_xlabel('radius r  [m]')
-        ax1.set_xlabel('radius r  [m]')
-        ax0.set_ylabel('v_rad  [m/s]')
-        ax1.set_ylabel('w    [m/s]')
-        plt.tight_layout()
-        fig.savefig(os.path.join(path_out_figs, fig_name))
-        plt.close(fig)
+        # fig_name = 'v_rad_test_k'+str(k0)+'.png'
+        # fig, axis = plt.subplots(2,1, figsize=(9,10), sharex='all')
+        # ax0 = axis[0]
+        # ax1 = axis[1]
+        # # for it,t0 in enumerate(time_rad_av[1::2]):
+        # for it,t0 in enumerate(times[1::2]):
+        #     count_color = 2 * np.double(it) / len(time_rad_av)
+        #     ir_tracer = np.where(radius_rad_av == np.int(np.round(r_av[2*it+1,k0_tracer],-2)))[0][0]
+        #     ax0.plot(radius_rad_av[:irmax], v_rad_av[2*it+1,:irmax,k0], color=cm.jet(count_color), label='t='+str(t0)+'s')
+        #     ax1.plot(radius_rad_av[:irmax], w_av[2*it+1,:irmax,k0], color=cm.jet(count_color), label='t='+str(t0)+'s')
+        #     ax0.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
+        #              ':', color='0.25', linewidth=1)
+        #     ax1.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
+        #              ':', color='0.25', linewidth=1)
+        #     if it == 0:
+        #         ax0.plot(radius_rad_av[ir_tracer],U_rad_av[2*it+1,k0_tracer], 'o', color='0.5', markersize=8, label='tracer velocity')
+        #         ax0.plot(radius_rad_av[ir_tracer],v_rad_av[2*it+1,ir_tracer,k0], 'ko', markersize=6, label='tracer radius')
+        #         ax1.plot(radius_rad_av[ir_tracer],w_av[2*it+1,ir_tracer,k0], 'ko', markersize=6, label='tracer radius')
+        #     else:
+        #         ax0.plot(radius_rad_av[ir_tracer],U_rad_av[2*it+1,k0_tracer], 'o', color='0.5', markersize=8)
+        #         ax0.plot(radius_rad_av[ir_tracer],v_rad_av[2*it+1,ir_tracer,k0], 'ko', markersize=6)
+        #         ax1.plot(radius_rad_av[ir_tracer],w_av[2*it+1,ir_tracer,k0], 'ko', markersize=6)
+        # ax0.set_ylim(np.amin(v_rad_av[:,:irmax,k0]), np.amax(v_rad_av[:,:irmax,k0]))
+        # ax1.set_ylim(np.minimum(np.amin(w_av[:,:irmax,k0]), -np.amax(w_av[:,:irmax,k0])), np.amax(w_av[:,:irmax,k0]))
+        # ax0.legend(loc=1,ncol=2)
+        # ax1.legend(loc=4,ncol=2)
+        # ax0.set_title('radial velocity: v_rad')
+        # ax1.set_title('vertical velocity: w')
+        # # ax0.set_xlabel('radius r  [m]')
+        # ax1.set_xlabel('radius r  [m]')
+        # ax0.set_ylabel('v_rad  [m/s]')
+        # ax1.set_ylabel('w    [m/s]')
+        # plt.tight_layout()
+        # fig.savefig(os.path.join(path_out_figs, fig_name))
+        # plt.close(fig)
 
         fig_name = 'v_rad_vel_k'+str(k0)+'.png'
         fig, axis = plt.subplots(1, 3, figsize=(18, 5))
@@ -546,7 +590,7 @@ def plot_rim_width(r_tracers_av, U_rad_av, r_av, v_rad_av, w_av,
                     ax.plot(r_wmax[2*it+1, k0], var[2*it+1, ir_max, k], 'ko', markersize=6)
                     ax.plot(r_wmin[2*it+1, k0], var[2*it+1, ir_min, k], 'kd', markersize=6)
                     ax.plot(r_wcenter[2*it+1, k0], var[2*it+1, ir_c, k], 'kx', markersize=6)
-            # ax.legend()
+            ax.set_ylabel(var_name)
             ax.set_title('z='+str((k_+1)*dx[2])+ ' (k='+str(k_)+')')
             ax.set_xlim(0, r_av[irmax])
         axis[-1].legend(loc='best', ncol=4)
