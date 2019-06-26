@@ -108,6 +108,7 @@ def main():
 
     k0_tracer = 0
     v_rad_av_at_rim = np.zeros((nt,nk), dtype=np.double)
+    print(v_rad_av.shape, v_rad_av_at_rim.shape, nt, times)
     for it,t0 in enumerate(times):
         for k0 in krange:
             ir_tracer = np.where(r_av == np.int(np.round(r_tracers_av[it, k0_tracer], -2)))[0][0]
