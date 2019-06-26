@@ -143,13 +143,15 @@ def main():
         # ax1.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
         #          ':', color='0.25', linewidth=1)
         if it == 0:
-            ax0.plot(r_av[ir_vrad_grad_max[it,k0]],v_rad_av[2*it+1,ir_vrad_grad_max[it,k0],k0], 'o', color='0.5', markersize=8, label='max gradient')
+            ax0.plot(r_av[ir_vrad_grad_max[it,k0]],v_rad_av[2*it+1,ir_vrad_grad_max[it,k0],k0], 'o', color='0.5', markersize=8, label='max gradient(v_rad)')
+            ax0.plot(r_av[ir_vrad_max[it,k0]],v_rad_av[2*it+1,ir_vrad_grad_max[it,k0],k0], 'd', color='0.5', markersize=8, label='max v_rad')
             # ax0.plot(r_av[ir_tracer],U_rad_av[2*it+1,k0_tracer], 'o', color='0.5', markersize=8, label='tracer velocity')
             # ax0.plot(r_av[ir_tracer],v_rad_av[2*it+1,ir_tracer,k0], 'ko', markersize=6, label='tracer radius')
             # ax1.plot(r_av[ir_tracer],w_av[2*it+1,ir_tracer,k0], 'ko', markersize=6, label='tracer radius')
 
         else:
             ax0.plot(r_av[ir_vrad_grad_max[it,k0]],v_rad_av[2*it+1,ir_vrad_grad_max[it,k0],k0], 'o', color='0.5', markersize=8)
+            ax0.plot(r_av[ir_vrad_max[it,k0]],v_rad_av[2*it+1,ir_vrad_grad_max[it,k0],k0], 'o', color='0.5', markersize=8)
             # ax0.plot(r_av[ir_tracer],U_rad_av[2*it+1,k0_tracer], 'o', color='0.5', markersize=8)
             # ax0.plot(r_av[ir_tracer],v_rad_av[2*it+1,ir_tracer,k0], 'ko', markersize=6)
             # ax1.plot(r_av[ir_tracer],w_av[2*it+1,ir_tracer,k0], 'ko', markersize=6)
