@@ -137,10 +137,10 @@ def main():
         count_color = 2 * np.double(it) / len(time_av)
         ax0.plot(r_av[:irmax], v_rad_av[2*it+1,:irmax,k0], color=cm.jet(count_color), label='t='+str(t0)+'s')
         ax1.plot(r_av[:irmax], w_av[2*it+1,:irmax,k0], color=cm.jet(count_color), label='t='+str(t0)+'s')
-        ax0.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
-                 ':', color='0.25', linewidth=1)
-        ax1.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
-                 ':', color='0.25', linewidth=1)
+        # ax0.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
+        #          ':', color='0.25', linewidth=1)
+        # ax1.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
+        #          ':', color='0.25', linewidth=1)
         if it == 0:
             ax0.plot(r_av[ir_vrad_grad_max[it,k0]],v_rad_av[2*it+1,ir_vrad_grad_max[it,k0],k0], 'o', color='0.5', markersize=8, label='max gradient')
             # ax0.plot(r_av[ir_tracer],U_rad_av[2*it+1,k0_tracer], 'o', color='0.5', markersize=8, label='tracer velocity')
