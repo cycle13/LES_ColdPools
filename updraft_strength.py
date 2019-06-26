@@ -370,11 +370,11 @@ def plot_vel_at_rim(r_av, U_rad_av, radius_rad_av,
             ax1.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
                      ':', color='0.25', linewidth=1)
             if it == 0:
-                ax0.plot(radius_rad_av[ir_tracer],U_rad_av[2*it+1,k0], 'o', color='0.5', markersize=6, label='tracer velocity')
+                ax0.plot(radius_rad_av[ir_tracer],U_rad_av[2*it+1,k0_tracer], 'o', color='0.5', markersize=6, label='tracer velocity')
                 ax0.plot(radius_rad_av[ir_tracer],v_rad_av[2*it+1,ir_tracer,k0], 'ko', markersize=6, label='tracer radius')
                 ax1.plot(radius_rad_av[ir_tracer],w_av[2*it+1,ir_tracer,k0], 'ko', markersize=6, label='tracer radius')
             else:
-                ax0.plot(radius_rad_av[ir_tracer],U_rad_av[2*it+1,k0], 'o', color='0.5', markersize=6)
+                ax0.plot(radius_rad_av[ir_tracer],U_rad_av[2*it+1,k0_tracer], 'o', color='0.5', markersize=6)
                 ax0.plot(radius_rad_av[ir_tracer],v_rad_av[2*it+1,ir_tracer,k0], 'ko', markersize=6)
                 ax1.plot(radius_rad_av[ir_tracer],w_av[2*it+1,ir_tracer,k0], 'ko', markersize=6)
         ax0.set_ylim(np.amin(v_rad_av[:,:irmax,k0]), np.amax(v_rad_av[:,:irmax,k0]))
