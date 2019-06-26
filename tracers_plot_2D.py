@@ -84,7 +84,7 @@ def main():
     for it, t0 in enumerate(times):
         print('-plot time: ' + str(t0))
         fig_name = 'v_rad_tan' + '_t' + str(t0) + '_tracers.png'
-        fig, axis = plt.subplots(1, 2, figsize=(11, 6))
+        fig, axis = plt.subplots(1, 2, figsize=(11, 6), sharey='all')
         for j, var_name in enumerate(var_list):
             print var_name, j
             var = rootgrp.variables[var_name][it, :, :, k0]
