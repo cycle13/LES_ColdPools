@@ -123,11 +123,13 @@ def main():
     # c) compute gradient of radial velocity
     # >> are tracers at position of maximum radial velocity??
     v_rad_gradient = np.zeros(shape=v_rad_av.shape)
+    ir_vrad_grad_max = np.zeros((nt, nk))
+    ir_vrad_max = np.argmax(v_rad_av, axis=1)
     for ir, r in enumerate(r_av[1:-1]):
         dri = 1./ (r_av[ir+1] - r_av[ir-1])
         v_rad_gradient[:,ir,:] = dri * (v_rad_av[:, ir+1, :] - v_rad_av[:, ir-1, :])
-    ir_vrad_max = np.argmax(v_rad_av, axis=1)
-    ir_vrad_grad_max = np.argmax(-v_rad_gradient[:,ir_vrad_max:,:], axis=1)
+        for it,t0 in enumerate(times):
+            ir_vrad_grad_max = np.argmax(-v_rad_gradient[:,ir_vrad_max[it,ir]:,:], axis=1)
     print('control: ', v_rad_gradient.shape, ir_vrad_grad_max.shape)
     k0 = 0
     fig_name = 'v_rad_gradient_k'+str(k0)+'.png'
