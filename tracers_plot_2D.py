@@ -42,9 +42,11 @@ def main():
         os.mkdir(path_out_figs)
 
     if args.path_tracers:
+        path_tracers = os.path.join(path, args.path_tracers)
         path_tracer_file = os.path.join(path, args.path_tracers, 'output')
     else:
         k_tracers = 0
+        path_tracers = os.path.join(path, 'tracer_k' + str(k_tracers))
         path_tracer_file = os.path.join(path, 'tracer_k' + str(k_tracers), 'output')
 
     print('')
@@ -57,42 +59,73 @@ def main():
     n_tracers = get_number_tracers(path_tracer_file)
     coordinates = get_tracer_coords(cp_id, n_cps, n_tracers, times, dt_fields, path_tracer_file)
 
-    var_list = ['s', 'w']
-    for it,t0 in enumerate(times):
-        print('-plot time: '+str(t0))
-        fig_name = 's_w' + '_t' + str(t0) + '_tracers.png'
-        fig, axis = plt.subplots(1, 2, figsize=(11, 6), sharey='all')
-        rootgrp = nc.Dataset(os.path.join(path_fields, str(t0)+'.nc'))
-        for j, var_name in enumerate(var_list):
-            print var_name, j
-            var = rootgrp.groups['fields'].variables[var_name][:,:,k0]
-            max = np.amax(var)
-            if var_name in ['w', 'v_rad', 'v_tan']:
-                min = -max
-                cm_ = cm_bwr
-            else:
-                min = np.amin(var)
-                cm_ = cm_hsv
-            axis[j].contourf(var.T, levels=np.linspace(min, max, 1e2), cmap=cm_)
-            axis[j].set_title(var_name)
-            axis[j].set_aspect('equal')
-        rootgrp.close()
-        for i in range(n_tracers):
-            for j in range(len(var_list)):
-                # normal (no shift)
-                axis[j].plot(coordinates[it,i,0], coordinates[it,i,1], 'ok', markersize=3)
-                ## trying out shifted by +1
-                #axis[j].plot(coordinates[it,i,0]-1, coordinates[it,i,1]-1, 'ok', markersize=3)
-        plt.tight_layout()
-        fig.savefig(os.path.join(path_out_figs, fig_name))
-        plt.close(fig)
+    # var_list = ['s', 'w']
+    # for it,t0 in enumerate(times):
+    #     print('-plot time: '+str(t0))
+    #     fig_name = 's_w' + '_t' + str(t0) + '_tracers.png'
+    #     fig, axis = plt.subplots(1, 2, figsize=(11, 6), sharey='all')
+    #     rootgrp = nc.Dataset(os.path.join(path_fields, str(t0)+'.nc'))
+    #     for j, var_name in enumerate(var_list):
+    #         print var_name, j
+    #         var = rootgrp.groups['fields'].variables[var_name][:,:,k0]
+    #         max = np.amax(var)
+    #         if var_name in ['w', 'v_rad', 'v_tan']:
+    #             min = -max
+    #             cm_ = cm_bwr
+    #         else:
+    #             min = np.amin(var)
+    #             cm_ = cm_hsv
+    #         axis[j].contourf(var.T, levels=np.linspace(min, max, 1e2), cmap=cm_)
+    #         axis[j].set_title(var_name)
+    #         axis[j].set_aspect('equal')
+    #     rootgrp.close()
+    #     for i in range(n_tracers):
+    #         for j in range(len(var_list)):
+    #             # normal (no shift)
+    #             axis[j].plot(coordinates[it,i,0], coordinates[it,i,1], 'ok', markersize=3)
+    #             ## trying out shifted by +1
+    #             #axis[j].plot(coordinates[it,i,0]-1, coordinates[it,i,1]-1, 'ok', markersize=3)
+    #     plt.tight_layout()
+    #     fig.savefig(os.path.join(path_out_figs, fig_name))
+    #     plt.close(fig)
+    #
+    #
+    # var_list = ['v_rad', 'v_tan']
+    # rootgrp = nc.Dataset(os.path.join(path, 'fields_v_rad', 'v_rad.nc'))
+    # for it, t0 in enumerate(times):
+    #     print('-plot time: ' + str(t0))
+    #     fig_name = 'v_rad_tan' + '_t' + str(t0) + '_tracers.png'
+    #     fig, axis = plt.subplots(1, 2, figsize=(11, 6), sharey='all')
+    #     for j, var_name in enumerate(var_list):
+    #         print var_name, j
+    #         var = rootgrp.variables[var_name][it, :, :, k0]
+    #         max = np.amax(var)
+    #         if var_name in ['w', 'v_rad', 'v_tan']:
+    #             min = -max
+    #         else:
+    #             min = np.amin(var)
+    #         axis[j].contourf(var.T, levels=np.linspace(min, max, 1e2), cmap=cm_bwr)
+    #         axis[j].contourf(var.T, levels=np.linspace(min, max, 1e2), cmap=cm_bwr)
+    #         axis[j].set_title(var_name)
+    #         axis[j].set_aspect('equal')
+    #     for i in range(n_tracers):
+    #         for j in range(len(var_list)):
+    #             # normal (no shift)
+    #             axis[j].plot(coordinates[it, i, 0], coordinates[it, i, 1], 'ok', markersize=3)
+    #             ## trying out shifted by +1
+    #             #axis[j].plot(coordinates[it,i,0]-1, coordinates[it,i,1]-1, 'ok', markersize=3)
+    #     plt.tight_layout()
+    #     fig.savefig(os.path.join(path_out_figs, fig_name))
+    #     plt.close(fig)
+    # rootgrp.close()
 
 
-    var_list = ['v_rad', 'v_tan']
-    rootgrp = nc.Dataset(os.path.join(path, 'fields_v_rad', 'v_rad.nc'))
+
+    var_list = ['u', 'v']
+    rootgrp = nc.Dataset(os.path.join(path_tracers, 'input', 'uv_alltimes.nc'))
     for it, t0 in enumerate(times):
         print('-plot time: ' + str(t0))
-        fig_name = 'v_rad_tan' + '_t' + str(t0) + '_tracers.png'
+        fig_name = 'uv_alltimes' + '_t' + str(t0) + '_tracers.png'
         fig, axis = plt.subplots(1, 2, figsize=(11, 6), sharey='all')
         for j, var_name in enumerate(var_list):
             print var_name, j
@@ -111,14 +144,11 @@ def main():
                 # normal (no shift)
                 axis[j].plot(coordinates[it, i, 0], coordinates[it, i, 1], 'ok', markersize=3)
                 ## trying out shifted by +1
-                #axis[j].plot(coordinates[it,i,0]-1, coordinates[it,i,1]-1, 'ok', markersize=3)
+                # axis[j].plot(coordinates[it,i,0]-1, coordinates[it,i,1]-1, 'ok', markersize=3)
         plt.tight_layout()
         fig.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
     rootgrp.close()
-
-
-
 
 
 
