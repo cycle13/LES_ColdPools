@@ -76,12 +76,13 @@ def main():
 
     # a) read in CP radius r_torus(t)=r_av and CP spreading velocity u_torus(t)=U_rad_av from tracer statistics
     if args.path_tracers:
-        fullpath_in = os.path.join(path, args.path_tracers, 'output')
+        path_tracers = os.path.join(path, args.path_tracers, 'output')
     else:
-        fullpath_in = os.path.join(path, 'tracer_k' + str(k0), 'output')
+        path_tracers = os.path.join(path, 'tracer_k' + str(k0), 'output')
+    print('path tracers: ', path_tracers)
     ID = os.path.basename(path[:-1])
-    n_tracers = get_number_tracers(fullpath_in)
-    n_cps = get_number_cps(fullpath_in)
+    n_tracers = get_number_tracers(path_tracers)
+    n_cps = get_number_cps(path_tracers)
     print('number of CPs: ', n_cps)
     print('number of tracers per CP: ', n_tracers)
     print ''
@@ -90,7 +91,7 @@ def main():
     U_rad_av = np.zeros((nt, nk))
     for it, t0 in enumerate(times):
         print('---t0: ' + str(t0) + '---', it)
-        dist_av[it, k0], U_rad_av[it, k0] = get_radius_vel(fullpath_in, it, cp_id, n_tracers, n_cps)
+        dist_av[it, k0], U_rad_av[it, k0] = get_radius_vel(path_tracers, it, cp_id, n_tracers, n_cps)
     r_tracers_av = dist_av * dx[0]
     del dist_av
 
@@ -199,7 +200,7 @@ def main():
     w_rot = np.zeros(nt)
     w_rot_ = np.zeros(nt)
     w_rot_max = np.zeros(nt)
-    print('eeeeeeeeeeeeeeeeeeee times: ', times)
+    print('eeeeeeeeeeeeeeeeeeee times: ', times, w_rot.shape, w_av.shape)
     for it,t0 in enumerate(times):
         print('---t0: ' + str(t0) + '---', it)
         ir_tracer = np.where(r_av == np.int(np.round(r_tracers_av[it, k0_tracer], -2)))[0][0]
