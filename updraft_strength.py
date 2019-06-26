@@ -27,10 +27,11 @@ def main():
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
     parser.add_argument("--rmax")
+    parser.add_argument("--path_tracers")
     args = parser.parse_args()
     set_input_parameters(args)
 
-    path_out_figs = os.path.join(path, 'figs_vorticity')
+    path_out_figs = os.path.join(path, 'figs_rim')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
 
@@ -74,8 +75,11 @@ def main():
 
 
     # a) read in CP radius r_torus(t)=r_av and CP spreading velocity u_torus(t)=U_rad_av from tracer statistics
-    id = os.path.basename(path[:-1])
-    fullpath_in = os.path.join(path, 'tracer_k' + str(k0), 'output')
+    if args.path_tracers:
+        fullpath_in = os.path.join(path, args.path_tracers, 'output')
+    else:
+        fullpath_in = os.path.join(path, 'tracer_k' + str(k0), 'output')
+    ID = os.path.basename(path[:-1])
     n_tracers = get_number_tracers(fullpath_in)
     n_cps = get_number_cps(fullpath_in)
     print('number of CPs: ', n_cps)
@@ -97,6 +101,7 @@ def main():
     rootgrp = nc.Dataset(fullpath_in, 'r')
     w_av = rootgrp.groups['stats'].variables['w'][:,:,:]                # nt, nr, nz
     v_rad_av = rootgrp.groups['stats'].variables['v_rad'][:,:,:]        # nt, nr, nz
+    v_tan_av = rootgrp.groups['stats'].variables['v_tan'][:,:,:]        # nt, nr, nz
     r_av = rootgrp.groups['stats'].variables['r'][:]                    # nr
     time_av = rootgrp.groups['timeseries'].variables['time'][:]         # nt
     rootgrp.close()
