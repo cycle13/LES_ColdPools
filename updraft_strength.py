@@ -108,7 +108,7 @@ def main():
 
     k0_tracer = 0
     v_rad_av_at_rim = np.zeros((nt,nk), dtype=np.double)
-    print(v_rad_av.shape, v_rad_av_at_rim.shape, nt, times)
+    print('v_rad_av, v_rad_av_at_rim', v_rad_av.shape, v_rad_av_at_rim.shape, nt, times)
     for it,t0 in enumerate(times):
         for k0 in krange:
             ir_tracer = np.where(r_av == np.int(np.round(r_tracers_av[it, k0_tracer], -2)))[0][0]
@@ -369,8 +369,12 @@ def plot_vel_at_rim(r_av, U_rad_av, radius_rad_av,
                      ':', color='0.25', linewidth=1)
             ax1.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
                      ':', color='0.25', linewidth=1)
-            ax0.plot(radius_rad_av[ir_tracer],v_rad_av[2*it+1,ir_tracer,k0], 'ko', markersize=5)
-            ax1.plot(radius_rad_av[ir_tracer],w_av[2*it+1,ir_tracer,k0], 'ko', markersize=5)
+            if it == 0:
+                ax0.plot(radius_rad_av[ir_tracer],v_rad_av[2*it+1,ir_tracer,k0], 'ko', markersize=5, label='tracer radius')
+                ax1.plot(radius_rad_av[ir_tracer],w_av[2*it+1,ir_tracer,k0], 'ko', markersize=5, label='tracer radius')
+            else:
+                ax0.plot(radius_rad_av[ir_tracer],v_rad_av[2*it+1,ir_tracer,k0], 'ko', markersize=5)
+                ax1.plot(radius_rad_av[ir_tracer],w_av[2*it+1,ir_tracer,k0], 'ko', markersize=5)
         ax0.set_ylim(np.amin(v_rad_av[:,:irmax,k0]), np.amax(v_rad_av[:,:irmax,k0]))
         ax1.set_ylim(np.minimum(np.amin(w_av[:,:irmax,k0]), -np.amax(w_av[:,:irmax,k0])), np.amax(w_av[:,:irmax,k0]))
         ax0.legend(loc=1,ncol=2)
