@@ -127,7 +127,7 @@ def main():
         dri = 1./ (r_av[ir+2] - r_av[ir])
         v_rad_gradient[:,ir,:] = dri * (v_rad_av[:, ir+2, :] - v_rad_av[:, ir, :])
     for it,t0 in enumerate(times):
-        ir_vrad_grad_max[it,k0] = np.argmax(-v_rad_gradient[:,ir_vrad_max[it,k0]:,:], axis=1)
+        ir_vrad_grad_max[it,k0] = np.argmax(-v_rad_gradient[it,ir_vrad_max[it,k0]:,k0])
     print('control: ', v_rad_gradient.shape, ir_vrad_grad_max.shape)
     k0 = 0
     fig_name = 'v_rad_gradient_k'+str(k0)+'.png'
