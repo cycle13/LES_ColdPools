@@ -21,9 +21,6 @@ def main():
     parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("casename")
     parser.add_argument("path")
-    # parser.add_argument("dTh", type=int)
-    # parser.add_argument("--zparams", nargs='+', type=int)
-    # parser.add_argument('--rparams', nargs='+', type=int)
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
     parser.add_argument("--rmax")
@@ -124,12 +121,13 @@ def main():
     # >> are tracers at position of maximum radial velocity??
     v_rad_gradient = np.zeros(shape=v_rad_av.shape)
     ir_vrad_grad_max = np.zeros((nt, nk))
-    ir_vrad_max = np.argmax(v_rad_av, axis=1)
+    ir_vrad_max = np.argmax(v_rad_av, axis=1)   # nt, nk
+    print('-------', v_rad_av.shape, nt, nk, )
     for ir, r in enumerate(r_av[1:-1]):
-        dri = 1./ (r_av[ir+1] - r_av[ir-1])
-        v_rad_gradient[:,ir,:] = dri * (v_rad_av[:, ir+1, :] - v_rad_av[:, ir-1, :])
-        for it,t0 in enumerate(times):
-            ir_vrad_grad_max = np.argmax(-v_rad_gradient[:,ir_vrad_max[it,ir]:,:], axis=1)
+        dri = 1./ (r_av[ir+2] - r_av[ir])
+        v_rad_gradient[:,ir,:] = dri * (v_rad_av[:, ir+2, :] - v_rad_av[:, ir, :])
+    for it,t0 in enumerate(times):
+        ir_vrad_grad_max[it,k0] = np.argmax(-v_rad_gradient[:,ir_vrad_max[it,k0]:,:], axis=1)
     print('control: ', v_rad_gradient.shape, ir_vrad_grad_max.shape)
     k0 = 0
     fig_name = 'v_rad_gradient_k'+str(k0)+'.png'
