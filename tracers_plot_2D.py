@@ -20,6 +20,7 @@ def main():
     parser.add_argument("--k0")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
+    parser.add_argument("--path_tracers")
     args = parser.parse_args()
     set_input_parameters(args)
 
@@ -40,8 +41,17 @@ def main():
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
 
-    k_tracers = 0
-    path_tracer_file = os.path.join(path, 'tracer_k' + str(k_tracers), 'output')
+    if args.path_tracers:
+        path_tracer_file = os.path.join(path, args.path_tracers, 'output')
+    else:
+        k_tracers = 0
+        path_tracer_file = os.path.join(path, 'tracer_k' + str(k_tracers), 'output')
+
+    print('')
+    print('path figs:    ' + path_out_figs)
+    print('path tracers: ' + path_tracer_file)
+    print('')
+
     cp_id = 1
     n_cps = get_number_cps(path_tracer_file)
     n_tracers = get_number_tracers(path_tracer_file)
@@ -65,15 +75,14 @@ def main():
                 cm_ = cm_hsv
             axis[j].contourf(var.T, levels=np.linspace(min, max, 1e2), cmap=cm_)
             axis[j].set_title(var_name)
-            # axis[j].set_xlabel('x')
             axis[j].set_aspect('equal')
         rootgrp.close()
         for i in range(n_tracers):
             for j in range(len(var_list)):
-                # normal interpolation
+                # normal (no shift)
                 axis[j].plot(coordinates[it,i,0], coordinates[it,i,1], 'ok', markersize=3)
-                # # trying out shifted by +1
-                # axis[j].plot(coordinates[it,i,0]-1, coordinates[it,i,1]-1, 'ok', markersize=3)
+                ## trying out shifted by +1
+                #axis[j].plot(coordinates[it,i,0]-1, coordinates[it,i,1]-1, 'ok', markersize=3)
         plt.tight_layout()
         fig.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
@@ -99,7 +108,10 @@ def main():
             axis[j].set_aspect('equal')
         for i in range(n_tracers):
             for j in range(len(var_list)):
+                # normal (no shift)
                 axis[j].plot(coordinates[it, i, 0], coordinates[it, i, 1], 'ok', markersize=3)
+                ## trying out shifted by +1
+                #axis[j].plot(coordinates[it,i,0]-1, coordinates[it,i,1]-1, 'ok', markersize=3)
         plt.tight_layout()
         fig.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
