@@ -135,7 +135,6 @@ def main():
     ax1 = axis[1]
     for it,t0 in enumerate(times[1::2]):
         count_color = 2 * np.double(it) / len(time_av)
-        ir_tracer = np.where(r_av == np.int(np.round(r_av[2*it+1,k0_tracer],-2)))[0][0]
         ax0.plot(r_av[:irmax], v_rad_av[2*it+1,:irmax,k0], color=cm.jet(count_color), label='t='+str(t0)+'s')
         ax1.plot(r_av[:irmax], w_av[2*it+1,:irmax,k0], color=cm.jet(count_color), label='t='+str(t0)+'s')
         ax0.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
