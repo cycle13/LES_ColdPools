@@ -86,7 +86,7 @@ def main():
 
         ic = ic_arr[0]
         jc = jc_arr[0]
-        KE, KEd, KE_x = compute_KE(ic, jc, irstar, tmin, tmax, id, path_in, path_fields, path_out)
+        KE, KEd, KE_x = compute_KE(ic, jc, irstar, tmin, tmax, id, filename, path_in, path_fields, path_out)
         rootgrp = nc.Dataset(os.path.join(path_out, filename), 'r+', format='NETCDF4')
         ts_grp = rootgrp.groups['timeseries']
         var = ts_grp.variables['KE']
@@ -135,7 +135,7 @@ def main():
 
 
 
-def compute_KE(ic, jc, irstar, tmin, tmax, id, path_in, path_fields, path_out):
+def compute_KE(ic, jc, irstar, tmin, tmax, id, filename, path_in, path_fields, path_out):
     times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
              and np.int(name[:-3]) >= tmin and np.int(name[:-3]) <= tmax]
     times.sort()
@@ -242,7 +242,9 @@ def compute_KE(ic, jc, irstar, tmin, tmax, id, path_in, path_fields, path_out):
     return KE, KEd, KE_x
 
 
-def compute_PE(ic,jc,id,jd,nx_,ny_,case_name,path,path_fields):
+
+
+def compute_PE(ic,jc,id,jd,nx_,ny_, filename, case_name, path, path_fields):
     # 1. read in initial s-field
     s = read_in_netcdf_fields('s', os.path.join(path_fields,'0.nc'))
     s_ = s[ic-id:ic+id,jc-jd:jc+jd,:]
@@ -307,7 +309,15 @@ def compute_PE(ic,jc,id,jd,nx_,ny_,case_name,path,path_fields):
     plt.close()
     del s, s_
 
-    return
+    # rootgrp = nc.Dataset(os.path.join(path_out, filename), 'r+', format='NETCDF4')
+    # ts_grp = rootgrp.groups['timeseries']
+    # var = ts_grp.variables['PE']
+    # var[:] = PE[:]
+    # var = ts_grp.variables['PEd']
+    # var[:] = PEd[:]
+    # rootgrp.close()
+
+    return PE
 
 # ----------------------------------------------------------------------
 
@@ -517,6 +527,11 @@ def create_output_file(filename, path_out):
 
     var = ts_grp.createVariable('KE_x', 'f8', ('nt', 'nx'))
     var.units = "J"
+
+    var = ts_grp.createVariable('PE', 'f8', ('nt'))
+    var.units = "J"
+    var = ts_grp.createVariable('PEd', 'f8', ('nt'))
+    var.units = "(m/s)^2"
 
     # field_grp = rootgrp.createGroup('fields_2D')
     # field_grp.createDimension('nt', nt)
