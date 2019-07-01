@@ -52,6 +52,7 @@ def main():
     for istar in range(ng):
         zstar = z_params[istar]
         rstar = r_params[istar]
+        irstar = np.int(np.round(rstar / dx[0]))
         id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
 
         path_in = os.path.join(path_root, id)
@@ -117,10 +118,9 @@ def main():
         rootgrp = nc.Dataset(os.path.join(path_in, filename), 'r+', format='NETCDF4')
         ts_grp = rootgrp.groups['timeseries']
         KE = ts_grp.variables['KE'][:]
-        # var[:] = KE[:]
         rootgrp.close()
 
-        plt.plot(times, KE, '-o', label=id)
+        plt.plot(timerange, KE, '-o', label=id)
 
     plt.legend(loc='best')
     plt.xlabel('time [s]')
@@ -149,10 +149,6 @@ def compute_KE(ic, jc, irstar, tmin, tmax, id, path_in, path_fields, path_out):
     KE = np.zeros((nt))
     KEd = np.zeros((nt))
     KE_x = np.zeros((nt, nx))       # compute KE[x, jc, :] (columnwise integration over z)
-
-    # ishift = id - irstar
-    # jshift = jd - irstar
-    # th_w = 5e-1
 
     print 'path_in', path_in
     print path_fields
@@ -315,7 +311,7 @@ def set_input_parameters(args):
     print('--- set input parameters ---')
     global case_name
     global path_root
-    global times
+    global timerange, nt
 
     path_root = args.path_root
     path_out_figs = os.path.join(path_root, 'figs_CP_height')
@@ -347,15 +343,16 @@ def set_input_parameters(args):
     if args.tmin:
         tmin = np.int(args.tmin)
     else:
-        tmin = np.int(100)
+        tmin = 100
     if args.tmax:
         tmax = np.int(args.tmax)
     else:
-        tmax = np.int(100)
-    times = np.arange(tmin, tmax + 100, 100)
+        tmax = tmin
+    timerange = np.arange(tmin, tmax + 100, 100)
+    nt = len(timerange)
     # times = [np.int(name[:-3]) for name in files]
-    times.sort()
-    print('times', times)
+    # times.sort()
+    print('timerange', timerange)
 
     return nml, dTh, z_params, r_params, tmin, tmax
 
@@ -366,7 +363,7 @@ def define_geometry(case_name, nml):
     print('--- define geometry ---')
     global x_half, y_half, z_half
     global ic_arr, jc_arr
-    global rstar, irstar, zstar, kstar
+    # global rstar, irstar, zstar, kstar
 
     x_half = np.empty((nx), dtype=np.double, order='c')
     y_half = np.empty((ny), dtype=np.double, order='c')
@@ -386,9 +383,6 @@ def define_geometry(case_name, nml):
 
     # set coordinates for plots
     if case_name == 'ColdPoolDry_single_3D':
-        rstar = nml['init']['r']
-        irstar = np.int(np.round(rstar / dx[0]))
-        zstar = nml['init']['h']
         try:
             ic = nml['init']['ic']
             jc = nml['init']['jc']
@@ -402,13 +396,14 @@ def define_geometry(case_name, nml):
         ic_arr[0] = ic
         jc_arr[0] = jc
     elif case_name == 'ColdPoolDry_double_2D':
-        try:
-            rstar = nml['init']['r']
-        except:
-            rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx[0]))
-        zstar = nml['init']['h']
-        isep = 4 * irstar
+        # try:
+        #     rstar = nml['init']['r']
+        # except:
+        #     rstar = 5000.0  # half of the width of initial cold-pools [m]
+        # irstar = np.int(np.round(rstar / dx[0]))
+        # zstar = nml['init']['h']
+        # kstar = np.int(np.round(zstar / dx[2]))
+        # isep = 4 * irstar
         ic1 = np.int(nx / 3)  # np.int(Gr.dims.ng[0] / 3)
         ic2 = ic1 + isep
         jc1 = np.int(ny / 2)
@@ -416,15 +411,15 @@ def define_geometry(case_name, nml):
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
     elif case_name == 'ColdPoolDry_double_3D':
-        try:
-            rstar = nml['init']['r']
-        except:
-            rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx[0]))
-        zstar = nml['init']['h']
-        kstar = np.int(np.round(zstar / dx[2]))
-        isep = 4 * irstar
-        jsep = 0
+        # try:
+        #     rstar = nml['init']['r']
+        # except:
+        #     rstar = 5000.0  # half of the width of initial cold-pools [m]
+        # irstar = np.int(np.round(rstar / dx[0]))
+        # zstar = nml['init']['h']
+        # kstar = np.int(np.round(zstar / dx[2]))
+        # isep = 4 * irstar
+        # jsep = 0
         ic1 = np.int(np.round((nx + 2 * gw) / 3)) - gw
         jc1 = np.int(np.round((ny + 2 * gw) / 2)) - gw
         ic2 = ic1 + isep
@@ -432,13 +427,13 @@ def define_geometry(case_name, nml):
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
     elif case_name == 'ColdPoolDry_triple_3D':
-        try:
-            rstar = nml['init']['r']
-        except:
-            rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx[0]))
-        zstar = nml['init']['h']
-        kstar = np.int(np.round(zstar / dx[2]))
+        # try:
+        #     rstar = nml['init']['r']
+        # except:
+        #     rstar = 5000.0  # half of the width of initial cold-pools [m]
+        # irstar = np.int(np.round(rstar / dx[0]))
+        # zstar = nml['init']['h']
+        # kstar = np.int(np.round(zstar / dx[2]))
         d = np.int(np.round(ny / 2))
         dhalf = np.int(np.round(ny / 4))
         a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2

@@ -465,7 +465,6 @@ def compute_CP_height_radial_av(rmax, times, file_name_in, path_out_data, path_o
     # ----- azimuthally average CP_height_field
     CP_height_av = np.zeros((itmax, rmax))
     for it, t0 in enumerate(times):
-        print CP_height_2d[it, :, :].shape
         CP_height_av[it, :] = compute_average_var(CP_height_2d[it, :, :], rmax, 1, r_field)
 
     # ----- dump
