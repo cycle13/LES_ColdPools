@@ -20,9 +20,9 @@ def main():
     parser.add_argument("--kmax")
     args = parser.parse_args()
 
-    times, nml, id = set_input_parameters(args)
-    print('id: '+ id)
-    radius = np.int(np.double(id[12:]) / dx[0])
+    times, nml, ID = set_input_parameters(args)
+    print('id: '+ ID)
+    radius = np.int(np.double(ID[12:]) / dx[0])
 
     path_out_data = os.path.join(path, 'data_analysis')
     if not os.path.exists(path_out_data):
@@ -77,7 +77,7 @@ def main():
     print ''
     print('----- compute angular average CP height ----------- ')
     sth = 0.5
-    file_name_CP_height = 'CP_height_' + id + '_sth' + str(sth) + '.nc' # in path_out_data
+    file_name_CP_height = 'CP_height_' + ID + '_sth' + str(sth) + '.nc' # in path_out_data
     compute_CP_height_radial_av(rmax, times, file_name_CP_height, path_out_data, path_out_data_2D)
 
 
