@@ -182,22 +182,22 @@ def compute_radial_velocity(th_field, r_field, times, filename, ic, jc, rmax, pa
         print('t=' + str(t0))
         fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
         rootgrp = nc.Dataset(fullpath_in, 'r')
+        u = rootgrp.groups['fields'].variables['u'][:,:,:]
+        v = rootgrp.groups['fields'].variables['v'][:,:,:]
         for k0 in range(kmax):
             print('   k=' + str(k0))
             v_hor_int = np.zeros((2, nx, ny))
-            u = rootgrp.groups['fields'].variables['u'][:,:,k0]
             for i in range(1,nx-1):
-                v_hor_int[0,i,:] = 0.5*(u[i,:]+u[i-1,:])
-            del u
-            v = rootgrp.groups['fields'].variables['v'][:,:,k0]
+                v_hor_int[0,i,:] = 0.5*(u[i,:,k0]+u[i-1,:,k0])
             for j in range(1,ny-1):
-                v_hor_int[1,:,j] = 0.5*(v[:,j]+v[:,j-1])
-            del v
+                v_hor_int[1,:,j] = 0.5*(v[:,j,:]+v[:,j-1,:])
+
             v_rad_int[it, :, :, k0], v_tan_int[it, :, :, k0] = compute_radial_vel(v_hor_int, th_field)
             # v_hor = np.zeros((2, nx, ny))
             # v_hor[0,:,:] = rootgrp.groups['fields'].variables['u'][:,:,k0]
             # v_hor[1,:,:] = rootgrp.groups['fields'].variables['v'][:,:,k0]
             # v_rad[it, :, :, k0], v_tan[it, :, :, k0] = compute_radial_vel(v_hor, th_field)
+        del u,v
         rootgrp.close()
 
         # v_hor_diff = v_hor - v_hor_int
