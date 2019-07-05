@@ -82,15 +82,14 @@ def main():
     n_cps = get_number_cps(path_tracers)
     print('number of CPs: ', n_cps)
     print('number of tracers per CP: ', n_tracers)
-    print ''
-
     dist_av = np.zeros((nt, nk))
     U_rad_av = np.zeros((nt, nk))
     for it, t0 in enumerate(times):
-        print('---t0: ' + str(t0) + '---', it)
+        # print('---t0: ' + str(t0) + '---', it)
         dist_av[it, k0], U_rad_av[it, k0] = get_radius_vel(path_tracers, it, cp_id, n_tracers, n_cps)
     r_tracers_av = dist_av * dx[0]
     del dist_av
+    print ''
 
 
     # b) read in updrafts w(t,r,z) and radial velocity v_rad(t,r,z) from angular average
@@ -119,7 +118,19 @@ def main():
     print ''
 
 
-    # c) compute gradient of radial velocity
+
+    # c) read in width of CP torus ring
+    fullpath_in = os.path.join(path, 'data_analysis', 'stats_radial_averaged_rimwidth.nc')
+    rootgrp = nc.Dataset(fullpath_in, 'r')
+    r_wmin = rootgrp.groups['rim_width'].variables['r_wmin'][:, :]  # r_wmin[nt, nz]
+    r_wcenter = rootgrp.groups['rim_width'].variables['r_wcenter'][:, :]
+    r_wmax = rootgrp.groups['rim_width'].variables['r_wmax'][:, :]
+    R = 0.5 * (r_wmax - r_wmin)
+    rootgrp.close()
+
+
+
+    # d) compute gradient of radial velocity
     # >> are tracers at position of maximum radial velocity??
     v_rad_gradient = np.zeros(shape=v_rad_av.shape)
     for ir, r in enumerate(r_av[1:-1]):
@@ -128,12 +139,12 @@ def main():
     ir_vrad_grad_max = np.argmin(v_rad_gradient, axis=1)  # nt, nk
     k0 = 0
     plot_v_rad_gradient(U_rad_av, r_av, v_rad_av, w_av, v_rad_gradient,
-                        ir_vrad_grad_max, ir_tracer,
+                        ir_vrad_max, ir_vrad_grad_max, ir_tracer, r_wmax,
                         k0, k0_tracer, irmax, time_av, path_out_figs)
 
 
 
-    # d) compute vertical gradient of updrafts:  w_grad_av[t,r,z]
+    # e) compute vertical gradient of updrafts:  w_grad_av[t,r,z]
     #       >> w_grad_av is at levels z (like u_rad, u, v  and scalars)
     #       - read in zrange from Stats-file to get right position for gradient
     #           >> Positions in PyCLES: half-levels = box centres (scalars, u, v); full levels = box sides (w)
@@ -171,15 +182,7 @@ def main():
     # plt.close(fig)
 
 
-    # e) read in width of CP torus ring
-    fullpath_in = os.path.join(path, 'data_analysis', 'stats_radial_averaged_rimwidth.nc')
-    rootgrp = nc.Dataset(fullpath_in, 'r')
-    r_wmin = rootgrp.groups['rim_width'].variables['r_wmin'][:, :]      # r_wmin[nt, nz]
-    r_wcenter = rootgrp.groups['rim_width'].variables['r_wcenter'][:, :]
-    r_wmax = rootgrp.groups['rim_width'].variables['r_wmax'][:, :]
-    R = 0.5*(r_wmax - r_wmin)
-    rootgrp.close()
-
+    # f) plot Model & different radii from tracers and rim_width.py
     fig_name = 'model_urad_w.png'
     k0_plot = 0
     t0 = 1800
@@ -195,7 +198,7 @@ def main():
 
 
 
-    # f) v_rot=omega*R defined as difference between max(v_rad)=v_rad(r_c) and v_rad(r_tracer)
+    # g) v_rot=omega*R defined as difference between max(v_rad)=v_rad(r_c) and v_rad(r_tracer)
     v_rot = np.zeros(nt)
     v_rad_max = np.amax(v_rad_av[:, :, 0], axis=1)
     for it,t0 in enumerate(times):
@@ -211,14 +214,14 @@ def main():
     w_rot_max = np.zeros(nt)
     print('eeeeeeeeeeeeeeeeeeee times: ', times, w_rot.shape, w_av.shape)
     for it,t0 in enumerate(times):
-        print('---t0: ' + str(t0) + '---', it)
         ir_tracer = np.where(r_av == np.int(np.round(r_tracers_av[it, k0_tracer], -2)))[0][0]
-        if R[it,0] >= 0:
-            ir[it] = np.int(np.double(R[it,0])/dx[0])
+        ir[it] = np.int(np.double(R[it,0])/dx[0])
+        print('---t0: ' + str(t0) + '---', it, ir[it], nk)
+        if R[it,0] >= 0 and ir[it] <= w_av.shape[2]:
             print it, R[it,0], ir[it]
             w_rot[it] = w_av[it, ir_tracer, ir[it]]
         else:
-            print R[it,:]
+            # print R[it,:]
             R[it,:] = 0.0
             w_rot[it] = w_av[it, ir_tracer, 0]
             # w_rot_[it] = w_av[it, ir_tracer, 0]
@@ -465,16 +468,20 @@ def plot_rim_width(r_tracers_av, U_rad_av, r_av, v_rad_av, w_av,
         ir_tracer = np.where(r_av == np.int(np.round(r_tracers_av[2 * it + 1, k0_tracer], -2)))[0][0]
         if it == 0:
             ax0.plot(r_av[ir_tracer], v_rad_av[2 * it + 1, ir_tracer, k0],
-                     'ok', markersize=6, label='r tracer')
-            ax1.plot(r_av[ir_tracer], w_av[2 * it + 1, ir_tracer, k0], 'ok', markersize=6, label='r tracer')
-            ax0.plot(r_wmax[2 * it + 1, k0], v_rad_av[2 * it + 1, ir, k0], 'o', color='0.5', markersize=6,
-                     label='r(w=max)')
-            ax1.plot(r_wmax[2 * it + 1, k0], w_av[2 * it + 1, ir, k0], 'o', color='0.5', markersize=6, label='r(w=max)')
+                     'ok', markersize=10, label='r tracer')
+            ax1.plot(r_av[ir_tracer], w_av[2 * it + 1, ir_tracer, k0],
+                     'ok', markersize=10, label='r tracer')
+            ax0.plot(r_wmax[2 * it + 1, k0], v_rad_av[2 * it + 1, ir, k0],
+                     'o', color='0.5', markersize=6, label='r(w=max)')
+            ax1.plot(r_wmax[2 * it + 1, k0], w_av[2 * it + 1, ir, k0],
+                     'o', color='0.5', markersize=6, label='r(w=max)')
         else:
             ax0.plot(r_av[ir_tracer], v_rad_av[2 * it + 1, ir_tracer, k0], 'ko', markersize=10)
             ax1.plot(r_av[ir_tracer], w_av[2 * it + 1, ir_tracer, k0], 'ko', markersize=10)
-            ax0.plot(r_wmax[2 * it + 1, k0], v_rad_av[2 * it + 1, ir, k0], 'o', color='0.5', markersize=6)
-            ax1.plot(r_wmax[2 * it + 1, k0], w_av[2 * it + 1, ir, k0], 'o', color='0.5', markersize=6)
+            ax0.plot(r_wmax[2 * it + 1, k0], v_rad_av[2 * it + 1, ir, k0],
+                     'o', color='0.5', markersize=6)
+            ax1.plot(r_wmax[2 * it + 1, k0], w_av[2 * it + 1, ir, k0],
+                     'o', color='0.5', markersize=6)
 
         ax2.plot(r_av[:irmax], v_rad_av[2 * it + 1, :irmax, k0], color=cm.jet(count_color))
         ax3.plot(r_av[:irmax], w_av[2 * it + 1, :irmax, k0], color=cm.jet(count_color))
@@ -482,8 +489,10 @@ def plot_rim_width(r_tracers_av, U_rad_av, r_av, v_rad_av, w_av,
         ir_c = np.where(r_av == np.int(np.round(r_wcenter[2 * it + 1, k0], -2)))[0][0]
         ir_tracer = np.where(r_av == np.int(np.round(r_tracers_av[2 * it + 1, k0_tracer], -2)))[0][0]
         if it == 0:
-            ax2.plot(r_av[ir_tracer], v_rad_av[2 * it + 1, ir_tracer, k0], 'ko', markersize=10, label='r tracer')
-            ax3.plot(r_av[ir_tracer], w_av[2 * it + 1, ir_tracer, k0], 'ko', markersize=10, label='r tracer')
+            ax2.plot(r_av[ir_tracer], v_rad_av[2 * it + 1, ir_tracer, k0],
+                     'ko', markersize=10, label='r tracer')
+            ax3.plot(r_av[ir_tracer], w_av[2 * it + 1, ir_tracer, k0],
+                     'ko', markersize=10, label='r tracer')
             ax2.plot(r_wmin[2 * it + 1, k0], v_rad_av[2 * it + 1, ir, k0], 'o', color='0.5', markersize=6, label='r(w=min)')
             ax3.plot(r_wmin[2 * it + 1, k0], w_av[2 * it + 1, ir, k0], 'o', color='0.5', markersize=6, label='r(w=min)')
             ax2.plot(r_wcenter[2 * it + 1, k0], v_rad_av[2 * it + 1, ir_c, k0], 'kd', markersize=6, label='r(w=0)')
@@ -546,21 +555,25 @@ def plot_rim_width(r_tracers_av, U_rad_av, r_av, v_rad_av, w_av,
                 ax.plot(r_av[:irmax], var[2*it+1,:irmax,k], color=cm.jet(count_color), label='t='+str(t0))
 
                 if it == 0:
-                    ax.plot(r_av[ir_tracer], var[2*it+1, ir_tracer, k], 'o', color='0.5', markersize=10, label='r tracer (k=0)')
-                    ax.plot(r_wmax[2*it+1, k0], var[2*it+1, ir_max, k], 'ko', markersize=6, label='r(w=max)')
-                    ax.plot(r_wmin[2*it+1, k0], var[2*it+1, ir_min, k], 'kd', markersize=6, label='r(w=min)')
+                    ax.plot(r_av[ir_tracer], var[2*it+1, ir_tracer, k], 'ko', markersize=10, label='r tracer (k=0)')
+                    ax.plot(r_wmax[2*it+1, k0], var[2*it+1, ir_max, k], 'o', color='0.4', markersize=6, label='r(w=max)')
+                    ax.plot(r_wmin[2*it+1, k0], var[2*it+1, ir_min, k], 'kd', color='0.4', markersize=6, label='r(w=min)')
                     ax.plot(r_wcenter[2*it+1, k0], var[2*it+1, ir_c, k], 'kx', markersize=6, label='r(w=0)')
-                    ax.plot(r_av[ir_vrad_grad_max[2*it+1,k0]], var[2*it+1, ir_vrad_grad_max[2*it+1,k0], k], 'ks', markersize=6, label='max(d vrad/dr)')
+                    ax.plot(r_av[ir_vrad_grad_max[2*it+1,k0]], var[2*it+1, ir_vrad_grad_max[2*it+1,k0], k],
+                            's', color='0.4', markersize=6, label='min(d vrad/dr)')
                 else:
-                    ax.plot(r_av[ir_tracer], var[2*it+1, ir_tracer, k], 'o', color='0.5', markersize=10)
-                    ax.plot(r_wmax[2*it+1, k0], var[2*it+1, ir_max, k], 'ko', markersize=6)
-                    ax.plot(r_wmin[2*it+1, k0], var[2*it+1, ir_min, k], 'kd', markersize=6)
+                    ax.plot(r_av[ir_tracer], var[2*it+1, ir_tracer, k], 'ko', markersize=10)
+                    ax.plot(r_wmax[2*it+1, k0], var[2*it+1, ir_max, k], 'ko', color='0.4', markersize=6)
+                    ax.plot(r_wmin[2*it+1, k0], var[2*it+1, ir_min, k], 'd', color='0.4', markersize=6)
                     ax.plot(r_wcenter[2*it+1, k0], var[2*it+1, ir_c, k], 'kx', markersize=6)
-                    ax.plot(r_av[ir_vrad_grad_max[2*it+1,k0]], var[2*it+1, ir_vrad_grad_max[2*it+1,k0], k], 'ks', markersize=6)
-            ax.set_ylabel(var_name)
+                    ax.plot(r_av[ir_vrad_grad_max[2*it+1,k0]], var[2*it+1, ir_vrad_grad_max[2*it+1,k0], k],
+                            's', color='0.4', markersize=6)
+            ax.set_ylabel(var_name + '  [m/s]')
             ax.set_title('z='+str((k_+1)*dx[2])+ ' (k='+str(k_)+')')
             ax.set_xlim(0, r_av[irmax])
-        axis[-1].legend(loc='best', ncol=4)
+        axis[-1].set_xlabel('radius r  [m]')
+        # axis[-1].legend(loc='best', ncol=4)
+        axis[-1].legend(loc='center left', bbox_to_anchor=(-0., -0.4), fontsize=9, ncol=4)
         if var_name == 'w':
             if dx[0] == 100:
                 axis[0].set_ylim(-1.5,1.6)
@@ -583,6 +596,8 @@ def plot_rim_width(r_tracers_av, U_rad_av, r_av, v_rad_av, w_av,
                 axis[1].set_ylim(-.5,5)
                 axis[2].set_ylim(-.5,2.5)
                 axis[3].set_ylim(-1.5,.75)
+        plt.suptitle(var_name, fontsize=18)
+        plt.subplots_adjust(bottom=0.13, right=.95, left=0.1, top=0.95, wspace=0.25, hspace=0.15)
         fig.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
     return
@@ -591,7 +606,7 @@ def plot_rim_width(r_tracers_av, U_rad_av, r_av, v_rad_av, w_av,
 
 
 def plot_v_rad_gradient(U_rad_av, r_av, v_rad_av, w_av, v_rad_gradient,
-                        ir_vrad_grad_max, ir_tracer,
+                        ir_vrad_max, ir_vrad_grad_max, ir_tracer, r_wmax,
                         k0, k0_tracer, irmax, time_av, path_out_figs):
     fig_name = 'v_rad_gradient_k' + str(k0) + '.png'
     fig, axis = plt.subplots(3, 1, figsize=(9, 12), sharex='col')
@@ -599,44 +614,69 @@ def plot_v_rad_gradient(U_rad_av, r_av, v_rad_av, w_av, v_rad_gradient,
     ax1 = axis[1]
     ax2 = axis[2]
     for it, t0 in enumerate(times[1::2]):
+        ir_max = np.where(r_av == np.int(np.round(r_wmax[2 * it + 1, k0], -2)))[0][0]
         count_color = 2 * np.double(it) / len(time_av)
+        if it == 0:
+            print v_rad_av[2 * it + 1, ir_vrad_grad_max[2 * it + 1, k0], k0]
+            ax0.plot(r_av[ir_vrad_grad_max[2 * it + 1, k0]], v_rad_gradient[2 * it + 1, ir_vrad_grad_max[2 * it + 1, k0], k0],
+                     's', color='0.6', markersize=6, label='min gradient(v_rad)')
+            ax1.plot(r_av[ir_vrad_grad_max[2 * it + 1, k0]], v_rad_av[2 * it + 1, ir_vrad_grad_max[2 * it + 1, k0], k0],
+                     's', color='0.6', markersize=6, label='min gradient(v_rad)')
+            ax2.plot(r_av[ir_vrad_grad_max[2 * it + 1, k0]], w_av[2 * it + 1, ir_vrad_grad_max[2 * it + 1, k0], k0],
+                     's', color='0.6', markersize=6, label='min gradient(v_rad)')
+            ax0.plot(r_av[ir_vrad_max[2 * it + 1, k0]], v_rad_gradient[2 * it + 1, ir_vrad_max[2 * it + 1, k0], k0],
+                     'd', color='0.4', markersize=6, label='max v_rad')
+            ax1.plot(r_av[ir_vrad_max[2 * it + 1, k0]], v_rad_av[2 * it + 1, ir_vrad_max[2 * it + 1, k0], k0],
+                     'd', color='0.4', markersize=6, label='max v_rad')
+            ax2.plot(r_av[ir_vrad_max[2 * it + 1, k0]], w_av[2 * it + 1, ir_vrad_max[2 * it + 1, k0], k0],
+                     'd', color='0.4', markersize=6, label='max v_rad')
+            ax0.plot(r_av[ir_max], v_rad_gradient[2 * it + 1, ir_max, k0],
+                     'o', color='0.3', markersize=6, label='max w')
+            ax1.plot(r_av[ir_max], v_rad_av[2 * it + 1, ir_max, k0],
+                     'o', color='0.3', markersize=6, label='max w')
+            ax2.plot(r_av[ir_max], w_av[2 * it + 1, ir_max, k0],
+                     'o', color='0.3', markersize=6, label='max w')
+            ax0.plot(r_av[ir_tracer[2 * it + 1]], v_rad_gradient[2 * it + 1, ir_tracer[2 * it + 1], k0_tracer],
+                     'ok', markersize=8, label='tracer velocity')
+            ax1.plot(r_av[ir_tracer[2 * it + 1]], U_rad_av[2 * it + 1, k0_tracer],
+                     'ok', markersize=8, label='tracer velocity')
+            # ax0.plot(r_av[ir_tracer[2*it+1]],v_rad_av[2*it+1,ir_tracer[2*it+1],k0], 'ko', markersize=6, label='tracer radius')
+            ax2.plot(r_av[ir_tracer[2 * it + 1]], w_av[2 * it + 1, ir_tracer[2 * it + 1], k0],
+                     'ko', markersize=8, label='tracer radius (+velocity)')
         ax0.plot(r_av[:irmax], v_rad_gradient[2 * it + 1, :irmax, k0], color=cm.jet(count_color),
                  label=str((np.amax(np.abs(v_rad_gradient[2 * it + 1, :irmax, k0])))))
         ax1.plot(r_av[:irmax], v_rad_av[2 * it + 1, :irmax, k0], color=cm.jet(count_color), label='t=' + str(t0) + 's')
         ax2.plot(r_av[:irmax], w_av[2 * it + 1, :irmax, k0], color=cm.jet(count_color), label='t=' + str(t0) + 's')
-        # ax0.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
-        #          ':', color='0.25', linewidth=1)
-        # ax1.plot([r_av[2*it+1,k0_tracer], r_av[2*it+1,k0_tracer]], [-10,10],
-        #          ':', color='0.25', linewidth=1)
-        if it == 0:
-            print v_rad_av[2 * it + 1, ir_vrad_grad_max[2 * it + 1, k0], k0]
+        if it>0:
             ax0.plot(r_av[ir_vrad_grad_max[2 * it + 1, k0]],
-                     v_rad_gradient[2 * it + 1, ir_vrad_grad_max[2 * it + 1, k0], k0], 'd', color='0.5', markersize=8,
-                     label='max v_rad')
+                     v_rad_gradient[2 * it + 1, ir_vrad_grad_max[2 * it + 1, k0], k0],
+                     's', color='0.6', markersize=6)
             ax1.plot(r_av[ir_vrad_grad_max[2 * it + 1, k0]], v_rad_av[2 * it + 1, ir_vrad_grad_max[2 * it + 1, k0], k0],
-                     'd', color='0.5', markersize=8, label='max v_rad')
+                     's', color='0.6', markersize=6)
             ax2.plot(r_av[ir_vrad_grad_max[2 * it + 1, k0]], w_av[2 * it + 1, ir_vrad_grad_max[2 * it + 1, k0], k0],
-                     'o', color='0.5', markersize=8, label='max gradient(v_rad)')
-            ax1.plot(r_av[ir_tracer[2 * it + 1]], U_rad_av[2 * it + 1, k0_tracer], 'o', color='0.25', markersize=6,
-                     label='tracer velocity')
+                     's', color='0.6', markersize=6)
+            ax0.plot(r_av[ir_vrad_max[2 * it + 1, k0]], v_rad_gradient[2 * it + 1, ir_vrad_max[2 * it + 1, k0], k0],
+                     'd', color='0.5', markersize=6)
+            ax1.plot(r_av[ir_vrad_max[2 * it + 1, k0]], v_rad_av[2 * it + 1, ir_vrad_max[2 * it + 1, k0], k0],
+                     'd', color='0.5', markersize=6)
+            ax2.plot(r_av[ir_vrad_max[2 * it + 1, k0]], w_av[2 * it + 1, ir_vrad_max[2 * it + 1, k0], k0],
+                     'd', color='0.5', markersize=6)
+            ax0.plot(r_av[ir_max], v_rad_gradient[2 * it + 1, ir_max, k0],
+                     'o', color='0.3', markersize=6)
+            ax1.plot(r_av[ir_max], v_rad_av[2 * it + 1, ir_max, k0],
+                     'o', color='0.3', markersize=6)
+            ax2.plot(r_av[ir_max], w_av[2 * it + 1, ir_max, k0],
+                     'o', color='0.3', markersize=6)
+            ax0.plot(r_av[ir_tracer[2 * it + 1]], v_rad_gradient[2 * it + 1, ir_tracer[2 * it + 1], k0_tracer],
+                     'ko', markersize=8)
+            ax1.plot(r_av[ir_tracer[2 * it + 1]], U_rad_av[2 * it + 1, k0_tracer],
+                     'ko', markersize=8)
             # ax0.plot(r_av[ir_tracer[2*it+1]],v_rad_av[2*it+1,ir_tracer[2*it+1],k0], 'ko', markersize=6, label='tracer radius')
-            ax2.plot(r_av[ir_tracer[2 * it + 1]], w_av[2 * it + 1, ir_tracer[2 * it + 1], k0], 'ko', markersize=6,
-                     label='tracer radius')
-
-        else:
-            ax0.plot(r_av[ir_vrad_grad_max[2 * it + 1, k0]],
-                     v_rad_gradient[2 * it + 1, ir_vrad_grad_max[2 * it + 1, k0], k0], 'd', color='0.5', markersize=8,
-                     label='max v_rad')
-            ax1.plot(r_av[ir_vrad_grad_max[2 * it + 1, k0]], v_rad_av[2 * it + 1, ir_vrad_grad_max[2 * it + 1, k0], k0],
-                     'd', color='0.5', markersize=8)
-            ax2.plot(r_av[ir_vrad_grad_max[2 * it + 1, k0]], w_av[2 * it + 1, ir_vrad_grad_max[2 * it + 1, k0], k0],
-                     'd', color='0.5', markersize=8)
-            ax1.plot(r_av[ir_tracer[2 * it + 1]], U_rad_av[2 * it + 1, k0_tracer], 'o', color='0.25', markersize=6)
-            # ax0.plot(r_av[ir_tracer[2*it+1]],v_rad_av[2*it+1,ir_tracer[2*it+1],k0], 'ko', markersize=6)
-            ax2.plot(r_av[ir_tracer[2 * it + 1]], w_av[2 * it + 1, ir_tracer[2 * it + 1], k0], 'ko', markersize=6)
+            ax2.plot(r_av[ir_tracer[2 * it + 1]], w_av[2 * it + 1, ir_tracer[2 * it + 1], k0],
+                     'ko', markersize=8)
     # ax0.set_ylim(np.amin(v_rad_av[:,:irmax,k0]), np.amax(v_rad_av[:,:irmax,k0]))
     # ax1.set_ylim(np.minimum(np.amin(w_av[:,:irmax,k0]), -np.amax(w_av[:,:irmax,k0])), np.amax(w_av[:,:irmax,k0]))
-    ax2.legend(loc='center left', bbox_to_anchor=(-0., -0.4), fontsize=9, ncol=4)
+    ax2.legend(loc='center left', bbox_to_anchor=(-0., -0.4), fontsize=9, ncol=5)
     ax0.grid()
     ax1.grid()
     ax2.grid()
@@ -686,10 +726,11 @@ def get_number_cps(fullpath_in):
     #     count += 1
     # cp_number = int(lines[count-1].split()[3])
     cp_number = int(lines[-1].split()[3])
-
     f.close()
 
     return cp_number
+
+
 
 def get_radius_vel(fullpath_in, t0, cp_id, n_tracers, n_cps):
     # print('in', fullpath_in)
@@ -717,6 +758,7 @@ def get_radius_vel(fullpath_in, t0, cp_id, n_tracers, n_cps):
     vel_av = np.average(vel)
 
     return r_av, vel_av
+
 # ----------------------------------------------------------------------
 
 def set_input_parameters(args):
