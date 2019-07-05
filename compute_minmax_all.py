@@ -32,6 +32,7 @@ def main():
     args = parser.parse_args()
 
     dTh, z_params, r_params, ic_arr, jc_arr, marg, times = set_input_parameters(args)
+    nt = len(times)
 
     if len(z_params) != len(r_params):
         print('wrong number of parameters! ')
@@ -47,8 +48,8 @@ def main():
 
     id_list = []
     for i, rstar in enumerate(r_params):
-        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-        id_list = np.append(id_list, id)
+        ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        id_list = np.append(id_list, ID)
     n_id = len(id_list)
 
     path_data = 'data_analysis'
@@ -67,8 +68,8 @@ def main():
 
     for var_name in var_list:
         var = np.zeros((n_id, nt, nr, nk))
-        for i, id in enumerate(id_list):
-            fullpath_in = os.path.join(path_root, id, path_data, stats_file_name)
+        for i, ID in enumerate(id_list):
+            fullpath_in = os.path.join(path_root, ID, path_data, stats_file_name)
             root = nc.Dataset(fullpath_in, 'r')
             var[i, :,:,:] = root.groups['stats'].variables[var_name][:nt,:,:]
             root.close()
@@ -82,10 +83,10 @@ def main():
         ax1 = axes[0]
         ax2 = axes[1]
 
-        for i, id in enumerate(id_list):
+        for i, ID in enumerate(id_list):
             pass
-            maxx = ax1.plot(times, var_max[i, :], 'o-', label=id)
-            minn = ax2.plot(times, var_min[i, :], 'o-', label=id)
+            maxx = ax1.plot(times, var_max[i, :], 'o-', label=ID)
+            minn = ax2.plot(times, var_min[i, :], 'o-', label=ID)
         ax1.legend(loc='best', fontsize=10)
         ax2.legend(loc='best', fontsize=10)
         ax1.set_xlim(0, times[-1])
@@ -121,12 +122,12 @@ def main():
 # ----------------------------------
 def plot_minmax_radial(var_name, rad, var_max_arr, var_min_arr, rmax, times, id_list):
     cm = plt.cm.get_cmap('coolwarm')
-    for i, id in enumerate(id_list):
-        print id
-        fullpath_out = os.path.join(path_root, id, 'figs_minmax')
+    for i, ID in enumerate(id_list):
+        print ID
+        fullpath_out = os.path.join(path_root, ID, 'figs_minmax')
         if not os.path.exists(fullpath_out):
             os.mkdir(fullpath_out)
-        figname = var_name + '_minmax_' + id + '_rad.png'
+        figname = var_name + '_minmax_' + ID + '_rad.png'
         fig, axes = plt.subplots(2, 1, figsize=(6, 12))
         ax1 = axes[0]
         ax2 = axes[1]
@@ -141,7 +142,7 @@ def plot_minmax_radial(var_name, rad, var_max_arr, var_min_arr, rmax, times, id_
         ax1.set_ylabel('max(' + var_name + ')')
         ax2.set_title('min(' + var_name + ')')
         ax2.set_xlabel('radius [m]', fontsize=18)
-        fig.suptitle(var_name + '  (' + id + ')')
+        fig.suptitle(var_name + '  (' + ID + ')')
         fig.savefig(os.path.join(fullpath_out, figname))
         plt.close(fig)
     return
@@ -170,9 +171,9 @@ def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
         for istar in range(ng):
             zstar = z_params[istar]
             rstar = r_params[istar]
-            id = 'dTh' + str(dTh)+ '_z' + str(zstar) + '_r' + str(rstar)
-            print('id', id)
-            path_fields = os.path.join(path_root, id, 'fields')
+            ID = 'dTh' + str(dTh)+ '_z' + str(zstar) + '_r' + str(rstar)
+            print('id', ID)
+            path_fields = os.path.join(path_root, ID, 'fields')
             print(path_fields)
 
             for it, t0 in enumerate(times):
@@ -184,8 +185,8 @@ def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
                 minmax[var_name]['max'][it] = np.amax(var[:,jc_arr[0], :kmax])
                 minmax[var_name]['min'][it] = np.amin(var[:,jc_arr[0], :kmax])
                 del var
-            maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=id)
-            minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=id)
+            maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=ID)
+            minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=ID)
         ax1.legend(loc='best', fontsize=10)
         ax2.legend(loc='best', fontsize=10)
         ax1.set_title('max(' + var_name + ')')
@@ -204,7 +205,7 @@ def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
 # compute domain minimum and maximum of variables (s, temperature, w) for each timestep
 def plot_domain_minmax(dTh, z_params, r_params, dx, times,
                        case_name, path_root, save_name, path_out_figs):
-    print('compting min/max domain')
+    print('computing min/max domain')
 
     var_list = ['w', 's', 'temperature', 'theta']
     # var_list = ['theta']
@@ -229,9 +230,9 @@ def plot_domain_minmax(dTh, z_params, r_params, dx, times,
         for istar in range(ng):
             zstar = z_params[istar]
             rstar = r_params[istar]
-            id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-            print('id', id)
-            path_fields = os.path.join(path_root, id, 'fields')
+            ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+            print('id', ID)
+            path_fields = os.path.join(path_root, ID, 'fields')
             print(path_fields)
             for it, t0 in enumerate(times):
                 print('t0='+str(t0))
@@ -243,8 +244,8 @@ def plot_domain_minmax(dTh, z_params, r_params, dx, times,
                 minmax[var_name]['max'][it] = np.amax(var[:,:,:kmax])
                 minmax[var_name]['min'][it] = np.amin(var[:,:,:kmax])
                 del var
-            maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=id)
-            minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=id)
+            maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=ID)
+            minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=ID)
         ax1.legend(loc='best', fontsize=10)
         ax2.legend(loc='best', fontsize=10)
         ax1.set_title('max(' + var_name + ')')
@@ -325,8 +326,8 @@ def set_input_parameters(args):
 
     global case_name
     case_name = args.casename
-    id0 = 'dTh' + str(dTh) + '_z' + str(z_params[0]) + '_r' + str(r_params[0])
-    nml = simplejson.loads(open(os.path.join(path_root, id0, case_name + '.in')).read())
+    ID0 = 'dTh' + str(dTh) + '_z' + str(z_params[0]) + '_r' + str(r_params[0])
+    nml = simplejson.loads(open(os.path.join(path_root, ID0, case_name + '.in')).read())
     global nx, ny, nz, dx
     dx = np.ndarray(3, dtype=np.int)
     nx = nml['grid']['nx']

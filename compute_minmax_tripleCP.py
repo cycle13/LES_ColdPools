@@ -4,6 +4,7 @@ import matplotlib.mlab as mlab
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 import matplotlib.colors as colors
+import matplotlib.patches as mpatches
 import netCDF4 as nc
 import argparse
 import json as simplejson
@@ -52,24 +53,30 @@ def main():
 
     files, times, krange, nml = set_input_parameters(args)
 
-    id = os.path.split(path_in)[1]
-    print ('id: ', id)
+    ID = os.path.split(path_in)[1]
+    print ('id: ', ID)
 
     var_list = ['w', 's', 'temperature', 'theta']
     var_list = ['w']
-    # minmax_domain = plot_minmax_domain(var_list, id, times)
+    # minmax_domain = plot_minmax_domain(var_list, ID, times)
 
+    # min/max at each level
+    # plot_minmax_levels(var_list, ID, times)
 
     # 2CP collision at t=1200s
     # 3CP collision at t=1400s
-    time_bins = [0, 1000, 1300, 2100, times[-1]]
-    time_bins = [0, 1000, 1300, times[-1]]
+    # time_bins = [0, 1000, 1300, 2100, times[-1]]
+    time_bins = [0, 1000, 1400, times[-1]]
     it_bins = [np.argwhere(np.asarray(times) == a)[0][0] for a in time_bins]
+    # subdomains for 3CP collision, centered at (ic, jc) and width (2*di, 2*dj)
+    ic = 43 + np.int(np.round(np.sqrt(3)/6*100))
+    jc = 100
+    di = 5
+    dj = 5
     print('bins: ', it_bins)
-    minmax_levels = plot_minmax_levels(var_list, id, times, time_bins, it_bins)
-    plot_minmax_levels_binned(var_list, id, times, time_bins, it_bins)
+    plot_minmax_levels_binned(var_list, ID, times, time_bins, it_bins, ic, jc, di, dj)
 
-    # minmax_xz = plot_xz_minmax(id, jc_arr, times)
+    # minmax_xz = plot_xz_minmax(ID, jc_arr, times)
 
 
     return
@@ -80,7 +87,7 @@ def main():
 # ----------------------------------
 
 
-def plot_xz_minmax(id, jc_arr, times):
+def plot_xz_minmax(ID, jc_arr, times):
     print('')
     print('computing min/max xz')
     var_list = ['u', 'w', 's', 'temperature']
@@ -100,8 +107,8 @@ def plot_xz_minmax(id, jc_arr, times):
             minmax[var_name]['max'][it] = np.amax(var[:,jc_arr[0],:])
             minmax[var_name]['min'][it] = np.amin(var[:,jc_arr[0],:])
             del var
-        maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=id)
-        minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=id)
+        maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=ID)
+        minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=ID)
         ax1.legend(loc='best', fontsize=10)
         ax2.legend(loc='best', fontsize=10)
         ax1.set_title('max(' + var_name + ')')
@@ -109,7 +116,7 @@ def plot_xz_minmax(id, jc_arr, times):
         ax2.set_title('min(' + var_name + ')')
         ax2.set_ylabel('min(' + var_name + ')')
         ax2.set_xlabel('time [s]')
-        fig.suptitle(id)
+        fig.suptitle(ID)
         fig.savefig(os.path.join(path_out_figs, var_name + '_dTh' + str(dTh) + '_minmax_xz.png'))
         plt.close(fig)
 
@@ -118,7 +125,7 @@ def plot_xz_minmax(id, jc_arr, times):
 
 
 # compute domain minimum and maximum of variables (s, temperature, w) for each timestep
-def plot_minmax_domain(var_list, id, times):
+def plot_minmax_domain(var_list, ID, times):
     print('computing min/max domain')
 
     minmax = {}
@@ -144,8 +151,8 @@ def plot_minmax_domain(var_list, id, times):
             minmax[var_name]['max'][it] = np.amax(var[:,:,:])
             minmax[var_name]['min'][it] = np.amin(var[:,:,:])
             del var
-        maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=id)
-        minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=id)
+        maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=ID)
+        minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=ID)
         ax1.legend(loc='best', fontsize=10)
         ax2.legend(loc='best', fontsize=10)
         ax1.set_title('max('+var_name+')')
@@ -153,8 +160,8 @@ def plot_minmax_domain(var_list, id, times):
         ax2.set_title('min('+var_name+')')
         ax2.set_ylabel('min('+var_name+')')
         ax2.set_xlabel('time [s]')
-        fig.suptitle(id)
-        fig.savefig(os.path.join(path_out_figs, var_name+'_'+str(id)+'_minmax_all.png'))
+        fig.suptitle(ID)
+        fig.savefig(os.path.join(path_out_figs, var_name+'_'+str(ID)+'_minmax_all.png'))
         plt.close(fig)
         print('')
 
@@ -163,7 +170,7 @@ def plot_minmax_domain(var_list, id, times):
 
 
 # compute minimum and maximum of variables (s, temperature, w) at each level for each timestep
-def plot_minmax_levels(var_list, id, times, time_bins, it_bins):
+def plot_minmax_levels(var_list, ID, times):
     print('computing min/max at each level')
 
     cm = plt.cm.get_cmap('coolwarm')
@@ -205,8 +212,8 @@ def plot_minmax_levels(var_list, id, times, time_bins, it_bins):
         ax1.set_xlabel('min('+var_name+')  [m/s]')
         ax2.set_xlabel('max('+var_name+')  [m/s]')
         ax1.set_ylabel('height z [m]')
-        fig.suptitle(id)
-        fig_name = var_name +'_'+str(id)+'_minmax_levels.png'
+        fig.suptitle(ID)
+        fig_name = var_name +'_'+str(ID)+'_minmax_levels.png'
         fig.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
         print('')
@@ -215,18 +222,21 @@ def plot_minmax_levels(var_list, id, times, time_bins, it_bins):
 
 
 # compute minimum and maximum of variables (s, temperature, w) at each level for each timestep
-def plot_minmax_levels_binned(var_list, id, times, time_bins, it_bins):
+def plot_minmax_levels_binned(var_list, ID, times, time_bins, it_bins, ic, jc, di, dj):
     print('computing binned min/max at each level')
 
     cm = plt.cm.get_cmap('coolwarm')
     cm2 = plt.cm.get_cmap('bwr')
     zrange = dx[2] * krange
-    c1 = 0.
-    c2 = 0.
-    c3 = 0.
+    c1 = -1.
+    c2 = -1.
+    c3 = -1.
 
     minmax = {}
     minmax['time'] = times
+    max_single = np.zeros((kmax), dtype=np.double)
+    max_double = np.zeros((kmax), dtype=np.double)
+    max_triple = np.zeros((2, kmax), dtype=np.double)       # 0: total domain, (2*di)x(2*dj) gridpoints around collision point
     for var_name in var_list:
         minmax[var_name] = {}
         minmax[var_name]['max'] = np.zeros((len(times), kmax), dtype=np.double)
@@ -248,27 +258,36 @@ def plot_minmax_levels_binned(var_list, id, times, time_bins, it_bins):
             for k in range(kmax):
                 minmax[var_name]['max'][it, k] = np.amax(var[:, :, k])
                 minmax[var_name]['min'][it, k] = np.amin(var[:, :, k])
-            del var
+
             if t0 < time_bins[1]:
                 ax = axes2[0, :]
-                c = c1 / (it_bins[1] - it_bins[0])
                 c1 += 1.
+                c = c1 / (it_bins[1] - it_bins[0])
+                max_single += np.amax(np.amax(var[:, :, :kmax], axis=0), axis=0)
             elif t0 < time_bins[2]:
                 ax = axes2[1, :]
-                c = c2 / (it_bins[2] - it_bins[1])
                 c2 += 1.
+                c = c2 / (it_bins[2] - it_bins[1])
+                max_double += np.amax(np.amax(var[:, :, :kmax], axis=0), axis=0)
             elif t0 < time_bins[3]:
                 ax = axes2[2, :]
-                c = c3 / (it_bins[3] - it_bins[2])
-                print('c', c)
                 c3 += 1.
+                c = c3 / (it_bins[3] - it_bins[2])
+                max_triple[0,:] += np.amax(np.amax(var[:, :, :kmax], axis=0), axis=0)
+                max_triple[1,:] += np.amax(np.amax(var[ic-di:ic+di, jc-dj:jc+dj, :kmax], axis=0), axis=0)
             else:
                 continue
+
+            del var
 
             ax[0].plot(minmax[var_name]['min'][it, :], zrange, '-',
                        color=cm(c), label='t=' + str(it) + 's')
             ax[1].plot(minmax[var_name]['max'][it, :], zrange, '-',
                        color=cm(c), label='t=' + str(it) + 's')
+
+        max_single /= c1
+        max_double /= c2
+        max_triple /= c3
 
         fig2.subplots_adjust(bottom=0.05, right=.85, left=0.1, top=.95, wspace=0.25)
         for i in range(3):
@@ -283,10 +302,40 @@ def plot_minmax_levels_binned(var_list, id, times, time_bins, it_bins):
             axes2[2, i].set_xlabel('min(' + var_name + ')  [m/s]')
             axes2[2, i].set_xlabel('max(' + var_name + ')  [m/s]')
         fig2.suptitle('min/max of ' + var_name, fontsize=24)
-        fig_name2 = var_name + '_' + str(id) + '_minmax_binned.png'
+        fig_name2 = var_name + '_' + str(ID) + '_minmax_binned.png'
         fig2.savefig(os.path.join(path_out_figs, fig_name2))
         plt.close(fig2)
         print('')
+
+
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey='none', figsize=(15, 5))
+        k0 = 25
+        # s_var = read_in_netcdf_fields('s', os.path.join(path_fields, str(1500) + '.nc'))
+        # var = theta_s(s_var)[:,:,22]
+        # del s_var
+        w_var = read_in_netcdf_fields('w', os.path.join(path_fields, str(1200) + '.nc'))
+        ax1.contourf(w_var[:,:,k0].T)
+        w_var = read_in_netcdf_fields('w', os.path.join(path_fields, str(1500) + '.nc'))
+        aux = np.amax(np.abs(w_var[:,:,k0]))
+        ax2.contourf(w_var[:,:,20].T, levels=np.linspace(-aux,aux,1e2), cmap=cm2)
+        rect_double = mpatches.Rectangle((ic-50,jc-50),2*50,2*50, linewidth=1, edgecolor='grey', facecolor='none')
+        rect = mpatches.Rectangle((ic-di,jc-dj),2*di,2*dj, linewidth=1, edgecolor='k', facecolor='none')
+        ax1.add_patch(rect)
+        ax1.add_patch(rect_double)
+        ax2.add_patch(rect)
+        ax2.add_patch(rect_double)
+        ax3.plot(max_single, zrange, label='single')
+        ax3.plot(max_double, zrange, label='double')
+        ax3.plot(max_triple[0,:], zrange, label='triple')
+        ax3.plot(max_triple[1,:], zrange, label='triple subdomain')
+        ax3.legend()
+        ax1.set_xlabel('min(' + var_name + ')  [m/s]')
+        ax3.set_xlabel('max(' + var_name + ')  [m/s]')
+        ax1.set_ylabel('height z [m]')
+        fig.suptitle('min/max of ' + var_name, fontsize=24)
+        fig_name = var_name + '_' + str(ID) + '_max_binned.png'
+        fig.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
 
     return
 
