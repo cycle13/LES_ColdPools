@@ -44,7 +44,7 @@ def main():
     i0_center, j0_center = define_geometry(case_name, nml)
 
     ng = len(z_params)
-    kmax = np.amax(z_params) + 2000. / dx[2]
+    kmax = np.amax(z_params) / dx[2]
 
 
 

@@ -23,8 +23,8 @@ def main():
     parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("casename")
     parser.add_argument("path")
-    # parser.add_argument("--tmin")
-    # parser.add_argument("--tmax")
+    parser.add_argument("--tmin")
+    parser.add_argument("--tmax")
     args = parser.parse_args()
 
     global cm_bwr, cm_grey, cm_vir, cm_hsv
@@ -34,6 +34,10 @@ def main():
 
     nml = set_input_parameters(args)
     # nt = len(times)
+
+    # threshold on vorticity: vort_c
+    vort_c = 1.5e-2
+
 
     # read in vort-field
     file_name = 'field_vort_yz.nc'
@@ -54,10 +58,101 @@ def main():
     rootgrp.close()
 
 
-    it = 0
-    t0 = 100
+    # plot crosssections to see threshold
+    print''
+    print''
+    fig_name = 'vort_threshold.png'
+    timesample = np.arange(1, 37, 5)
+    print timesample
+    krange = [0,1,2,3]
+    cm = plt.cm.get_cmap('coolwarm')
+    fig, axes = plt.subplots(len(krange), 1, figsize=(10, 10), sharex='all')
+    for ik, k0 in enumerate(krange):
+        ax = axes[ik]
+        ax.plot([0, nx],[0,0], 'k', linewidth=0.5)
+        ax.plot([0, nx],[vort_c, vort_c], 'k', linewidth=0.5)
+        ax.plot([0, nx],[-vort_c, -vort_c], 'k', linewidth=0.5)
+        ax.fill_between([0, nx], -vort_c, vort_c, color='gray', alpha=0.4)
+        for count, it in enumerate(timesample):
+            count_color = np.double(count)/len(timesample)
+            ax.plot(vort_yz[it, :, k0], color=cm(count_color), label='t='+str(time_range[it]))
+        ax.set_title('k='+str(k0))
+    axes[-1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=3, fontsize=8)
+    plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, wspace=0.25)
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
 
-    vort_c = 2e-2
+    fig_name = 'vort_threshold_var.png'
+    fig, axes = plt.subplots(len(krange), 1, figsize=(10, 10), sharex='all')
+    for ik, k0 in enumerate(krange):
+        ax = axes[ik]
+        ax.plot([0, nx], [0, 0], 'k', linewidth=0.5)
+        ax.plot([0, nx], [vort_c**2, vort_c**2], 'k', linewidth=0.5)
+        # ax.plot([0, nx], [-vort_c**2, -vort_c**2], 'k', linewidth=0.5)
+        ax.fill_between([0, nx], 0, vort_c**2, color='gray', alpha=0.4)
+        for count, it in enumerate(timesample):
+            count_color = np.double(count) / len(timesample)
+            ax.plot(vort_yz[it, :, k0]**2, color=cm(count_color), label='t=' + str(time_range[it]))
+        ax.set_title('k=' + str(k0))
+        ax.set_ylim(0,10*vort_c**2)
+    axes[-1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=3, fontsize=8)
+    plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, wspace=0.25)
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+    print''
+    print''
+
+
+
+    ''' FILTER FIELD '''
+    import scipy as sp
+    import scipy.ndimage
+    sigma_x = 1.
+    sigma_y = 1.
+    n= 200
+    m = 1000
+    x = np.zeros((n, n))
+    i = np.random.choice(range(0, n*n), size=m)
+    x[i/n, i%n] = 1.
+    x_conv = sp.ndimage.filters.gaussian_filter(x, [sigma_x, sigma_y], mode='constant')
+
+    for it in timesample:
+        vort_mask = sp.ndimage.filters.gaussian_filter(vort_yz[it,:,:], [sigma_x, sigma_y])
+        fig_name = 'convolution_test_t'+str(it)+'.png'
+        fig, axis = plt.subplots(3, 1, figsize=(10, 10), sharex='all')
+        cf = axis[0].imshow(vort_yz[it,:,:].T, origin='lower')
+        plt.colorbar(cf, ax=axis[0])
+        cf = axis[1].imshow(vort_mask.T, origin='lower')
+        plt.colorbar(cf, ax=axis[1])
+        cf = axis[2].imshow((vort_mask-vort_yz[it,:,:]).T, origin='lower')
+        plt.colorbar(cf, ax=axis[2])
+        plt.suptitle('sigma_x='+str(sigma_x)+', sigma_y='+str(sigma_y))
+        plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, wspace=0.1)
+        plt.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
+
+    for sigma in np.linspace(0.2,1.6,8):
+        fig_name = 'convoultion_vort_threshold_sigma'+str(sigma)+'_var.png'
+        fig, axes = plt.subplots(len(krange), 1, figsize=(10, 10), sharex='all')
+        for ik, k0 in enumerate(krange):
+            ax = axes[ik]
+            ax.plot([0, nx], [0, 0], 'k', linewidth=0.5)
+            ax.plot([0, nx], [vort_c ** 2, vort_c ** 2], 'k', linewidth=0.5)
+            ax.fill_between([0, nx], 0, vort_c ** 2, color='gray', alpha=0.4)
+            for count, it in enumerate(timesample):
+                vort_mask = sp.ndimage.filters.gaussian_filter(vort_yz[it, :, :], [sigma, sigma])
+                count_color = np.double(count) / len(timesample)
+                ax.plot(vort_mask[:, k0] ** 2, color=cm(count_color), label='t=' + str(time_range[it]))
+            ax.set_title('k=' + str(k0))
+            ax.set_ylim(0, 10 * vort_c ** 2)
+        axes[-1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=3, fontsize=8)
+        plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, wspace=0.25)
+        fig.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
+
+
+
+    ''' COMPUTE CIRCULATION '''
     circ = np.zeros(nt)
     area = np.zeros(nt)
     area_ = np.zeros(nt)
@@ -82,18 +177,18 @@ def main():
         # computing circulation
         # !!!!!!!! need to define limits of search area?! (dynamically as it moves with time, maybe read in radius)
 
-
-        test_field = np.zeros((jmax-jmin, kmax), dtype = np.int)
+        # vort_mask = np.masked_where(...)
+        vort_mask = np.zeros((jmax-jmin, kmax), dtype = np.int)
         for j in range(jmin, jmax):
             for k in range(kmax):
-                if vort_yz[it, j,k] >= vort_c:
+                if vort_yz[it, j,k]**2 >= vort_c**2:
                     circ[it] += vort_yz[it, j,k]
-                    test_field[j-jmin, k] = 1
+                    vort_mask[j-jmin, k] = 1
                     vort_mean[it] += vort_yz[it,j,k]
                     vort_mean2 += vort_yz[it,j,k]*vort_yz[it,j,k]
                     if vort_yz[it, j, k] > vort_max_cond[it]:
                         vort_max_cond[it] = vort_yz[it, j, k]
-        area[it] = np.sum(test_field)
+        area[it] = np.sum(vort_mask)
         if area[it] > 0:
             vort_mean[it] /= area[it]
             vort_mean2 /= area[it]
@@ -101,27 +196,28 @@ def main():
         else:
             vort_mean[it] =  0.0
             vort_var[it] = 0.0
-        area[it] = np.sum(test_field)*dx[0]*dx[1]
+        area[it] = np.sum(vort_mask)*dx[0]*dx[1]
         area_[it] = circ[it] / vort_mean[it]*dx[0]*dx[1]
 
-        # # plotting circulation
-        # lvls = np.linspace(vort_min[it], vort_max[it], 1e3)
-        # fig, axes = plt.subplots(1, 2, figsize=(15, 4))
-        # ax = axes[0]
-        # ax.contourf(vort_yz[it, jmin:jmax, :kmax].T, levels=lvls)
-        # ax.plot(vort_max_i[0] - jmin, vort_max_i[1], 'kx', markersize=20)
-        # ax = axes[1]
-        # ax.imshow(test_field[vort_max_i[0]-50-jmin:vort_max_i[0]+25-jmin,:].T, origin='lower')
-        # ax.set_title('circulation: C='+str(circ[it]))
+        # plotting circulation
+        lvls = np.linspace(vort_min[it], vort_max[it], 1e3)
+        fig, axes = plt.subplots(1, 2, figsize=(15, 4))
+        ax = axes[0]
+        ax.contourf(vort_yz[it, :, :kmax].T, levels=lvls)
+        ax.plot(vort_max_i[0], vort_max_i[1], 'kx', markersize=20)
+        ax = axes[1]
+        ax.imshow(vort_mask[vort_max_i[0]-50-jmin:vort_max_i[0]+25-jmin,:].T, origin='lower')
+        ax.set_title('circulation: C='+str(circ[it]))
+        plt.suptitle('t='+str(t0)+'s')
         # plt.tight_layout
-        # plt.suptitle('t='+str(t0)+'s')
-        # fig_name = 'vort_max_t' + str(np.int(t0)) + '.png'
-        # plt.savefig(os.path.join(path_out_figs, fig_name))
-        # plt.close(fig)
+        plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, wspace=0.1)
+        fig_name = 'vort_max_t' + str(np.int(t0)) + '.png'
+        plt.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
 
 
     # plotting time series
-    fig_name = 'vort_ts.png'
+    fig_name = 'vort_threshold_vortc' + str(vort_c)+'.png'
     ncol = 4
     fig, axes = plt.subplots(1, ncol, sharey='none', figsize=(5 * ncol, 5))
     count_color = 2 * np.double(it) / len(time_range)
@@ -155,6 +251,7 @@ def main():
     ax.set_xlabel('time')
     ax.set_ylabel('vort  [1/s]')
     plt.tight_layout()
+    plt.suptitle('vort_c = '+str(vort_c)+'1/s')
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 
@@ -243,18 +340,22 @@ def set_input_parameters(args):
     dV = dx[0] * dx[1] * dx[2]
 
     ''' determine time range '''
-    # if args.tmin:
-    #     tmin = np.int(args.tmin)
-    # else:
-    #     tmin = 100
-    # if args.tmax:
-    #     tmax = np.int(args.tmax)
-    # else:
-    #     tmax = tmin
+    global tmin, tmax
+    if args.tmin:
+        tmin = np.int(args.tmin)
+    else:
+        tmin = 100
+    if args.tmax:
+        tmax = np.int(args.tmax)
+    else:
+        tmax = tmin
     # times = np.arange(tmin, tmax + 100, 100)
     # nt = len(times)
     # print('timerange', times)
-    #
+    print('tmin ', tmin)
+    print('tmax ', tmax)
+    print ''
+
     # return nml, times
     return nml
 
