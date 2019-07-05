@@ -12,6 +12,7 @@ plt.rcParams['ytick.labelsize'] = label_size
 plt.rcParams['lines.linewidth'] = 2
 plt.rcParams['legend.fontsize'] = 10
 plt.rcParams['axes.labelsize'] = 15
+plt.rcParams['lines.markersize'] = 5
 
 def main():
     parser = argparse.ArgumentParser(prog='LES_CP')
@@ -73,7 +74,6 @@ def main():
         id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
         print('id', id)
         fullpath_in = os.path.join(path_root, id, 'tracer_k'+str(k0), 'output')
-        # print(fullpath_in)
 
         # read_in_txtfile(fullpath_in)
         for it, t0 in enumerate(times):
@@ -82,16 +82,24 @@ def main():
             # get_radius(fullpath_in, it, cp_id)
             dist_av[istar, it, k0], U_rad_av[istar, it, k0] = get_radius_vel(fullpath_in, it, cp_id, n_tracers, n_cps)
         r_av = dist_av * dx[0]
-        for it, t0 in enumerate(times[1:]):
+    for it, t0 in enumerate(times[:]):
+        if it > 0:
             drdt_av[:,it,:] = 1./dt_fields * (r_av[:,it,:] - r_av[:,it-1,:])
-        print ''
+            print('........ t0: '+str(t0)+'---', it, drdt_av[:,it,:])
+    print ''
     print ''
 
 
-    ''' (b) plot r_av, dtdt_av, U_rad_av'''
+    ''' (b) plot r_av, drdt_av, U_rad_av '''
     figname = 'CP_rim_dTh' + str(dTh) + '.png'
     title = 'CP rim (dTh=' + str(dTh) + ')'
-    plot_dist_vel(r_av, drdt_av, U_rad_av, [dTh], z_params, r_params, n_params, k0, title, figname)
+    plot_dist_vel(r_av, drdt_av, U_rad_av,
+                  [dTh], z_params, r_params, n_params, k0, title, figname)
+    figname = 'comparison_drdt_Urad_dTh' + str(dTh) + '.png'
+    plot_comparison_drdt_Urad(r_av, drdt_av, U_rad_av,
+                              [dTh], z_params, r_params, n_params, k0, title, figname)
+
+
 
 
 
@@ -330,11 +338,54 @@ def plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_par
     ax1.set_ylabel('drdt_av')
     ax2.set_ylabel('U_rad_av  [m/s]')
     ax1.legend()
-    # fig.suptitle('CP rim (dTh=' + str(dTh) + ')')
     fig.suptitle(title)
     fig.tight_layout()
     fig.savefig(os.path.join(path_out_figs, fig_name))
-    # fig.savefig(os.path.join(path_out_figs, 'CP_rim_dTh' + str(dTh) + '.png'))
+    plt.close(fig)
+
+    return
+
+# ----------------------------------------------------------------------
+def plot_comparison_drdt_Urad(r_av, drdt_av, U_rad_av,
+                              dTh_params, z_params, r_params, n_params, k0,
+                            title, fig_name):
+    fig, axis = plt.subplots(2, n_params, sharex='all', sharey='row', figsize=(6*n_params, 10))
+    print n_params
+    colorlist = ['navy', 'blue', 'forestgreen']
+    for istar in range(n_params):
+        print istar
+        if len(dTh_params) == 1:
+            dTh = dTh_params[0]
+        else:
+            dTh = dTh_params[istar]
+        zstar = z_params[istar]
+        rstar = r_params[istar]
+        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+
+        ax2 = axis[0,istar].twinx()
+        ax2.plot(times, r_av[istar, :, k0], '-o', color='gray',
+                 linewidth=1, markersize=3, markeredgecolor='gray',
+                 label=str(r_av[istar,:2,k0]))
+        axis[0,istar].plot(times[:-1], drdt_av[istar, 1:, k0], 'o-', color=colorlist[0], label='dR/dt')
+        axis[0,istar].plot(times[:], drdt_av[istar, :, k0], 'o-', color=colorlist[1], label='dR/dt')
+        axis[0,istar].plot(times, U_rad_av[istar, :, k0], 'o-', color=colorlist[2], label='U_rad')
+        axis[0,istar].set_title(id)
+        axis[0,istar].legend(loc='best')
+        axis[0,istar].set_ylabel('velocity [m/s]')
+
+        axis[1, istar].plot(times[:-1], drdt_av[istar, 1:, k0]/U_rad_av[istar, :-1, k0],
+                            color=colorlist[0], label='frac')
+        axis[1, istar].plot(times[:], drdt_av[istar, :, k0]/U_rad_av[istar, :, k0], color=colorlist[1], label='frac')
+        axis[1, istar].legend(loc='best')
+        ax2.legend(loc='best')
+
+        axis[1,istar].set_xlabel('time  [s]')
+        axis[1,istar].set_ylabel('fraction [-]')
+
+    fig.suptitle(title)
+    fig.tight_layout()
+    plt.subplots_adjust(bottom=0.08, right=.95, left=0.07, top=0.9, wspace=0.25)
+    fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 
     return
