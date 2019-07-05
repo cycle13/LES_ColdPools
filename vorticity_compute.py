@@ -86,6 +86,29 @@ def main():
     #           >> w[kr=0] = 0.5*(w[kr=-1/2]+w[kr=1/2]) = 0.5*(w[ks=0]+w[ks=-1]) = 0
 
     ''' COMPUTE VORTICITY '''
+    stats_file_name = 'Stats_vorticity.nc'
+    compute_vorticity_xz_yz(n_CPs, ic, jc, nx_half, ny_half, kmax, timerange, stats_file_name)
+
+
+    ''' PLOTTING '''
+    figname = 'vort_yz_max_sum.png'
+    file = nc.Dataset(os.path.join(path_out_fields, stats_file_name))
+    ts_grp = file.groups['timeseries']
+    vort_yz_max = ts_grp.variables['vort_yz_max'][:]
+    vort_yz_min = ts_grp.variables['vort_yz_min'][:]
+    vort_yz_sum = ts_grp.variables['vort_yz_sum'][:]
+    vort_yz_env = ts_grp.variables['vort_yz_env'][:]
+    file.close()
+    plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env, timerange, figname)
+
+    return
+
+
+
+
+
+# ----------------------------------
+def compute_vorticity_xz_yz(n_CPs, ic, jc, nx_half, ny_half, kmax, timerange, stats_file_name):
     # create fields file
     fields_file_name = 'field_vort_yz.nc'
     create_vort_field_file(timerange, fields_file_name, kmax, n_CPs)
@@ -158,13 +181,12 @@ def main():
                                                       kmax)  # NOT interpolating velocity fields
         vort_xz_stag = compute_vorticity_xz_staggered(u[:, jc, :], w[:, jc, :], kmax)
         # compare vorticities
-        plot_comparison_vort_vort_stag(vort_yz, vort_yz_stag, jcshift, jc, kmax, t0)
+        plot_comparison_vort_vort_stag(vort_yz, vort_yz_stag, jc, kmax, t0)
 
 
 
     ''' compute vorticity statistics '''
     # create file for output time arrays
-    stats_file_name = 'Stats_vorticity.nc'
     create_statistics_file(stats_file_name, path_out_fields, nt, timerange)
     add_statistics_variable('vort_yz_max', 's^-1', 'timeseries', stats_file_name, path_out_fields)
     add_statistics_variable('vort_yz_min', 's^-1', 'timeseries', stats_file_name, path_out_fields)
@@ -180,19 +202,13 @@ def main():
     vort_yz_max = np.amax(np.amax(vort_yz, axis=1), axis=1)
     vort_yz_min = np.amin(np.amin(vort_yz, axis=1), axis=1)
     vort_yz_sum = np.sum(np.sum(vort_yz[:, jc_arr[0]:, :], axis=1), axis=1)
-    vort_yz_env = np.sum(vort_yz[:, nx-1, :], axis=1)  # profile outside of coldpool
+    vort_yz_env = np.mean(np.mean(vort_yz[:, nx-10:nx-1, :], axis=1), axis=1)  # profile outside of coldpool
 
     # output vorticity timeseries
     dump_statistics_variable(vort_yz_max, 'vort_yz_max', 'timeseries', stats_file_name, path_out_fields)
     dump_statistics_variable(vort_yz_min, 'vort_yz_min', 'timeseries', stats_file_name, path_out_fields)
     dump_statistics_variable(vort_yz_sum, 'vort_yz_sum', 'timeseries', stats_file_name, path_out_fields)
     dump_statistics_variable(vort_yz_env, 'vort_yz_env', 'timeseries', stats_file_name, path_out_fields)
-
-
-
-    ''' PLOTTING '''
-    figname = 'vort_yz_max_sum.png'
-    plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env, timerange, figname)
 
     return
 
@@ -215,12 +231,11 @@ def plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env
     ax2.set_title('sum vort_yz')
     ax2.set_xlabel('time t  [s]')
     ax2.set_ylabel('sum vort_yz  [1/s]')
-    fig.savefig(os.path.join(path_out_figs, 'vort_yz_max_sum.png'))
     ax3 = axes[2]
     ax3.plot(timerange, vort_yz_env, '-o')
-    ax3.set_title('sum vort_yz env')
+    ax3.set_title('mean vort_yz env')
     ax3.set_xlabel('time t  [s]')
-    ax3.set_ylabel('sum vort_yz  [1/s]')
+    ax3.set_ylabel('vort_yz [1/s]')
     plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, wspace=0.25)
     # fig.savefig(os.path.join(path_out_figs, 'vort_yz_max_sum.png'))
     fig.savefig(os.path.join(path_out_figs, figname))
@@ -342,7 +357,7 @@ def compute_vorticity_xz_staggered(u_, w_, kmax):
 # ----------------------------------------------------------------------
 # PLOTTING
 
-def plot_comparison_vort_vort_stag(vort_yz, vort_yz_stag, jcshift, jc, kmax, t0):
+def plot_comparison_vort_vort_stag(vort_yz, vort_yz_stag, jc, kmax, t0):
     fig, axes = plt.subplots(3, 3, figsize=(15, 12))
 
     ax = axes[0, 0]
