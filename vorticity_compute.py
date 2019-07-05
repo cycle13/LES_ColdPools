@@ -79,27 +79,17 @@ def main():
     #           >> w[ks=-1] = -w[ks=0]
     #           >> w[kr=0] = 0.5*(w[kr=-1/2]+w[kr=1/2]) = 0.5*(w[ks=0]+w[ks=-1]) = 0
 
-    ''' COMPUTE VORTICITY '''
+    # ''' COMPUTE VORTICITY '''
     stats_file_name = 'Stats_vorticity.nc'
-    compute_vorticity_xz_yz(n_CPs, ic, jc, nx_half, ny_half, kmax, timerange, stats_file_name)
-
+    # compute_vorticity_xz_yz(n_CPs, ic, jc, nx_half, ny_half, kmax, timerange, stats_file_name)
+    #
     stats_file_name_phi = 'Stats_vorticity_phi.nc'
-    file_name_in = 'stats_radial_averaged.nc'
-    compute_vorticity_radav(kmax, timerange, file_name_in, stats_file_name_phi)
-
+    # file_name_in = 'stats_radial_averaged.nc'
+    # compute_vorticity_radav(kmax, timerange, file_name_in, stats_file_name_phi)
+    #
 
 
     # ''' PLOTTING '''
-    figname = 'vort_stats_xz.png'
-    file = nc.Dataset(os.path.join(path_out_fields, stats_file_name), 'r')
-    ts_grp = file.groups['timeseries']
-    vort_max = ts_grp.variables['vort_xz_max'][:]
-    vort_min = ts_grp.variables['vort_xz_min'][:]
-    vort_sum = ts_grp.variables['vort_xz_sum'][:]
-    vort_env = ts_grp.variables['vort_xz_env'][:]
-    file.close()
-    plot_vorticity_timeseries(vort_max, vort_min, vort_sum, vort_env, 'vort_xz', timerange, figname)
-
     figname = 'vort_stats_yz.png'
     file = nc.Dataset(os.path.join(path_out_fields, stats_file_name), 'r')
     ts_grp = file.groups['timeseries']
@@ -110,15 +100,30 @@ def main():
     file.close()
     plot_vorticity_timeseries(vort_max, vort_min, vort_sum, vort_env, 'vort_yz', timerange, figname)
 
+    figname = 'vort_stats_xz.png'
+    file = nc.Dataset(os.path.join(path_out_fields, stats_file_name), 'r')
+    ts_grp = file.groups['timeseries']
+    vort_max = ts_grp.variables['vort_xz_max'][:]
+    vort_min = ts_grp.variables['vort_xz_min'][:]
+    vort_sum = ts_grp.variables['vort_xz_sum'][:]
+    vort_env = ts_grp.variables['vort_xz_env'][:]
+    file.close()
+    plot_vorticity_timeseries(vort_max, vort_min, vort_sum, vort_env, 'vort_xz', timerange, figname)
+
     figname = 'vort_stats_phi.png'
     file = nc.Dataset(os.path.join(path_out_fields, stats_file_name_phi), 'r')
     ts_grp = file.groups['timeseries']
-    vort_max = ts_grp.variables['vort_phi_max'][:]
-    vort_min = ts_grp.variables['vort_phi_min'][:]
-    vort_sum = ts_grp.variables['vort_phi_sum'][:]
-    vort_env = ts_grp.variables['vort_phi_env'][:]
+    vort_max_phi = ts_grp.variables['vort_phi_max'][:]
+    vort_min_phi = ts_grp.variables['vort_phi_min'][:]
+    vort_sum_phi = ts_grp.variables['vort_phi_sum'][:]
+    vort_env_phi = ts_grp.variables['vort_phi_env'][:]
     file.close()
-    plot_vorticity_timeseries(vort_max, vort_min, vort_sum, vort_env, 'vort_phi', timerange, figname)
+    plot_vorticity_timeseries(vort_max_phi, vort_min_phi, vort_sum_phi, vort_env_phi, 'vort_phi', timerange, figname)
+
+    figname = 'vort_stats_phi_vs_xz.png'
+    plot_vorticity_timeseries_comparison('vort_phi', 'vort_xz', vort_max_phi, vort_min_phi, vort_sum_phi, vort_env_phi,
+                                         vort_max, vort_min, vort_sum, vort_env,
+                                         'vort_phi vs. vort_xz', timerange, figname)
 
     return
 
@@ -350,6 +355,42 @@ def plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env
     ax3.set_ylabel('vort [1/s]')
     plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, wspace=0.25)
     # fig.savefig(os.path.join(path_out_figs, 'vort_yz_max_sum.png'))
+    plt.suptitle(title)
+    fig.savefig(os.path.join(path_out_figs, figname))
+
+    return
+
+
+def plot_vorticity_timeseries_comparison(name1, name2,
+                                         vort_yz_max1, vort_yz_min1, vort_yz_sum1, vort_yz_env1,
+                                         vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env,
+                                         title, timerange, figname):
+    fig, axes = plt.subplots(1,3, figsize=(15,5))
+    ax1 = axes[0]
+    ax1.plot(timerange, vort_yz_max, 'o-', label = 'max')
+    ax1.plot(timerange, -vort_yz_min, 'o-', label='-min')
+    ax1.plot(timerange, vort_yz_max1, 's-', label = 'max')
+    ax1.plot(timerange, -vort_yz_min1, 's-', label='-min')
+    ax1.legend()
+    ax1.set_title('max vort')
+    ax1.set_xlabel('time t  [s]')
+    ax1.set_ylabel('max vort  [1/s]')
+    ax2 = axes[1]
+    ax2.plot(timerange, vort_yz_sum, '-o', label=name2)
+    ax2.plot(timerange, vort_yz_sum1, 's-', label=name1)
+    ax2.legend(loc='best')
+    ax2.set_title('sum vort')
+    ax2.set_xlabel('time t  [s]')
+    ax2.set_ylabel('sum vort  [1/s]')
+    ax3 = axes[2]
+    ax3.plot(timerange, vort_yz_env, '-o')
+    ax3.plot(timerange, vort_yz_env1, 's-')
+    ax3.set_title('mean vort env')
+    ax3.set_xlabel('time t  [s]')
+    ax3.set_ylabel('vort [1/s]')
+    plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, wspace=0.25)
+    # fig.savefig(os.path.join(path_out_figs, 'vort_yz_max_sum.png'))
+    plt.suptitle(title)
     fig.savefig(os.path.join(path_out_figs, figname))
 
     return
@@ -466,8 +507,8 @@ def compute_vorticity_xz_staggered(u_, w_, kmax):
 
 
 
-# ----------------------------------------------------------------------
-# PLOTTING
+# -----------------------------PLOTTING fields comparison-----------------------------------------
+
 
 def plot_comparison_vort_vort_stag(vort_yz, vort_yz_stag, jc, kmax, t0):
     fig, axes = plt.subplots(3, 3, figsize=(15, 12))
@@ -713,7 +754,6 @@ def define_geometry(case_name, nml):
     return n_CPs
 
 # ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
 
 def create_statistics_file(file_name, path, nt, timerange):#, nk, krange):
     print('-------- create statistics file -------- ')
@@ -754,7 +794,6 @@ def dump_statistics_variable(var_in, var_name, grp_name, file_name, path):
     rootgrp.close()
     return
 
-# ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 
 def create_vort_phi_file(vort_phi, nr, nz, times, file_name):
@@ -831,7 +870,6 @@ def dump_vort_field(name, data, it, t0, file_name):
 
 
 
-# ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 
 def read_in_netcdf_fields(variable_name, fullpath_in):
