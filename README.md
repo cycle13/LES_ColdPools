@@ -32,7 +32,7 @@ Details:
 >        - k_dumped[k] \in {0,1} (0=not dumped, 1=dumped) 
  
  
-**(1c) like v2 but with changes to boundaries to improve performance**
+*(1c) like v2 but with changes to boundaries to improve performance**
 
 `define_cp_rim_v3.py`: 
 
@@ -41,8 +41,9 @@ Details:
 
 
 
-#### (2) Definition of Cold Pool rim width:
-*Computes CP rim width based on dipole of vertical updraft w: distance between positions of maximum and 
+**(1c) Definition of Cold Pool rim width:** 
+
+Computes CP rim width based on dipole of vertical updraft w: distance between positions of maximum and 
 minimum vertical velocity at a given level (width=r(max(w))-r(min(w))) 
 
 ***`rim_width.py`***
@@ -50,6 +51,11 @@ minimum vertical velocity at a given level (width=r(max(w))-r(min(w)))
 
 > OUTPUT:
 > - figures in ``PATH/figs_radial_average``  
+> - appending statistics to ``PATH/data_analysis/stats_radial_averaged.nc``:  location of min(w), max(w) 
+
+
+
+
 
 #### (3) Computation of Cold Pool Height:
 *Computes the CP height based on threshold on entropy anomaly for each column, starting from the top*
@@ -61,7 +67,25 @@ minimum vertical velocity at a given level (width=r(max(w))-r(min(w)))
 > - timeseries with domain maximum values of CP-height, max(w) and height(max(w))
 
 
- #### (4) Vorticity computation CP rim
+
+
+### _______________________________________
+
+### ***Vorticity***
+#### (1) Vorticity computation
+***`vorticity_compute.py`*** [casename CASENAME][path PATH][--tmin TMIN][--tmax TMAX][--kmax KMAX]
+
+**computes x- and y-components of vorticity on crosssections `compute_vorticity_yz`, `compute_vorticity_xz`, interpolating the input fields.** 
+
+> OUTPUT:
+> - (1+2)-D field in ``PATH/fields_vorticity/field_vort_yz.nc``
+> - Statistics (min, max, sum, etc. ) in ``PATH/fields_vorticity/Stats_vorticity.nc``
+
+- Comparison of computation from velocity fields on staggered grid vs. interpolated. )
+- Comparison of x- and y-component on respective crosss-ections
+
+
+#### (2) Vorticity CP rim
 ***`conceptual_model/vorticity_rim.py`*** [casename CASENAME][path PATH]
 
 *computes and saves 4D field (k=0,..kmax) for radial velocity and azimuthal average of all variables*
