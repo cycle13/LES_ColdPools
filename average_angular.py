@@ -59,47 +59,44 @@ def main():
     th_field, r_field = compute_radius(ic, jc, irange, jrange, file_name_rthfield, path_out_data_2D)
 
 
-    print ''
-    print('----- compute radial velocity ----------- ')
-    # creates output-file with v_rad[nt, nx, ny, kmax], v_ran[nt, nx, ny, kmax] and r_field[nx, ny]
-    file_name_vradfield = 'v_rad.nc'    # in 'fields_v_rad'
-    compute_radial_velocity(th_field, r_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data_2D)
-
-
-    print ''
-    print('----- compute angular average ----------- ')
-    # OUTPUT: file with angular averaged statistics, e.g. v_rad[nt, nr, nz]
-    # file_name_stats = 'stats_radial_averaged_test.nc'
-    file_name_stats = 'stats_radial_averaged.nc'
-    compute_angular_average(rmax, times, file_name_stats, path_out_data, path_out_data_2D)
-
-
-    print ''
-    print('----- compute angular average CP height ----------- ')
-    sth = 0.5
-    file_name_CP_height = 'CP_height_' + ID + '_sth' + str(sth) + '.nc' # in path_out_data
-    compute_CP_height_radial_av(rmax, times, file_name_CP_height, path_out_data, path_out_data_2D)
-
-
-
-    print ''
-    print('----- plotting ----------- ')
-    file_name_stats = 'stats_radial_averaged.nc'
-    plot_radially_averaged_vars(times, file_name_stats, path_out_data, path_out_figs)
-    # ----- plot CP height radially averaged
-    file_name_CP_height = 'CP_height_' + id + '_sth' + str(sth) + '.nc' # in path_out_data
-    plot_radially_averaged_CP_height(times, file_name_CP_height, path_out_data)
+    # print ''
+    # print('----- compute radial velocity ----------- ')
+    # # creates output-file with v_rad[nt, nx, ny, kmax], v_ran[nt, nx, ny, kmax] and r_field[nx, ny]
+    # file_name_vradfield = 'v_rad.nc'    # in 'fields_v_rad'
+    # compute_radial_velocity(th_field, r_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data_2D)
+    #
+    #
+    # print ''
+    # print('----- compute angular average ----------- ')
+    # # OUTPUT: file with angular averaged statistics, e.g. v_rad[nt, nr, nz]
+    # # file_name_stats = 'stats_radial_averaged_test.nc'
+    # file_name_stats = 'stats_radial_averaged.nc'
+    # compute_angular_average(rmax, times, file_name_stats, path_out_data, path_out_data_2D)
+    #
+    #
+    # print ''
+    # print('----- compute angular average CP height ----------- ')
+    # sth = 0.5
+    # file_name_CP_height = 'CP_height_' + ID + '_sth' + str(sth) + '.nc' # in path_out_data
+    # compute_CP_height_radial_av(rmax, times, file_name_CP_height, path_out_data, path_out_data_2D)
+    #
+    #
+    #
+    # print ''
+    # print('----- plotting ----------- ')
+    # file_name_stats = 'stats_radial_averaged.nc'
+    # plot_radially_averaged_vars(times, file_name_stats, path_out_data, path_out_figs)
+    # # ----- plot CP height radially averaged
+    # file_name_CP_height = 'CP_height_' + id + '_sth' + str(sth) + '.nc' # in path_out_data
+    # plot_radially_averaged_CP_height(times, file_name_CP_height, path_out_data)
 
     return
 
 
 # _______________________________
-# _______________________________
 def compute_radius(ic, jc, irange, jrange, file_name, path_out_data_2D):
-    r_field = np.zeros((nx, ny), dtype=np.int)  # radius
-    th_field = np.zeros((nx, ny), dtype=np.double)  # angle
-    # irange = 10
-    # jrange = 10
+    r_field = np.zeros((nx, ny), dtype=np.int)          # radius
+    th_field = np.zeros((nx, ny), dtype=np.double)      # angle
     for i in range(irange):
         for j in range(jrange):
             r_field[ic+i, jc+j] = np.round(np.sqrt(i**2+j**2))
@@ -115,22 +112,40 @@ def compute_radius(ic, jc, irange, jrange, file_name, path_out_data_2D):
             th_field[ic-i, jc-j] = np.pi + aux
             th_field[ic+i, jc-j] = 2*np.pi - aux
 
-    # th_range = np.zeros((2, 4 * nx), dtype=np.double)
-    # th_range_aux = np.zeros((nx, ny), dtype=np.int)
-    # r0 = 45
-    # count = 0
-    # for i in range(nx):
-    #     for j in range(ny):
-    #         if r_field[i,j] < r0 + 1 and r_field[i,j] > r0 -1:
-    #             th_range_aux[i, j] = 1
-    #             th_range[0, count] = r_field[i,j]
-    #             th_range[1, count] = th_field[i,j]
-    #             count += 1
+    # complication: difference for scalar fields (on horizontally centered grid points) and horizontal velocities
+    # r_field:              for scalars, w and v_rad, v_tan (have been interpolated)
+    # r_field_half:         for u, v
+    # ic,jc:                on 'full' grid (r_field)
+    # >> easier: first interpolate u, v onto 'full grid' and then compute azimuthal average from interpolated fields!
+    # r_field_halfx = np.zeros((nx, ny), dtype=np.int)  # radius
+    # r_field_halfy = np.zeros((nx, ny), dtype=np.int)  # radius
+    # th_field_half = np.zeros((nx, ny), dtype=np.double)  # angle
+    # ic_half = ic + dx[0] * 0.5
+    # jc_half = jc + dx[1] * 0.5
+    # for i in range(irange):
+    #     for j in range(jrange):
+    #         r_field_halfx[ic + i, jc + j] = np.round(np.sqrt((i + 0.5) ** 2 + j ** 2))
+    #         r_field_halfx[ic - i, jc + j] = r_field_halfx[ic + i, jc + j]
+    #         r_field_halfx[ic - i, jc - j] = r_field_halfx[ic + i, jc + j]
+    #         r_field_halfx[ic + i, jc - j] = r_field_halfx[ic + i, jc + j]
     #
+    #         r_field_halfy[ic + i, jc + j] = np.round(np.sqrt(i ** 2 + (j + 0.5) ** 2))
+    #         r_field_halfy[ic - i, jc + j] = r_field_halfy[ic + i, jc + j]
+    #         r_field_halfy[ic - i, jc - j] = r_field_halfy[ic + i, jc + j]
+    #         r_field_halfy[ic + i, jc - j] = r_field_halfy[ic + i, jc + j]
 
-    fullpath_out = os.path.join(path_out_data_2D, file_name)
-
-
+    # faster computation of r_field
+    #   >> checked: r_field_test = r_field
+    #   >> no computation of th_field
+    # irange_ = (np.arange(0,nx)-ic)**2
+    # jrange_ = (np.arange(0,ny)-jc)**2
+    # r_field_test = np.meshgrid(irange_, jrange_)
+    # irange_halfx = (np.arange(0,nx)-ic+0.5)**2
+    # jrange_halfy = (np.arange(0,ny)-jc+0.5) ** 2
+    # r_field_halfx = np.meshgrid(irange_halfx, jrange_)
+    # r_field_halfy = np.meshgrid(irange_, jrange_halfy)
+    # del irange_, irange_halfx, jrange_, jrange_halfy
+    # print('r_field: ', np.amin(np.abs(r_field - r_field_test)))
 
     fig, axis = plt.subplots(3, 2)
     ax1 = axis[0,0]
@@ -152,19 +167,6 @@ def compute_radius(ic, jc, irange, jrange, file_name, path_out_data_2D):
     # ax4.plot(th_range[1, :])
     plt.savefig(os.path.join(path_out_data_2D, 'test_field.png'))
     plt.close()
-
-
-    # rootgrp = nc.Dataset(fullpath_out, 'w', format='NETCDF4')
-    # nx_ = 200
-    # rootgrp.createDimension('nx', nx_)
-    # rootgrp.createDimension('ny', nx_)
-    # # var = rootgrp.createVariable('r_field', 'f8', ('nx', 'ny'))
-    # # var[:, :] = r_field[:,:]
-    # # var = rootgrp.createVariable('th_field', 'f8', ('nx', 'ny'))
-    # # print('aaa', var.shape, th_field.shape)
-    # # var[:,:] = np.ones(shape=var.shape)
-    # # var[:, :] = th_field[:,:]
-    # rootgrp.close()
 
     return th_field, r_field
 
@@ -191,8 +193,9 @@ def compute_radial_velocity(th_field, r_field, times, filename, ic, jc, rmax, pa
                 v_hor_int[0,i,:] = 0.5*(u[i,:,k0]+u[i-1,:,k0])
             for j in range(1,ny-1):
                 v_hor_int[1,:,j] = 0.5*(v[:,j,:]+v[:,j-1,:])
-
             v_rad_int[it, :, :, k0], v_tan_int[it, :, :, k0] = compute_radial_vel(v_hor_int, th_field)
+
+            # no interpolation:
             # v_hor = np.zeros((2, nx, ny))
             # v_hor[0,:,:] = rootgrp.groups['fields'].variables['u'][:,:,k0]
             # v_hor[1,:,:] = rootgrp.groups['fields'].variables['v'][:,:,k0]
@@ -230,8 +233,8 @@ def compute_radial_velocity(th_field, r_field, times, filename, ic, jc, rmax, pa
         plt.savefig(os.path.join(path_out_data_2D, 'test_field_vrad_vtan_t'+str(t0)+'.png'))
         plt.close()
 
-
-    create_vrad_field(v_rad_int, v_tan_int, r_field, kmax, filename, path_out_data_2D)
+    # dump r_field, th_field, v_rad, v_tan
+    create_vrad_field(v_rad_int, v_tan_int, r_field, th_field, kmax, filename, path_out_data_2D)
     # del v_rad, v_tan
     del v_rad_int, v_tan_int
     return
@@ -280,7 +283,7 @@ def compute_angular_average(rmax, times, file_name, path_out_data, path_out_data
 
 # _______________________________
 
-def create_vrad_field(v_rad, v_tan, r_field, kmax, file_name, path_out_data_2D):
+def create_vrad_field(v_rad, v_tan, r_field, th_field, kmax, file_name, path_out_data_2D):
     # file_name = 'v_rad.nc'
     rootgrp = nc.Dataset(os.path.join(path_out_data_2D, file_name), 'w', format='NETCDF4')
 
@@ -295,6 +298,8 @@ def create_vrad_field(v_rad, v_tan, r_field, kmax, file_name, path_out_data_2D):
     var[:,:,:,:] = v_tan
     var = rootgrp.createVariable('r_field', 'f8', ('nx', 'ny'))
     var[:,:] = r_field
+    var = rootgrp.createVariable('th_field', 'f8', ('nx', 'ny'))
+    var[:,:] = th_field
     rootgrp.close()
 
     return
