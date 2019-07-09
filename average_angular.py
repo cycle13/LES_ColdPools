@@ -22,7 +22,8 @@ def main():
 
     times, nml, ID = set_input_parameters(args)
     print('id: '+ ID)
-    radius = np.int(np.double(ID[12:]) / dx[0])
+    radius = np.int(np.double(ID[12:16]) / dx[0])
+    print('radius: ' + str(radius))
 
     path_out_data = os.path.join(path, 'data_analysis')
     if not os.path.exists(path_out_data):
@@ -52,13 +53,13 @@ def main():
     plot_configuration(ic, jc, path_out_data_2D)
 
 
-    print ''
-    print('----- compute radius ----------- ')
-    # OUTPUT: th_field[nx, ny], r_field[nx, ny]
-    file_name_rthfield = 'r_th_field.nc'    # in 'fields_v_rad'
-    th_field, r_field = compute_radius(ic, jc, irange, jrange, file_name_rthfield, path_out_data_2D)
-
-
+    # print ''
+    # print('----- compute radius ----------- ')
+    # # OUTPUT: th_field[nx, ny], r_field[nx, ny]
+    # file_name_rthfield = 'r_th_field.nc'    # in 'fields_v_rad'
+    # th_field, r_field = compute_radius(ic, jc, irange, jrange, file_name_rthfield, path_out_data_2D)
+    #
+    #
     # print ''
     # print('----- compute radial velocity ----------- ')
     # # creates output-file with v_rad[nt, nx, ny, kmax], v_ran[nt, nx, ny, kmax] and r_field[nx, ny]
@@ -76,19 +77,19 @@ def main():
     #
     # print ''
     # print('----- compute angular average CP height ----------- ')
-    # sth = 0.5
+    sth = 0.5
     # file_name_CP_height = 'CP_height_' + ID + '_sth' + str(sth) + '.nc' # in path_out_data
     # compute_CP_height_radial_av(rmax, times, file_name_CP_height, path_out_data, path_out_data_2D)
-    #
-    #
-    #
-    # print ''
-    # print('----- plotting ----------- ')
-    # file_name_stats = 'stats_radial_averaged.nc'
-    # plot_radially_averaged_vars(times, file_name_stats, path_out_data, path_out_figs)
-    # # ----- plot CP height radially averaged
-    # file_name_CP_height = 'CP_height_' + id + '_sth' + str(sth) + '.nc' # in path_out_data
-    # plot_radially_averaged_CP_height(times, file_name_CP_height, path_out_data)
+
+
+
+    print ''
+    print('----- plotting ----------- ')
+    file_name_stats = 'stats_radial_averaged.nc'
+    plot_radially_averaged_vars(times, file_name_stats, path_out_data, path_out_figs)
+    # ----- plot CP height radially averaged
+    file_name_CP_height = 'CP_height_' + ID + '_sth' + str(sth) + '.nc' # in path_out_data
+    plot_radially_averaged_CP_height(times, file_name_CP_height, path_out_data)
 
     return
 
@@ -192,7 +193,7 @@ def compute_radial_velocity(th_field, r_field, times, filename, ic, jc, rmax, pa
             for i in range(1,nx-1):
                 v_hor_int[0,i,:] = 0.5*(u[i,:,k0]+u[i-1,:,k0])
             for j in range(1,ny-1):
-                v_hor_int[1,:,j] = 0.5*(v[:,j,:]+v[:,j-1,:])
+                v_hor_int[1,:,j] = 0.5*(v[:,j,k0]+v[:,j-1,k0])
             v_rad_int[it, :, :, k0], v_tan_int[it, :, :, k0] = compute_radial_vel(v_hor_int, th_field)
 
             # no interpolation:
@@ -621,7 +622,7 @@ def plot_configuration(ic, jc, path_out):
     ax3.imshow(s[ic, :,:100].T, origin='lower')
     ax3.plot([ic,ic], [0,100], 'k-', linewidth=1)
 
-    radius = np.int(np.double(os.path.basename(path[:-1])[12:])/dx[0])
+    radius = np.int(np.double(os.path.basename(path[:-1])[12:16])/dx[0])
     circle1 = plt.Circle((ic, jc), radius, fill=False, color='r', linewidth=2)
     circle2 = plt.Circle((ic+1, jc+1), radius, fill=False, color='r', linewidth=2)
     circle3 = plt.Circle((ic-1, jc-1), radius, fill=False, color='r', linewidth=2)
@@ -651,9 +652,9 @@ def set_input_parameters(args):
     global case_name
     case_name = args.casename
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
-    id = os.path.basename(path[:])
-    if id == '':
-        id = os.path.basename(path[:-1])
+    ID = os.path.basename(path[:])
+    if ID == '':
+        ID = os.path.basename(path[:-1])
     global nx, ny, nz, dx, gw
     dx = np.ndarray(3, dtype=np.int)
     nx = nml['grid']['nx']
@@ -691,7 +692,7 @@ def set_input_parameters(args):
     print('kmax ', kmax, 'nx ', nx)
     print('')
 
-    return times, nml, id
+    return times, nml, ID
 
 # _______________________________
 
