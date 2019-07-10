@@ -5,8 +5,17 @@ import os
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
+import time
+
 
 from thermodynamic_functions import exner_c, pv_c, sd_c, g, alpha_c
+
+label_size = 10
+plt.rcParams['xtick.labelsize'] = label_size
+plt.rcParams['ytick.labelsize'] = label_size
+plt.rcParams['lines.linewidth'] = 2
+plt.rcParams['legend.fontsize'] = 10
+plt.rcParams['axes.labelsize'] = 15
 
 def main():
 
@@ -16,55 +25,66 @@ def main():
     parser.add_argument("path")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
+    parser.add_argument("--path_tracers")
     args = parser.parse_args()
 
 
+
     times, nml = set_input_output_parameters(args)
+    ic_arr, jc_arr = define_geometry(nml)
+    ic = ic_arr[0]
+    jc = jc_arr[0]
+    irange = np.minimum(nx - ic, ic)
+    jrange = np.minimum(ny - jc, jc)
+    rmax = np.int(np.ceil(np.sqrt(irange ** 2 + jrange ** 2)))
 
-    compute_surface_fluxes(times)
+
+    ''' compute surface fluxes from 3D LES output'''
+    # > output 2d-fields and timeseries of mean values
+    filename_2d = 'surface_fluxes.nc'
+    filename_stats = 'surface_fluxes_stats.nc'
+    compute_surface_fluxes(filename_2d, filename_stats, times)
+    print('')
+
+    # compute azimuthally averaged fluxes
+    # - read in r_field, th_field from fields_v_rad/v_rad.nc
+    # - compute average
+    filename_2d = 'surface_fluxes_t3600.nc'
+    filename_stats = 'surface_fluxes_stats.nc'
+    compute_angular_average(filename_2d, filename_stats, rmax)
+
+    # # compute_surface_flux_constant()
+    # # (1) read in tracer position = CP rim = position of max(v_rad)
+    # # (2) assume profile v_rad(r) = m*r, r<=r_tracer
+    # # (3) compute tracer profile therefrom
+    # if args.path_tracers:
+    #     path_tracers = os.path.join(path, args.path_tracers, 'output')
+    # else:
+    #     path_tracers = os.path.join(path, 'tracer_k' + str(k0), 'output')
+    # print('path tracers: ', path_tracers)
+    # ID = os.path.basename(path[:-1])
+    # n_tracers = get_number_tracers(path_tracers)
+    # n_cps = get_number_cps(path_tracers)
+    # print('number of CPs: ', n_cps)
+    # print('number of tracers per CP: ', n_tracers)
 
 
-    print os.path.join(path, 'stats', 'Stats.'+case_name + '.nc')
-    stats_file = nc.Dataset(os.path.join(path, 'stats', 'Stats.'+case_name + '.nc'))
-    flux_file_stats = nc.Dataset(os.path.join(path_out_fields, 'surface_fluxes_stats.nc'))
-    shf_mean_stats = stats_file.groups['timeseries'].variables['shf_surface_mean'][:]
-    s_flux_mean_stats = stats_file.groups['timeseries'].variables['s_flux_surface_mean'][:]
-    shf_mean = flux_file_stats.variables['shf_surface_mean'][:]
-    s_flux_mean = flux_file_stats.variables['s_flux_surface_mean'][:]
-    times_out = flux_file_stats.variables['time'][:]
-    stats_file.close()
-    flux_file_stats.close()
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-    ax1.plot(shf_mean_stats, '-o', label='shf (stats)', linewidth=3)
-    ax1.plot(shf_mean, '-d', label='shf', linewidth=2)
-    ax2.plot(s_flux_mean_stats, '-o', label='s-flux (stats)', linewidth=3)
-    ax2.plot(s_flux_mean, '-d', label='s-flux', linewidth=3)
-    ax1.legend()
-    plt.show()
+    ''' plotting '''
+    filename_stats = 'surface_fluxes_stats.nc'
+    figname = 'SHF_comparison_stats_vs_computation.png'
+    plot_sfc_fluxes(figname, filename_stats)
 
     return
 
 # ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
-def compute_surface_fluxes(times):
+def compute_surface_fluxes(filename_2d, filename_stats, times):
 
-    # x_half = np.empty((nx), dtype=np.double, order='c')
-    # y_half = np.empty((ny), dtype=np.double, order='c')
     z_half = np.empty((nz), dtype=np.double, order='c')
-    # count = 0
-    # for i in xrange(nx):
-    #     x_half[count] = (i + 0.5) * dx[0]
-    #     count += 1
-    # count = 0
-    # for j in xrange(ny):
-    #     y_half[count] = (j + 0.5) * dx[1]
-    #     count += 1
     count = 0
     for i in xrange(nz):
         z_half[count] = (i + 0.5) * dx[2]
         count += 1
-
     k0 = 0
 
     # COEFFICIENTS
@@ -93,9 +113,7 @@ def compute_surface_fluxes(times):
 
 
     # LOOP OVER TIME
-    filename = 'surface_fluxes.nc'
-    create_output_file_2d(filename, nx, ny, times)
-    filename_stats = 'surface_fluxes_stats.nc'
+    create_output_file_2d(filename_2d, nx, ny, times)
     create_output_file_stats(filename_stats, times)
     for it, t0 in enumerate(times):
         print('it, t0', it, t0)
@@ -125,76 +143,193 @@ def compute_surface_fluxes(times):
         windspeed = compute_windspeed(u, v, u0, v0, gustiness)
 
         # COMPUTE FLUXES
-        for i in range(1,nx - 1):
-            for j in range(1,ny - 1):
-                theta_flux[i,j] = -CH * windspeed[i,j] * (temperature[i,j] * exner_c(Pg - theta_surface))
+        t_ini = time.time()
+        theta_flux = -CH * windspeed * (temperature * exner_c(Pg) - theta_surface)  # no difference to in-loop calculation
+        buoyancy_flux = g * theta_flux / theta_surface
+        for i in range(1,nx-1):
+            for j in range(1,ny-1):
+                # theta_flux[i,j] = -CH * windspeed[i,j] * (temperature[i,j] * exner_c(Pg) - theta_surface)
                 s_flux[i,j] = -CH * windspeed[i,j] * (s[i,j] - s_star)
                 # self.qt_flux[ij] = -self.cq * windspeed[ij] * (PV.values[qt_shift + ijk] - Ref.qtg)
-                # buoyancy_flux = g * ((theta_flux + (eps_vi-1.0)*(theta_surface*self.qt_flux[ij] + Ref.qtg * theta_flux))/(theta_surface*(1.0 + (eps_vi-1)*Ref.qtg)))
-                buoyancy_flux = g * theta_flux / theta_surface
+                # # buoyancy_flux = g * ((theta_flux + (eps_vi-1.0)*(theta_surface*self.qt_flux[ij] + Ref.qtg * theta_flux))/(theta_surface*(1.0 + (eps_vi-1)*Ref.qtg)))
+                # buoyancy_flux = g * theta_flux[i,j] / theta_surface
                 u_flux[i,j] = -CM * interp_2(windspeed[i,j], windspeed[i+1,j]) * (u[i,j] + u0)
                 v_flux[i,j] = -CM * interp_2(windspeed[i,j], windspeed[i,j + 1]) * (v[i,j] + v0)
                 ustar_ = np.sqrt(CM) * windspeed[i,j]
                 friction_velocity[i,j] = ustar_
 
                 shf[i,j] = s_flux[i,j] * rho0 * temperature[i,j]
-
                 s_flux_surface_mean += s_flux[i,j]
                 shf_surface_mean += shf[i,j]
 
-        s_flux_surface_mean /= (nx-2)*(ny-2)
-        shf_surface_mean /= (nx-2)*(ny-2)
-        dump_2d(filename, theta_flux, s_flux, u_flux, v_flux, shf, it, times)
+        # compute domain mean fluxes
+        s_flux_surface_mean /= (nx-2) * (ny-2)
+        shf_surface_mean /= (nx-2) * (ny-2)
+        print('--- time: ', time.time()-t_ini)
+        dump_2d(filename_2d, theta_flux, s_flux, u_flux, v_flux, shf, it, times)
         dump_stats(filename_stats, s_flux_surface_mean, shf_surface_mean, it, times)
+
+
+
+
+
+        # # COMPUTE FLUXES without loop
+        # filename_new = 'surface_fluxes_new.nc'
+        # create_output_file_2d(filename_new, nx, ny, times)
+        # filename_stats_new = 'surface_fluxes_stats_new.nc'
+        # create_output_file_stats(filename_stats_new, times)
+        # t_ini = time.time()
+        # theta_flux = -CH * windspeed * (temperature * exner_c(Pg) - theta_surface)
+        # s_flux = -CH * windspeed * (s - s_star)
+        # shf = s_flux * rho0 * temperature
+        # # self.qt_flux[ij] = -self.cq * windspeed[ij] * (PV.values[qt_shift + ijk] - Ref.qtg)
+        # # buoyancy_flux = g * ((theta_flux + (eps_vi-1.0)*(theta_surface*self.qt_flux[ij] + Ref.qtg * theta_flux))/(theta_surface*(1.0 + (eps_vi-1)*Ref.qtg)))
+        # buoyancy_flux = g * theta_flux / theta_surface
+        # for i in range(1, nx - 1):
+        #     for j in range(1, ny - 1):
+        #         u_flux[i, j] = -CM * interp_2(windspeed[i, j], windspeed[i + 1, j]) * (u[i, j] + u0)
+        #         v_flux[i, j] = -CM * interp_2(windspeed[i, j], windspeed[i, j + 1]) * (v[i, j] + v0)
+        #         ustar_ = np.sqrt(CM) * windspeed[i, j]
+        #         friction_velocity[i, j] = ustar_
+        # # compute domain mean fluxes
+        # s_flux_surface_mean = np.mean(s_flux)
+        # shf_surface_mean = np.mean(shf)
+        # print('--- time: ', time.time()-t_ini)
+        # dump_2d(filename_new, theta_flux, s_flux, u_flux, v_flux, shf, it, times)
+        # dump_stats(filename_stats_new, s_flux_surface_mean, shf_surface_mean, it, times)
 
     return
 
 # ----------------------------------------------------------------------
+
+def compute_angular_average(filename_2d, filename_stats, rmax):
+    # (1) read in 2d-surface flux fields
+    print os.path.join(path, 'fields_fluxes', filename_2d)
+    sfc_flux_file = nc.Dataset(os.path.join(path, 'fields_fluxes', filename_2d), 'r')
+
+    # (2) read in r_field
+    vrad_file = nc.Dataset(os.path.join(path, 'fields_v_rad', 'v_rad.nc'), 'r')
+    r_field = vrad_file.variables['r_field'][:,:]
+    vrad_file.close()
+
+    # (3) compute azimuthal average
+    var_list = ['shf', 'u_flux', 'v_flux', 's_flux', 'th_flux']
+    for var_name in var_list:
+        var_2d = sfc_flux_file.variables[var_name][:, :, :]
+        count = np.zeros(rmax, dtype=np.int)
+        var_av = np.zeros((nt, rmax), dtype=np.double)
+        for i in range(nx):
+            for j in range(ny):
+                r = r_field[i, j]
+                count[r] += 1
+                var_av[:, r] += var_2d[:nt, i, j]
+        for r in range(rmax):
+            if count[r] > 0:
+                var_av[:, r] /= count[r]
+
+        file_out = nc.Dataset(os.path.join(path, 'fields_fluxes', filename_stats), 'r+')
+        nt_ = len(file_out.groups['timeseries'].variables['time'][:])
+        r_grp = file_out.createGroup('rad_av')
+        if not 'nt' in r_grp.dimensions.keys():
+            r_grp.createDimension('nt', nt_)
+        if not 'nr' in r_grp.dimensions.keys():
+            r_grp.createDimension('nr', rmax)
+        if var_name in r_grp.variables.keys():
+            var = r_grp.variables[var_name]
+        else:
+            var = r_grp.createVariable(var_name, 'f8', ('nt', 'nr'))
+        var[:nt,:] = var_av[:,:]
+        file_out.close()
+    sfc_flux_file.close()
+
+    return
+
+
+
+# ----------------------------------------------------------------------
+def plot_sfc_fluxes(figname, filename_stats):
+    try:
+        stats_file = nc.Dataset(os.path.join(path, 'stats', 'Stats.' + case_name + '.nc'))
+    except:
+        stats_file = nc.Dataset(os.path.join(path, 'Stats.' + case_name + '.nc'))
+    flux_file_stats = nc.Dataset(os.path.join(path_out_fields, filename_stats))
+    shf_mean_stats = stats_file.groups['timeseries'].variables['shf_surface_mean'][:]
+    times_stats = stats_file.groups['timeseries'].variables['t'][:]
+    s_flux_mean_stats = stats_file.groups['timeseries'].variables['s_flux_surface_mean'][:]
+    shf_mean = flux_file_stats.groups['timeseries'].variables['shf_surface_mean'][:]
+    s_flux_mean = flux_file_stats.groups['timeseries'].variables['s_flux_surface_mean'][:]
+    times_out = flux_file_stats.groups['timeseries'].variables['time'][:]
+    stats_file.close()
+    flux_file_stats.close()
+
+    nt_ = np.minimum(len(times_out), len(times_stats))
+    if times_stats[:nt].any() != times_out[:nt].any():
+        print('not same times!! not plotting')
+        return
+    else:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+        ax1.plot(times_stats[:nt], shf_mean_stats, '-d', label='shf (stats)', linewidth=3)
+        ax1.plot(times_stats[:nt], shf_mean, '-o', label='shf', linewidth=2)
+        ax2.plot(times_stats[:nt], s_flux_mean_stats, '-d', label='s-flux (stats)', linewidth=3)
+        ax2.plot(times_stats[:nt], s_flux_mean, '-o', label='s-flux', linewidth=3)
+        ax1.set_xlim(0,times_stats[nt_-1])
+        ax2.set_xlim(0,times_stats[nt_-1])
+        ax1.set_xlabel('time  [s]')
+        ax2.set_xlabel('time  [s]')
+        ax1.set_ylabel('mean(SHF)')
+        ax2.set_ylabel('mean(entropy flux)')
+        ax1.legend()
+        plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, wspace=0.3)
+        fig.savefig(os.path.join(path, path_out_figs, figname))
+        plt.close(fig)
+    return
 # ----------------------------------------------------------------------
 
 def create_output_file_2d(filename, nx, ny, times):
-    if os.path.exists(os.path.join(path_out_fields, filename)):
-        print('2d File already existing! Not creating new file')
-    else:
-        rootgrp = nc.Dataset(os.path.join(path_out_fields, filename), 'w', format='NETCDF4')
-        nt = len(times)
-        rootgrp.createDimension('nt', nt)
-        var = rootgrp.createVariable('time', 'f8', ('nt'))
-        var.units = "s"
-        var[:] = times
-        rootgrp.createDimension('nx', nx)
-        rootgrp.createDimension('ny', ny)
+    # if os.path.exists(os.path.join(path_out_fields, filename)):
+    #     print('2d File already existing! Not creating new file')
+    # else:
+    rootgrp = nc.Dataset(os.path.join(path_out_fields, filename), 'w', format='NETCDF4')
+    nt_ = len(times)
+    rootgrp.createDimension('nt', nt_)
+    var = rootgrp.createVariable('time', 'f8', ('nt'))
+    var.units = "s"
+    var[:] = times
+    rootgrp.createDimension('nx', nx)
+    rootgrp.createDimension('ny', ny)
 
-        var = rootgrp.createVariable('th_flux', 'f8', ('nt', 'nx', 'ny'))
-        var.units = "K/m2"
-        var = rootgrp.createVariable('s_flux', 'f8', ('nt', 'nx', 'ny'))
-        var.units = "J/(K m2)"
-        var = rootgrp.createVariable('u_flux', 'f8', ('nt', 'nx', 'ny'))
-        var.units = "1/(ms)"
-        var = rootgrp.createVariable('v_flux', 'f8', ('nt', 'nx', 'ny'))
-        var.units = "1/(ms)"
-        var = rootgrp.createVariable('shf', 'f8', ('nt', 'nx', 'ny'))
-        var.units = "J/m2"
-        rootgrp.close()
+    var = rootgrp.createVariable('th_flux', 'f8', ('nt', 'nx', 'ny'))
+    var.units = "K/m2"
+    var = rootgrp.createVariable('s_flux', 'f8', ('nt', 'nx', 'ny'))
+    var.units = "J/(K m2)"
+    var = rootgrp.createVariable('u_flux', 'f8', ('nt', 'nx', 'ny'))
+    var.units = "1/(ms)"
+    var = rootgrp.createVariable('v_flux', 'f8', ('nt', 'nx', 'ny'))
+    var.units = "1/(ms)"
+    var = rootgrp.createVariable('shf', 'f8', ('nt', 'nx', 'ny'))
+    var.units = "J/m2"
+    rootgrp.close()
 
     return
 
-def create_output_file_stats(filename, times):
-    if os.path.exists(os.path.join(path_out_fields, filename)):
-        print('Stats file already existing! Not creating new file')
-    else:
-        rootgrp = nc.Dataset(os.path.join(path_out_fields, filename), 'w', format='NETCDF4')
-        nt = len(times)
-        rootgrp.createDimension('nt', nt)
-        var = rootgrp.createVariable('time', 'f8', ('nt'))
-        var.units = "s"
-        var[:] = times
 
-        var = rootgrp.createVariable('s_flux_surface_mean', 'f8', ('nt'))
-        var.units = "J/(K m2)"
-        var = rootgrp.createVariable('shf_surface_mean', 'f8', ('nt'))
-        var.units = "J/m2"
-        rootgrp.close()
+def create_output_file_stats(filename, times):
+    # if os.path.exists(os.path.join(path_out_fields, filename)):
+    #     print('Stats file already existing! Not creating new file')
+    # else:
+    rootgrp = nc.Dataset(os.path.join(path_out_fields, filename), 'w', format='NETCDF4')
+    nt_ = len(times)
+    ts_grp = rootgrp.createGroup('timeseries')
+    ts_grp.createDimension('nt', nt_)
+    var = ts_grp.createVariable('time', 'f8', ('nt'))
+    var.units = "s"
+    var[:] = times
+
+    var = ts_grp.createVariable('s_flux_surface_mean', 'f8', ('nt'))
+    var.units = "J/(K m2)"
+    var = ts_grp.createVariable('shf_surface_mean', 'f8', ('nt'))
+    var.units = "J/m2"
+    rootgrp.close()
 
     return
 
@@ -221,21 +356,22 @@ def dump_2d(filename, th_flux, s_flux, u_flux, v_flux, shf, it, times):
     rootgrp.close()
     return
 
+
 def dump_stats(filename, s_flux_surface_mean, shf_surface_mean, it, times):
     rootgrp = nc.Dataset(os.path.join(path_out_fields, filename), 'r+', format='NETCDF4')
-    t_out = rootgrp.variables['time'][:]
+    ts_grp = rootgrp.groups['timeseries']
+    t_out = ts_grp.variables['time'][:]
     if times[it] != t_out[it]:
         print('Not correct output time!!')
         sys.exit()
 
-    var = rootgrp.variables['s_flux_surface_mean']
+    var = ts_grp.variables['s_flux_surface_mean']
     var[it] = s_flux_surface_mean
-    var = rootgrp.variables['shf_surface_mean']
+    var = ts_grp.variables['shf_surface_mean']
     var[it] = shf_surface_mean
     rootgrp.close()
     return
 
-# ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 def interp_2(phi, phip1):
     return 0.5*(phi + phip1)
@@ -257,11 +393,6 @@ def compute_windspeed(u, v, u0, v0, gustiness):
     return speed
 
 
-
-
-
-
-# ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 
 def set_input_output_parameters(args):
@@ -310,7 +441,66 @@ def set_input_output_parameters(args):
 
     return timerange, nml
 
-# _______________________________________________________
+
+def define_geometry(nml):
+    '''--- define geometry ---'''
+    global rstar
+    if case_name == 'ColdPoolDry_double_2D':
+        rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx))
+        isep = 4 * irstar
+        ic1 = np.int(nx / 3)
+        ic2 = ic1 + isep
+        jc1 = np.int(ny / 2)
+        jc2 = jc1
+        ic_arr = [ic1, ic2]
+        jc_arr = [jc1, jc2]
+    elif case_name == 'ColdPoolDry_single_3D':
+        rstar = nml['init']['r']
+        try:
+            print('(ic,jc) from nml')
+            ic = nml['init']['ic']
+            jc = nml['init']['jc']
+        except:
+            print('(ic,jc) NOT from nml')
+            ic = np.int(nx / 2)
+            jc = np.int(ny / 2)
+        ic_arr = [ic]
+        jc_arr = [jc]
+    elif case_name == 'ColdPoolDry_double_3D':
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx))
+        isep = 4 * irstar
+        jsep = 0
+        ic1 = np.int(np.round((nx + 2 * gw) / 3)) - gw
+        jc1 = np.int(np.round((ny + 2 * gw) / 2)) - gw
+        ic2 = ic1 + isep
+        jc2 = jc1 + jsep
+        ic_arr = [ic1, ic2]
+        jc_arr = [jc1, jc2]
+    elif case_name == 'ColdPoolDry_triple_3D':
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
+        d = np.int(np.round(ny / 2))
+        a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
+        ic1 = np.int(np.round(a / 2))  # + gw
+        ic2 = ic1
+        ic3 = ic1 + np.int(np.round(a))
+        jc1 = np.int(np.round(d / 2))  # + gw
+        jc2 = jc1 + d
+        jc3 = jc1 + np.int(np.round(d / 2))
+        ic_arr = [ic1, ic2, ic3]
+        jc_arr = [jc1, jc2, jc3]
+    print('')
+    return ic_arr, jc_arr
+
+
+
 # _______________________________________________________
 def theta_s(s):
     T_tilde = 298.15
