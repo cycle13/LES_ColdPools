@@ -5,6 +5,7 @@ import os
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import time
 
 
@@ -39,41 +40,61 @@ def main():
     rmax = np.int(np.ceil(np.sqrt(irange ** 2 + jrange ** 2)))
 
 
-    ''' compute surface fluxes from 3D LES output'''
-    # > output 2d-fields and timeseries of mean values
-    filename_2d = 'surface_fluxes.nc'
-    filename_stats = 'surface_fluxes_stats.nc'
-    compute_surface_fluxes(filename_2d, filename_stats, times)
-    print('')
+    # ''' compute surface fluxes from 3D LES output'''
+    # # > output 2d-fields and timeseries of mean values
+    # filename_2d = 'surface_fluxes.nc'
+    # filename_stats = 'surface_fluxes_stats.nc'
+    # compute_surface_fluxes(filename_2d, filename_stats, times)
+    # print('')
+    #
+    # ''' compute azimuthally averaged fluxes '''
+    # # - read in r_field, th_field from fields_v_rad/v_rad.nc
+    # # - compute average
+    # filename_2d = 'surface_fluxes.nc'
+    # filename_stats = 'surface_fluxes_stats.nc'
+    # compute_angular_average(filename_2d, filename_stats, rmax)
+    #
+    #
 
-    # compute azimuthally averaged fluxes
-    # - read in r_field, th_field from fields_v_rad/v_rad.nc
-    # - compute average
-    filename_2d = 'surface_fluxes_t3600.nc'
-    filename_stats = 'surface_fluxes_stats.nc'
-    compute_angular_average(filename_2d, filename_stats, rmax)
+    # compute_surface_flux_constant()
+    # (1) read in tracer position = CP rim = position of max(v_rad)
+    # (2) assume profile v_rad(r) = m*r, r<=r_tracer
+    # (3) compute tracer profile therefrom
+    if args.path_tracers:
+        path_tracers = os.path.join(path, args.path_tracers, 'output')
+    else:
+        k0 = 0
+        path_tracers = os.path.join(path, 'tracer_k' + str(k0), 'output')
+    print('path tracers: ', path_tracers)
+    cp_id = 1  # circle ID that is used for statistics
+    n_tracers = get_number_tracers(path_tracers)
+    n_cps = get_number_cps(path_tracers)
+    print('number of CPs: ', n_cps)
+    print('number of tracers per CP: ', n_tracers)
+    dist_tracers_av = np.zeros((nt))
+    U_tracers_av = np.zeros((nt))
+    for it, t0 in enumerate(times):
+        dist_tracers_av[it], U_tracers_av[it] = get_radius_vel(path_tracers, it, cp_id, n_tracers, n_cps)
+    r_tracers_av = dist_tracers_av * dx[0]
+    del dist_tracers_av
+    compute_linear_profiles_Romps(r_tracers_av, U_tracers_av, times)
 
-    # # compute_surface_flux_constant()
-    # # (1) read in tracer position = CP rim = position of max(v_rad)
-    # # (2) assume profile v_rad(r) = m*r, r<=r_tracer
-    # # (3) compute tracer profile therefrom
-    # if args.path_tracers:
-    #     path_tracers = os.path.join(path, args.path_tracers, 'output')
-    # else:
-    #     path_tracers = os.path.join(path, 'tracer_k' + str(k0), 'output')
-    # print('path tracers: ', path_tracers)
-    # ID = os.path.basename(path[:-1])
-    # n_tracers = get_number_tracers(path_tracers)
-    # n_cps = get_number_cps(path_tracers)
-    # print('number of CPs: ', n_cps)
-    # print('number of tracers per CP: ', n_tracers)
+
+
+
+
 
 
 
     ''' plotting '''
     filename_stats = 'surface_fluxes_stats.nc'
-    figname = 'SHF_comparison_stats_vs_computation.png'
-    plot_sfc_fluxes(figname, filename_stats)
+    # figname = 'SHF_comparison_stats_vs_computation.png'
+    # plot_sfc_fluxes(figname, filename_stats)
+
+    filename_stats = 'surface_fluxes_stats.nc'
+    figname = 'fluxes_rav.png'
+    plot_sfc_rad_av(figname, filename_stats)
+
 
     return
 
@@ -202,6 +223,87 @@ def compute_surface_fluxes(filename_2d, filename_stats, times):
 
 # ----------------------------------------------------------------------
 
+def compute_linear_profiles_Romps(r_tracers_av, U_tracers_av, times):
+    ''' linear model '''
+    filename_stats_radav = 'stats_radial_averaged.nc'
+    rootgrp = nc.Dataset(os.path.join(path, 'data_analysis', filename_stats_radav), 'r')
+    v_rad_av = rootgrp.groups['stats'].variables['v_rad'][:, :, :]  # nt, nr, nz
+    r_range = rootgrp.groups['stats'].variables['r'][:]  # nr
+    rootgrp.close()
+    nr = len(r_range)
+    ur_lin = np.zeros((nt, nr))
+    ir_tracer = np.zeros(nt)
+    for it, t0 in enumerate(times):
+        ir_tracer[it] = np.where(r_range == np.int(np.round(r_tracers_av[it], -2)))[0][0]
+        ur_lin[it, :] = U_tracers_av[it] / r_tracers_av[it] * r_range[:]
+
+    print ''
+    rmax_plot = 5e3
+    figname = 'linear_model_Romps.png'
+    fig, axis = plt.subplots(2, 2, figsize=(15, 8))
+    plt.subplots_adjust(bottom=0.25, right=.95, left=0.07, top=0.9, wspace=0.3)
+    ax1 = axis[0, 0]
+    ax2 = axis[0, 1]
+    ax3 = axis[1, 0]
+    ax4 = axis[1, 1]
+    ax1.plot(times, r_tracers_av[:], '-o')
+    ax2.plot(times, U_tracers_av[:], '-o')
+    for it, t0 in enumerate(times):
+        count = np.double(it) / len(times)
+        ax1.plot(t0, r_tracers_av[it], 'o', color=cm.bwr(count))
+        ax2.plot(t0, U_tracers_av[it], 'o', color=cm.bwr(count))
+        ax3.plot(r_range, ur_lin[it, :], '-', color=cm.bwr(count))
+        ax4.plot(r_range, v_rad_av[it, :, 0], '-', color=cm.bwr(count))
+        ax4.plot(r_range[ir_tracer[it]], v_rad_av[it, ir_tracer[it], 0], 'o', color=cm.bwr(count))
+        ax4.plot(r_range, ur_lin[it, :], '-', color=cm.bwr(count), linewidth=1)
+        ax4.plot(r_range[ir_tracer[it]], U_tracers_av[it], 'd', color=cm.bwr(count))
+    ax1.set_title('R(t)')
+    ax2.set_title('U(t)')
+    ax3.set_title('u_r=U/R*r (Romps)')
+    for i, ax in enumerate(axis[0, :]):
+        ax.set_xlabel('time  [s]')
+    ax1.set_xlabel('r  [m]')
+    ax3.set_xlim(0, rmax_plot)
+    ax4.set_xlim(0, rmax_plot)
+    ax3.set_ylim(0, np.amax(v_rad_av[:, :, 0]))
+    ax4.set_ylim(0, np.amax(v_rad_av[:, :, 0]))
+    plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, wspace=0.3, hspace=0.3)
+    fig.savefig(os.path.join(path, path_out_figs, figname))
+    plt.close(fig)
+
+    rmax_plot = 10e3
+    t_list = [0, 7, 13, 18, 24, 30, 36]
+    print('.............')
+    # figname = 'linear_model_Romps_' + path_tracers + '.png'
+    figname = 'linear_model_Romps_large.png'
+    fig, axis = plt.subplots(2, 1, figsize=(15, 8))
+    plt.subplots_adjust(bottom=0.25, right=.95, left=0.07, top=0.9, wspace=0.3)
+    ax1 = axis[0]
+    ax2 = axis[1]
+    for it in t_list:
+        t0 = times[it]
+        count = np.double(it) / len(times)
+        ax1.plot(r_range, ur_lin[it, :], '-', color=cm.winter(count))
+        ax2.plot(r_range, v_rad_av[it, :, 0], '-', color=cm.winter(count), label='t=' + str(t0))
+        ax2.plot(r_range[ir_tracer[it]], v_rad_av[it, ir_tracer[it], 0], 'o', color=cm.winter(count))
+        ax2.plot(r_range[:ir_tracer[it] + 1], ur_lin[it, :ir_tracer[it] + 1], '-', color=cm.winter(count), linewidth=1)
+        ax2.plot(r_range[ir_tracer[it]], U_tracers_av[it], 'd', color=cm.winter(count))
+    ax2.set_title('u_r=U/R*r (Romps)')
+    ax2.legend(loc='best')
+    # for i, ax in enumerate(axis[0, :]):
+    #     ax.set_xlabel('time  [s]')
+    # ax1.set_xlabel('r  [m]')
+    ax1.set_xlim(0, rmax_plot)
+    ax2.set_xlim(0, rmax_plot)
+    ax1.set_ylim(0, np.amax(v_rad_av[:, :, 0]))
+    ax2.set_ylim(0, np.amax(v_rad_av[:, :, 0]))
+    plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, wspace=0.3, hspace=0.3)
+    fig.savefig(os.path.join(path, path_out_figs, figname))
+    plt.close(fig)
+    return
+
+# ----------------------------------------------------------------------
+
 def compute_angular_average(filename_2d, filename_stats, rmax):
     # (1) read in 2d-surface flux fields
     print os.path.join(path, 'fields_fluxes', filename_2d)
@@ -214,6 +316,23 @@ def compute_angular_average(filename_2d, filename_stats, rmax):
 
     # (3) compute azimuthal average
     var_list = ['shf', 'u_flux', 'v_flux', 's_flux', 'th_flux']
+    file_out = nc.Dataset(os.path.join(path, 'fields_fluxes', filename_stats), 'r+')
+    nt_ = len(file_out.groups['timeseries'].variables['time'][:])
+    r_grp = file_out.createGroup('rad_av')
+    if not 'nt' in r_grp.dimensions.keys():
+        r_grp.createDimension('nt', nt_)
+    if not 'nr' in r_grp.dimensions.keys():
+        r_grp.createDimension('nr', rmax)
+    if not 'r' in r_grp.variables.keys():
+        # ri_range = np.arange(0, rmax, dtype=np.int)
+        # r_range = np.arange(0, rmax, dtype=np.double) * dx[0]
+        var = r_grp.createVariable('r', 'f8', ('nr'))
+        var.unit = 'm'
+        var[:] = np.arange(0, rmax, dtype=np.double) * dx[0]
+        var = r_grp.createVariable('ir', 'f8', ('nr'))
+        var.unit = '-'
+        var[:] = np.arange(0, rmax, dtype=np.int)
+
     for var_name in var_list:
         var_2d = sfc_flux_file.variables[var_name][:, :, :]
         count = np.zeros(rmax, dtype=np.int)
@@ -227,19 +346,12 @@ def compute_angular_average(filename_2d, filename_stats, rmax):
             if count[r] > 0:
                 var_av[:, r] /= count[r]
 
-        file_out = nc.Dataset(os.path.join(path, 'fields_fluxes', filename_stats), 'r+')
-        nt_ = len(file_out.groups['timeseries'].variables['time'][:])
-        r_grp = file_out.createGroup('rad_av')
-        if not 'nt' in r_grp.dimensions.keys():
-            r_grp.createDimension('nt', nt_)
-        if not 'nr' in r_grp.dimensions.keys():
-            r_grp.createDimension('nr', rmax)
         if var_name in r_grp.variables.keys():
             var = r_grp.variables[var_name]
         else:
             var = r_grp.createVariable(var_name, 'f8', ('nt', 'nr'))
         var[:nt,:] = var_av[:,:]
-        file_out.close()
+    file_out.close()
     sfc_flux_file.close()
 
     return
@@ -283,7 +395,163 @@ def plot_sfc_fluxes(figname, filename_stats):
         fig.savefig(os.path.join(path, path_out_figs, figname))
         plt.close(fig)
     return
+
+
+
+def plot_sfc_rad_av(figname, filename_stats):
+    try:
+        stats_file = nc.Dataset(os.path.join(path, 'stats', 'Stats.' + case_name + '.nc'))
+    except:
+        stats_file = nc.Dataset(os.path.join(path, 'Stats.' + case_name + '.nc'))
+    shf_mean_stats = stats_file.groups['timeseries'].variables['shf_surface_mean'][:]
+    times_stats = stats_file.groups['timeseries'].variables['t'][:]
+    s_flux_mean_stats = stats_file.groups['timeseries'].variables['s_flux_surface_mean'][:]
+
+    flux_file_stats = nc.Dataset(os.path.join(path_out_fields, filename_stats))
+    r_range = flux_file_stats.groups['rad_av'].variables['r'][:]
+    shf_rav = flux_file_stats.groups['rad_av'].variables['shf'][:,:]
+    s_flux_rav = flux_file_stats.groups['rad_av'].variables['s_flux'][:,:]
+    times_rav = flux_file_stats.groups['timeseries'].variables['time'][:]
+    stats_file.close()
+    flux_file_stats.close()
+
+
+    nt_ = np.minimum(len(times_rav), len(times_stats))
+    ta = np.where(times_rav == tmin)[0][0]
+    tb = np.where(times_rav == tmax)[0][0]
+    rmax_plot = 8e3
+    if times_stats[:nt].any() != times_rav[:nt].any():
+        print('not same times!! not plotting')
+        return
+    else:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+        for it, t0 in enumerate(times_rav[1::3]):
+            if it >= ta and it <= tb:
+                count_color = 3 * np.double(it) / len(times_rav)
+                ax1.plot(r_range, shf_rav[3*it+1, :], color=cm.jet(count_color),
+                        label='t=' + str(np.int(t0)))
+                if it == ta:
+                    ax1.plot(t0, 1e1*shf_mean_stats[3*it+1], 'ok', markersize=8, label='domain mean*1e1')
+                    ax2.plot(t0, 1e1*s_flux_mean_stats[3*it+1], 'ok', markersize=8, label='domain mean*1e1')
+                else:
+                    ax1.plot(t0, 1e1*shf_mean_stats[3*it+1], 'ok', markersize=8)
+                    ax2.plot(t0, 1e1*s_flux_mean_stats[3*it+1], 'ok', markersize=8)
+                ax2.plot(r_range, s_flux_rav[3*it+1, :], color=cm.jet(count_color),
+                        label='t=' + str(np.int(t0)))
+        ax1.set_xlim(0,rmax_plot)
+        ax2.set_xlim(0,rmax_plot)
+        ax1.set_xlabel('time  [s]')
+        ax2.set_xlabel('time  [s]')
+        ax1.set_ylabel('SHF(r)')
+        ax2.set_ylabel('s_flux(r)')
+        # ax1.legend()
+        ax1.legend(loc='upper left', bbox_to_anchor=(.5, -0.15),fontsize=8, ncol=5)
+        plt.suptitle('azimuthally averaged SHF')
+
+        plt.subplots_adjust(bottom=0.25, right=.95, left=0.07, top=0.9, wspace=0.3)
+        fig.savefig(os.path.join(path, path_out_figs, figname))
+        plt.close(fig)
+
+        figname = 'SHF_rav.png'
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+        for it, t0 in enumerate(times_rav[1::3]):
+            if it >= ta and it <= tb:
+                count_color = 3 * np.double(it) / len(times_rav)
+                ax1.plot(r_range, shf_rav[3 * it + 1, :], color=cm.jet(count_color),
+                         label='t=' + str(np.int(t0)))
+                if it == ta:
+                    ax1.plot(t0, 1e1 * shf_mean_stats[3 * it + 1], 'ok', markersize=8, label='domain mean*1e1')
+                    ax2.plot(t0, 1e1 * s_flux_mean_stats[3 * it + 1], 'ok', markersize=8, label='domain mean*1e1')
+                else:
+                    ax1.plot(t0, 1e1 * shf_mean_stats[3 * it + 1], 'ok', markersize=8)
+                    ax2.plot(t0, 1e1 * s_flux_mean_stats[3 * it + 1], 'ok', markersize=8)
+                ax2.plot(r_range, s_flux_rav[3 * it + 1, :], color=cm.jet(count_color),
+                         label='t=' + str(np.int(t0)))
+        ax1.set_xlim(0, rmax_plot)
+        ax2.set_xlim(0, rmax_plot)
+        ax1.set_xlabel('time  [s]')
+        ax2.set_xlabel('time  [s]')
+        ax1.set_ylabel('SHF(r)')
+        ax2.set_ylabel('s_flux(r)')
+        # ax1.legend()
+        ax1.legend(loc='upper left', bbox_to_anchor=(.5, -0.15), fontsize=8, ncol=5)
+        plt.suptitle('azimuthally averaged SHF')
+
+        plt.subplots_adjust(bottom=0.25, right=.95, left=0.07, top=0.9, wspace=0.3)
+        fig.savefig(os.path.join(path, path_out_figs, figname))
+        plt.close(fig)
+
+
+    return
+
+
+# ---------------------------- TRACER STATISTICS -----------------------
+
+def get_number_tracers(fullpath_in):
+    # get number of tracers in each CP
+    f = open(fullpath_in + '/coldpool_tracer_out.txt', 'r')
+    lines = f.readlines()
+    count = 0
+    # while CP age is 0 and CP ID is 1
+    cp_age = int(lines[count].split()[0])
+    cp_ID = int(lines[count].split()[3])
+    print('cp_age', cp_age)
+    while (cp_age == 1 and cp_ID == 1):
+        count += 1
+        cp_age = int(lines[count].split()[0])
+        cp_ID = int(lines[count].split()[3])
+    n_tracers = count
+    f.close()
+
+    return n_tracers
+
+
+
+def get_number_cps(fullpath_in):
+    # get number of tracers in each CP
+    f = open(fullpath_in + '/coldpool_tracer_out.txt', 'r')
+    lines = f.readlines()
+    # count = 0
+    # # while CP age is 0 and CP ID is 1
+    # while (int(lines[count].split()[0]) == 1):
+    #     count += 1
+    # cp_number = int(lines[count-1].split()[3])
+    cp_number = int(lines[-1].split()[3])
+    f.close()
+
+    return cp_number
+
+
+
+def get_radius_vel(fullpath_in, t0, cp_id, n_tracers, n_cps):
+    # print('in', fullpath_in)
+    f = open(fullpath_in + '/coldpool_tracer_out.txt', 'r')
+    # f = open(DIR+EXPID+'/'+child+'/output/irt_tracks_output_pure_sort.txt', 'r')
+    lines = f.readlines()
+    count = 0
+    dist = []
+    vel = []
+
+    count = t0 * n_cps * n_tracers + (cp_id - 1)*n_tracers
+    # while CP age is 0 and CP ID is cp_id
+    timestep = int(lines[count].split()[0])
+    cp_ID = int(lines[count].split()[3])
+    # print(timestep, cp_ID)
+    while (timestep-1 == t0 and int(lines[count].split()[3])==cp_id):
+        columns = lines[count].split()
+        dist.append(float(columns[8]))
+        # vel.append(np.sqrt(float(columns[10])**2 + float(columns[11])**2))
+        vel.append(float(columns[12]))
+        count += 1
+        timestep = int(lines[count].split()[0])
+    f.close()
+    r_av = np.average(dist)
+    vel_av = np.average(vel)
+
+    return r_av, vel_av
+
 # ----------------------------------------------------------------------
+
 
 def create_output_file_2d(filename, nx, ny, times):
     # if os.path.exists(os.path.join(path_out_fields, filename)):
@@ -423,7 +691,7 @@ def set_input_output_parameters(args):
 
 
     ''' determine file range '''
-    global nt
+    global nt, tmin, tmax
     if args.tmin:
         tmin = np.int(args.tmin)
     else:
