@@ -28,113 +28,38 @@ def main():
     parser.add_argument("--kmax")
     args = parser.parse_args()
 
-    global path_in, path_fields, path_out
-    case_name = args.casename
-    case = case_name[12:-3]
-    print('')
-    print('casename: ' + case_name)
-    print('case: '+ case)
-    print('')
-
-    path_in = args.path
-    if os.path.exists(os.path.join(path_in, 'fields')):
-        path_fields = os.path.join(path_in, 'fields')
-    elif os.path.exists(os.path.join(path_in, 'fields_k120')):
-        path_fields = os.path.join(path_in, 'fields_k120')
-    path_out = os.path.join(path_in, 'figs_crosssections')
-    if not os.path.exists(path_out):
-        os.mkdir(path_out)
-    print('path: ', path_in)
-    print('path out: ', path_out)
-    print('')
-
-
-
-    ''' determine file range '''
-    if args.tmin:
-        time_min = np.int(args.tmin)
-    else:
-        time_min = np.int(100)
-    if args.tmax:
-        time_max = np.int(args.tmax)
-    else:
-        time_max = np.int(10000)
-    times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
-             and np.int(name[:-3])>=time_min and np.int(name[:-3])<=time_max]
-    times.sort()
-    print('times', times)
-    files = [str(t)+'.nc' for t in times]
-    print('files', files)
-
-    x_half, y_half, z_half = define_geometry(case_name, files)
+    case, times, files, krange = set_input_parameters(args)
+    icoll, jcoll, ic_arr, jc_arr, x_half, y_half, z_half = define_geometry(case_name, files)
 
     ''' --- auxiliary arrays (since no Grid.pyx) ---'''
     # test file:
     var = read_in_netcdf_fields('s', os.path.join(path_fields, files[0]))
-    plot_configuration(var)
+    plot_configuration(var, np.append(ic_arr, icoll), np.append(jc_arr,jcoll))
 
-    # [nx_, ny_, nz_] = var.shape
-    # x_half = np.empty((nx_), dtype=np.double, order='c')
-    # y_half = np.empty((ny_), dtype=np.double, order='c')
-    # z_half = np.empty((nz_), dtype=np.double, order='c')
-    # count = 0
-    # for i in xrange(nx_):
-    #     x_half[count] = (i + 0.5) * dx
-    #     count += 1
-    # count = 0
-    # for j in xrange(ny_):
-    #     y_half[count] = (j + 0.5) * dy
-    #     count += 1
-    # count = 0
-    # for i in xrange(nz_):
-    #     z_half[count] = (i + 0.5) * dz
-    #     count += 1
-    #
     #
     # ''' (a) compute horizontal convergence''''
     #
-    #
-    ''' (b) plot profiles for w, s for all time-steps '''
-    if args.kmin:
-        kmin = np.int(args.kmin)
-    else:
-        kmin = 0
-    if args.kmax:
-        kmax = np.int(args.kmax)
-    else:
-        kmax = kmin
-    krange = np.arange(kmin, kmax + 1)
-    print('krange: ', krange)
-    print ''
 
-    zrange = np.arange(0, 1)
+    ''' (b) plot profiles for w, s for all time-steps '''
     var_list = ['w', 's']
     # var_list = ['s']
     for k0 in krange:
         print('---- k0: '+str(k0) + '----')
-        # if case == 'double':
-        #     # -- 2D --
-        #     i0 = ic1 + isep
-        #     i_collision = np.int(ic1 + np.round((ic2 - ic1) / 2))  # double 3D
-        #     # plot_y_crosssections(var_list, k0, i0, ic1, jc1, ic2, jc2, files, path_out, path_fields)
-        #
-        #     # -- 2D --
-        #     # j0 = np.int(jc1 + (ic2 - ic1) / 4)
-        #     # plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2, files, path_out, path_fields)
-        if case == 'triple':
+        if case == 'double':
             # -- 3D --
-            j0 = np.int(jc_arr[0] + isep)
+            i0 = ic_arr[0] + isep
+            plot_y_crosssections(var_list, k0, i0, ic_arr[0], jc_arr[0], ic_arr[1], jc_arr[1], files, path_out, path_fields)
+
+            # -- 2D --
+            # j0 = np.int(jc1 + (ic2 - ic1) / 4)
+            # plot_xz_crosssections(var_list, j0, k0, ic_arr[0], jc_arr[0], ic_arr[1], jc_arr[1], files, path_out, path_fields)
+        if case == 'triple':
+            j0 = jcoll
             plot_xz_crosssections(var_list, j0, k0,
                                   ic_arr[0], jc_arr[0], ic_arr[2], jc_arr[2],
                                   x_half, y_half, files, path_out, path_fields)
 
-    #
-    # ''' (c) plot profiles at different levels for collision time '''
-    # # krange_ = [0, 2, 5,10]
-    # krange_ = [1, 3, 4, 6]
-    # krange_ = [0, 1, 2, 3]
-    # # krange_ = [7, 8, 9, 10]
-    # # krange_ = [0, 1, 2, 3]
+    ''' (c) plot profiles at different levels for collision time '''
     krange_ = [1, 4, 10, 15]
     if case == 'single':
         jmin = jc_arr[0] - 80
@@ -142,19 +67,10 @@ def main():
         plot_yz_crosssections_multilevel('s', ic_arr[0], krange_, jmin, jmax,  jc_arr, files, path_out, path_fields)
     if case == 'double':
         # -- 2D --
-        i_collision = np.int(1/2*(ic_arr[0]+ic_arr[1]))
-        plot_yz_crosssections_multilevel('w', i_collision, krange, jmin, jmax,  jc_arr, files, path_out, path_fields)
+        plot_yz_crosssections_multilevel('w', icoll, krange, jmin, jmax,  jc_arr, files, path_out, path_fields)
     elif case == 'triple':
         print 'triple'
         # -- 3D --
-        jc1 = jc_arr[0]
-        j0 = np.int(jc1 + isep)
-        # # plot_xz_crosssections_multilevel('w', j0, krange, ic_arr, jc_arr, files, path_out, path_fields)
-        ic1 = ic_arr[0]
-        ic2 = ic_arr[1]
-        ic3 = ic_arr[2]
-        i0 = ic3 + np.int(gw/2)
-        i0 = 0.5*(ic1+ic2)
         # plot_yz_crosssections_multilevel('w', i0, krange_, jmin, jmax,   jc_arr, files, path_out, path_fields)
         plot_xz_crosssections_multilevel('w', jc_arr[2], krange_, ic_arr, jc_arr, files, path_out, path_fields)
     # print ''
@@ -164,24 +80,28 @@ def main():
 
 # ----------------------------------
 
-def plot_configuration(var):
+def plot_configuration(var, i_arr, j_arr):
     fig, (ax1, ax2)= plt.subplots(1,2)
     ax1.imshow(var[:, :, 0].T, origin='lower')
-    ax1.plot([ic_arr[0], ic_arr[0]], [0, ny-1], 'w', linewidth=1)
-    ax1.plot([0, nx], [jc_arr[0], jc_arr[0]], 'w', linewidth=1)
     ax1.set_xlabel('x')
     ax1.set_ylabel('y')
     plt.tight_layout()
     ax1.set_xlim(0,nx)
     ax1.set_ylim(0,ny)
     ax2.contourf(var[:, :, 0].T, origin='lower')
-    ax2.plot([ic_arr[0], ic_arr[0]], [0, ny-1], 'w', linewidth=1)
-    ax2.plot([0, nz], [jc_arr[0], jc_arr[0]], 'w', linewidth=1)
     ax2.set_xlabel('x')
+    print i_arr, j_arr
+    for ic in i_arr:
+        ax1.plot([ic, ic], [0, ny-1], 'w', linewidth=1)
+        ax2.plot([ic, ic], [0, ny-1], 'w', linewidth=1)
+    for jc in j_arr:
+        ax1.plot([0, nx], [jc,jc], 'w', linewidth=1)
+        ax2.plot([0, nx], [jc,jc], 'w', linewidth=1)
+
     plt.tight_layout()
-    ax2.set_xlim(70,130)
-    ax2.set_ylim(120,180)
-    print('gw', gw, ic_arr[0])
+    ax2.set_xlim(200,600)
+    ax2.set_ylim(200,600)
+    # print('gw', gw, ic_arr[0])
     ax2.set_aspect('equal')
     plt.savefig(os.path.join(path_out, 'initial.png'))
     plt.close()
@@ -201,7 +121,6 @@ def plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2,
     # x_arr = dx*np.arange(0,nx)
 
     print('j0', j0, 'jc2', jc2)
-    # j0 = jc2
 
     for var_name in var_list:
         var_min1 = 9999.9       # min/max along axis through CP 1
@@ -274,8 +193,8 @@ def plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2,
         # Put a legend below current axis
         ax3.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
                    fancybox=True, shadow=True, ncol=5)
-        plt.suptitle(var_name + ' z='+str(k0*dz)+'m  (k='+str(k0)+')', fontsize=21  )
-        plt.savefig(os.path.join(path_out, 'xz_plane_' + var_name + '_z' + str(np.int(k0*dz)) + 'm.png'))
+        plt.suptitle(var_name + ' z='+str(k0*dx[2])+'m  (k='+str(k0)+')', fontsize=21  )
+        plt.savefig(os.path.join(path_out, 'xz_plane_' + var_name + '_z' + str(np.int(k0*dx[2])) + 'm.png'))
         plt.close()
     return
 
@@ -370,7 +289,7 @@ def plot_xz_crosssections_multilevel(var_name, j0, krange, ic_arr, jc_arr,
     plt.ylabel('y')
     for n,k in enumerate(krange):
         plt.subplot(nline, 1, n+2)
-        plt.title('k='+str(k)+', z='+str(dz*k)+'m')
+        plt.title('k='+str(k)+', z='+str(dx[2]*k)+'m')
         plt.ylabel(var_name)
         plt.xlabel('y')
     plt.subplot(nline,1,nline)
@@ -425,7 +344,7 @@ def plot_yz_crosssections_multilevel(var_name, i0, krange, jmin, jmax,  jc_arr, 
     plt.ylabel('y')
     for n,k in enumerate(krange):
         plt.subplot(nline, 1, n+2)
-        plt.title('k='+str(k)+', z='+str(dz*k)+'m, max=' + str(np.round(max[n], 1)))
+        plt.title('k='+str(k)+', z='+str(dx[2]*k)+'m, max=' + str(np.round(max[n], 1)))
         plt.ylabel(var_name)
         plt.xlabel('y')
     plt.subplot(nline,1,nline)
@@ -440,27 +359,79 @@ def plot_yz_crosssections_multilevel(var_name, i0, krange, jmin, jmax,  jc_arr, 
 
 
 # ----------------------------------
+def set_input_parameters(args):
+    print ''' setting parameters '''
+    global path_in, path_fields, path_out
+    path_in = args.path
+    if os.path.exists(os.path.join(path_in, 'fields')):
+        path_fields = os.path.join(path_in, 'fields')
+    path_out = os.path.join(path_in, 'figs_crosssections')
+    if not os.path.exists(path_out):
+        os.mkdir(path_out)
+    print('path: ', path_in)
+    print('path out: ', path_out)
+    print('')
+
+    global case_name
+    case_name = args.casename
+    case = case_name[12:-3]
+    print('')
+    print('casename: ' + case_name)
+    print('case: ' + case)
+    print('')
+
+
+    ''' determine file range '''
+    if args.tmin:
+        time_min = np.int(args.tmin)
+    else:
+        time_min = np.int(100)
+    if args.tmax:
+        time_max = np.int(args.tmax)
+    else:
+        time_max = np.int(10000)
+    times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
+             and np.int(name[:-3]) >= time_min and np.int(name[:-3]) <= time_max]
+    times.sort()
+    print('times', times)
+    files = [str(t) + '.nc' for t in times]
+    # print('files', files)
+    print('')
+
+    if args.kmin:
+        kmin = np.int(args.kmin)
+    else:
+        kmin = 0
+    if args.kmax:
+        kmax = np.int(args.kmax)
+    else:
+        kmax = kmin
+    krange = np.arange(kmin, kmax + 1)
+    print('krange: ', krange)
+    print ''
+
+    return case, times, files, krange
+
+# ----------------------------------
 def define_geometry(case_name, files):
     print 'define geometry'
-    global nx, ny, nz, dx, dy, dz, gw
+    global nx, ny, nz, dx, gw
     nml = simplejson.loads(open(os.path.join(path_in, case_name + '.in')).read())
     nx = nml['grid']['nx']
     ny = nml['grid']['ny']
     nz = nml['grid']['nz']
-    dx = nml['grid']['dx']
-    dy = nml['grid']['dy']
-    dz = nml['grid']['dz']
+    dx = np.ndarray(3, dtype=np.int)
+    dx[0] = nml['grid']['dx']
+    dx[1] = nml['grid']['dy']
+    dx[2] = nml['grid']['dz']
     gw = nml['grid']['gw']
 
     # set coordinates for plots
     # (a) double 3D
-    global ic_arr, jc_arr
     global isep
 
     if case_name == 'ColdPoolDry_single_3D':
         rstar = nml['init']['r']
-        irstar = np.int(np.round(rstar / dx))
-        zstar = nml['init']['h']
         try:
             ic = nml['init']['ic']
             jc = nml['init']['jc']
@@ -478,7 +449,6 @@ def define_geometry(case_name, files):
         except:
             rstar = 5000.0  # half of the width of initial cold-pools [m]
         irstar = np.int(np.round(rstar / dx))
-        # zstar = nml['init']['h']
         isep = 4 * irstar
         ic1 = np.int(nx / 3)  # np.int(Gr.dims.ng[0] / 3)
         ic2 = ic1 + isep
@@ -492,35 +462,41 @@ def define_geometry(case_name, files):
         except:
             rstar = 5000.0  # half of the width of initial cold-pools [m]
         irstar = np.int(np.round(rstar / dx))
-        # zstar = nml['init']['h']
         isep = 4 * irstar
         jsep = 0
         # ic1 = np.int(np.round((nx + 2 * gw) / 3)) - gw
         ic1 = np.int(np.round((nx - gw) / 3)) + 1
-        jc1 = np.int(np.round((ny + 2 * gw) / 2)) - gw
         ic2 = ic1 + isep
+        jc1 = np.int(np.round((ny + 2 * gw) / 2)) - gw
         jc2 = jc1 + jsep
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
+        icoll = 0.5*(ic1+ic2)
+        jcoll = 0.5*(jc1+jc2)
     elif case_name == 'ColdPoolDry_triple_3D':
         try:
             rstar = nml['init']['r']
         except:
             rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
-        d = np.int(np.round(ny / 2))
-        dhalf = np.int(np.round(ny / 4))
-        a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
-        ic1 = np.int(np.round(a / 2))  # + gw
+        d = nml['init']['d']
+        i_d = np.int(np.round(d / dx[0]))
+        a = np.int(np.round(i_d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
+        idhalf = np.int(np.round(i_d / 2))
+        r_int = np.int(np.round(np.sqrt(3.) / 6 * i_d))  # radius of inscribed circle
+        # point of 3-CP collision (ic, jc)
+        ic = np.int(np.round(nx / 2))
+        jc = np.int(np.round(ny / 2))
+        ic1 = ic - r_int
         ic2 = ic1
-        ic3 = ic1 + np.int(np.round(a))
-        jc1 = np.int(np.round(d / 2))  # + gw
-        jc2 = jc1 + d
-        jc3 = jc1 + np.int(np.round(d / 2))
+        print('------', ic, a, r_int)
+        ic3 = ic + (a - r_int)
+        jc1 = jc - idhalf
+        jc2 = jc + idhalf
+        jc3 = jc
         ic_arr = [ic1, ic2, ic3]
         jc_arr = [jc1, jc2, jc3]
-
-        isep = dhalf
+        icoll = ic
+        jcoll = jc
 
     print('ic, jc: ', ic_arr, jc_arr)
 
@@ -529,24 +505,23 @@ def define_geometry(case_name, files):
     # test file:
     var = read_in_netcdf_fields('u', os.path.join(path_fields, files[0]))
     [nx_, ny_, nz_] = var.shape
-
     x_half = np.empty((nx_), dtype=np.double, order='c')
     y_half = np.empty((ny_), dtype=np.double, order='c')
     z_half = np.empty((nz_), dtype=np.double, order='c')
     count = 0
     for i in xrange(nx_):
-        x_half[count] = (i + 0.5) * dx
+        x_half[count] = (i + 0.5) * dx[0]
         count += 1
     count = 0
     for j in xrange(ny_):
-        y_half[count] = (j + 0.5) * dy
+        y_half[count] = (j + 0.5) * dx[1]
         count += 1
     count = 0
     for i in xrange(nz_):
-        z_half[count] = (i + 0.5) * dz
+        z_half[count] = (i + 0.5) * dx[2]
         count += 1
 
-    return x_half, y_half, z_half
+    return icoll, jcoll, ic_arr, jc_arr, x_half, y_half, z_half
 
 # ----------------------------------
 def read_in_netcdf_fields(variable_name, fullpath_in):
