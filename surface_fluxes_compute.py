@@ -4,8 +4,9 @@ import json as simplejson
 import os
 import numpy as np
 import sys
+import matplotlib as mpl
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
+# import matplotlib.cm as cm
 import time
 
 
@@ -77,9 +78,15 @@ def main():
         dist_tracers_av[it], U_tracers_av[it] = get_radius_vel(path_tracers, it, cp_id, n_tracers, n_cps)
     r_tracers_av = dist_tracers_av * dx[0]
     del dist_tracers_av
-    compute_linear_profiles_Romps(r_tracers_av, U_tracers_av, times)
+    u_rad_lin = compute_linear_profiles_Romps(r_tracers_av, U_tracers_av, times)
 
-
+    shf_rad_lin, shf_mean_lin = compute_surface_flux_1d(u_rad_lin, times, 'test_shf_1d_lin.png')
+    root = nc.Dataset(os.path.join(path, 'data_analysis', 'stats_radial_averaged.nc'))
+    times_rav = root.groups['timeseries'].variables['time'][:]
+    r_range = root.groups['stats'].variables['r'][:]
+    u_rad = root.groups['stats'].variables['v_rad'][:,:,0]      # (nt, nr, nz)
+    root.close()
+    shf_rad, shf_mean = compute_surface_flux_1d(u_rad, times, 'test_shf_1d_normal.png')
 
 
 
@@ -88,17 +95,154 @@ def main():
 
     ''' plotting '''
     filename_stats = 'surface_fluxes_stats.nc'
-    # figname = 'SHF_comparison_stats_vs_computation.png'
-    # plot_sfc_fluxes(figname, filename_stats)
+    figname = 'SHF_comparison_stats_vs_computation.png'
+    plot_sfc_fluxes(figname, filename_stats)
 
     filename_stats = 'surface_fluxes_stats.nc'
     figname = 'fluxes_rav.png'
     plot_sfc_rad_av(figname, filename_stats)
 
+    figname = 'fluxes_rad_av_comparison.png'
+    rmax_plot = 9e3
+    fig, (axis) = plt.subplots(1, 3, figsize=(16, 5))
+    ax1 = axis[0]
+    ax2 = axis[1]
+    ax3 = axis[2]
+    tstep = 6
+    ta = np.where(times_rav == tmin)[0][0]
+    tb = np.where(times_rav == tmax)[0][0]
+    for it, t0 in enumerate(times_rav[0::tstep]):
+        if it >= ta and it <= tb:
+            count_color = tstep * np.double(it) / len(times_rav)
+            ax1.plot(r_range, shf_rad_lin[it,:],
+                     color=mpl.cm.winter(count_color), label='t=' + str(np.int(t0)))
+            ax2.plot(r_range, shf_rad[it,:],
+                     color=mpl.cm.winter(count_color), label='t=' + str(np.int(t0)))
+    ax3.plot(times_rav, shf_mean_lin, label='SHF lin')
+    ax3.plot(times_rav, shf_mean, label='SHF')
+    ax1.set_xlim(0, rmax_plot)
+    ax2.set_xlim(0, rmax_plot)
+    ax3.set_xlim(0, times_rav[-1])
+    ax1.set_title('SHF linear v_rad')
+    ax2.set_title('SHF from velocity output')
+    ax3.set_title('mean SHF')
+    for i,ax in enumerate(axis):
+        ax.legend(loc='best')
+    plt.subplots_adjust(bottom=0.1, right=.98, left=0.06, top=0.9, wspace=0.2)
+    fig.savefig(os.path.join(path, path_out_figs, figname))
+    plt.close(fig)
 
     return
 
 # ----------------------------------------------------------------------
+
+def compute_surface_flux_1d(u_field_1d, times, figname):
+    print('--- compute 1D surface flux ---')
+    # COEFFICIENTS
+    cm = 0.001229  # bulk coefficient for momentum flux (from Rico-case)
+    ch = 0.001094  # bulk coefficient for heat flux (from Rico-case)
+    # self.cq = 0.001133
+    z0 = 0.00015
+    z_half0 = 0.5*dx[2]
+    CM = cm * (np.log(20.0 / z0) / np.log(z_half0 / z0)) ** 2
+    CH = ch * (np.log(20.0 / z0) / np.log(z_half0 / z0)) ** 2
+
+    # REFERENCE VALUES
+    Pg = 1.0e5
+    Tg = 300.0
+    qtg = 0.0
+    theta_surface = Tg * exner_c(Pg)
+    pv_star = pv_c(Pg, qtg, qtg)
+    pd_star = Pg - pv_star
+    s_star = sd_c(pd_star, Tg)
+
+    alpha0 = alpha_c(Pg, Tg, qtg, 0.0)
+    rho0 = 1. / alpha0
+
+    # LOOP OVER TIME
+    # create_output_file_2d(filename_2d, nx, ny, times)
+    # create_output_file_stats(filename_stats, times)
+    # READ IN FIELDS
+    root = nc.Dataset(os.path.join(path, 'data_analysis', 'stats_radial_averaged.nc'))
+    nr = root.groups['stats'].dimensions['nr'].size
+    s_rad = root.groups['stats'].variables['s'][:,:,0]
+    temp_rad = root.groups['stats'].variables['temperature'][:,:,0]
+    root.close()
+
+    # OUTPUT FIELDS
+    theta_flux = np.zeros((nt,nr), dtype=np.double)
+    s_flux = np.zeros((nt, nr), dtype=np.double)
+    ur_flux = np.zeros((nt, nr), dtype=np.double)
+    shf = np.zeros((nt, nr), dtype=np.double)
+    s_flux_surface_mean = np.zeros((nt), dtype=np.double)
+    shf_mean = np.zeros((nt), dtype=np.double)
+    for it, t0 in enumerate(times):
+        # WINDSPEED
+        gustiness = 0.0
+        u0 = 0.0
+        v0 = 0.0
+        windspeed = np.zeros((nr), dtype=np.double)
+        for i in range(nr):
+            windspeed[i] = np.maximum(np.sqrt(u0**2 + v0**2) + u_field_1d[it,i], gustiness)
+
+        # COMPUTE FLUXES
+        theta_flux[it,:] = -CH * windspeed[:] * (
+                    temp_rad[it,:] * exner_c(Pg) - theta_surface)  # no difference to in-loop calculation
+        for i in range(nr-1):
+            s_flux[it,i] = -CH * windspeed[i] * (s_rad[it,i] - s_star)
+            ur_flux[it,i] = -CM * interp_2(windspeed[i], windspeed[i + 1]) * (u_field_1d[it,i] + u0)
+
+            shf[it,i] = s_flux[it,i] * rho0 * temp_rad[it,i]
+            s_flux_surface_mean[it] += s_flux[it,i]
+            shf_mean[it] += shf[it,i]
+
+        # DOMAIN MEAN FLUXES
+        s_flux_surface_mean[it] /= (nr - 1)
+        shf_mean[it] /= (nr - 1)
+        # dump_2d(filename_2d, theta_flux, s_flux, u_flux, v_flux, shf, it, times)
+        # dump_stats(filename_stats, s_flux_surface_mean, shf_mean, it, times)
+
+
+
+
+    # -------------------------------
+    root = nc.Dataset(os.path.join(path, 'data_analysis', 'stats_radial_averaged.nc'))
+    nr = root.groups['stats'].dimensions['nr'].size
+    r_range = root.groups['stats'].variables['r'][:]
+    root.close()
+    fig, (axis) = plt.subplots(1, 3, figsize=(16, 5))
+    ax1 = axis[0]
+    ax2 = axis[1]
+    ax3 = axis[2]
+    tstep = 6
+    # ta = np.where(times_rav == tmin)[0][0]
+    # tb = np.where(times_rav == tmax)[0][0]
+    rmax_plot = 9e3
+    for it in range(nt):
+        count_color = np.double(it) / nt
+        ax1.plot(r_range, s_flux[it, :],
+                 color=mpl.cm.winter(count_color), label='t=' + str(np.int(it)))
+        ax2.plot(r_range, shf[it, :],
+                 color=mpl.cm.winter(count_color), label='t=' + str(np.int(it)))
+    ax3.plot(shf_mean, label='SHF')
+    ax1.set_xlim(0, rmax_plot)
+    ax2.set_xlim(0, rmax_plot)
+    # ax3.set_xlim(0, times_rav[-1])
+    ax1.set_title('s-flux')
+    ax2.set_title('SHF')
+    ax3.set_title('mean SHF')
+    for i, ax in enumerate(axis):
+        ax.legend(loc='best', fontsize=6, ncol=2)
+    plt.subplots_adjust(bottom=0.1, right=.98, left=0.06, top=0.9, wspace=0.2)
+    fig.savefig(os.path.join(path, path_out_figs, figname))
+    plt.close(fig)
+
+
+    return shf, shf_mean
+
+
+
+
 def compute_surface_fluxes(filename_2d, filename_stats, times):
 
     z_half = np.empty((nz), dtype=np.double, order='c')
@@ -155,7 +299,7 @@ def compute_surface_fluxes(filename_2d, filename_stats, times):
         shf = np.zeros((nx, ny), dtype=np.double)
 
         s_flux_surface_mean = 0.0
-        shf_surface_mean = 0.0
+        shf_mean = 0.0
 
         # WINDSPEED
         gustiness = 0.0
@@ -181,14 +325,14 @@ def compute_surface_fluxes(filename_2d, filename_stats, times):
 
                 shf[i,j] = s_flux[i,j] * rho0 * temperature[i,j]
                 s_flux_surface_mean += s_flux[i,j]
-                shf_surface_mean += shf[i,j]
+                shf_mean += shf[i,j]
 
-        # compute domain mean fluxes
+        # DOMAIN MEAN FLUXES
         s_flux_surface_mean /= (nx-2) * (ny-2)
-        shf_surface_mean /= (nx-2) * (ny-2)
+        shf_mean /= (nx-2) * (ny-2)
         print('--- time: ', time.time()-t_ini)
         dump_2d(filename_2d, theta_flux, s_flux, u_flux, v_flux, shf, it, times)
-        dump_stats(filename_stats, s_flux_surface_mean, shf_surface_mean, it, times)
+        dump_stats(filename_stats, s_flux_surface_mean, shf_mean, it, times)
 
 
 
@@ -214,10 +358,10 @@ def compute_surface_fluxes(filename_2d, filename_stats, times):
         #         friction_velocity[i, j] = ustar_
         # # compute domain mean fluxes
         # s_flux_surface_mean = np.mean(s_flux)
-        # shf_surface_mean = np.mean(shf)
+        # shf_mean = np.mean(shf)
         # print('--- time: ', time.time()-t_ini)
         # dump_2d(filename_new, theta_flux, s_flux, u_flux, v_flux, shf, it, times)
-        # dump_stats(filename_stats_new, s_flux_surface_mean, shf_surface_mean, it, times)
+        # dump_stats(filename_stats_new, s_flux_surface_mean, shf_mean, it, times)
 
     return
 
@@ -238,7 +382,7 @@ def compute_linear_profiles_Romps(r_tracers_av, U_tracers_av, times):
         ur_lin[it, :] = U_tracers_av[it] / r_tracers_av[it] * r_range[:]
 
     print ''
-    rmax_plot = 5e3
+    rmax_plot = 10e3
     figname = 'linear_model_Romps.png'
     fig, axis = plt.subplots(2, 2, figsize=(15, 8))
     plt.subplots_adjust(bottom=0.25, right=.95, left=0.07, top=0.9, wspace=0.3)
@@ -250,19 +394,24 @@ def compute_linear_profiles_Romps(r_tracers_av, U_tracers_av, times):
     ax2.plot(times, U_tracers_av[:], '-o')
     for it, t0 in enumerate(times):
         count = np.double(it) / len(times)
-        ax1.plot(t0, r_tracers_av[it], 'o', color=cm.bwr(count))
-        ax2.plot(t0, U_tracers_av[it], 'o', color=cm.bwr(count))
-        ax3.plot(r_range, ur_lin[it, :], '-', color=cm.bwr(count))
-        ax4.plot(r_range, v_rad_av[it, :, 0], '-', color=cm.bwr(count))
-        ax4.plot(r_range[ir_tracer[it]], v_rad_av[it, ir_tracer[it], 0], 'o', color=cm.bwr(count))
-        ax4.plot(r_range, ur_lin[it, :], '-', color=cm.bwr(count), linewidth=1)
-        ax4.plot(r_range[ir_tracer[it]], U_tracers_av[it], 'd', color=cm.bwr(count))
+        ax1.plot(t0, r_tracers_av[it], 'o', color=mpl.cm.bwr(count))
+        ax2.plot(t0, U_tracers_av[it], 'o', color=mpl.cm.bwr(count))
+        ax3.plot(r_range, ur_lin[it, :], '-', color=mpl.cm.bwr(count))
+        ax4.plot(r_range, v_rad_av[it, :, 0], '-', color=mpl.cm.bwr(count))
+        ax4.plot(r_range[ir_tracer[it]], v_rad_av[it, ir_tracer[it], 0], 'o', color=mpl.cm.bwr(count))
+        ax4.plot(r_range, ur_lin[it, :], '-', color=mpl.cm.bwr(count), linewidth=1)
+        ax4.plot(r_range[ir_tracer[it]], U_tracers_av[it], 'd', color=mpl.cm.bwr(count))
     ax1.set_title('R(t)')
     ax2.set_title('U(t)')
     ax3.set_title('u_r=U/R*r (Romps)')
     for i, ax in enumerate(axis[0, :]):
         ax.set_xlabel('time  [s]')
-    ax1.set_xlabel('r  [m]')
+    for i, ax in enumerate(axis[1, :]):
+        ax.set_xlabel('r  [m]')
+    ax1.set_ylabel('r  [m]')
+    ax2.set_ylabel('U  [m/s]')
+    ax3.set_ylabel('u_lin  [m/s]')
+    ax4.set_ylabel('v_rad  [m/s]')
     ax3.set_xlim(0, rmax_plot)
     ax4.set_xlim(0, rmax_plot)
     ax3.set_ylim(0, np.amax(v_rad_av[:, :, 0]))
@@ -283,11 +432,11 @@ def compute_linear_profiles_Romps(r_tracers_av, U_tracers_av, times):
     for it in t_list:
         t0 = times[it]
         count = np.double(it) / len(times)
-        ax1.plot(r_range, ur_lin[it, :], '-', color=cm.winter(count))
-        ax2.plot(r_range, v_rad_av[it, :, 0], '-', color=cm.winter(count), label='t=' + str(t0))
-        ax2.plot(r_range[ir_tracer[it]], v_rad_av[it, ir_tracer[it], 0], 'o', color=cm.winter(count))
-        ax2.plot(r_range[:ir_tracer[it] + 1], ur_lin[it, :ir_tracer[it] + 1], '-', color=cm.winter(count), linewidth=1)
-        ax2.plot(r_range[ir_tracer[it]], U_tracers_av[it], 'd', color=cm.winter(count))
+        ax1.plot(r_range, ur_lin[it, :], '-', color=mpl.cm.winter(count))
+        ax2.plot(r_range, v_rad_av[it, :, 0], '-', color=mpl.cm.winter(count), label='t=' + str(t0))
+        ax2.plot(r_range[ir_tracer[it]], v_rad_av[it, ir_tracer[it], 0], 'o', color=mpl.cm.winter(count))
+        ax2.plot(r_range[:ir_tracer[it] + 1], ur_lin[it, :ir_tracer[it] + 1], '-', color=mpl.cm.winter(count), linewidth=1)
+        ax2.plot(r_range[ir_tracer[it]], U_tracers_av[it], 'd', color=mpl.cm.winter(count))
     ax2.set_title('u_r=U/R*r (Romps)')
     ax2.legend(loc='best')
     # for i, ax in enumerate(axis[0, :]):
@@ -300,7 +449,8 @@ def compute_linear_profiles_Romps(r_tracers_av, U_tracers_av, times):
     plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, wspace=0.3, hspace=0.3)
     fig.savefig(os.path.join(path, path_out_figs, figname))
     plt.close(fig)
-    return
+
+    return ur_lin
 
 # ----------------------------------------------------------------------
 
@@ -399,6 +549,7 @@ def plot_sfc_fluxes(figname, filename_stats):
 
 
 def plot_sfc_rad_av(figname, filename_stats):
+    print('plotting surface fluxes rad av')
     try:
         stats_file = nc.Dataset(os.path.join(path, 'stats', 'Stats.' + case_name + '.nc'))
     except:
@@ -412,36 +563,45 @@ def plot_sfc_rad_av(figname, filename_stats):
     shf_rav = flux_file_stats.groups['rad_av'].variables['shf'][:,:]
     s_flux_rav = flux_file_stats.groups['rad_av'].variables['s_flux'][:,:]
     times_rav = flux_file_stats.groups['timeseries'].variables['time'][:]
+    shf_mean = flux_file_stats.groups['timeseries'].variables['shf_surface_mean'][:]
     stats_file.close()
     flux_file_stats.close()
 
+    file_radav = nc.Dataset(os.path.join(path, 'data_analysis', 'stats_radial_averaged.nc'))
+    r_rad = file_radav.groups['stats'].variables['r'][:]
+    v_rad = file_radav.groups['stats'].variables['v_rad'][:,:,0]
+    temp = file_radav.groups['stats'].variables['temperature'][:,:,0]
+    file_radav.close()
 
     nt_ = np.minimum(len(times_rav), len(times_stats))
     ta = np.where(times_rav == tmin)[0][0]
     tb = np.where(times_rav == tmax)[0][0]
-    rmax_plot = 8e3
+    rmax_plot = 10e3
+    irmax_plot = rmax_plot/dx[0]
+    tstep = 3
     if times_stats[:nt].any() != times_rav[:nt].any():
         print('not same times!! not plotting')
         return
     else:
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-        for it, t0 in enumerate(times_rav[1::3]):
+        for it, t0 in enumerate(times_rav[0::tstep]):
             if it >= ta and it <= tb:
-                count_color = 3 * np.double(it) / len(times_rav)
-                ax1.plot(r_range, shf_rav[3*it+1, :], color=cm.jet(count_color),
+                count_color = tstep*np.double(it) / len(times_rav)
+                ax1.plot(r_range, shf_rav[tstep*it,:], color=mpl.cm.jet(count_color),
                         label='t=' + str(np.int(t0)))
+                ax2.plot(r_range, s_flux_rav[tstep*it,:], color=mpl.cm.jet(count_color),
+                         label='t=' + str(np.int(t0)))
                 if it == ta:
-                    ax1.plot(t0, 1e1*shf_mean_stats[3*it+1], 'ok', markersize=8, label='domain mean*1e1')
-                    ax2.plot(t0, 1e1*s_flux_mean_stats[3*it+1], 'ok', markersize=8, label='domain mean*1e1')
+                    ax1.plot(t0, 1e1*shf_mean_stats[tstep*it], 'ok', markersize=8, label='domain mean*1e1')
+                    ax2.plot(t0, 1e1*s_flux_mean_stats[tstep*it], 'ok', markersize=8, label='domain mean*1e1')
                 else:
-                    ax1.plot(t0, 1e1*shf_mean_stats[3*it+1], 'ok', markersize=8)
-                    ax2.plot(t0, 1e1*s_flux_mean_stats[3*it+1], 'ok', markersize=8)
-                ax2.plot(r_range, s_flux_rav[3*it+1, :], color=cm.jet(count_color),
-                        label='t=' + str(np.int(t0)))
+                    ax1.plot(t0, 1e1*shf_mean_stats[tstep*it], 'ok', markersize=8)
+                    ax2.plot(t0, 1e1*s_flux_mean_stats[tstep*it], 'ok', markersize=8)
+
         ax1.set_xlim(0,rmax_plot)
         ax2.set_xlim(0,rmax_plot)
-        ax1.set_xlabel('time  [s]')
-        ax2.set_xlabel('time  [s]')
+        ax1.set_xlabel('r  [m]')
+        ax2.set_xlabel('r  [m]')
         ax1.set_ylabel('SHF(r)')
         ax2.set_ylabel('s_flux(r)')
         # ax1.legend()
@@ -452,32 +612,55 @@ def plot_sfc_rad_av(figname, filename_stats):
         fig.savefig(os.path.join(path, path_out_figs, figname))
         plt.close(fig)
 
-        figname = 'SHF_rav.png'
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-        for it, t0 in enumerate(times_rav[1::3]):
-            if it >= ta and it <= tb:
-                count_color = 3 * np.double(it) / len(times_rav)
-                ax1.plot(r_range, shf_rav[3 * it + 1, :], color=cm.jet(count_color),
-                         label='t=' + str(np.int(t0)))
-                if it == ta:
-                    ax1.plot(t0, 1e1 * shf_mean_stats[3 * it + 1], 'ok', markersize=8, label='domain mean*1e1')
-                    ax2.plot(t0, 1e1 * s_flux_mean_stats[3 * it + 1], 'ok', markersize=8, label='domain mean*1e1')
-                else:
-                    ax1.plot(t0, 1e1 * shf_mean_stats[3 * it + 1], 'ok', markersize=8)
-                    ax2.plot(t0, 1e1 * s_flux_mean_stats[3 * it + 1], 'ok', markersize=8)
-                ax2.plot(r_range, s_flux_rav[3 * it + 1, :], color=cm.jet(count_color),
-                         label='t=' + str(np.int(t0)))
-        ax1.set_xlim(0, rmax_plot)
-        ax2.set_xlim(0, rmax_plot)
-        ax1.set_xlabel('time  [s]')
-        ax2.set_xlabel('time  [s]')
-        ax1.set_ylabel('SHF(r)')
-        ax2.set_ylabel('s_flux(r)')
-        # ax1.legend()
-        ax1.legend(loc='upper left', bbox_to_anchor=(.5, -0.15), fontsize=8, ncol=5)
-        plt.suptitle('azimuthally averaged SHF')
 
+        fig, (axis) = plt.subplots(1, 2, figsize=(12, 5))
+        axis[0].plot(r_range)
+        axis[0].plot(r_rad, 'r--')
         plt.subplots_adjust(bottom=0.25, right=.95, left=0.07, top=0.9, wspace=0.3)
+        fig.savefig(os.path.join(path, path_out_figs, 'test_radii.png'))
+        plt.close(fig)
+
+        figname = 'SHF_rav.png'
+        fig, (axis) = plt.subplots(1, 2, figsize=(12, 5))
+        ax1 = axis[0]
+        ax2 = axis[1]
+        tstep = 6
+        shf_mean_ = np.zeros((nt_))
+        for it, t0 in enumerate(times_rav[0::tstep]):
+            if it >= ta and it <= tb:
+                count_color = tstep*np.double(it) / len(times_rav)
+                # ax3.plot(r_range, shf_rav[tstep*it,:], color=mpl.cm.winter(count_color),
+                #          label='t=' + str(np.int(t0)))
+                if np.amax(shf_rav[tstep*it,:])>0.:
+                    ax2.semilogy(r_range, shf_rav[tstep*it,:], color=mpl.cm.winter(count_color),
+                             label='t=' + str(np.int(t0)))
+        for it,t0 in enumerate(times_rav):
+            shf_mean_[it] = 1./(nx*ny*dx[0])*np.sum(2*np.pi*r_range[:]*shf_rav[it,:])
+        ax1.plot(times_stats, shf_mean_stats, label='<SHF> (stats)')
+        ax1.plot(times_stats, shf_mean, '-o', markersize=4, label='<SHF>')
+        # ax1.plot(times_stats, shf_mean_, '-o', markersize=4, label='<SHF>')
+        ax1.plot(times_stats, 5e-2*np.amax(v_rad, axis=1), '-o', markersize=4, label='0.05*max(v_r)')
+        ax1.plot(times_stats, -1e-1*(np.amin(temp[:, :irmax_plot], axis=1) - np.amax(temp[:, :irmax_plot], axis=1)),
+                 '-o', markersize=4, label='-0.1*dT')
+
+        ax1.set_xlim(0, times_stats[-1])
+        ax1.set_xlabel('time  [s]')
+        ax1.set_ylabel('SHF [J/(s*m2)]  /  v [m/s]  /  dT [K]')
+        ax2.set_xlim(0, rmax_plot)
+        ax2.set_ylim(1e-4, 1e2)
+        ax2.set_xlabel('r  [m]')
+        ax2.set_ylabel('log[ SHF(r) ]')
+        # ax3.set_xlim(0, rmax_plot)
+        # ax3.set_xlabel('r  [m]')
+        # ax3.set_ylabel('SHF(r)')
+        # ax3.set_xlim(0, rmax_plot)
+        # ax3.set_xlabel('r  [m]')
+        # ax3.set_ylabel('SHF(r)')
+        ax1.legend(loc='upper left', bbox_to_anchor=(0., -0.15), fontsize=10, ncol=2)
+        ax2.legend(loc='upper left', bbox_to_anchor=(0., -0.15), fontsize=10, ncol=4)
+        # plt.suptitle('azimuthally averaged SHF')
+
+        plt.subplots_adjust(bottom=0.25, right=.98, left=0.06, top=0.9, wspace=0.2)
         fig.savefig(os.path.join(path, path_out_figs, figname))
         plt.close(fig)
 
@@ -664,6 +847,7 @@ def compute_windspeed(u, v, u0, v0, gustiness):
 # ----------------------------------------------------------------------
 
 def set_input_output_parameters(args):
+    print('')
     print('--- set input parameters ---')
     global path, path_in, path_out_figs, path_out_fields, path_stats, path_fields
     path = args.path
@@ -674,6 +858,10 @@ def set_input_output_parameters(args):
         os.mkdir(path_out_figs)
     if not os.path.exists(path_out_fields):
         os.mkdir(path_out_fields)
+    print('paths: ')
+    print('path_out_fields: ' + path_out_fields)
+    print('path_out_figs:   ' + path_out_figs)
+    print('')
 
     global case_name
     case_name = args.casename
@@ -766,7 +954,6 @@ def define_geometry(nml):
         jc_arr = [jc1, jc2, jc3]
     print('')
     return ic_arr, jc_arr
-
 
 
 # _______________________________________________________
