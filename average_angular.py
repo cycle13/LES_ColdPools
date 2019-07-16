@@ -53,33 +53,33 @@ def main():
     plot_configuration(ic, jc, path_out_data_2D)
 
 
-    # print ''
-    # print('----- compute radius ----------- ')
-    # # OUTPUT: th_field[nx, ny], r_field[nx, ny]
-    # file_name_rthfield = 'r_th_field.nc'    # in 'fields_v_rad'
-    # th_field, r_field = compute_radius(ic, jc, irange, jrange, file_name_rthfield, path_out_data_2D)
-    #
-    #
-    # print ''
-    # print('----- compute radial velocity ----------- ')
-    # # creates output-file with v_rad[nt, nx, ny, kmax], v_ran[nt, nx, ny, kmax] and r_field[nx, ny]
-    # file_name_vradfield = 'v_rad.nc'    # in 'fields_v_rad'
-    # compute_radial_velocity(th_field, r_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data_2D)
-    #
-    #
-    # print ''
-    # print('----- compute angular average ----------- ')
-    # # OUTPUT: file with angular averaged statistics, e.g. v_rad[nt, nr, nz]
-    # # file_name_stats = 'stats_radial_averaged_test.nc'
-    # file_name_stats = 'stats_radial_averaged.nc'
-    # compute_angular_average(rmax, times, file_name_stats, path_out_data, path_out_data_2D)
-    #
-    #
-    # print ''
-    # print('----- compute angular average CP height ----------- ')
+    print ''
+    print('----- compute radius ----------- ')
+    # OUTPUT: th_field[nx, ny], r_field[nx, ny]
+    file_name_rthfield = 'r_th_field.nc'    # in 'fields_v_rad'
+    th_field, r_field = compute_radius(ic, jc, irange, jrange, file_name_rthfield, path_out_data_2D)
+
+
+    print ''
+    print('----- compute radial velocity ----------- ')
+    # creates output-file with v_rad[nt, nx, ny, kmax], v_ran[nt, nx, ny, kmax] and r_field[nx, ny]
+    file_name_vradfield = 'v_rad.nc'    # in 'fields_v_rad'
+    compute_radial_velocity(th_field, r_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data_2D)
+
+
+    print ''
+    print('----- compute angular average ----------- ')
+    # OUTPUT: file with angular averaged statistics, e.g. v_rad[nt, nr, nz]
+    # file_name_stats = 'stats_radial_averaged_test.nc'
+    file_name_stats = 'stats_radial_averaged.nc'
+    compute_angular_average(rmax, times, file_name_stats, path_out_data, path_out_data_2D)
+
+
+    print ''
+    print('----- compute angular average CP height ----------- ')
     sth = 0.5
-    # file_name_CP_height = 'CP_height_' + ID + '_sth' + str(sth) + '.nc' # in path_out_data
-    # compute_CP_height_radial_av(rmax, times, file_name_CP_height, path_out_data, path_out_data_2D)
+    file_name_CP_height = 'CP_height_' + ID + '_sth' + str(sth) + '.nc' # in path_out_data
+    compute_CP_height_radial_av(rmax, times, file_name_CP_height, path_out_data, path_out_data_2D)
 
 
 
@@ -712,15 +712,15 @@ def define_geometry(nml):
         jc2 = jc1
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
-    elif case_name == 'ColdPoolDry_single_3D':
+    elif case_name[:21] == 'ColdPoolDry_single_3D':
         rstar = nml['init']['r']
         # irstar = np.int(np.round(rstar / dx))
         # zstar = nml['init']['h']
         # dTh = nml['init']['dTh']
         try:
             print('(ic,jc) from nml')
-            ic = nml['init']['ic']
-            jc = nml['init']['jc']
+            ic = np.int(nml['init']['ic'])
+            jc = np.int(nml['init']['jc'])
         except:
             print('(ic,jc) NOT from nml')
             ic = np.int(nx / 2)

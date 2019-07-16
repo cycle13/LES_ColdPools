@@ -62,6 +62,7 @@ def main():
                 if z_half[k] <= 1000.:
                     theta_bg[k] = th_g
                 else:
+                    print(z_half[k], k)
                     theta_bg[k] = th_g * np.exp(Nv/g*(z_half[k]-1000.))
 
             # Cold Pool anomaly
@@ -80,6 +81,7 @@ def main():
 
                     for k in xrange(nlg[2]):
                         ijk = ishift + jshift + k
+                        theta_strat[i, j, k] = theta_bg[k]
                         if z_half[k] <= z_max_arr[0, i, j]:
                             theta_neutral[i, j, k] = th_g - dTh
                             theta_strat[i, j, k] = theta_bg[k] - dTh
@@ -101,6 +103,9 @@ def main():
             print('max(z_max[0,ic+gw,:])  ', np.amax(z_max_arr[0,icg,:]))
             print('max(z_max[0,ic+gw+1,:])', np.amax(z_max_arr[0,icg+1,:]))
             print('')
+            print(theta_bg[5+gw:15+gw])
+            print(theta_strat[ic,jc,5+gw:15+gw])
+
 
             plotting(dTh, rstar, irstar, zstar, kstar, theta_neutral, theta_strat, z_max_arr, theta_bg, icg)
         #
@@ -224,14 +229,13 @@ def plotting(dTh, rstar, irstar, zstar, kstar, theta_n, theta_s, z_max_arr, thet
     ax1.add_artist(circle2)
     ax1.set_xlim([0, nx])
     ax1.set_ylim([0, ny])
-    # # ax1.set_title(str(count_0))
-    # ax2.contourf(x_half[gw:-gw], y_half[gw:-gw], theta_n_[:, :, 0])
-    # ax2.plot([xc, xc], [y_half[gw], y_half[-gw]], 'k')
-    # ax2.plot([x_half[gw], x_half[-gw]], [yc, yc], 'k')
+    ax1.set_title(str(np.amin(theta_n_)) + ', ' + str(np.amax(theta_n_)))
+
 
     ax1 = axes[0, 1]
     ax2 = axes[1, 1]
     im = ax1.imshow(theta_n_[ic, :, :].T, origin='lower', cmap=cm.bwr)
+    plt.colorbar(im, ax=ax1, shrink=0.5)
     ax1.plot(z_max_arr[0, icg, gw:-gw] / dz, 'gold', label='z_max[0]/dz', linewidth=3)
     ax1.plot(z_max_arr[1, icg, gw:-gw] / dz, 'lime', label='z_max[1]/dz', linewidth=3)
     ax1.plot([jc, jc], [0, nz], 'k')
@@ -246,21 +250,12 @@ def plotting(dTh, rstar, irstar, zstar, kstar, theta_n, theta_s, z_max_arr, thet
     ax1.grid()
     ax1.set_xlim([0, ny])
     ax1.set_ylim([0, nz])
-    # ax2.contourf(theta_[ic, :, :].T, cmap=cm.bwr)
-    # ax2.plot(k_max_arr[0, icg, gw:-gw], 'gold', label='k_max[0]', linewidth=3)
-    # ax2.plot(k_max_arr[1, icg, gw:-gw], 'lime', label='k_max[1]', linewidth=3)
-    # ax2.plot([jc, jc], [0, nz], 'k')
-    # ax2.plot([jc - irstar, jc - irstar], [0, nz], ':', color='lightgray', linewidth=2, label='jc+irstar')
-    # ax2.plot([jc + irstar, jc + irstar], [0, nz], ':', color='lightgray', linewidth=2)
-    # ax2.plot([jc - irstar - marg_i, jc - irstar - marg_i], [0, nz], '--', color='lightgray', linewidth=2,
-    #          label='jc-irstar-marg_i')
-    # ax2.plot([jc + irstar + marg_i, jc + irstar + marg_i], [0, nz], '--', color='lightgray', linewidth=2)
-    # ax2.grid()
-    # ax2.set_xlim([0, nx])
-    #
+
+
     ax1 = axes[0, 2]
     ax2 = axes[1, 2]
     ax1.imshow(theta_s_[ic, :, :].T, origin='lower', cmap=cm.bwr)
+    plt.colorbar(im, ax=ax1, shrink=0.5)
     ax1.plot(z_max_arr[0, icg, gw:-gw] / dz, 'gold', label='z_max[0]/dz', linewidth=3)
     ax1.plot(z_max_arr[1, icg, gw:-gw] / dz, 'lime', label='z_max[1]/dz', linewidth=3)
     ax1.plot([jc, jc], [0, nz], 'k')
@@ -277,25 +272,10 @@ def plotting(dTh, rstar, irstar, zstar, kstar, theta_n, theta_s, z_max_arr, thet
     ax1.grid()
     ax1.set_xlim([0, ny])
     ax1.set_ylim([0, nz])
-    # ax2.contourf(y_half[gw:-gw], z_half[gw:-gw], theta_n_[ic, :, :].T, cmap=cm.bwr)
-    # ax2.plot(y_half[gw:-gw], z_max_arr[0, icg, gw:-gw], 'gold', label='z_max[0]', linewidth=3)
-    # ax2.plot(y_half[gw:-gw], (np.round(z_max_arr[0, icg, gw:-gw] / dz)) * dz, '--', color='k', label='z_max[0]',
-    #          linewidth=3)
-    # ax2.plot(y_half[gw:-gw], z_max_arr[1, icg, gw:-gw], 'lime', label='z_max[1]', linewidth=3)
-    # ax2.plot(y_half[gw:-gw], (np.round(z_max_arr[1, icg, gw:-gw] / dz)) * dz, '--', color='k', label='z_max[0]',
-    #          linewidth=3)
-    # ax2.plot([jc, jc], [0, nz], 'k')
-    # ax2.plot([jc - irstar, jc - irstar], [0, nz], 'w:')
-    # ax2.plot([jc + irstar, jc + irstar], [0, nz], 'w:')
-    # ax2.plot([jc - irstar - marg_i, jc - irstar - marg_i], [0, nz], 'w--')
-    # ax2.plot([jc + irstar + marg_i, jc + irstar + marg_i], [0, nz], 'w--')
-    # # ax4.legend()
-    # # legend = plt.legend(frameon=1)
-    # # frame.set_facecolor('green')
-    # # frame.set_edgecolor('red')
-    #
+
+
+
     ax1 = axes[0, 3]
-    ax2 = axes[1, 3]
     im = ax1.imshow(theta_s_[:, :, 0].T, origin='lower', cmap=cm.bwr)
     plt.colorbar(im, ax=ax1, shrink=0.5)
     ax1.plot(ic, jc, 'or')
@@ -313,12 +293,14 @@ def plotting(dTh, rstar, irstar, zstar, kstar, theta_n, theta_s, z_max_arr, thet
     ax1.add_artist(circle2)
     ax1.set_xlim([0, nx])
     ax1.set_ylim([0, ny])
+    ax1.set_title(str(np.amin(theta_s_)) + ', ' + str(np.amax(theta_s_)))
 
-    ax2.plot(theta_bg[gw:-gw], np.arange(0,nz)*dz)
-    # ax2.contourf(x_half[gw:-gw], y_half[gw:-gw], theta_s_[:, :, 0])
-    # ax2.plot([xc, xc], [y_half[gw], y_half[-gw]], 'k')
-    # ax2.plot([x_half[gw], x_half[-gw]], [yc, yc], 'k')
-    #
+
+    ax1 = axes[1, 2]
+    ax2 = axes[1, 3]
+    ax1.plot(theta_bg[gw:-gw], np.arange(0,nz), linewidth=2)
+    ax2.plot(theta_bg[gw:-gw], np.arange(0,nz)*dz, linewidth=2)
+
     # plt.tight_layout
     # plt.suptitle('r*=' + str(rstar) + ' (irstar=' + str(irstar) + '), z*=' + str(zstar) + ' (kstar=' + str(kstar) + ')')
     fig.savefig('./figs_Initialization/initialization_strat_dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar) + '.png')
