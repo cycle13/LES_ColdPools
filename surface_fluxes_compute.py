@@ -97,43 +97,43 @@ def main():
     filename_stats = 'surface_fluxes_stats.nc'
     figname = 'SHF_comparison_stats_vs_computation.png'
     plot_sfc_fluxes(figname, filename_stats)
-    #
-    # filename_stats = 'surface_fluxes_stats.nc'
-    # figname = 'fluxes_rav.png'
+
+    filename_stats = 'surface_fluxes_stats.nc'
+    figname = 'fluxes_rav.png'
     # plot_sfc_rad_av(figname, filename_stats)
 
-    # figname = 'fluxes_rad_av_comparison.png'
-    # rmax_plot = 9e3
-    # fig, (axis) = plt.subplots(1, 3, figsize=(16, 5))
-    # ax1 = axis[0]
-    # ax2 = axis[1]
-    # ax3 = axis[2]
-    # tstep = 6
-    # ta = np.where(times_rav == tmin)[0][0]
-    # tb = np.where(times_rav == tmax)[0][0]
-    # for it, t0 in enumerate(times_rav[0::tstep]):
-    #     if it >= ta and it <= tb:
-    #         count_color = tstep * np.double(it) / len(times_rav)
-    #         ax1.plot(r_range, shf_rad_lin[it,:],
-    #                  color=mpl.cm.winter(count_color), label='t=' + str(np.int(t0)))
-    #         ax2.plot(r_range, shf_rad[it,:],
-    #                  color=mpl.cm.winter(count_color), label='t=' + str(np.int(t0)))
-    # ax3.plot(times_rav, shf_mean_lin, label='SHF lin')
-    # ax3.plot(times_rav, shf_mean, label='SHF')
-    # ax1.set_xlim(0, rmax_plot)
-    # ax2.set_xlim(0, rmax_plot)
-    # ax3.set_xlim(0, times_rav[-1])
-    # ax1.set_xlabel('r  [m]')
-    # ax2.set_xlabel('r  [m]')
-    # ax3.set_xlabel('time  [s]')
-    # ax1.set_title('SHF linear v_rad')
-    # ax2.set_title('SHF from velocity output')
-    # ax3.set_title('mean SHF')
-    # for i,ax in enumerate(axis):
-    #     ax.legend(loc='best')
-    # plt.subplots_adjust(bottom=0.1, right=.98, left=0.06, top=0.9, wspace=0.2)
-    # fig.savefig(os.path.join(path, path_out_figs, figname))
-    # plt.close(fig)
+    figname = 'fluxes_rad_av_comparison.png'
+    rmax_plot = 9e3
+    fig, (axis) = plt.subplots(1, 3, figsize=(16, 5))
+    ax1 = axis[0]
+    ax2 = axis[1]
+    ax3 = axis[2]
+    tstep = 6
+    ta = np.where(times_rav == tmin)[0][0]
+    tb = np.where(times_rav == tmax)[0][0]
+    for it, t0 in enumerate(times_rav[0::tstep]):
+        if it >= ta and it <= tb:
+            count_color = tstep * np.double(it) / len(times_rav)
+            ax1.plot(r_range, shf_rad_lin[it,:],
+                     color=mpl.cm.winter(count_color), label='t=' + str(np.int(t0)))
+            ax2.plot(r_range, shf_rad[it,:],
+                     color=mpl.cm.winter(count_color), label='t=' + str(np.int(t0)))
+    ax3.plot(times_rav[:nt], shf_mean_lin, label='SHF lin')
+    ax3.plot(times_rav[:nt], shf_mean, label='SHF')
+    ax1.set_xlim(0, rmax_plot)
+    ax2.set_xlim(0, rmax_plot)
+    ax3.set_xlim(0, times_rav[-1])
+    ax1.set_xlabel('r  [m]')
+    ax2.set_xlabel('r  [m]')
+    ax3.set_xlabel('time  [s]')
+    ax1.set_title('SHF linear v_rad')
+    ax2.set_title('SHF from velocity output')
+    ax3.set_title('mean SHF')
+    for i,ax in enumerate(axis):
+        ax.legend(loc='best')
+    plt.subplots_adjust(bottom=0.1, right=.98, left=0.06, top=0.9, wspace=0.2)
+    fig.savefig(os.path.join(path, path_out_figs, figname))
+    plt.close(fig)
 
     return
 
@@ -424,6 +424,7 @@ def compute_linear_profiles_Romps(r_tracers_av, U_tracers_av, times):
 
     rmax_plot = 10e3
     t_list = [0, 7, 13, 18, 24, 30, 36]
+    t_list = [0, 1, 2, 7, 13, 18, 24, 30, 36]
     # figname = 'linear_model_Romps_' + path_tracers + '.png'
     figname = 'linear_model_Romps_large.png'
     fig, axis = plt.subplots(2, 1, figsize=(15, 8))
@@ -533,7 +534,7 @@ def plot_sfc_fluxes(figname, filename_stats):
     else:
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
         ax1.plot(times_stats[:nt], shf_mean_stats[:nt], '-d', label='shf (stats)', linewidth=3)
-        ax1.plot(times_stats[:nt], shf_mean[:nt], '-o', label='shf', linewidth=2)
+        ax1.plot(times_stats[:nt], shf_mean[:nt], '--o', label='shf', linewidth=2)
         ax2.plot(times_stats[:nt], s_flux_mean_stats[:nt], '-d', label='s-flux (stats)', linewidth=3)
         ax2.plot(times_stats[:nt], s_flux_mean[:nt], '-o', label='s-flux', linewidth=3)
         ax1.set_xlim(0,times_stats[nt_-1])
@@ -579,7 +580,7 @@ def plot_sfc_rad_av(figname, filename_stats):
     ta = np.where(times_rav == tmin)[0][0]
     tb = np.where(times_rav == tmax)[0][0]
     rmax_plot = 10e3
-    irmax_plot = rmax_plot/dx[0]
+    irmax_plot = np.int(rmax_plot/dx[0])
     tstep = 3
     if times_stats[:nt].any() != times_rav[:nt].any():
         print('not same times!! not plotting')
