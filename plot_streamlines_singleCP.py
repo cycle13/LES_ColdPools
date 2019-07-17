@@ -162,7 +162,10 @@ def plot_streamplot_xz(cont_var_name, cont_var, w, vel, speed, x_arr, z_arr, j0,
     else:
         cbar.set_label(cont_var_name, rotation=90)
     if vary:
-        lw = 5 * speed[:, j0, :kmax] / speed[:, j0, :kmax].max()
+        if speed[:, j0, :kmax].max() > 0.:
+            lw = 5 * speed[:, j0, :kmax] / speed[:, j0, :kmax].max()
+        else:
+            lw = 5 * speed[:, j0, :kmax] / 1.
         plt.streamplot(x_arr[imin:imax], z_arr[:kmax], vel[0,imin:imax,j0,:kmax].T, w_[imin:imax,:kmax].T,
                        color='k', density = 1.5, linewidth=lw[imin:imax,:].T)
     else:
@@ -292,6 +295,7 @@ def set_input_parameters(args):
 
     global case_name
     case_name = args.casename
+    print('casename: ', case_name)
     nml = simplejson.loads(open(os.path.join(path_in, case_name + '.in')).read())
     global nx, ny, nz, dx, dy, dz
     nx = nml['grid']['nx']
@@ -357,6 +361,7 @@ def set_input_parameters(args):
 
 
 
+
 def define_geometry(case_name, nml, files):
     # print('--- define geometry ---')
     global ic_arr, jc_arr
@@ -373,7 +378,7 @@ def define_geometry(case_name, nml, files):
         jc2 = jc1
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
-    elif case_name == 'ColdPoolDry_single_3D':
+    elif case_name[:21] == 'ColdPoolDry_single_3D':
         try:
             rstar = nml['init']['r']
         except:

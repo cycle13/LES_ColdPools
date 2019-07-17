@@ -379,6 +379,7 @@ def set_parameters():
     sg = 6e3
     return
 
+
 def define_geometry():
 
     global nx, ny, nz, dx, dy, dz
@@ -390,9 +391,8 @@ def define_geometry():
     dz = 100
     global gw, nl, nlg, npl, npg
     gw = 5
-    # gw = 1
-    # Gr.dims.nlg[i], i=0,1,2
     mpi_dims = [1, 1, 1]
+    # Gr.dims.nlg[i], i=0,1,2
     nl = np.ndarray(3, dtype=np.int)
     nl[0] = nx / mpi_dims[0]
     nl[1] = ny / mpi_dims[1]

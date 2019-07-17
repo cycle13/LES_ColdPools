@@ -91,10 +91,12 @@ def main():
         print('vertical xz-crossection at CP center: j0='+str(j0_center))
         # convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_center)
         convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files, k_max, path_fields, path_out_, j0_center)
-        # print('vertical xz-crossection at 3-CP collision: j0='+str(j0_coll))
-        convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files, k_max, path_fields, path_out_, j0_coll)
-        print('vertical yz-crossection at 2-CP collision: x0='+str(i0_center))
-        convert_file_for_varlist_vertsection_yz(var_list, times, files, path_fields, path_out_, i0_center)
+        if case_name == 'ColdPoolDry_triple_3D':
+            # print('vertical xz-crossection at 3-CP collision: j0='+str(j0_coll))
+            convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files,
+                                                               k_max, path_fields, path_out_, j0_coll)
+        # print('vertical yz-crossection at 2-CP collision: x0='+str(i0_center))
+        # convert_file_for_varlist_vertsection_yz(var_list, times, files, path_fields, path_out_, i0_center)
         print''
     if args.hor == 'True' or args.hor == 'true':
         print '-- horizontal crosssection: k0 = '+str(k0) +' --'
@@ -103,10 +105,10 @@ def main():
             os.mkdir(path_out_)
         # horizontal crosssection
         convert_file_for_varlist_horsection(var_list, times, files, path_fields, path_out_, k0)
-        imin = 100
-        imax = 300
-        jmin = 100
-        jmax = 300
+        # imin = 100
+        # imax = 300
+        # jmin = 100
+        # jmax = 300
         # horizontal crosssection of subdomin
         # convert_file_for_varlist_horsection_minimize(var_list, times, imin, imax, jmin, jmax,
         #                                            files, path_fields, path_out_, k0)
@@ -612,6 +614,7 @@ def convert_file_forall_variables(files, path_fields, path_out, k_min, k_max):
 def define_geometry(path_root, args):
     print('--- define geometry ---')
 
+    global case_name
     case_name = args.casename
     nml = simplejson.loads(open(os.path.join(path_root, case_name + '.in')).read())
     global nx, ny, nz, dx, dV, gw
@@ -627,7 +630,7 @@ def define_geometry(path_root, args):
     print('nml: ', dx, nx)
 
     # set coordinates for plots
-    if case_name == 'ColdPoolDry_single_3D':
+    if case_name[:21] == 'ColdPoolDry_single_3D':
         rstar = nml['init']['r']
         zstar = nml['init']['h']
         try:
@@ -701,7 +704,8 @@ def define_geometry(path_root, args):
     ''' plotting parameters '''
     # at center of CP: (i0_center, j0_center)
     # at collision point: (i0_coll, j0_coll)
-    if case_name == 'ColdPoolDry_single_3D':
+    print('case_name: ' + case_name[:21])
+    if case_name[:21] == 'ColdPoolDry_single_3D':
         i0_coll = ic_arr[0]
         j0_coll = jc_arr[0]
         i0_center = ic_arr[0]

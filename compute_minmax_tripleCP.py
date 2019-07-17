@@ -417,7 +417,7 @@ def set_input_parameters(args):
         kmax = np.int(args.kmax)
     else:
         kmax = 1
-    krange = np.arange(kmin, kmax)
+    krange = np.arange(kmin, kmax + 1)
 
     if args.tmin:
         tmin = np.int(args.tmin)

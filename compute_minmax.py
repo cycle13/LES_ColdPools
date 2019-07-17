@@ -35,7 +35,9 @@ def main():
     ID = os.path.split(path_in)[1]
     print ('id: ', ID)
 
-    minmax_domain = plot_domain_minmax(ID, times)
+    var_list = ['w', 's', 'temperature', 'theta']
+    var_list = ['w']
+    minmax_domain = plot_minmax_domain(var_list, ID, times)
 
     minmax_xz = plot_xz_minmax(ID, jc_arr, times)
 
@@ -50,7 +52,7 @@ def main():
 
 def plot_xz_minmax(ID, jc_arr, times):
     print('')
-    print('compting min/max xz')
+    print('computing min/max xz')
     var_list = ['u', 'w', 's', 'temperature']
     minmax = {}
     minmax['time'] = times
@@ -86,11 +88,9 @@ def plot_xz_minmax(ID, jc_arr, times):
 
 
 # compute domain minimum and maximum of variables (s, temperature, w) for each timestep
-def plot_domain_minmax(ID, times):
-    print('compting min/max domain')
+def plot_minmax_domain(var_list, ID, times):
+    print('computing min/max domain')
 
-    var_list = ['w', 's', 'temperature', 'theta']
-    # var_list = ['theta']
     minmax = {}
     minmax['time'] = times
     for var_name in var_list:
