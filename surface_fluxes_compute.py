@@ -97,40 +97,43 @@ def main():
     filename_stats = 'surface_fluxes_stats.nc'
     figname = 'SHF_comparison_stats_vs_computation.png'
     plot_sfc_fluxes(figname, filename_stats)
+    #
+    # filename_stats = 'surface_fluxes_stats.nc'
+    # figname = 'fluxes_rav.png'
+    # plot_sfc_rad_av(figname, filename_stats)
 
-    filename_stats = 'surface_fluxes_stats.nc'
-    figname = 'fluxes_rav.png'
-    plot_sfc_rad_av(figname, filename_stats)
-
-    figname = 'fluxes_rad_av_comparison.png'
-    rmax_plot = 9e3
-    fig, (axis) = plt.subplots(1, 3, figsize=(16, 5))
-    ax1 = axis[0]
-    ax2 = axis[1]
-    ax3 = axis[2]
-    tstep = 6
-    ta = np.where(times_rav == tmin)[0][0]
-    tb = np.where(times_rav == tmax)[0][0]
-    for it, t0 in enumerate(times_rav[0::tstep]):
-        if it >= ta and it <= tb:
-            count_color = tstep * np.double(it) / len(times_rav)
-            ax1.plot(r_range, shf_rad_lin[it,:],
-                     color=mpl.cm.winter(count_color), label='t=' + str(np.int(t0)))
-            ax2.plot(r_range, shf_rad[it,:],
-                     color=mpl.cm.winter(count_color), label='t=' + str(np.int(t0)))
-    ax3.plot(times_rav, shf_mean_lin, label='SHF lin')
-    ax3.plot(times_rav, shf_mean, label='SHF')
-    ax1.set_xlim(0, rmax_plot)
-    ax2.set_xlim(0, rmax_plot)
-    ax3.set_xlim(0, times_rav[-1])
-    ax1.set_title('SHF linear v_rad')
-    ax2.set_title('SHF from velocity output')
-    ax3.set_title('mean SHF')
-    for i,ax in enumerate(axis):
-        ax.legend(loc='best')
-    plt.subplots_adjust(bottom=0.1, right=.98, left=0.06, top=0.9, wspace=0.2)
-    fig.savefig(os.path.join(path, path_out_figs, figname))
-    plt.close(fig)
+    # figname = 'fluxes_rad_av_comparison.png'
+    # rmax_plot = 9e3
+    # fig, (axis) = plt.subplots(1, 3, figsize=(16, 5))
+    # ax1 = axis[0]
+    # ax2 = axis[1]
+    # ax3 = axis[2]
+    # tstep = 6
+    # ta = np.where(times_rav == tmin)[0][0]
+    # tb = np.where(times_rav == tmax)[0][0]
+    # for it, t0 in enumerate(times_rav[0::tstep]):
+    #     if it >= ta and it <= tb:
+    #         count_color = tstep * np.double(it) / len(times_rav)
+    #         ax1.plot(r_range, shf_rad_lin[it,:],
+    #                  color=mpl.cm.winter(count_color), label='t=' + str(np.int(t0)))
+    #         ax2.plot(r_range, shf_rad[it,:],
+    #                  color=mpl.cm.winter(count_color), label='t=' + str(np.int(t0)))
+    # ax3.plot(times_rav, shf_mean_lin, label='SHF lin')
+    # ax3.plot(times_rav, shf_mean, label='SHF')
+    # ax1.set_xlim(0, rmax_plot)
+    # ax2.set_xlim(0, rmax_plot)
+    # ax3.set_xlim(0, times_rav[-1])
+    # ax1.set_xlabel('r  [m]')
+    # ax2.set_xlabel('r  [m]')
+    # ax3.set_xlabel('time  [s]')
+    # ax1.set_title('SHF linear v_rad')
+    # ax2.set_title('SHF from velocity output')
+    # ax3.set_title('mean SHF')
+    # for i,ax in enumerate(axis):
+    #     ax.legend(loc='best')
+    # plt.subplots_adjust(bottom=0.1, right=.98, left=0.06, top=0.9, wspace=0.2)
+    # fig.savefig(os.path.join(path, path_out_figs, figname))
+    # plt.close(fig)
 
     return
 
@@ -376,16 +379,15 @@ def compute_linear_profiles_Romps(r_tracers_av, U_tracers_av, times):
     rootgrp.close()
     nr = len(r_range)
     ur_lin = np.zeros((nt, nr))
-    ir_tracer = np.zeros(nt)
+    ir_tracer = np.zeros(nt, dtype=np.int)
     for it, t0 in enumerate(times):
         ir_tracer[it] = np.where(r_range == np.int(np.round(r_tracers_av[it], -2)))[0][0]
         ur_lin[it, :] = U_tracers_av[it] / r_tracers_av[it] * r_range[:]
 
-    print ''
+    print('')
     rmax_plot = 10e3
     figname = 'linear_model_Romps.png'
     fig, axis = plt.subplots(2, 2, figsize=(15, 8))
-    plt.subplots_adjust(bottom=0.25, right=.95, left=0.07, top=0.9, wspace=0.3)
     ax1 = axis[0, 0]
     ax2 = axis[0, 1]
     ax3 = axis[1, 0]
@@ -422,7 +424,6 @@ def compute_linear_profiles_Romps(r_tracers_av, U_tracers_av, times):
 
     rmax_plot = 10e3
     t_list = [0, 7, 13, 18, 24, 30, 36]
-    print('.............')
     # figname = 'linear_model_Romps_' + path_tracers + '.png'
     figname = 'linear_model_Romps_large.png'
     fig, axis = plt.subplots(2, 1, figsize=(15, 8))
@@ -430,13 +431,14 @@ def compute_linear_profiles_Romps(r_tracers_av, U_tracers_av, times):
     ax1 = axis[0]
     ax2 = axis[1]
     for it in t_list:
-        t0 = times[it]
-        count = np.double(it) / len(times)
-        ax1.plot(r_range, ur_lin[it, :], '-', color=mpl.cm.winter(count))
-        ax2.plot(r_range, v_rad_av[it, :, 0], '-', color=mpl.cm.winter(count), label='t=' + str(t0))
-        ax2.plot(r_range[ir_tracer[it]], v_rad_av[it, ir_tracer[it], 0], 'o', color=mpl.cm.winter(count))
-        ax2.plot(r_range[:ir_tracer[it] + 1], ur_lin[it, :ir_tracer[it] + 1], '-', color=mpl.cm.winter(count), linewidth=1)
-        ax2.plot(r_range[ir_tracer[it]], U_tracers_av[it], 'd', color=mpl.cm.winter(count))
+        if it < nt:
+            t0 = times[it]
+            count = np.double(it) / len(times)
+            ax1.plot(r_range, ur_lin[it, :], '-', color=mpl.cm.winter(count))
+            ax2.plot(r_range, v_rad_av[it, :, 0], '-', color=mpl.cm.winter(count), label='t=' + str(t0))
+            ax2.plot(r_range[ir_tracer[it]], v_rad_av[it, ir_tracer[it], 0], 'o', color=mpl.cm.winter(count))
+            ax2.plot(r_range[:ir_tracer[it] + 1], ur_lin[it, :ir_tracer[it] + 1], '-', color=mpl.cm.winter(count), linewidth=1)
+            ax2.plot(r_range[ir_tracer[it]], U_tracers_av[it], 'd', color=mpl.cm.winter(count))
     ax2.set_title('u_r=U/R*r (Romps)')
     ax2.legend(loc='best')
     # for i, ax in enumerate(axis[0, :]):
@@ -456,7 +458,7 @@ def compute_linear_profiles_Romps(r_tracers_av, U_tracers_av, times):
 
 def compute_angular_average(filename_2d, filename_stats, rmax):
     # (1) read in 2d-surface flux fields
-    print os.path.join(path, 'fields_fluxes', filename_2d)
+    print(os.path.join(path, 'fields_fluxes', filename_2d))
     sfc_flux_file = nc.Dataset(os.path.join(path, 'fields_fluxes', filename_2d), 'r')
 
     # (2) read in r_field
@@ -530,10 +532,10 @@ def plot_sfc_fluxes(figname, filename_stats):
         return
     else:
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-        ax1.plot(times_stats[:nt], shf_mean_stats, '-d', label='shf (stats)', linewidth=3)
-        ax1.plot(times_stats[:nt], shf_mean, '-o', label='shf', linewidth=2)
-        ax2.plot(times_stats[:nt], s_flux_mean_stats, '-d', label='s-flux (stats)', linewidth=3)
-        ax2.plot(times_stats[:nt], s_flux_mean, '-o', label='s-flux', linewidth=3)
+        ax1.plot(times_stats[:nt], shf_mean_stats[:nt], '-d', label='shf (stats)', linewidth=3)
+        ax1.plot(times_stats[:nt], shf_mean[:nt], '-o', label='shf', linewidth=2)
+        ax2.plot(times_stats[:nt], s_flux_mean_stats[:nt], '-d', label='s-flux (stats)', linewidth=3)
+        ax2.plot(times_stats[:nt], s_flux_mean[:nt], '-o', label='s-flux', linewidth=3)
         ax1.set_xlim(0,times_stats[nt_-1])
         ax2.set_xlim(0,times_stats[nt_-1])
         ax1.set_xlabel('time  [s]')
