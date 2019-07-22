@@ -33,11 +33,13 @@ def main():
     dt = 100
     icoll, jcoll, ic_arr, jc_arr, x_half, y_half, z_half = define_geometry(case_name, files)
 
-    ''' --- auxiliary arrays (since no Grid.pyx) ---'''
-    # rootgrp = nc.Dataset(os.path.join(path_fields, '0.nc'), 'r')
-    # var = rootgrp.groups['fields'].variables['s'][:, :, 0]
-    # rootgrp.close()
-    # plot_configuration(var, icoll, jcoll, ic_arr, jc_arr)
+    filename_out = os.path.join('data_analysis', 'stats_crosssections.nc')
+
+    ''' --- plot configuration ---'''
+    rootgrp = nc.Dataset(os.path.join(path_fields, '0.nc'), 'r')
+    var = rootgrp.groups['fields'].variables['s'][:, :, 0]
+    rootgrp.close()
+    plot_configuration(var, icoll, jcoll, ic_arr, jc_arr)
 
     #
     # ''' (a) compute horizontal convergence''''
@@ -45,10 +47,14 @@ def main():
 
 
     ''' (a) compute and plot maxima in single, double and triple time window '''
+    # time_single: time, when w(icoll,jcoll,k=0)<1.m/s for the last time (single for t<=time_single)
+    # time_double: timestep when w(icol,jcoll,k=0) decays again for the first time
     kmax = np.int(2000./dx[2])
     var_name = 'w'
     min_single, min_double, min_triple, max_single, max_double, max_triple, \
             time_single, time_double, it_single, it_double = compute_minima_maxima(var_name, icoll, jcoll, ic_arr, jc_arr, times, nt, dt, kmax)
+    output_minima_maxima(var_name, min_single, min_double, min_triple, max_single, max_double, max_triple,
+                         time_single, time_double, times, kmax, filename_out)
     plot_xz_crosssection_single_double_triple(var_name, min_single, min_double, min_triple,
                                               max_single, max_double, max_triple,
                                               icoll, jcoll, ic_arr, jc_arr,
@@ -56,13 +62,43 @@ def main():
     print('')
 
 
-    ''' compute mass-flux '''
-    # mass_flux[i,j,k]= dm*w[i,j,k]*dt
-    # mass_flux[i,j,k]= rho*dA*w[i,j,k]*dt = rho[i,j,k]*dx*dy*w[i,j,k]*dt
-    # define area:
-    # - band along xz-crosssection of width 300m
-    # - single: between x=r*+delta and x=icoll+10
-    # - double: between x=ic_arr[0]-r_int=
+    # ''' compute mass-flux '''
+    # # mass_flux[i,j,k]= dm*w[i,j,k]*dt
+    # # mass_flux[i,j,k]= rho*dA*w[i,j,k]*dt = rho[i,j,k]*dx*dy*w[i,j,k]*dt
+    # # define area:
+    # # - band along xz-crosssection of width 300m
+    # # - single: between x=r*+delta and x=icoll+10; time btw. t<=time_single
+    # # - double: between x=ic_arr[0]-r_int=2*ic_arr[0]-icoll and x=ic_arr[0]+r_int=icoll; time time_single<t<=time_double
+    # # - triple: between x=icoll-10 and x=icoll+10; time_double<t
+    # width=400.
+    # delta_y = np.int(width/(2*dx[1]))
+    # rstar = 2000.
+    # ir = rstar / dx[0]
+    # # path = '/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2/dTh3_z1000_r1000/stats/'
+    # # case_name = 'ColdPoolDry_single_3D'
+    # try:
+    #     rootgrp = nc.Dataset(os.path.join(path_in, 'stats', 'Stats.' + case_name + '.nc'))
+    # except:
+    #     rootgrp = nc.Dataset(os.path.join(path_in, 'Stats.' + case_name + '.nc'))
+    # rho0_stats = rootgrp.groups['reference'].variables['rho0'][:]
+    # rootgrp.close()
+    # mass_flux_ = np.ndarray((3, nt, kmax), dtype=np.double)
+    # mass_flux = np.ndarray((3, kmax), dtype=np.double)
+    # for it, t0 in enumerate(times):
+    #     rootgrp = nc.Dataset(os.path.join(path_fields, str(t0) + '.nc'), 'r')
+    #     var = rootgrp.groups['fields'].variables['w'][:, :, :kmax]
+    #     rootgrp.close()
+    #     mass_flux_[0,it,:] = np.sum(np.sum(var[icoll+10:ic_arr[2]-ir,jcoll-delta_y:jcoll+delta_y,:], axis=0), axis=0)
+    #     mass_flux_[1,it,:] = np.sum(np.sum(var[2*ic_arr[0]-icoll:icoll-3,jcoll-delta_y:jcoll+delta_y,:], axis=0), axis=0)
+    #     mass_flux_[2,it,:] = np.sum(np.sum(var[icoll-3:icoll+10,jcoll-delta_y:jcoll+delta_y,:], axis=0), axis=0)
+    # mass_flux_ = dx[0]*dx[1]*mass_flux_
+    # for k in range(kmax):
+    #     mass_flux_[:,:,k] = rho0_stats[k]*mass_flux_[:,:,k]
+    # mass_flux[0,:] = dt*np.sum(mass_flux_[0,:time_single,:], axis=0)
+    # mass_flux[1,:] = dt*np.sum(mass_flux_[1,time_single:time_double+1,:], axis=0)
+    # mass_flux[2,:] = dt*np.sum(mass_flux_[2,:time_single+1,:], axis=0)
+
+
 
 
     ''' (b) plot crosssections at level k0 for w, s for all time-steps '''
@@ -129,12 +165,13 @@ def compute_minima_maxima(var_name, icoll, jcoll, ic_arr, jc_arr, times, nt, dt,
         if var_name == 'w' and time_single == 0:
             if var[ic_arr[0], jcoll, 0] > 1.:
                 time_single = t0 - dt
-    # time_single = (np.where(max_single[:,0] == np.amax(max_single[:,0]))[0][0] + 1)*dt
-    time_double = (np.argmax(max_double_[:, 0])) * dt + tmin
-    it_single = time_single / dt
-    it_double = time_double / dt
+    time_double = (np.argmax(np.amax(max_double_[:, :], axis=1))) * dt + tmin
+    it_single = (time_single-tmin) / dt
+    it_double = (time_double-tmin) / dt
+    print('---', np.amax(np.amax(max_double_[:, :], axis=1)), time_double,
+          np.amax(max_double_[it_double,:]), np.amax(max_double_[it_double+1,:]))
     print('it: ', it_single, it_double)
-    print('time: ', time_single, time_double)
+    print('time: ', time_single, time_double, it_single, it_double)
 
 
     max_single = np.amax(max_single_[:it_single,:], axis=0)
@@ -147,8 +184,47 @@ def compute_minima_maxima(var_name, icoll, jcoll, ic_arr, jc_arr, times, nt, dt,
 
 
     # ---- plotting -----
+    cm = plt.cm.get_cmap('coolwarm')
+
+    fig_name = 'xz_plane_w_single_double_triple.png'
+    fig, axis = plt.subplots(3, 1, figsize=(12, 12))
+    max = np.maximum(np.amax(max_double), np.amax(max_triple)) + 0.5
+    min = np.amin(min_double) - 0.2
+    for i, ax in enumerate(axis):
+        # plot boundary of area considered for double, triple collision
+        # ax.plot([dx[0] * (icoll - 3), dx[0] * (icoll - 3)], [min, max], 'b--', linewidth=0.5)
+        # ax.plot([dx[0] * icoll, dx[0] * icoll], [min, max], 'b--', linewidth=1)
+        # ax.plot([dx[0] * (icoll + 10), dx[0] * (icoll + 10)], [min, max], 'b--', linewidth=0.5)
+        # ax.plot([dx[0] * ic_arr[0], dx[0] * ic_arr[0]], [min, max], 'k--', linewidth=1, label='ic1')
+        ax.set_xlabel('x')
+        ax.set_ylabel(var_name)
+        # ax.set_xlim(imin * dx[0], imax * dx[0])
+        ax.set_ylim(min, max)
+    #     ax.grid()
+    # plot min/max
+    for it,t0 in enumerate([time_double-dt, time_double, time_double+dt]):
+        rootgrp = nc.Dataset(os.path.join(path_fields, str(t0) + '.nc'), 'r')
+        var = rootgrp.groups['fields'].variables[var_name][:, jcoll, :]
+        rootgrp.close()
+        for k0 in range(10):
+            count_color = np.double(k0)/10
+            axis[it].plot(var[:, k0], color=cm(count_color), label='k=' + str(k0))
+    axis[0].set_title('t=time_double-dt='+str(time_double-dt))
+    axis[1].set_title('t=time_double='+str(time_double))
+    axis[2].set_title('t=time_double+dt='+str(time_double+dt))
+    del var
+    axis[-1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
+               fancybox=True, shadow=False, ncol=6, fontsize=10)
+    # plt.suptitle(var_name + ' (z=' + str(k0 * dx[2]) + 'm, k=' + str(k0) + ')', fontsize=21)
+    plt.subplots_adjust(bottom=0.18, right=.95, left=0.1, top=0.9, hspace=0.26)
+    plt.savefig(os.path.join(path_out, fig_name))
+    plt.close()
+
+
+
+
     print('plot minmax levels')
-    fig_name = 'minmax_levels_' + var_name + '.png'
+    fig_name = 'minmax_levels_' + var_name + '_' + case_name + '.png'
     zrange = np.arange(kmax) * dx[2]
     fig, axis = plt.subplots(1, 2, figsize=(6, 8))
     ax0 = axis[0]
@@ -233,7 +309,7 @@ def plot_xz_crosssection_single_double_triple(var_name,
         ax1 = axis[0]
         ax2 = axis[1]
         ax3 = axis[2]
-        max = np.maximum(max_double[k0], max_triple[k0]) + 0.2
+        max = np.maximum(max_double[k0], max_triple[k0]) + 0.5
         min = np.minimum(min_single[k0], min_double[k0]) - 0.2
         for i, ax in enumerate(axis):
             # plot boundary of area considered for double, triple collision
@@ -249,7 +325,8 @@ def plot_xz_crosssection_single_double_triple(var_name,
         # plot min/max
         ax1.plot([0,nx*dx[0]],[max_single[k0], max_single[k0]], 'k', linewidth=0.5)
         ax2.plot([0,nx*dx[0]],[max_double[k0], max_double[k0]], 'k', linewidth=0.5)
-        ax3.plot([0,nx*dx[0]],[max_triple[k0], max_triple[k0]], 'k', linewidth=0.5)
+        ax3.plot([0,nx*dx[0]],[max_double[k0], max_double[k0]], 'k', linewidth=0.5)
+        ax3.plot([0,nx*dx[0]],[max_triple[k0], max_triple[k0]], 'k--', linewidth=0.5)
         for it, t0 in enumerate(times):
             rootgrp = nc.Dataset(os.path.join(path_fields, str(t0) + '.nc'), 'r')
             var = rootgrp.groups['fields'].variables[var_name][:, :, k0]
@@ -257,9 +334,9 @@ def plot_xz_crosssection_single_double_triple(var_name,
             count_color = np.double(it) / len(times)
             if t0 <= time_single:
                 ax1.plot(x_half, var[:, jcoll], color=cm(count_color), label='t=' + str(t0))
-            if t0 <= time_double:
+            elif t0 <= time_double:
                 ax2.plot(x_half, var[:, jcoll], color=cm(count_color), label='t=' + str(t0))
-            if t0 > time_double:
+            else:
                 ax3.plot(x_half, var[:, jcoll], color=cm(count_color), label='t=' + str(t0))
         ax1.set_title('single: t<=' + str(time_single))
         ax2.set_title('double: t<=' + str(time_double))
@@ -487,6 +564,46 @@ def plot_yz_crosssections_multilevel(var_name, i0, krange, jmin, jmax,
 
 
 # ----------------------------------
+
+def output_minima_maxima(var_name, min_single, min_double, min_triple, max_single, max_double, max_triple,
+                         time_single, time_double, times, kmax, filename_out):
+    root_out = nc.Dataset(os.path.join(path_in, filename_out), 'w', format='NETCDF4')
+
+    rootgrp = root_out.createGroup(var_name, )
+    rootgrp.createDimension('time', None)
+    rootgrp.createDimension('nz', kmax)
+
+    time_out = rootgrp.createVariable('time', 'f8', ('time',))
+    time_out.long_name = 'Time'
+    time_out.units = 's'
+    time_out[:] = times
+    var = rootgrp.createVariable('time_single', 'f8', )
+    var.long_name = 'single for t<=time_single'
+    var[:] = time_single
+    var = rootgrp.createVariable('time_double', 'f8', )
+    var.long_name = 'double for time_single<t<=time_double'
+    var[:] = time_double
+
+    var = rootgrp.createVariable('min_single', 'f8', ('nz'))
+    var[:] = min_single[:]
+    var = rootgrp.createVariable('min_double', 'f8', ('nz'))
+    var[:] = min_double[:]
+    var = rootgrp.createVariable('min_triple', 'f8', ('nz'))
+    var[:] = min_triple[:]
+    var = rootgrp.createVariable('max_single', 'f8', ('nz'))
+    var[:] = max_single[:]
+    var = rootgrp.createVariable('max_double', 'f8', ('nz'))
+    var[:] = max_double[:]
+    var = rootgrp.createVariable('max_triple', 'f8', ('nz'))
+    var[:] = max_triple[:]
+
+    root_out.close()
+
+    return
+
+# ----------------------------------
+
+
 def set_input_parameters(args):
     print ''' setting parameters '''
     global path_in, path_fields, path_out
@@ -540,7 +657,7 @@ def set_input_parameters(args):
 
     return case, times, files, krange
 
-# ----------------------------------
+
 def define_geometry(case_name, files):
     print 'define geometry'
     global nx, ny, nz, dx, gw
