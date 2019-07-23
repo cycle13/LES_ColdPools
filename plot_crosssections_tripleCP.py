@@ -24,13 +24,15 @@ def main():
     parser.add_argument("path")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
-    parser.add_argument("--kmin")
-    parser.add_argument("--kmax")
     args = parser.parse_args()
 
-    case, times, files, krange = set_input_parameters(args)
+    case, times, files = set_input_parameters(args)
+    define_geometry(case_name, files)
+    kmax = np.int(2000. / dx[2])
+    krange = np.arange(kmax)
+    print('krange: ', krange)
+    print('kmax: ', kmax)
     nt = len(times)
-    dt = 100
     icoll, jcoll, ic_arr, jc_arr, x_half, y_half, z_half = define_geometry(case_name, files)
 
     filename_out = os.path.join('data_analysis', 'stats_crosssections.nc')
@@ -49,13 +51,15 @@ def main():
     ''' (a) compute and plot maxima in single, double and triple time window '''
     # time_single: time, when w(icoll,jcoll,k=0)<1.m/s for the last time (single for t<=time_single)
     # time_double: timestep when w(icol,jcoll,k=0) decays again for the first time
-    kmax = np.int(2000./dx[2])
-    var_name = 'w'
-    min_single, min_double, min_triple, max_single, max_double, max_triple, \
-            time_single, time_double, it_single, it_double = compute_minima_maxima(var_name, icoll, jcoll, ic_arr, jc_arr, times, nt, dt, kmax)
-    output_minima_maxima(var_name, min_single, min_double, min_triple, max_single, max_double, max_triple,
+    var_list = ['w', 's']
+    for var_name in var_list:
+        print('')
+        print('------ var: '+var_name)
+        min_single, min_double, min_triple, max_single, max_double, max_triple, \
+            time_single, time_double, it_single, it_double = compute_minima_maxima(var_name, icoll, jcoll, ic_arr, jc_arr, times, nt, kmax)
+        output_minima_maxima(var_name, min_single, min_double, min_triple, max_single, max_double, max_triple,
                          time_single, time_double, times, kmax, filename_out)
-    plot_xz_crosssection_single_double_triple(var_name, min_single, min_double, min_triple,
+        plot_xz_crosssection_single_double_triple(var_name, min_single, min_double, min_triple,
                                               max_single, max_double, max_triple,
                                               icoll, jcoll, ic_arr, jc_arr,
                                               time_single, time_double, times, x_half)
@@ -63,8 +67,8 @@ def main():
 
 
     # ''' compute mass-flux '''
-    # # mass_flux[i,j,k]= dm*w[i,j,k]*dt
-    # # mass_flux[i,j,k]= rho*dA*w[i,j,k]*dt = rho[i,j,k]*dx*dy*w[i,j,k]*dt
+    # # mass_flux[i,j,k]= dm*w[i,j,k]*dt_fields
+    # # mass_flux[i,j,k]= rho*dA*w[i,j,k]*dt_fields = rho[i,j,k]*dx*dy*w[i,j,k]*dt_fields
     # # define area:
     # # - band along xz-crosssection of width 300m
     # # - single: between x=r*+delta and x=icoll+10; time btw. t<=time_single
@@ -94,9 +98,9 @@ def main():
     # mass_flux_ = dx[0]*dx[1]*mass_flux_
     # for k in range(kmax):
     #     mass_flux_[:,:,k] = rho0_stats[k]*mass_flux_[:,:,k]
-    # mass_flux[0,:] = dt*np.sum(mass_flux_[0,:time_single,:], axis=0)
-    # mass_flux[1,:] = dt*np.sum(mass_flux_[1,time_single:time_double+1,:], axis=0)
-    # mass_flux[2,:] = dt*np.sum(mass_flux_[2,:time_single+1,:], axis=0)
+    # mass_flux[0,:] = dt_fields*np.sum(mass_flux_[0,:time_single,:], axis=0)
+    # mass_flux[1,:] = dt_fields*np.sum(mass_flux_[1,time_single:time_double+1,:], axis=0)
+    # mass_flux[2,:] = dt_fields*np.sum(mass_flux_[2,:time_single+1,:], axis=0)
 
 
 
@@ -134,8 +138,8 @@ def main():
 
 # --------------------------------------------------------------------
 
-def compute_minima_maxima(var_name, icoll, jcoll, ic_arr, jc_arr, times, nt, dt, kmax):
-    print('compute and plot maxima / minima')
+def compute_minima_maxima(var_name, icoll, jcoll, ic_arr, jc_arr, times, nt, kmax):
+    print('compute and plot maxima / minima (kmax='+str(kmax)+')')
 
     max_single_ = np.zeros((nt, kmax), dtype=np.double)
     max_double_ = np.zeros((nt, kmax), dtype=np.double)
@@ -152,9 +156,9 @@ def compute_minima_maxima(var_name, icoll, jcoll, ic_arr, jc_arr, times, nt, dt,
         if var_name == 's':
             for k in range(kmax):
                 if var_name == 's':
-                    min_single_[it, k] = np.maximum(6000, np.amin(var[icoll + 10:, jcoll, k]))
-                    min_double_[it, k] = np.maximum(6000, np.amin(var[:icoll - 3, jcoll, k]))
-                    min_triple_[it, k] = np.maximum(6000, np.amin(var[icoll - 3:, jcoll, k]))
+                    min_single_[it, k] = np.maximum(6000, np.amin(var[icoll+10:, jcoll, k]))
+                    min_double_[it, k] = np.maximum(6000, np.amin(var[:icoll-3, jcoll, k]))
+                    min_triple_[it, k] = np.maximum(6000, np.amin(var[icoll-3:icoll+3, jcoll, k]))
         else:
             min_single_[it, :] = np.amin(var[icoll + 10:, jcoll, :], axis=0)
             min_double_[it, :] = np.amin(var[:icoll - 3, jcoll, :], axis=0)
@@ -162,56 +166,66 @@ def compute_minima_maxima(var_name, icoll, jcoll, ic_arr, jc_arr, times, nt, dt,
         max_single_[it, :] = np.amax(var[icoll + 10:, jcoll, :], axis=0)
         max_double_[it, :] = np.amax(var[:icoll - 3, jcoll, :], axis=0)
         max_triple_[it, :] = np.amax(var[icoll - 3:, jcoll, :], axis=0)
-        if var_name == 'w' and time_single == 0:
-            if var[ic_arr[0], jcoll, 0] > 1.:
-                time_single = t0 - dt
-    time_double = (np.argmax(np.amax(max_double_[:, :], axis=1))) * dt + tmin
-    it_single = (time_single-tmin) / dt
-    it_double = (time_double-tmin) / dt
-    print('---', np.amax(np.amax(max_double_[:, :], axis=1)), time_double,
-          np.amax(max_double_[it_double,:]), np.amax(max_double_[it_double+1,:]))
-    print('it: ', it_single, it_double)
-    print('time: ', time_single, time_double, it_single, it_double)
+        if var_name == 'w':
+            if time_single == 0 and var[ic_arr[0], jcoll, 0] > 1.:
+                time_single = t0 - dt_fields
+            time_double = (np.argmax(np.amax(max_double_[:, :], axis=1))) * dt_fields + tmin
+        elif var_name == 's':
+            if time_single == 0 and var[ic_arr[0], jcoll, 0] < (np.mean(var[:10, jcoll, 0])-5):
+                time_single = t0 - dt_fields
+            time_double = (np.argmin(np.amin(min_triple_[:, :], axis=1))) * dt_fields + tmin
+    it_single = (time_single-tmin) / dt_fields
+    it_double = (time_double-tmin) / dt_fields
+    print('it single, double: ', it_single, it_double)
+    print('time single, double: ', time_single, time_double, it_single, it_double)
 
-
-    max_single = np.amax(max_single_[:it_single,:], axis=0)
-    max_double = np.amax(max_double_[:it_double+1,:], axis=0)
-    max_triple = np.amax(max_triple_[:,:], axis=0)
+    max_single = np.amax(max_single_[:it_single + 1, :], axis=0)
+    max_double = np.amax(max_double_[it_single:it_double+1,:], axis=0)
+    max_triple = np.amax(max_triple_[it_double:,:], axis=0)
     min_single = np.amin(min_single_[:it_single+1,:], axis=0)
-    min_double = np.amin(min_double_[it_single:,:], axis=0)
-    min_triple = np.amin(min_triple_[it_single:,:], axis=0)
+    min_double = np.amin(min_double_[it_single:it_double+1,:], axis=0)
+    min_triple = np.amin(min_triple_[it_double:,:], axis=0)
+    # if var_name == 'w':
+    #     max_single = np.amax(max_single_[:it_single+1,:], axis=0)
+    #     max_double = np.amax(max_double_[it_single:it_double+1,:], axis=0)
+    #     max_triple = np.amax(max_triple_[it_double:,:], axis=0)
+    #     min_single = np.amin(min_single_[:it_single+1,:], axis=0)
+    #     min_double = np.amin(min_double_[it_single:it_double+1,:], axis=0)
+    #     min_triple = np.amin(min_triple_[it_double:,:], axis=0)
+    # elif var_name == 's':
+    #     max_single = np.amax(max_single_[:it_single+1, :], axis=0)
+    #     max_double = np.amax(max_double_[it_single:it_double+1, :], axis=0)
+    #     max_triple = np.amax(max_triple_[it_double:, :], axis=0)
+    #     min_single = np.amin(min_single_[:it_single+1, :], axis=0)
+    #     min_double = np.amin(min_double_[it_single:it_double+1, :], axis=0)
+    #     min_triple = np.amin(min_triple_[it_double:, :], axis=0)
 
 
 
     # ---- plotting -----
     cm = plt.cm.get_cmap('coolwarm')
 
-    fig_name = 'xz_plane_w_single_double_triple.png'
+    fig_name = 'xz_plane_' + var_name + '_single_double_triple.png'
     fig, axis = plt.subplots(3, 1, figsize=(12, 12))
     max = np.maximum(np.amax(max_double), np.amax(max_triple)) + 0.5
     min = np.amin(min_double) - 0.2
     for i, ax in enumerate(axis):
-        # plot boundary of area considered for double, triple collision
-        # ax.plot([dx[0] * (icoll - 3), dx[0] * (icoll - 3)], [min, max], 'b--', linewidth=0.5)
-        # ax.plot([dx[0] * icoll, dx[0] * icoll], [min, max], 'b--', linewidth=1)
-        # ax.plot([dx[0] * (icoll + 10), dx[0] * (icoll + 10)], [min, max], 'b--', linewidth=0.5)
-        # ax.plot([dx[0] * ic_arr[0], dx[0] * ic_arr[0]], [min, max], 'k--', linewidth=1, label='ic1')
         ax.set_xlabel('x')
         ax.set_ylabel(var_name)
         # ax.set_xlim(imin * dx[0], imax * dx[0])
         ax.set_ylim(min, max)
     #     ax.grid()
     # plot min/max
-    for it,t0 in enumerate([time_double-dt, time_double, time_double+dt]):
+    for it,t0 in enumerate([time_double-dt_fields, time_double, time_double+dt_fields]):
         rootgrp = nc.Dataset(os.path.join(path_fields, str(t0) + '.nc'), 'r')
         var = rootgrp.groups['fields'].variables[var_name][:, jcoll, :]
         rootgrp.close()
         for k0 in range(10):
             count_color = np.double(k0)/10
             axis[it].plot(var[:, k0], color=cm(count_color), label='k=' + str(k0))
-    axis[0].set_title('t=time_double-dt='+str(time_double-dt))
+    axis[0].set_title('t=time_double-dt='+str(time_double-dt_fields))
     axis[1].set_title('t=time_double='+str(time_double))
-    axis[2].set_title('t=time_double+dt='+str(time_double+dt))
+    axis[2].set_title('t=time_double+dt='+str(time_double+dt_fields))
     del var
     axis[-1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
                fancybox=True, shadow=False, ncol=6, fontsize=10)
@@ -304,7 +318,7 @@ def plot_xz_crosssection_single_double_triple(var_name,
     imin = (icoll - 200)
     imax = (icoll + 200)
     for k0 in [0, 2, 4, 6, 8, 10, 12, 14, 16]:
-        fig_name = 'xz_plane_w_single_double_triple_k' + str(k0) + '.png'
+        fig_name = 'xz_plane_' + var_name + '_single_double_triple_k' + str(k0) + '.png'
         fig, axis = plt.subplots(3, 1, figsize=(12, 12))
         ax1 = axis[0]
         ax2 = axis[1]
@@ -567,6 +581,11 @@ def plot_yz_crosssections_multilevel(var_name, i0, krange, jmin, jmax,
 
 def output_minima_maxima(var_name, min_single, min_double, min_triple, max_single, max_double, max_triple,
                          time_single, time_double, times, kmax, filename_out):
+    print('')
+    print(os.path.join(path_in, filename_out))
+    print(path_in)
+    if not os.path.exists(os.path.join(path_in, 'data_analysis')):
+        os.mkdir(os.path.join(path_in, 'data_analysis'))
     root_out = nc.Dataset(os.path.join(path_in, filename_out), 'w', format='NETCDF4')
 
     rootgrp = root_out.createGroup(var_name, )
@@ -626,7 +645,7 @@ def set_input_parameters(args):
     print('')
 
 
-    ''' determine file range '''
+    ''' determine time range '''
     global tmin, tmax
     if args.tmin:
         tmin = np.int(args.tmin)
@@ -643,19 +662,14 @@ def set_input_parameters(args):
     files = [str(t) + '.nc' for t in times]
     print('')
 
-    if args.kmin:
-        kmin = np.int(args.kmin)
-    else:
-        kmin = 0
-    if args.kmax:
-        kmax = np.int(args.kmax)
-    else:
-        kmax = kmin
-    krange = np.arange(kmin, kmax + 1)
-    print('krange: ', krange)
-    print ''
+    # if args.kmax:
+    #     kmax = np.int(args.kmax)
+    # else:
+    #     kmax = 0
+    print('')
 
-    return case, times, files, krange
+    return case, times, files
+
 
 
 def define_geometry(case_name, files):
@@ -670,55 +684,11 @@ def define_geometry(case_name, files):
     dx[1] = nml['grid']['dy']
     dx[2] = nml['grid']['dz']
     gw = nml['grid']['gw']
+    global dt_fields
+    dt_fields = np.int(nml['fields_io']['frequency'])
 
     # set coordinates for plots
-    # (a) double 3D
-    global isep
-
-    if case_name == 'ColdPoolDry_single_3D':
-        rstar = nml['init']['r']
-        try:
-            ic = nml['init']['ic']
-            jc = nml['init']['jc']
-        except:
-            ic = np.int(nx/2)
-            jc = np.int(ny/2)
-        ic_arr = np.zeros(1)
-        jc_arr = np.zeros(1)
-        ic_arr[0] = ic
-        jc_arr[0] = jc
-    # (b) double 2D
-    elif case_name == 'ColdPoolDry_double_2D':
-        try:
-            rstar = nml['init']['r']
-        except:
-            rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
-        isep = 4 * irstar
-        ic1 = np.int(nx / 3)  # np.int(Gr.dims.ng[0] / 3)
-        ic2 = ic1 + isep
-        jc1 = np.int(ny / 2)
-        jc2 = jc1
-        ic_arr = [ic1, ic2]
-        jc_arr = [jc1, jc2]
-    elif case_name == 'ColdPoolDry_double_3D':
-        try:
-            rstar = nml['init']['r']
-        except:
-            rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
-        isep = 4 * irstar
-        jsep = 0
-        # ic1 = np.int(np.round((nx + 2 * gw) / 3)) - gw
-        ic1 = np.int(np.round((nx - gw) / 3)) + 1
-        ic2 = ic1 + isep
-        jc1 = np.int(np.round((ny + 2 * gw) / 2)) - gw
-        jc2 = jc1 + jsep
-        ic_arr = [ic1, ic2]
-        jc_arr = [jc1, jc2]
-        icoll = 0.5*(ic1+ic2)
-        jcoll = 0.5*(jc1+jc2)
-    elif case_name == 'ColdPoolDry_triple_3D':
+    if case_name[:21] == 'ColdPoolDry_triple_3D':
         global d, r_int
         try:
             rstar = nml['init']['r']
@@ -743,7 +713,7 @@ def define_geometry(case_name, files):
         icoll = ic
         jcoll = jc
 
-    print('ic, jc: ', ic_arr, jc_arr)
+    # print('ic, jc: ', ic_arr, jc_arr)
 
     ''' --- auxiliary arrays (since no Grid.pyx) ---'''
     global nx_, ny_, nz_
