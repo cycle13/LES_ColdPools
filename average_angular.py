@@ -21,9 +21,6 @@ def main():
     args = parser.parse_args()
 
     times, nml, ID = set_input_parameters(args)
-    print('id: '+ ID)
-    radius = np.int(np.double(ID[12:16]) / dx[0])
-    print('radius: ' + str(radius))
 
     path_out_data = os.path.join(path, 'data_analysis')
     if not os.path.exists(path_out_data):
@@ -42,7 +39,11 @@ def main():
     print 'fields:  ', path_fields
     print ''
 
-    ic_arr, jc_arr = define_geometry(nml)
+    ic_arr, jc_arr, rstar = define_geometry(nml)
+    # radius = np.int(np.double(ID[12:16]) / dx[0])
+    radius = np.int(np.double(rstar) / dx[0])
+    print('id: '+ ID)
+    print('radius: ' + str(radius))
     ic = ic_arr[0]
     jc = jc_arr[0]
     irange = np.minimum(nx-ic, ic)
@@ -50,7 +51,7 @@ def main():
     rmax = np.int(np.ceil(np.sqrt(irange**2 + jrange**2)))
 
     # plot configuration test file
-    plot_configuration(ic, jc, path_out_data_2D)
+    plot_configuration(ic, jc, radius, path_out_data_2D)
 
 
     print ''
@@ -605,7 +606,7 @@ def plot_radially_averaged_CP_height(times, file_name_in, path_out_data):
     return
 
 # _______________________________
-def plot_configuration(ic, jc, path_out):
+def plot_configuration(ic, jc, radius, path_out):
     fig_name = 'test_config.png'
     fullpath_in = os.path.join(path, 'fields', '0.nc')
     rootgrp = nc.Dataset(fullpath_in, 'r')
@@ -622,7 +623,6 @@ def plot_configuration(ic, jc, path_out):
     ax3.imshow(s[ic, :,:100].T, origin='lower')
     ax3.plot([ic,ic], [0,100], 'k-', linewidth=1)
 
-    radius = np.int(np.double(os.path.basename(path[:-1])[12:16])/dx[0])
     circle1 = plt.Circle((ic, jc), radius, fill=False, color='r', linewidth=2)
     circle2 = plt.Circle((ic+1, jc+1), radius, fill=False, color='r', linewidth=2)
     circle3 = plt.Circle((ic-1, jc-1), radius, fill=False, color='r', linewidth=2)
@@ -788,7 +788,7 @@ def define_geometry(nml):
     #
     # return x_half, y_half, z_half
 
-    return ic_arr, jc_arr
+    return ic_arr, jc_arr, rstar
 
 # _______________________________
 
