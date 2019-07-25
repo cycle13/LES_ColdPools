@@ -428,7 +428,7 @@ def define_geometry():
     global ic1, ic2, ic3, jc1, jc2, jc3
     # d = namelist['init']['d']
     d = 6000.
-    id = np.int(np.round(d / dx))
+    id = np.round(d / dx)
     idhalf = np.int(np.round(id / 2))
     a = np.int(np.round(id * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
     r_int = np.int(np.sqrt(3.) / 6 * id)  # radius of inscribed circle
@@ -437,7 +437,7 @@ def define_geometry():
     jc = np.int(np.round(ny / 2))
     ic1 = ic - r_int
     ic2 = ic1
-    ic3 = ic + r_int
+    ic3 = ic + (a - r_int)
     jc1 = jc - idhalf
     jc2 = jc + idhalf
     jc3 = jc
