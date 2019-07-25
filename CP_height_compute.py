@@ -6,6 +6,9 @@ import argparse
 import json as simplejson
 import os
 import time
+import scipy
+import scipy.ndimage
+
 
 
 label_size = 8
@@ -28,16 +31,17 @@ def main():
     parser.add_argument("--s_crit")
     args = parser.parse_args()
 
-    global cm_bwr, cm_grey, cm_vir, cm_hsv
+    global cm_bwr, cm_grey, cm_vir, cm_hsv, cm_cw
     cm_bwr = plt.cm.get_cmap('bwr')
     cm_grey = plt.cm.get_cmap('gist_gray_r')
     cm_hsv = plt.cm.get_cmap('hsv')
     cm_fall = plt.cm.get_cmap('winter')
     cm_summer = plt.cm.get_cmap('spring')
+    cm_cw = plt.cm.get_cmap('coolwarm')
 
     nml, times = set_input_output_parameters(args)
     i0_center, j0_center, i0_coll, j0_coll, xmin_plt, xmax_plt, ymin_plt, ymax_plt = define_geometry(case_name, nml)
-    kmax = kstar + 10
+    kmax = kstar + 20
 
     ''' threshold for entropy '''
     if args.s_crit:
@@ -61,34 +65,34 @@ def main():
     s_bg = np.average(np.average(s0[:10,:10,:kmax], axis=0), axis=0)
     smax = np.amax(s0)
     smin = np.amin(s0)
-    plot_geometry(s0, i0_center, j0_center)
+    plot_geometry(s0, i0_coll, j0_coll)
     del s0
     print('sminmax', smin, smax)
     print ''
 
-    # ''' create output file '''
+    # # ''' create output file '''
     filename = 'CP_height_' + ID + '_sth' + str(s_crit) + '.nc'
-    create_output_file(filename, s_crit, nx, ny, times)
-    ''' define CP height & maximal updraft velocity'''
-    # Output:
-    #       CP_top[it, x, y]: 2D-field with CP-height for each xy-value
-    #       w_max[0,it,x,y]:  2D-field with maximum value of w for each column
-    #       w_max[1,it,x,y]:  height where maximum value of w for each column
-    w_max, w_max_height, w_max_2d = compute_w_max(kmax, times)
-    dump_output_file('w_max', 'timeseries', w_max, filename)
-    dump_output_file('w_max_2d', 'fields_2D', w_max_2d[0,:,:,:], filename)
-    dump_output_file('w_max_height', 'timeseries', w_max_height, filename)
-    dump_output_file('w_max_height_2d', 'fields_2D', w_max_2d[1,:,:,:], filename)
-    CP_top, CP_top_max = compute_CP_height_threshold(s_bg, s_crit, kmax, times)
-    dump_output_file('CP_height_max', 'timeseries', CP_top_max, filename)
-    dump_output_file('CP_height_2d', 'fields_2D', CP_top[:,:,:], filename)
-    CP_top_grad, CP_top_grad_max = compute_CP_height_gradient(i0_coll, j0_coll, kmax, times)
-    dump_output_file('CP_height_gradient_max', 'timeseries', CP_top_grad_max, filename)
-    dump_output_file('CP_height_gradient_2d', 'fields_2D', CP_top_grad[:,:,:], filename)
-    print('')
-
-
-
+    # create_output_file(filename, s_crit, nx, ny, times)
+    # ''' define CP height & maximal updraft velocity'''
+    # # Output:
+    # #       CP_top[it, x, y]: 2D-field with CP-height for each xy-value
+    # #       w_max[0,it,x,y]:  2D-field with maximum value of w for each column
+    # #       w_max[1,it,x,y]:  height where maximum value of w for each column
+    # w_max, w_max_height, w_max_2d = compute_w_max(kmax, times)
+    # dump_output_file('w_max', 'timeseries', w_max, filename)
+    # dump_output_file('w_max_2d', 'fields_2D', w_max_2d[0,:,:,:], filename)
+    # dump_output_file('w_max_height', 'timeseries', w_max_height, filename)
+    # dump_output_file('w_max_height_2d', 'fields_2D', w_max_2d[1,:,:,:], filename)
+    # CP_top, CP_top_max = compute_CP_height_threshold(s_bg, s_crit, kmax, times)
+    # dump_output_file('CP_height_max', 'timeseries', CP_top_max, filename)
+    # dump_output_file('CP_height_2d', 'fields_2D', CP_top[:,:,:], filename)
+    CP_top_grad, CP_top_grad_max, CP_top_gradgrad = compute_CP_height_gradient(i0_coll, j0_coll, kmax, times)
+    # dump_output_file('CP_height_gradient_max', 'timeseries', CP_top_grad_max, filename)
+    # dump_output_file('CP_height_gradient_2d', 'fields_2D', CP_top_grad[:,:,:], filename)
+    # print('')
+    #
+    #
+    #
     '''plot contour-figure of CP_top, w_max, height of w_max (xy-plane)'''
     print('plotting')
     filename = 'CP_height_' + ID + '_sth' + str(s_crit) + '.nc'
@@ -118,7 +122,8 @@ def main():
                          w_max_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt],
                          w_max_height_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt], t0,
                          figname)
-        # plot_contourf_test_yz(s, smin, smax, CP_top_2D[it, :, :], CP_top_grad[it, :, :], kmax, t0)
+        plot_contourf_test_yz(smin, smax, CP_top_2D[it, :, :], CP_top_gradient_2D[it, :, :],
+                              CP_top_gradgrad[it,:,:], kmax, j0_coll, t0)
 
 
 
@@ -170,8 +175,6 @@ def compute_w_max(kmax, times):
     return w_max, w_max_height, w_max_2d
 
 
-
-
 def compute_CP_height_threshold(s_bg, s_crit, kmax, times):
     print('--- compute CP height by threshold ---')
     nt = len(times)
@@ -180,13 +183,11 @@ def compute_CP_height_threshold(s_bg, s_crit, kmax, times):
     # define CP height by threshold in entropy directly (s > s_crit)
     CP_top = np.zeros((nt, nx, ny), dtype=np.int)
     CP_top_max = np.zeros((nt))
-    print('s_bg', s_bg)
 
     for it, t0 in enumerate(times):
         print('--- t: ', it, t0)
         s = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0) + '.nc'))[xmin:xmax, xmin:xmax, :kmax]
         s_diff = s - s_bg
-        print('s_diff', s_diff.shape)
         for i in range(nx):
             for j in range(ny):
                 # for k in range(kmax-1, 0, -1):
@@ -198,7 +199,6 @@ def compute_CP_height_threshold(s_bg, s_crit, kmax, times):
                         # print('if-in', k)
                         CP_top[it, i, j] = (k+0.5)*dx[2]    # staggered grid for entropy
                         k = 0
-        # print(CP_top[it,:,:])
         print(kmax, (kmax+0.5)*dx[2], np.amax(CP_top[it,:,:]), np.amin(CP_top[it,:,:]))
         CP_top_max[it] = np.amax(CP_top[it, :, :])
 
@@ -207,18 +207,16 @@ def compute_CP_height_threshold(s_bg, s_crit, kmax, times):
     return CP_top, CP_top_max
 
 
-
-
 def compute_CP_height_gradient(i0_coll, j0_coll, kmax, times):
-    print('--- compute CP height by threshold ---')
+    print('--- compute CP height by gradient ---')
     nt = len(times)
     xmin = 0
     xmax = nx
     dzi = 1. / dx[2]
 
     # define CP height by inflection point (i.e., the zero-point the vertical gradient) of entropy
-    CP_top_grad = np.zeros((nt, nx, ny))
-    CP_top_max = np.zeros((nt))
+    CP_top_grad = np.zeros((nt, nx, ny), dtype=np.int)
+    CP_top_gradgrad = np.zeros((nt, nx, ny), dtype=np.int)
 
     # irstar used for determining the averaging domain
     if case_name[:21] == 'ColdPoolDry_single_3D':
@@ -238,33 +236,129 @@ def compute_CP_height_gradient(i0_coll, j0_coll, kmax, times):
         deltay = irstar
 
     for it, t0 in enumerate(times):
+        fig, axes = plt.subplots(3, 3, figsize=(15, 12))
+        jmin = 100
+        jmax = 300
+
         print('--- t: ', it, t0)
         s = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0) + '.nc'))[xmin:xmax, xmin:xmax, :kmax+1]
         s_grad = np.zeros((nx, ny, kmax))
-        s_gradgrad = np.zeros((nx, ny, kmax))
+        s_gradgrad = np.zeros((nx, ny, kmax), dtype=np.double)
 
         # # s_grad[:, :, 0] = dzi * (s[:, :, 1] - 2 * s[:, :, 0] + s[:, :, 0])
-        # s_grad[:,:,0] = dzi * (s[:,:,1] - s[:,:,0])
+        s_grad[:,:,0] = dzi * (s[:,:,1] - s[:,:,0])
         s_gradgrad[:,:,0] = dzi ** 2 * (s[:, :, 1] - 2 * s[:, :, 0] + s[:, :, 0])  # symmetric bcs: s[k=-1]=s[k=0]
         for k in range(1, kmax):
-            # s_grad[:,:,k] = dzi * (s[:,:,k + 1] - s[:,:,k])
-            s_gradgrad[:,:,k] = dzi ** 2 * (s[:, :, k + 1] - 2 * s[:, :, k] + s[:, :, k - 1])
+            s_grad[:,:,k] = dzi * (s[:,:,k + 1] - s[:,:,k])
+            s_gradgrad[:,:,k] = dzi ** 2 * (s[:, :, k+1] - 2 * s[:, :, k] + s[:, :, k - 1])
 
-        # epsilon = np.average(np.average(s_grad[i_eps_min:i_eps_min + deltax, j_eps_min:j_eps_min + deltay, :], axis=0),
-        #                      axis=0)
+
+
+        ax = axes[0, 0]
+        levels = np.linspace(np.amin(s), np.amax(s), 1e2)
+        a = ax.contourf(s[ic_arr[0], jmin:jmax, :kstar + 10].T, levels=levels)
+        aux = np.ndarray((2,ny))
+        for j in range(xmin,xmax):
+            aux[0,j] = np.argmax(s_grad[ic_arr[0],j,:kmax])
+            aux[1,j] = np.argmin(s_gradgrad[ic_arr[0],j,:kmax])
+        ax.plot(aux[0,jmin:jmax], '-w')
+        ax.plot(aux[1,jmin:jmax], '-r')
+        plt.colorbar(a, ax=ax)
+        ax.set_title('s')
+        ax = axes[0, 1]
+        cf = ax.contourf(s_grad[ic_arr[0], jmin:jmax, :kmax].T, levels=np.linspace(0, 0.09, 10))
+        plt.colorbar(cf, ax=ax)
+        ax.set_title('s_grad')
+        ax = axes[0, 2]
+        cf = ax.contourf(np.abs(s_gradgrad[ic_arr[0], jmin:jmax, :kmax]).T,
+                         levels=np.linspace(-4e-4, 4e-4, 17), cmap=cm_bwr, extend="both")
+
+        plt.colorbar(cf, ax=ax)
+        ax.set_title('s_gradgrad')
+
+
+
+
+        s_grad[s_grad <= 0.02] = 0.
+        # s_gradgrad[s_grad <= 0.01] = 0.     # no good result in interior of CP
+        k_init = np.argmax(s_gradgrad[:,:,:kmax], axis=2)
+        k_end = np.argmin(s_gradgrad[:,:,:kmax], axis=2)
+        # k_init_smooth = scipy.ndimage.uniform_filter(k_init, size=3, mode='constant')
+        # k_end_smooth = scipy.ndimage.uniform_filter(k_end, size=3, mode='constant')
+        activity = np.zeros((nx, ny), dtype=np.int)
         for i in range(xmin,xmax):
             for j in range(xmin,xmax):
-                CP_top_grad[it,i,j] = (np.argmin(np.abs(s_gradgrad[i,j,:]))+0.5)*dx[2]
-                # for k in range(kmax, 0, -1):
-                #     if s_grad[i, j, k] > epsilon[k] + 1e-3 and CP_top_grad[it, i, j] == 0:
-                #         CP_top_grad[it, i, j] = k
-        CP_top_max[it] = np.amax(CP_top_grad[it, :, :])
+                CP_top_grad[it,i,j] = np.argmax(s_grad[i,j,:kmax])
+                min_aux = 9999.9
+                # test continuity of k_init
+                if np.abs(np.mean(k_init[i-1:i+2,j-1:j+2])-k_init[i,j]) <= 8.*2/9:
+                    if np.abs(np.mean(k_end[i-1:i+2, j-1:j + 2]) - k_end[i, j]) <= 8.*2/9:
+                        if k_init[i,j] < k_end[i,j]:
+                            k = k_init[i,j]
+                            while k <= k_end[i,j]:
+                                if np.abs(s_gradgrad[i,j,k]) <= min_aux:
+                                    min_aux = np.abs(s_gradgrad[i,j,k])
+                                    CP_top_gradgrad[it,i,j] = k
+                                k += 1
+                # CP_top_gradgrad[it,i,j] = np.argmin(s_gradgrad[i,j,:kmax])
 
-    return CP_top_grad, CP_top_max
 
 
 
-# ----------------------------------------------------------------------
+
+        ax = axes[1, 0]
+        levels = np.linspace(np.amin(s), np.amax(s), 1e2)
+        a = ax.contourf(s[ic_arr[0], jmin:jmax, :kstar + 10].T, levels=levels)
+        ax.plot(CP_top_grad[it, ic_arr[0], jmin:jmax], '-w')
+        ax.plot(CP_top_gradgrad[it, ic_arr[0], jmin:jmax], '-r')
+        plt.colorbar(a, ax=ax)
+        ax = axes[1,1]
+        cf = ax.contourf(s_grad[ic_arr[0], jmin:jmax, :kmax].T, levels=np.linspace(0,0.09,10))
+        ax.plot(CP_top_grad[it, ic_arr[0], jmin:jmax], '-w')
+        plt.colorbar(cf, ax=ax)
+        ax.set_title('s_grad (threshold=0.02)')
+        ax = axes[1,2]
+        cf = ax.contourf(s_gradgrad[ic_arr[0], jmin:jmax, :kmax].T,
+                         levels=np.linspace(-4e-4, 4e-4, 17), cmap=cm_bwr, extend="both")
+        cf.cmap.set_under('black')
+        cf.cmap.set_over('black')
+        plt.colorbar(cf, ax=ax)
+        ax.plot(k_init[ic_arr[0], jmin:jmax], 'r', linewidth=1.)
+        ax.plot(k_end[ic_arr[0], jmin:jmax], 'b', linewidth= 1.)
+        ax.plot(CP_top_gradgrad[it, ic_arr[0], jmin:jmax], '-g', linewidth=2)
+        ax.set_title('s_gradgrad (threshold=s_grad>0.02)')
+        ax = axes[2,0]
+        cf = ax.contourf(np.amin(np.abs(s_gradgrad[jmin:jmax, jmin:jmax,:]), axis=2))
+        plt.colorbar(cf, ax=ax)
+        ax.set_title('min(s_gradgrad)')
+        ax = axes[2,1]
+        cf = ax.contourf(CP_top_grad[it, jmin:jmax, jmin:jmax].T)
+        plt.colorbar(cf, ax=ax)
+        ax.set_title('CP top = argmax(gradient)')
+        ax = axes[2,2]
+        cf = ax.contourf(CP_top_gradgrad[it, jmin:jmax, jmin:jmax].T)
+        plt.colorbar(cf, ax=ax)
+        ax.set_title('CP top = argmin(gradgrad)')
+
+        for ax in axes[0, :]:
+            ax.set_ylim(0, kstar + 8)
+            ax.set_xlim(100,200)
+        for ax in axes[1, :]:
+            ax.set_ylim(0, kstar + 8)
+            ax.set_xlim(100,200)
+        for ax in axes[2, :]:
+            ax.set_aspect('equal')
+        fig.tight_layout()
+        fig.savefig(os.path.join(path_out_figs, 'gradient_yz_t' + str(t0) + '.png'))
+        plt.close(fig)
+
+
+
+    CP_top_grad = (CP_top_grad + 0.5) * dx[2]
+    CP_top_gradgrad = (CP_top_gradgrad + 0.5) * dx[2]
+    CP_top_max = np.amax(CP_top_grad[it, :, :])
+    return CP_top_grad, CP_top_max, CP_top_gradgrad
+
 # ----------------------------------------------------------------------
 def plot_timeseries(CP_height_2d, CP_height, w_max_height, s0, i0_coll, j0_coll, time_range, figname):
 
@@ -315,25 +409,39 @@ def plot_timeseries(CP_height_2d, CP_height, w_max_height, s0, i0_coll, j0_coll,
     return
 
 # ----------------------------------------------------------------------
-# ----------------------------------------------------------------------
-def plot_contourf_test_yz(s, smin, smax, CP_top, CP_top_grad, kmax, t0):
+def plot_contourf_test_yz(smin, smax, CP_top, CP_top_grad, CP_top_gradgrad, kmax, j0_coll, t0):
     ic1 = ic_arr[0]
     levels = np.arange(smin, smax, 0.1)
+    s = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0)+'.nc'))
 
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    fig, axes = plt.subplots(1, 4, figsize=(16, 5))
     ax1 = axes[0]
-    a = ax1.contourf(s[:, :, 1].T, levels=levels)
-    ax1.plot([ic1, ic1], [0, ny], 'k-')
+    a = ax1.contourf(s[ic1, :, :kmax].T, levels=levels)
+    ax1.plot(CP_top[ic1,:], '-w')
+    ax1.plot(CP_top_grad[ic1,:], '-r')
+    ax1.plot(CP_top_grad[ic1,:], '-y')
     plt.colorbar(a, ax=ax1)
     ax2 = axes[1]
-    ax2.contourf(s[ic1, :, :kmax].T, levels=levels)
-    ax2.plot(CP_top[ic1, :], 'w-')
+    cf = ax2.contourf(CP_top[:,:].T)
+    plt.colorbar(cf, ax=ax2)
     ax2.set_title('CP top (threshold)')
+    # ax2.contourf(s[ic1, :, :kmax].T, levels=levels)
+    # ax2.plot(CP_top[ic1, :], 'w-')
     ax3 = axes[2]
-    ax3.contourf(s[ic1, :, :kmax].T, levels=levels)
-    ax3.plot(CP_top_grad[ic1, :], 'w-')
+    cf = ax3.contourf(CP_top_grad[:,:].T)
+    plt.colorbar(cf, ax=ax3)
     ax3.set_title('CP top (gradient)')
-    fig.suptitle('t=' + str(t0) + 's')
+    # ax3.contourf(s[ic1, :, :kmax].T, levels=levels)
+    # ax3.plot(CP_top_grad[ic1, :], 'w-')
+    ax4 = axes[3]
+    cf = ax4.contourf(CP_top_gradgrad[:, :].T)
+    plt.colorbar(cf, ax=ax4)
+    ax4.set_title('CP top (gradgrad)')
+
+    # fig.suptitle('t=' + str(t0) + 's')
+    ax2.set_aspect('equal')
+    ax3.set_aspect('equal')
+    ax4.set_aspect('equal')
     fig.tight_layout()
     fig.savefig(os.path.join(path_out_figs, 'CP_height_yz_t' + str(t0) + '.png'))
     plt.close(fig)
@@ -385,17 +493,18 @@ def plot_geometry(s, i0, j0):
     fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
     ax1 = axes[0]
     ax2 = axes[1]
-    a1 = ax1.contourf(s[:,:,kstar].T)
-    a2 = ax2.contourf(s[:,:,0].T)
-    eps = 20
-    plt.colorbar(a1, ax=ax1)
-    plt.colorbar(a2, ax=ax2)
-    ax1.set_xlim(i0-eps, i0+eps)
-    ax1.set_ylim(j0-eps, j0+eps)
-    ax2.set_xlim(i0-eps, i0+eps)
-    ax2.set_ylim(j0-eps, j0+eps)
+    cf1 = ax1.contourf(s[:,:,0].T)
+    cf2 = ax2.contourf(s[:,:,kstar].T)
+    eps = 100
+    plt.colorbar(cf1, ax=ax1)
+    plt.colorbar(cf2, ax=ax2)
+    ax1.plot(ic_arr, jc_arr, 'yo')
     ax1.plot(i0, j0, 'ko')
     ax2.plot(i0, j0, 'ko')
+    ax1.set_xlim(eps, nx-eps)
+    ax1.set_ylim(eps, ny-eps)
+    ax2.set_xlim(eps, nx-eps)
+    ax2.set_ylim(eps, ny-eps)
     ax1.plot([i0, i0],[0, ny], 'k-')
     ax2.plot([i0, i0],[0, ny], 'k-')
     ax1.plot([0, ny],[j0, j0], 'k-')
@@ -404,6 +513,8 @@ def plot_geometry(s, i0, j0):
     ax2.set_aspect('equal')  # ax.set_aspect(1.0)
     ax1.set_xlabel('x  (dx=' + str(dx[0]) + 'm)')
     ax1.set_ylabel('y  (dy=' + str(dx[1]) + 'm)')
+    ax1.set_title('k=0')
+    ax2.set_title('k='+str(kstar))
 
     fig.tight_layout()
     fig.savefig(os.path.join(path_out_figs, 'CP_geometry.png'))
@@ -699,23 +810,32 @@ def define_geometry(case_name, nml):
         irstar = np.int(np.round(rstar / dx[0]))
         zstar = nml['init']['h']
         kstar = np.int(np.round(zstar / dx[2]))
-        d = np.int(np.round(ny / 2))
+        try:
+            d = nml['init']['d']
+        except:
+            d = 10000
         dhalf = np.int(np.round(ny / 4))
-        a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
-        ic1 = np.int(np.round(a / 2))  # + gw
+        id = np.round(d / dx[0])
+        idhalf = np.int(np.round(id / 2))
+        a = np.int(np.round(id * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
+        r_int = np.int(np.sqrt(3.) / 6 * id)  # radius of inscribed circle
+        # point of 3-CP collision (ic, jc)
+        ic = np.int(np.round(nx / 2))
+        jc = np.int(np.round(ny / 2))
+        ic1 = ic - r_int
         ic2 = ic1
-        ic3 = ic1 + np.int(np.round(a))
-        jc1 = np.int(np.round(d / 2))  # + gw
-        jc2 = jc1 + d
-        jc3 = jc1 + np.int(np.round(d / 2))
+        ic3 = ic + (a - r_int)
+        jc1 = jc - idhalf
+        jc2 = jc + idhalf
+        jc3 = jc
         ic_arr = [ic1, ic2, ic3]
         jc_arr = [jc1, jc2, jc3]
-        i0_coll = 0.5 * (ic_arr[0] + ic_arr[2])
+        i0_coll = ic
         i0_center = ic_arr[0]
-        j0_coll = jc_arr[2]
+        j0_coll = jc
         j0_center = jc_arr[0]
 
-        isep = dhalf
+
 
     ''' plotting parameters '''
     if case_name[:21] == 'ColdPoolDry_single_3D':
