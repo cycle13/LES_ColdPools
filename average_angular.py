@@ -189,7 +189,7 @@ def compute_radial_velocity(th_field, r_field, times, filename, ic, jc, rmax, pa
         u = rootgrp.groups['fields'].variables['u'][:,:,:]
         v = rootgrp.groups['fields'].variables['v'][:,:,:]
         for k0 in range(kmax):
-            print('   k=' + str(k0))
+            # print('   k=' + str(k0))
             v_hor_int = np.zeros((2, nx, ny))
             for i in range(1,nx-1):
                 v_hor_int[0,i,:] = 0.5*(u[i,:,k0]+u[i-1,:,k0])

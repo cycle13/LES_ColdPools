@@ -52,6 +52,11 @@ def main():
     # time_single: time, when w(icoll,jcoll,k=0)<1.m/s for the last time (single for t<=time_single)
     # time_double: timestep when w(icol,jcoll,k=0) decays again for the first time
     var_list = ['w', 's']
+    # create output file
+    if not os.path.exists(os.path.join(path_in, 'data_analysis')):
+        os.mkdir(os.path.join(path_in, 'data_analysis'))
+    root_out = nc.Dataset(os.path.join(path_in, filename_out), 'w', format='NETCDF4')
+    root_out.close()
     for var_name in var_list:
         print('')
         print('------ var: '+var_name)
@@ -162,10 +167,10 @@ def compute_minima_maxima(var_name, icoll, jcoll, ic_arr, jc_arr, times, nt, kma
         else:
             min_single_[it, :] = np.amin(var[icoll + 10:, jcoll, :], axis=0)
             min_double_[it, :] = np.amin(var[:icoll - 3, jcoll, :], axis=0)
-            min_triple_[it, :] = np.amin(var[icoll - 3:, jcoll, :], axis=0)
+            min_triple_[it, :] = np.amin(var[icoll - 3:icoll+10, jcoll, :], axis=0)
         max_single_[it, :] = np.amax(var[icoll + 10:, jcoll, :], axis=0)
         max_double_[it, :] = np.amax(var[:icoll - 3, jcoll, :], axis=0)
-        max_triple_[it, :] = np.amax(var[icoll - 3:, jcoll, :], axis=0)
+        max_triple_[it, :] = np.amax(var[icoll - 3:icoll+10, jcoll, :], axis=0)
         if var_name == 'w':
             if time_single == 0 and var[ic_arr[0], jcoll, 0] > 1.:
                 time_single = t0 - dt_fields
@@ -581,16 +586,15 @@ def plot_yz_crosssections_multilevel(var_name, i0, krange, jmin, jmax,
 
 def output_minima_maxima(var_name, min_single, min_double, min_triple, max_single, max_double, max_triple,
                          time_single, time_double, times, kmax, filename_out):
+    print('output minima, maxima for '+var_name)
     print('')
-    print(os.path.join(path_in, filename_out))
-    print(path_in)
-    if not os.path.exists(os.path.join(path_in, 'data_analysis')):
-        os.mkdir(os.path.join(path_in, 'data_analysis'))
-    root_out = nc.Dataset(os.path.join(path_in, filename_out), 'w', format='NETCDF4')
-
-    rootgrp = root_out.createGroup(var_name, )
-    rootgrp.createDimension('time', None)
-    rootgrp.createDimension('nz', kmax)
+    root_out = nc.Dataset(os.path.join(path_in, filename_out), 'r+', format='NETCDF4')
+    if not var_name in root_out.groups.keys():
+        rootgrp = root_out.createGroup(var_name, )
+        rootgrp.createDimension('time', None)
+        rootgrp.createDimension('nz', kmax)
+    else:
+        rootgrp = root_out.groups[var_name]
 
     time_out = rootgrp.createVariable('time', 'f8', ('time',))
     time_out.long_name = 'Time'
