@@ -39,6 +39,8 @@ def main():
     parser.add_argument("--tmax")
     parser.add_argument("--kmin")
     parser.add_argument("--kmax")
+    parser.add_argument("--hor")
+    parser.add_argument("--vert")
     args = parser.parse_args()
 
     global cm_bwr
@@ -46,7 +48,7 @@ def main():
 
     # set_input_parameters(args)
     files, times, nml = set_input_parameters(args)
-    x_half, y_half, z_half = define_geometry(case_name, nml, files)
+    ic_arr, jc_arr, x_half, y_half, z_half = define_geometry(case_name, nml, files)
     ID = os.path.split(path_in)[1]
     print ('id: ', ID)
 
@@ -83,27 +85,33 @@ def main():
                 cont_var = w
             elif cont_var_name == 'temperature_anomaly':
                 cont_var = read_in_netcdf_fields('temperature', os.path.join(path_fields, file))
+                t_mean = np.average(np.average(cont_var[:, :, :kmax+1], axis=0), axis=0)
+                cont_var = cont_var[:, :, :kmax] - t_mean
             else:
                 cont_var = read_in_netcdf_fields(cont_var_name, os.path.join(path_fields, file))
 
-            # ''' (a) xy-plane '''
-            # for k0 in krange:
-            #     print('-- k0=' + str(k0) + ' --')
-            #     plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel_h,
-            #                                      x_half, y_half, speed_h, k0, t0, path_out)
 
-            ''' (b) yz-plane at center of cold pool'''
-            i0 = ic1    # through center of cold pool
-            kmax = 60
-            if t0 < 1200:
-                jmin = 100
-            elif t0 < 2400:
-                jmin = 40
-            else:
-                jmin = 20
-            jmax = ny-jmin
-            plot_streamplot_yz(cont_var_name, cont_var, w, vel_h, speed_yz, y_half, z_half,
-                               i0, jmin, jmax, kmax, t0, path_out, True)
+
+
+            if args.hor in ['True', 'true']:
+                ''' (a) xy-plane '''
+                for k0 in krange:
+                    print('-- k0=' + str(k0) + ' --')
+                    plot_streamplot_xy_varythickness(cont_var_name, cont_var[:,:,:kmax+1], vel_h,
+                                                      x_half, y_half, speed_h, k0, t0, path_out)
+
+            if args.vert in ['True', 'true']:
+                ''' (b) yz-plane at center of cold pool'''
+                i0 = ic_arr[0]    # through center of cold pool
+                if t0 < 1000:
+                    jmin = jc_arr[0] - irstar - 30
+                elif t0 < 2400:
+                    jmin = jc_arr[0] - irstar - 60
+                else:
+                    jmin = 20
+                jmax = ny-jmin
+                plot_streamplot_yz(cont_var_name, cont_var, w, vel_h, speed_yz, y_half, z_half,
+                                   i0, jmin, jmax, kmax, t0, path_out, True)
 
             # ''' (c) xz-plane at center of cold pool #1'''
             # j0 = jc1
@@ -186,6 +194,7 @@ def plot_streamplot_xz(cont_var_name, cont_var, w, vel, speed, x_arr, z_arr, j0,
 
 def plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed,
                        y_arr, z_arr, i0, jmin, jmax, kmax, t0, path_out, vary=True):
+    print('plot streamplot yz')
     if t0 <= 100:
         plt.figure()
         plt.contourf(w[:,:,1].T)
@@ -201,22 +210,20 @@ def plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed,
     if cont_var_name == 'w':
         varmax = np.maximum(np.abs(np.amin(var_)), np.abs(np.amax(var_)))
         varmin = -varmax
-        levels = np.linspace(-varmax, varmax, 1e3)
     else:
         varmin = np.amin(var_)
         varmax = np.amax(var_)
-        levels = np.linspace(varmin, varmax, 1e3)
+    levels = np.linspace(varmin, varmax, 1e3)
 
-    plt.figure(figsize=(12, 10))
-    cf = plt.contourf(y_arr[jmin:jmax], z_arr[:kmax], var_[jmin:jmax,:kmax].T,cmap=cm, levels=levels)
-
-    # plt.colorbar(cf)
+    fig, ax = plt.subplots(figsize=(15, 9))
+    cf = plt.contourf(y_arr[jmin:jmax], z_arr[:kmax], var_[jmin:jmax,:kmax].T,cmap=cm,
+                      levels=levels, extend='both')
     cb = plt.colorbar(cf, shrink=0.6, ticks=np.arange(np.floor(varmin), np.floor(varmax) + 1, 1), aspect=12)
     cb.ax.tick_params(width=1, size=4)  # , labelsize=6)
     if not vary:
         plt.streamplot(y_arr[jmin:jmax], z_arr[:kmax], vel[1,i0,jmin:jmax,:kmax].T, w_[:,:kmax].T,
                        color='k', density=1.5, linewidth=1.5)
-    elif vary:
+    elif vary and speed[i0,:,:].max()>0.:
         #  Varying line width along a streamline
         lw = 5 * speed[i0,:,:] / speed[i0,:,:].max()
         plt.streamplot(y_arr[jmin:jmax], z_arr[:kmax], vel[1, i0, jmin:jmax, :kmax].T, w_[jmin:jmax,:kmax].T,
@@ -224,11 +231,11 @@ def plot_streamplot_yz(cont_var_name, cont_var, w, vel, speed,
                     density=1.5,
                     linewidth = lw[jmin:jmax, :kmax].T)
 
-    plt.xlabel('y [m]   (dy=' + str(dy) + ')')
-    plt.ylabel('z [m]   (dz=' + str(dy) + ')')
+    plt.xlabel('y   (dy=' + str(dy) + ')')
+    plt.ylabel('z   (dz=' + str(dy) + ')')
     plt.title('t=' + str(t0)+ ', x='+str(i0*dx)+'m')
     plt.savefig(os.path.join(path_out, 'streamlines_yz_i'+str(i0)+'_t'+str(t0)+'.png'))
-    plt.close()
+    plt.close(fig)
     return
 
 
@@ -243,29 +250,31 @@ def plot_streamplot_xy_varythickness(cont_var_name, cont_var, vel, x_arr, y_arr,
 
     cont_var_ = cont_var[:, :, k0]
     if cont_var_name == 'w':
-        wmax = np.maximum(np.abs(np.amin(cont_var_)), np.abs(np.amax(cont_var_)))
-        levels = np.linspace(-wmax, wmax, 1e3)
-        del wmax
+        varmax = np.amax(cont_var_)
+        varmin = np.amin(cont_var_)
+        varmax = np.maximum(np.abs(varmin), np.abs(varmax))
+        varmin = -varmax
     else:
-        levels = np.linspace(np.amin(cont_var_), np.amax(cont_var_))
-    del cont_var_
+        varmax = np.amax(cont_var_)
+        varmin = np.amin(cont_var_)
+    levels = np.linspace(varmin, varmax, 1e3)
 
-    print('levels computed')
     fig, ax = plt.subplots(figsize=(16,10))
     ax.set_aspect('equal')    # ax.set_aspect(1.0)
     if np.abs(speed[:,:,k0].max()) > 0.0:
         lw = 5 * speed[:,:,k0] / speed[:,:,k0].max()
     else:
         lw = 2 * np.ones(shape=speed[:,:,k0].shape)
-    ax1 = plt.contourf(x_arr, y_arr, cont_var[:,:,k0].T, levels=levels, alpha=1., cmap = cm)
-    plt.colorbar(ax1, shrink=0.5)
-    # # plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
-    # #                color='k', density=1.5, linewidth=lw[:,:].T)
-    print('plt.streamplot')
+    cf = plt.contourf(x_arr, y_arr, cont_var_.T, levels=levels, alpha=1., cmap = cm)
+    if cont_var_name == 's':
+        cb = plt.colorbar(cf, shrink=0.5, ticks=np.arange(np.floor(varmin), np.floor(varmax) + 1, 2), aspect=17)
+    else:
+        cb = plt.colorbar(cf, shrink=0.5, ticks=np.arange(np.floor(varmin), np.floor(varmax) + 1, 1), aspect=17)
+    cb.ax.tick_params(width=1, size=4)  # , labelsize=6)
     strm = plt.streamplot(x_arr, y_arr, vel[0,:,:,k0].T ,vel[1,:,:,k0].T,
-                          color=vel[0,:,:,k0], cmap=cm_lines, density=1.5, linewidth=lw[:,:].T)
-    plt.colorbar(strm.lines, shrink=0.5)
-    print('plt.streamplot finished')
+                          color=speed[:,:,k0].T, cmap=cm_lines, density=1.5, linewidth=lw[:,:].T)
+    cb = plt.colorbar(strm.lines, shrink=0.5, ticks=np.arange(0, np.amax(speed),1), aspect=17)
+    cb.ax.tick_params(width=1, size=4)  # , labelsize=6)
     plt.xlabel('x [m]   (dx='+str(dx)+')')
     plt.ylabel('y [m]   (dy='+str(dy)+')')
     plt.title('t='+str(t0) + ', z='+str(dz*k0), fontsize=label_size)
@@ -324,7 +333,7 @@ def set_input_parameters(args):
         except:
             time_max = 3000
 
-    global krange
+    global krange, kmax
     if args.kmin:
         kmin = np.int(args.kmin)
     else:
@@ -364,21 +373,8 @@ def set_input_parameters(args):
 
 def define_geometry(case_name, nml, files):
     # print('--- define geometry ---')
-    global ic_arr, jc_arr
-    global ic, jc, isep
     global rstar, irstar
-    if case_name == 'ColdPoolDry_double_2D':
-        rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
-        # zstar = nml['init']['h']
-        isep = 4 * irstar
-        ic1 = np.int(nx / 3)
-        ic2 = ic1 + isep
-        jc1 = np.int(ny / 2)
-        jc2 = jc1
-        ic_arr = [ic1, ic2]
-        jc_arr = [jc1, jc2]
-    elif case_name[:21] == 'ColdPoolDry_single_3D':
+    if case_name[:21] == 'ColdPoolDry_single_3D':
         try:
             rstar = nml['init']['r']
         except:
@@ -386,48 +382,17 @@ def define_geometry(case_name, nml, files):
         irstar = np.int(np.round(rstar / dx))
         # zstar = nml['init']['h']
         dTh = nml['init']['dTh']
-        marg_i = np.int(500. / np.round(dx))  # width of margin
-        marg = marg_i * dx  # width of margin
+        try:
+            marg = nml['init']['marg']
+        except:
+            marg = 200. # width of margin
         ic = np.int(nx / 2)
         jc = np.int(ny / 2)
         # xc = Gr.x_half[ic + Gr.dims.gw]  # center of cold-pool
         # yc = Gr.y_half[jc + Gr.dims.gw]  # center of cold-pool
         ic_arr = [ic]
         jc_arr = [jc]
-    elif case_name == 'ColdPoolDry_double_3D':
-        try:
-            rstar = nml['init']['r']
-        except:
-            rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
-        # zstar = nml['init']['h']
-        isep = 4 * irstar
-        jsep = 0
-        ic1 = np.int(np.round((nx + 2 * gw) / 3)) - gw
-        jc1 = np.int(np.round((ny + 2 * gw) / 2)) - gw
-        ic2 = ic1 + isep
-        jc2 = jc1 + jsep
-        ic_arr = [ic1, ic2]
-        jc_arr = [jc1, jc2]
-    elif case_name == 'ColdPoolDry_triple_3D':
-        try:
-            rstar = nml['init']['r']
-        except:
-            rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
-        d = np.int(np.round(ny / 2))
-        dhalf = np.int(np.round(ny / 4))
-        a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
-        ic1 = np.int(np.round(a / 2))  # + gw
-        ic2 = ic1
-        ic3 = ic1 + np.int(np.round(a))
-        jc1 = np.int(np.round(d / 2))  # + gw
-        jc2 = jc1 + d
-        jc3 = jc1 + np.int(np.round(d / 2))
-        ic_arr = [ic1, ic2, ic3]
-        jc_arr = [jc1, jc2, jc3]
 
-        isep = dhalf
 
     ''' --- auxiliary arrays (since no Grid.pyx) ---'''
     global nx_, ny_, nz_
@@ -451,7 +416,7 @@ def define_geometry(case_name, nml, files):
         z_half[count] = (i + 0.5) * dz
         count += 1
 
-    return x_half, y_half, z_half
+    return ic_arr, jc_arr, x_half, y_half, z_half
 
 # ----------------------------------
 def read_in_netcdf_fields(variable_name, fullpath_in):
