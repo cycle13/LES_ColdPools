@@ -51,7 +51,7 @@ def main():
     rmax = np.int(np.ceil(np.sqrt(irange**2 + jrange**2)))
 
     # plot configuration test file
-    plot_configuration(ic, jc, radius, path_out_data_2D)
+    plot_configuration(ic, jc, radius, times, path_out_data_2D)
 
 
     print ''
@@ -606,9 +606,9 @@ def plot_radially_averaged_CP_height(times, file_name_in, path_out_data):
     return
 
 # _______________________________
-def plot_configuration(ic, jc, radius, path_out):
+def plot_configuration(ic, jc, radius, times, path_out):
     fig_name = 'test_config.png'
-    fullpath_in = os.path.join(path, 'fields', '0.nc')
+    fullpath_in = os.path.join(path, 'fields', str(times[0]) + '.nc')
     rootgrp = nc.Dataset(fullpath_in, 'r')
     s = rootgrp.groups['fields'].variables['s'][:, :, :]
     fig, (ax1,ax2,ax3) = plt.subplots(1, 3, sharey='none', figsize=(16, 5))
