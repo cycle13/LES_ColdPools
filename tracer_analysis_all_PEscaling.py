@@ -5,6 +5,8 @@ import netCDF4 as nc
 import argparse
 import json as simplejson
 import os
+import scipy
+from scipy import optimize
 
 label_size = 10
 plt.rcParams['xtick.labelsize'] = label_size
@@ -44,9 +46,9 @@ def main():
     # reference case: dTh3_z1000_r1000
     id_ref = 'dTh3_z1000_r1000'
     # path_ref = os.path.join(path_root, id_ref)
-    # path_ref = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2_dx100m/' + id_ref
+    path_ref = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2_dx100m/' + id_ref
     # path_ref = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run5_PE_scaling_dx100m/' + id_ref
-    path_ref = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run3_dx50m/' + id_ref
+    # path_ref = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run3_dx50m/' + id_ref
     dt_fields = 100
     cp_id = 2  # circle ID that is used for statistics
 
@@ -68,11 +70,12 @@ def main():
     dist_av = np.zeros((n_params, nt, nk))
     r_av = np.zeros((n_params, nt, nk))
     drdt_av = np.zeros((n_params, nt, nk))
+    drdt_av_ref = np.zeros((nt, nk))
     U_rad_av = np.zeros((n_params, nt, nk))
-    dU_rad_av = np.zeros((n_params, nt, nk))
     dist_av_ref = np.zeros((nt, nk))
     U_rad_av_ref = np.zeros((nt, nk))
 
+    print('--- reading in tracer data')
     for istar in range(n_params):
         zstar = z_params[0]
         rstar = r_params[istar]
@@ -89,6 +92,7 @@ def main():
         r_av_ref = dist_av_ref * dx[0]
         for it, t0 in enumerate(times[1:]):
             drdt_av[:,it,:] = 1./dt_fields * (r_av[:,it,:] - r_av[:,it-1,:])
+            drdt_av_ref[it,:] = 1./dt_fields * (r_av_ref[it,:] - r_av_ref[it-1,:])
         print ''
     print ''
 
@@ -96,46 +100,62 @@ def main():
     ''' (b) plot r_av, dtdt_av, U_rad_av'''
     figname = 'CP_rim_dTh' + str(dTh) + '.png'
     title = 'CP rim (dTh=' + str(dTh) + 'K, dx='+str(dx[0]) +'m)'
-    plot_dist_vel(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
+    plot_dist_vel(r_av, drdt_av, U_rad_av, r_av_ref, drdt_av_ref, U_rad_av_ref,
                   [dTh], z_params, r_params, n_params, k0, id_ref, title, figname)
+    ''' fit function to r_av '''
+    plot_dist_fitting(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
+                     [dTh], z_params, r_params, n_params, k0, id_ref, figname)
     ''' fit function to U_rad '''
     plot_vel_fitting(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
                   [dTh], z_params, r_params, n_params, k0, id_ref, figname)
 
 
 
-    ''' (c) plot normalized radius / velocity'''
-    # (i) for vertical velocity from crosssection in 3D field
-    # (ii) for azimuthally averaged vertical vleocity
-    print('plotting normalized')
-    for istar in range(n_params):
-        zstar = z_params[0]
-        rstar = r_params[istar]
-        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-        print('id', id)
-        nml = simplejson.loads(open(os.path.join(path_root, id, case_name + '.in')).read())
-        nx = nml['grid']['nx']
-        ny = nml['grid']['ny']
-        ic = np.int(nx / 2)
-        jc = np.int(ny / 2)
-        print(ic, jc)
-        figname_norm = 'CP_rim_normalized_' + id + '.png'
-        plot_vel_normalized(r_av, times, istar, k0, nx, ic, jc, id, figname_norm)
-        # figname_norm = 'CP_rim_normalized_' + id + '_av.png'
-        # plot_vel_normalized_w_av(r_av, times, istar, k0, id, figname_norm)
+    # ''' (c) plot normalized radius / velocity'''
+    # # (i) for vertical velocity from crosssection in 3D field
+    # # (ii) for azimuthally averaged vertical vleocity
+    # print('plotting normalized')
+    # for istar in range(n_params):
+    #     zstar = z_params[0]
+    #     rstar = r_params[istar]
+    #     id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+    #     print('id', id)
+    #     nml = simplejson.loads(open(os.path.join(path_root, id, case_name + '.in')).read())
+    #     nx = nml['grid']['nx']
+    #     ny = nml['grid']['ny']
+    #     ic = np.int(nx / 2)
+    #     jc = np.int(ny / 2)
+    #     print(ic, jc)
+    #     figname_norm = 'CP_rim_normalized_' + id + '.png'
+    #     plot_vel_normalized(r_av, times, istar, k0, nx, ic, jc, id, figname_norm)
+    #     # figname_norm = 'CP_rim_normalized_' + id + '_av.png'
+    #     # plot_vel_normalized_w_av(r_av, times, istar, k0, id, figname_norm)
 
 
-    trange = [600, 1200, 1800, 2400, 3000, 3600 ]
+    ''' (d) scaling with PE'''
+    trange = [600, 1200, 1800, 2400, 3000, 3500 ]
+    scaling = [-1, 0, 1, 2, 3]
     fig_name = 'PE_scaling_dTh' + str(dTh) + '.png'
+    plot_PE_scaling(r_av, r_av_ref, U_rad_av, U_rad_av_ref, scaling[:n_params+1], k0, trange, fig_name)
+    fig_name = 'PE_scaling_dTh' + str(dTh) + '_log2.png'
+    plot_PE_scaling_log2(r_av, r_av_ref, U_rad_av, U_rad_av_ref, scaling[:n_params+1], k0, trange, fig_name)
+
+
+
+    return
+
+
+# ----------------------------------------------------------------------
+def plot_PE_scaling_log2(r_av, r_av_ref, U_rad_av, U_rad_av_ref, scaling, k0, trange, fig_name):
     fig, axes = plt.subplots(1, 2, sharex='none', figsize=(12, 5))
     ax0 = axes[0]
     ax1 = axes[1]
-    scaling = [-1, 0, 1, 2, 3]
+    # scaling = [-1, 0, 1, 2, 3]
     r_av_ = np.zeros(shape=len(scaling))
     U_rad_av_ = np.zeros(shape=len(scaling))
     for t0 in trange:
         it = np.where(times == t0)[0][0]
-        for i,s in enumerate(scaling):
+        for i, s in enumerate(scaling):
             if s < 0:
                 r_av_[i] = r_av[i, it, k0]
                 U_rad_av_[i] = U_rad_av[i, it, k0]
@@ -143,13 +163,13 @@ def main():
                 r_av_[i] = r_av_ref[it, k0]
                 U_rad_av_[i] = U_rad_av_ref[it, k0]
             else:
-                r_av_[i] = r_av[i-1, it, k0]
-                U_rad_av_[i] = U_rad_av[i-1, it, k0]
-        ax0.plot(scaling, r_av_[1] + 9.5e2*np.asarray(scaling), 'k', linewidth=1)
-        ax0.plot(scaling, r_av_[3]+ 12e2*(np.asarray(scaling)-2), 'k--', linewidth=1)
-        ax0.plot(scaling, 2e3 + 0.1*1e3*(np.asarray(scaling)+2)**2, 'r', linewidth=1)
-        ax0.plot(scaling, r_av_[:], 'o-', label='t='+str(t0))
-        ax1.plot(scaling, U_rad_av_[:], 'o-', label='t='+str(t0))
+                r_av_[i] = r_av[i - 1, it, k0]
+                U_rad_av_[i] = U_rad_av[i - 1, it, k0]
+        ax0.plot(scaling, r_av_[1] + 9.5e2 * np.asarray(scaling), 'k', linewidth=1)
+        ax0.plot(scaling, r_av_[3] + 12e2 * (np.asarray(scaling) - 2), 'k--', linewidth=1)
+        ax0.plot(scaling, 2e3 + 0.1 * 1e3 * (np.asarray(scaling) + 2) ** 2, 'r', linewidth=1)
+        ax0.plot(scaling, r_av_[:], 'o-', label='t=' + str(t0))
+        ax1.plot(scaling, U_rad_av_[:], 'o-', label='t=' + str(t0))
     ax0.set_xlabel('log2(PE/PE0)')
     ax1.set_xlabel('log2(PE/PE0)')
     ax0.set_ylabel('r_av  [m]')
@@ -158,11 +178,62 @@ def main():
     fig.tight_layout()
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
-
-
-
     return
 
+
+def plot_PE_scaling(r_av, r_av_ref, U_rad_av, U_rad_av_ref, scaling, k0, trange, fig_name):
+    fig, axes = plt.subplots(1, 3, sharex='none', figsize=(18, 5))
+    ax0 = axes[0]
+    ax1 = axes[1]
+    ax2 = axes[2]
+    PEPE0 = [2**s for s in scaling]
+    print(scaling)
+    print(PEPE0)
+
+    r_av_ = np.zeros(shape=len(scaling))
+    U_rad_av_ = np.zeros(shape=len(scaling))
+
+    print(r_av.shape, r_av_.shape)
+    for t0 in trange:
+        it = np.where(times == t0)[0][0]
+        for i, s in enumerate(scaling):
+            if s < 0:
+                r_av_[i] = r_av[i, it, k0]
+                U_rad_av_[i] = U_rad_av[i, it, k0]
+            elif s == 0:
+                r_av_[i] = r_av_ref[it, k0]
+                U_rad_av_[i] = U_rad_av_ref[it, k0]
+            else:
+                r_av_[i] = r_av[i - 1, it, k0]
+                U_rad_av_[i] = U_rad_av[i - 1, it, k0]
+        ax1.plot(scaling, r_av_[1] + 9.5e2 * np.asarray(scaling), 'k', linewidth=1)
+        # ax1.plot(scaling, r_av_[3] + 12e2 * (np.asarray(scaling) - 2), 'k--', linewidth=1)
+        ax1.plot(scaling, 2e3 + 0.1 * 1e3 * (np.asarray(scaling) + 2) ** 2, 'r', linewidth=2)
+        ax0.plot(PEPE0, r_av_[:], 'o-', label='t=' + str(t0))
+        ax1.plot(scaling, r_av_[:], 'o-', label='t=' + str(t0))
+        ax2.plot(np.log(PEPE0), np.log(r_av_[:]), 'o-')
+    a = 8.3
+    for m in np.arange(0.2, 0.4, 0.05):
+        ax0.plot(PEPE0, np.exp(a)*PEPE0**m, '-', color=str(2*m), linewidth=1)
+        ax2.plot(np.log(PEPE0), m * np.log(PEPE0) + a, '-', color=str(2*m), linewidth=1, label='m=' + str(m))
+    a = 8.7
+    for m in np.arange(0.2, 0.4, 0.05):
+        ax0.plot(PEPE0, np.exp(a)*PEPE0**m, '-', color=str(2*m), linewidth=1)
+        ax2.plot(np.log(PEPE0), m * np.log(PEPE0) + a, '-', color=str(2*m), linewidth=1)
+    ax0.set_xlabel('PE/PE0')
+    ax1.set_xlabel('log2(PE/PE0)')
+    ax2.set_xlabel('log(PE/PE0)')
+    ax0.set_ylabel('r_av  [m]')
+    ax1.set_ylabel('r_av  [m]')
+    ax2.set_ylabel('log(r_av)  [m]')
+    # ax1.set_ylabel('U_rad_av [m/s]')
+    ax0.legend(loc='best')
+    ax1.legend(loc='best')
+    ax2.legend(loc='best')
+    fig.tight_layout()
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+    return
 
 # ----------------------------------------------------------------------
 def plot_vel_normalized_w_av(r_av, times, istar, k0, id, fig_name):
@@ -310,7 +381,7 @@ def plot_vel_normalized(r_av, times, istar, k0, nx, ic, jc, id, fig_name):
 
 
 # ----------------------------------------------------------------------
-def plot_dist_vel(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
+def plot_dist_vel(r_av, drdt_av, U_rad_av, r_av_ref, drdt_av_ref, U_rad_av_ref,
                   dTh_params, z_params, r_params, n_params, k0,
                   id_ref, title, fig_name):
 
@@ -327,11 +398,9 @@ def plot_dist_vel(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
         ax1.plot(times[1:], drdt_av[istar, 1:, k0], 'o-', label=id)
         ax2.plot(times, U_rad_av[istar, :, k0], 'o-', label=id)
     ax0.plot(times, r_av_ref[:, k0], 'ko-', label=id_ref)
+    ax1.plot(times[1:], drdt_av_ref[1:, k0], 'ko-', label=id_ref)
     ax2.plot(times, U_rad_av_ref[:, k0], 'ko-', label=id_ref)
 
-    # ax0.set_title('r_av')
-    # ax1.set_title('drdt_av')
-    # ax2.set_title('U_av')
     ax0.set_xlabel('times [s]')
     ax1.set_xlabel('times [s]')
     ax2.set_xlabel('times [s]')
@@ -340,14 +409,15 @@ def plot_dist_vel(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
     ax2.set_ylabel('U_rad_av  [m/s]')
     ax2.legend()
     # fig.suptitle('CP rim (dTh=' + str(dTh) + ')')
-    fig.suptitle(title)
+    fig.suptitle(title, fontsize=18)
     fig.tight_layout()
+    plt.subplots_adjust(bottom=0.12, right=.95, left=0.06, top=0.9, wspace=0.15)
     fig.savefig(os.path.join(path_out_figs, fig_name))
     # fig.savefig(os.path.join(path_out_figs, 'CP_rim_dTh' + str(dTh) + '.png'))
     plt.close(fig)
 
-
-    fig, axis = plt.subplots(2, 2, sharex='none', figsize=(18, 10))
+    ''' plot logarithmically '''
+    fig, axis = plt.subplots(3, 2, sharex='none', figsize=(18, 15))
     for istar in range(n_params):
         if len(dTh_params) == 1:
             dTh = dTh_params[0]
@@ -360,19 +430,29 @@ def plot_dist_vel(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
         axis[0,1].semilogx(times, U_rad_av[istar, :, k0], 'o-', label=id)
         axis[1,0].loglog(times, r_av[istar, :, k0], 'o-', label=id)
         axis[1,1].loglog(times, U_rad_av[istar, :, k0], 'o-', label=id)
+        axis[2,0].semilogy(times, r_av[istar, :, k0], 'o-', label=id)
+        axis[2,1].semilogy(times, U_rad_av[istar, :, k0], 'o-', label=id)
     axis[0, 0].semilogx(times, r_av_ref[:, k0], 'ko-', label=id)
     axis[0, 1].semilogx(times, U_rad_av_ref[:, k0], 'ko-', label=id)
     axis[1, 0].loglog(times, r_av_ref[:, k0], 'ko-', label=id)
     axis[1, 1].loglog(times, U_rad_av_ref[:, k0], 'ko-', label=id)
+    axis[2, 0].semilogy(times, r_av_ref[:, k0], 'ko-', label=id)
+    axis[2, 1].semilogy(times, U_rad_av_ref[:, k0], 'ko-', label=id)
     axis[0, 0].set_title('CP radius (r_av)', fontsize=18)
     axis[0, 1].set_title('radial spreading velocity (U_av)', fontsize=18)
-    axis[0,0].set_xlabel('times [s]')
-    axis[1, 0].set_xlabel('time [s]')
-    axis[1, 1].set_xlabel('time [s]')
+    # axis[0,0].set_xlabel('log(times) [s]')
+    axis[0, 0].set_xlabel('log(times) [s]')
+    axis[0, 1].set_xlabel('log(times) [s]')
+    axis[1, 0].set_xlabel('log(times) [s]')
+    axis[1, 1].set_xlabel('log(times) [s]')
+    axis[2, 0].set_xlabel('times [s]')
+    axis[2, 1].set_xlabel('times [s]')
     axis[0, 0].set_ylabel('r_av  [m]')
-    axis[1, 0].set_ylabel('r_av  [m]')
+    axis[1, 0].set_ylabel('log(r_av)  [m]')
+    axis[2, 0].set_ylabel('log(r_av)  [m]')
     axis[0, 1].set_ylabel('U_rad_av  [m/s]')
-    axis[1, 1].set_ylabel('U_rad_av  [m/s]')
+    axis[1, 1].set_ylabel('log(U_rad_av)  [m/s]')
+    axis[2, 1].set_ylabel('log(U_rad_av)  [m/s]')
     fig.tight_layout()
     plt.subplots_adjust(bottom=0.075, right=.95, left=0.07, top=0.9, wspace=0.25)
     axis[1,1].legend(loc='best')
@@ -385,11 +465,153 @@ def plot_dist_vel(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
 
 
 
+def plot_dist_fitting(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
+                      dTh_params, z_params, r_params, n_params, k0,
+                      id_ref, fig_name):
+    # Fit the first set
+    # fitfunc = lambda p, x: p[0] * np.cos(2 * np.pi / p[1] * x + p[2]) + p[3] * x  # Target function
+    fitfunc1 = lambda p, x: p[0] + p[1] * x ** p[2]  # Target function
+    errfunc = lambda p, x, y: fitfunc1(p, x) - y  # Distance to the target function
+    n_init = 5
+    p0 = np.zeros((n_init, 3))
+    p1 = np.zeros((n_init, 3))
+    p0[0, :] = [0., 0., 0.]  # Initial guess for the parameters
+    p0[1, :] = [0., 0., 2.]  # Initial guess for the parameters
+    p0[2, :] = [10., 0., 2.]  # Initial guess for the parameters
+    p0[3, :] = [0., 0., -2.]  # Initial guess for the parameters
+    p0[4, :] = [10., 0., -2.]  # Initial guess for the parameters
+
+    for istar in range(n_params):
+        if len(dTh_params) == 1:
+            dTh = dTh_params[0]
+        else:
+            dTh = dTh_params[istar]
+        zstar = z_params[0]
+        rstar = r_params[istar]
+        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+
+        fig, axis = plt.subplots(1, 3, sharex='none', figsize=(18, 7))
+        axis[0].plot(times, r_av[istar, :, k0], 'o-', label=id)
+        axis[1].semilogx(times, r_av[istar, :, k0], 'o-', label=id)
+        axis[2].loglog(times, r_av[istar, :, k0], 'o-', label=id)
+        tmin = 4
+        axis[0].plot(times, r_av_ref[:, k0], 'ko-', label=id)
+        axis[1].semilogx(times, r_av_ref[:, k0], 'ko-', label=id)
+        axis[2].loglog(times, r_av_ref[:, k0], 'ko-', label=id)
+        for i in range(n_init):
+            p1[i, :], success = optimize.leastsq(errfunc, p0[i, :], args=(times[tmin:], r_av[istar, tmin:, k0]))
+            axis[0].plot(times[tmin:], fitfunc1(p1[i,:], times[tmin:]), "-", label='p='+str(p1[i,:]))  # Plot of the data and the fit
+            axis[1].semilogx(times, fitfunc1(p1[i,:], times), "-", label='p='+str(p1[i,:]))  # Plot of the data and the fit
+            axis[2].loglog(times, fitfunc1(p1[i,:], times), "-", label='p='+str(p1[i,:]))  # Plot of the data and the fit
+        # # axis[0, 1].set_title('radial spreading velocity (U_av)', fontsize=18)
+        axis[0].set_xlabel('time [s]')
+        axis[1].set_xlabel('time [s]')
+        axis[2].set_xlabel('time [s]')
+        axis[0].set_ylabel('r_av  [m/s]')
+        axis[2].set_ylabel('log(r_av)  [m/s]')
+        # fig.tight_layout()
+        plt.subplots_adjust(bottom=0.3, right=.95, left=0.07, top=0.9, wspace=0.25)
+        axis[1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
+                   fancybox=True, shadow=True, ncol=3)
+        fig.suptitle('CP radius (' + id +', dx='+str(dx[0]) +'m)', fontsize=21)
+        fig.savefig(os.path.join(path_out_figs, fig_name[:-4] + '_fit_r_' + id + '.png'))
+        plt.close(fig)
+
+    ''' reference '''
+    fig, axis = plt.subplots(1, 3, sharex='none', figsize=(18, 7))
+    tmin = 2
+    axis[0].plot(times, r_av_ref[:, k0], 'ko-', label=id)
+    axis[1].semilogx(times, r_av_ref[:, k0], 'ko-', label=id)
+    axis[2].loglog(times, r_av_ref[:, k0], 'ko-', label=id)
+    for istar in range(n_params):
+        if len(dTh_params) == 1:
+            dTh = dTh_params[0]
+        else:
+            dTh = dTh_params[istar]
+        zstar = z_params[0]
+        rstar = r_params[istar]
+        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        axis[0].plot(times, r_av[istar, :, k0], 'o-', label=id)
+        axis[1].semilogx(times, r_av[istar, :, k0], 'o-', label=id)
+        axis[2].loglog(times, r_av[istar, :, k0], 'o-', label=id)
+    for i in range(n_init):
+        p1[i, :], success = optimize.leastsq(errfunc, p0[i, :], args=(times[tmin:], r_av_ref[tmin:, k0]))
+        axis[0].plot(times[tmin:], fitfunc1(p1[i, :], times[tmin:]), "-",
+                     label='p=' + str(p1[i, :]))  # Plot of the data and the fit
+        axis[1].semilogx(times, fitfunc1(p1[i, :], times), "-",
+                         label='p=' + str(p1[i, :]))  # Plot of the data and the fit
+        axis[2].loglog(times, fitfunc1(p1[i, :], times), "-",
+                       label='p=' + str(p1[i, :]))  # Plot of the data and the fit
+    # # axis[0, 1].set_title('radial spreading velocity (U_av)', fontsize=18)
+    axis[0].set_xlabel('time [s]')
+    axis[1].set_xlabel('time [s]')
+    axis[2].set_xlabel('time [s]')
+    axis[0].set_ylabel('r_av  [m/s]')
+    # axis[1, 1].set_ylabel('r_av  [m/s]')
+    # fig.tight_layout()
+    plt.subplots_adjust(bottom=0.3, right=.95, left=0.07, top=0.9, wspace=0.25)
+    axis[1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
+                   fancybox=True, shadow=True, ncol=3)
+    fig.suptitle('CP radius (' + id + ', dx=' + str(dx[0]) + 'm)', fontsize=21)
+    fig.savefig(os.path.join(path_out_figs, fig_name[:-4] + '_fit_r_' + id_ref + '.png'))
+    plt.close(fig)
+
+    ''' all '''
+    cmap = cm_hsv
+    fig, axis = plt.subplots(1, 3, sharex='none', figsize=(18, 7))
+    axis[0].plot(times, r_av_ref[:, k0], 'ko-', linewidth=1, label=id)
+    axis[1].semilogx(times, r_av_ref[:, k0], 'ko-', linewidth=1, label=id)
+    axis[2].loglog(times, r_av_ref[:, k0], 'ko-', linewidth=1, label=id)
+    p1[i, :], success = optimize.leastsq(errfunc, p0[i, :], args=(times[tmin:], r_av_ref[tmin:, k0]))
+    axis[0].plot(times[tmin:], fitfunc1(p1[i, :], times[tmin:]), "k-", linewidth=3,
+                 label='p=' + str(p1[i, :]))  # Plot of the data and the fit
+    axis[1].semilogx(times[tmin:], fitfunc1(p1[i, :], times[tmin:]), "k-", linewidth=3,
+                     label='p=' + str(p1[i, :]))  # Plot of the data and the fit
+    axis[2].loglog(times[tmin:], fitfunc1(p1[i, :], times)[tmin:], "k-", linewidth=3,
+                   label='p=' + str(p1[i, :]))  # Plot of the data and the fit
+    for istar in range(n_params):
+        i_color = np.double(istar) / n_params
+        if len(dTh_params) == 1:
+            dTh = dTh_params[0]
+        else:
+            dTh = dTh_params[istar]
+        zstar = z_params[0]
+        rstar = r_params[istar]
+        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        tmin = 4
+        i = 4  # parameters
+        axis[0].plot(times, r_av[istar, :, k0], 'o-', linewidth=1, color=cmap(i_color), label=id)
+        axis[1].semilogx(times, r_av[istar, :, k0], 'o-', linewidth=1, color=cmap(i_color), label=id)
+        axis[2].loglog(times, r_av[istar, :, k0], 'o-', linewidth=1, color=cmap(i_color), label=id)
+        p1[i, :], success = optimize.leastsq(errfunc, p0[i, :], args=(times[tmin:], r_av[istar, tmin:, k0]))
+        axis[0].plot(times[tmin:], fitfunc1(p1[i, :], times[tmin:]), "-", linewidth=3, color=cmap(i_color),
+                     label='p=' + str(p1[i, :]))  # Plot of the data and the fit
+        axis[1].semilogx(times[tmin:], fitfunc1(p1[i, :], times[tmin:]), "-", linewidth=3, color=cmap(i_color),
+                         label='p=' + str(p1[i, :]))  # Plot of the data and the fit
+        axis[2].loglog(times[tmin:], fitfunc1(p1[i, :], times[tmin:]), "-", linewidth=3, color=cmap(i_color),
+                       label='p=' + str(p1[i, :]))  # Plot of the data and the fit
+    axis[0].set_xlabel('time [s]')
+    axis[1].set_xlabel('log(time) [s]')
+    axis[2].set_xlabel('log(time) [s]')
+    axis[0].set_ylabel('r_av  [m/s]')
+    axis[1].set_ylabel('r_av  [m/s]')
+    axis[2].set_ylabel('log(r_av)  [m/s]')
+    # axis[1, 1].set_ylabel('r_av  [m/s]')
+    # fig.tight_layout()
+    plt.subplots_adjust(bottom=0.3, right=.95, left=0.07, top=0.9, wspace=0.25)
+    axis[1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
+                   fancybox=True, shadow=True, ncol=3)
+    fig.suptitle('CP radius (r_av) (dx=' + str(dx[0]) + 'm)', fontsize=21)
+    fig.savefig(os.path.join(path_out_figs, fig_name[:-4] + '_fit_r_all.png'))
+    plt.close(fig)
+
+    return
+
+
 def plot_vel_fitting(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
                       dTh_params, z_params, r_params, n_params, k0,
                       id_ref, fig_name):
-    import scipy
-    from scipy import optimize
+
 
     # Fit the first set
     # fitfunc = lambda p, x: p[0] * np.cos(2 * np.pi / p[1] * x + p[2]) + p[3] * x  # Target function
@@ -398,13 +620,17 @@ def plot_vel_fitting(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
     n_init = 5
     p0 = np.zeros((n_init, 3))
     p1 = np.zeros((n_init, 3))
+    a = [1e1, 1e2, 1e4, 1e6, 1e8]
+    # b =
+    # Initial guess for the parameters
+    p0[:, 0] = a
     p0[0, :] = [0., 0., -3.]  # Initial guess for the parameters
     p0[1, :] = [0., 0., 2.]  # Initial guess for the parameters
     p0[2, :] = [10., 0., 2.]  # Initial guess for the parameters
     p0[3, :] = [0., 0., -2.]  # Initial guess for the parameters
     p0[4, :] = [10., 0., -2.]  # Initial guess for the parameters
 
-
+    ''' for each case '''
     for istar in range(n_params):
         if len(dTh_params) == 1:
             dTh = dTh_params[0]
@@ -437,7 +663,7 @@ def plot_vel_fitting(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
         axis[1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
                    fancybox=True, shadow=True, ncol=3)
         fig.suptitle('CP rim (' + id +', dx='+str(dx[0]) +'m)', fontsize=21)
-        fig.savefig(os.path.join(path_out_figs, fig_name[:-4] + '_fit_' + id + '.png'))
+        fig.savefig(os.path.join(path_out_figs, fig_name[:-4] + '_fit_vel_' + id + '.png'))
         plt.close(fig)
 
 
@@ -478,7 +704,7 @@ def plot_vel_fitting(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
     axis[1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
                    fancybox=True, shadow=True, ncol=3)
     fig.suptitle('CP rim (' + id + ', dx=' + str(dx[0]) + 'm)', fontsize=21)
-    fig.savefig(os.path.join(path_out_figs, fig_name[:-4] + '_fit_' + id_ref + '.png'))
+    fig.savefig(os.path.join(path_out_figs, fig_name[:-4] + '_fit_vel_' + id_ref + '.png'))
     plt.close(fig)
 
 
@@ -495,7 +721,9 @@ def plot_vel_fitting(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
                  label='p=' + str(p1[i, :]))  # Plot of the data and the fit
     axis[1].semilogx(times[tmin:], fitfunc1(p1[i, :], times[tmin:]), "k-", linewidth=3,
                      label='p=' + str(p1[i, :]))  # Plot of the data and the fit
-    axis[2].loglog(times[tmin:], fitfunc1(p1[i, :], times)[tmin:], "k-", linewidth=3,
+    # axis[2].loglog(times[tmin:], fitfunc1(p1[i, :], times)[tmin:], "k-", linewidth=3,
+    #                label='p=' + str(p1[i, :]))  # Plot of the data and the fit
+    axis[2].loglog(times, fitfunc1(p1[i, :], times), "k-", linewidth=3,
                    label='p=' + str(p1[i, :]))  # Plot of the data and the fit
     for istar in range(n_params):
         i_color = np.double(istar)/n_params
@@ -514,7 +742,10 @@ def plot_vel_fitting(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
         p1[i, :], success = optimize.leastsq(errfunc, p0[i, :], args=(times[tmin:], U_rad_av[istar, tmin:, k0]))
         axis[0].plot(times[tmin:], fitfunc1(p1[i, :], times[tmin:]), "-", linewidth=3, color=cmap(i_color), label='p=' + str(p1[i, :]))  # Plot of the data and the fit
         axis[1].semilogx(times[tmin:], fitfunc1(p1[i, :], times[tmin:]), "-", linewidth=3, color=cmap(i_color), label='p=' + str(p1[i, :]))  # Plot of the data and the fit
-        axis[2].loglog(times[tmin:], fitfunc1(p1[i, :], times[tmin:]), "-", linewidth=3, color=cmap(i_color), label='p=' + str(p1[i, :]))  # Plot of the data and the fit
+        # axis[2].loglog(times[tmin:], fitfunc1(p1[i, :], times[tmin:]), "-", linewidth=3, color=cmap(i_color), label='p=' + str(p1[i, :]))  # Plot of the data and the f
+        axis[2].loglog(times[:], fitfunc1(p1[i, :], times[:]), "-", linewidth=3, color=cmap(i_color),
+                       label='p=' + str(p1[i, :]))  # Plot of the data and the f
+        # it
     axis[0].set_xlabel('time [s]')
     axis[1].set_xlabel('log(time) [s]')
     axis[2].set_xlabel('log(time) [s]')
@@ -526,8 +757,8 @@ def plot_vel_fitting(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
     plt.subplots_adjust(bottom=0.3, right=.95, left=0.07, top=0.9, wspace=0.25)
     axis[1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
                    fancybox=True, shadow=True, ncol=3)
-    fig.suptitle('radial spreading velocity (U_av) (' + id + ', dx=' + str(dx[0]) + 'm)', fontsize=21)
-    fig.savefig(os.path.join(path_out_figs, fig_name[:-4] + '_fit_all.png'))
+    fig.suptitle('radial spreading velocity (U_av) (dx=' + str(dx[0]) + 'm)', fontsize=21)
+    fig.savefig(os.path.join(path_out_figs, fig_name[:-4] + '_fit_vel_all.png'))
     plt.close(fig)
     return
 

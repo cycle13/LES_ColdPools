@@ -55,23 +55,31 @@ def main():
     path_data = 'data_analysis'
     stats_file_name = 'stats_radial_averaged.nc'
     var_list = ['w', 's', 'temperature', 'v_rad']
-    # test-file
-    root = nc.Dataset(os.path.join(path_root, id_list[0], path_data, stats_file_name), 'r')
-    rad = root.groups['stats'].variables['r'][:]
-    nr = len(rad)
-    rmax = nr-30
-    print('radius: ', rad)
-    dims = root.groups['dimensions'].dimensions
-    nk = dims['nz'].size
-    root.close()
-    del dims
+    # test-file >> need to loop through all, since different domain size
+    nr_aux = []
+    for i, ID in enumerate(id_list):
+        print(os.path.join(path_root, id_list[0], path_data, stats_file_name))
+        root = nc.Dataset(os.path.join(path_root, id_list[0], path_data, stats_file_name), 'r')
+        # try:
+        #     root = nc.Dataset(os.path.join(path_root, id_list[0], path_data, stats_file_name), 'r')
+        # except:
+        #     root = nc.Dataset(os.path.join(path_root, id_list[0], path_data, 'stats', stats_file_name), 'r')
+        nr_aux.append(root.groups['stats'].dimensions['nr'].size)
+        nk = root.groups['dimensions'].dimensions['nz'].size
+        root.close()
+    print nr_aux, type(nr_aux)
+    nr = np.amax(nr_aux)
+    rmax = nr - 30
 
     for var_name in var_list:
         var = np.zeros((n_id, nt, nr, nk))
         for i, ID in enumerate(id_list):
             fullpath_in = os.path.join(path_root, ID, path_data, stats_file_name)
             root = nc.Dataset(fullpath_in, 'r')
-            var[i, :,:,:] = root.groups['stats'].variables[var_name][:nt,:,:]
+            rad = root.groups['stats'].variables['r'][:]
+            nr_ = root.groups['stats'].dimensions['nr'].size
+            print('nr: ', nr, nr_)
+            #         var[i, :,:,:] = root.groups['stats'].variables[var_name][:nt,:,:]
             root.close()
         var_max_arr = np.amax(var, axis=3)
         var_min_arr = np.amin(var, axis=3)
