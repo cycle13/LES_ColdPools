@@ -58,26 +58,26 @@ def main():
     plot_configuration(ic, jc, radius, times, path_out_data_2D)
 
 
-    print ''
-    print('----- compute radius ----------- ')
-    # OUTPUT: th_field[nx, ny], r_field[nx, ny]
-    file_name_rthfield = 'r_th_field.nc'    # in 'fields_v_rad'
-    th_field, r_field = compute_radius(ic, jc, irange, jrange, file_name_rthfield, path_out_data_2D)
+    # print ''
+    # print('----- compute radius ----------- ')
+    # # OUTPUT: th_field[nx, ny], r_field[nx, ny]
+    # file_name_rthfield = 'r_th_field.nc'    # in 'fields_v_rad'
+    # th_field, r_field = compute_radius(ic, jc, irange, jrange, file_name_rthfield, path_out_data_2D)
+    #
+    #
+    # print ''
+    # print('----- compute radial velocity ----------- ')
+    # # creates 2D output-file with v_rad[nt, nx, ny, kmax], v_ran[nt, nx, ny, kmax] and r_field[nx, ny]
+    # file_name_vradfield = 'v_rad.nc'    # in 'fields_v_rad'
+    # compute_radial_velocity(th_field, r_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data_2D)
+    #
 
-
-    print ''
-    print('----- compute radial velocity ----------- ')
-    # creates 2D output-file with v_rad[nt, nx, ny, kmax], v_ran[nt, nx, ny, kmax] and r_field[nx, ny]
-    file_name_vradfield = 'v_rad.nc'    # in 'fields_v_rad'
-    compute_radial_velocity(th_field, r_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data_2D)
-
-
-    print ''
-    print('----- compute angular average ----------- ')
-    # OUTPUT: file with angular averaged statistics, e.g. v_rad[nt, nr, nz]
-    # file_name_stats = 'stats_radial_averaged_test.nc'
-    file_name_stats = 'stats_radial_averaged.nc'
-    compute_angular_average(rmax, times, file_name_stats, path_out_data, path_out_data_2D)
+    # print ''
+    # print('----- compute angular average ----------- ')
+    # # OUTPUT: file with angular averaged statistics, e.g. v_rad[nt, nr, nz]
+    # # file_name_stats = 'stats_radial_averaged_test.nc'
+    # file_name_stats = 'stats_radial_averaged.nc'
+    # compute_angular_average(rmax, times, file_name_stats, path_out_data, path_out_data_2D)
 
 
     ''' testing '''
@@ -95,7 +95,7 @@ def main():
     r_range = rootgrp.groups['stats'].variables['r'][:]
     rootgrp.close()
     rmax_ = rmax*dx[0]
-    var_av = np.zeros((len(times), nr-1), dtype=np.double)
+    var_av = np.zeros((len(times), nr), dtype=np.double)
     var_mean_polar = np.zeros((len(times)), dtype=np.double)
     var_mean_euclidian = np.zeros((len(times)), dtype=np.double)
     for it, t0 in enumerate(times):
@@ -464,8 +464,9 @@ def compute_average_var(var, rmax, kmax_, r_field):
         for i in range(nx):
             for j in range(ny):
                 r = r_field[i, j]
-                count[r] += 1
-                var_av[r] += var[i, j]
+                if r < rmax:
+                    count[r] += 1
+                    var_av[r] += var[i, j]
 
     elif kmax_ > 1:
         var_av = np.zeros((rmax, kmax_), dtype=np.double)
