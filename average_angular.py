@@ -48,7 +48,11 @@ def main():
     jc = jc_arr[0]
     irange = np.minimum(nx-ic, ic)
     jrange = np.minimum(ny-jc, jc)
-    rmax = np.int(np.ceil(np.sqrt(irange**2 + jrange**2)))
+    # rmax = np.int(np.floor(np.sqrt(irange**2 + jrange**2)))
+    rmax = np.minimum(irange, jrange)
+    print('nx, ny: ', nx, ny)
+    # print('ic, jc, irange, jrange: ', ic, jc, irange, jrange)
+    print('rmax: ', rmax, np.sqrt((nx/2)**2+(ny/2)**2))
 
     # plot configuration test file
     plot_configuration(ic, jc, radius, times, path_out_data_2D)
@@ -63,7 +67,7 @@ def main():
 
     print ''
     print('----- compute radial velocity ----------- ')
-    # creates output-file with v_rad[nt, nx, ny, kmax], v_ran[nt, nx, ny, kmax] and r_field[nx, ny]
+    # creates 2D output-file with v_rad[nt, nx, ny, kmax], v_ran[nt, nx, ny, kmax] and r_field[nx, ny]
     file_name_vradfield = 'v_rad.nc'    # in 'fields_v_rad'
     compute_radial_velocity(th_field, r_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data_2D)
 
@@ -74,6 +78,56 @@ def main():
     # file_name_stats = 'stats_radial_averaged_test.nc'
     file_name_stats = 'stats_radial_averaged.nc'
     compute_angular_average(rmax, times, file_name_stats, path_out_data, path_out_data_2D)
+
+
+    ''' testing '''
+
+    var_name = 's'
+    k0 = 0
+    file_name_vradfield = 'v_rad.nc'
+    fullpath_in = os.path.join(path_out_data_2D, file_name_vradfield)
+    rootgrp = nc.Dataset(fullpath_in)
+    r_field = rootgrp.variables['r_field'][:,:]
+    rootgrp.close()
+    file_name_stats = 'stats_radial_averaged.nc'
+    rootgrp = nc.Dataset(os.path.join(path_out_data, file_name_stats), 'r')
+    nr = rootgrp.groups['stats'].dimensions['nr'].size
+    r_range = rootgrp.groups['stats'].variables['r'][:]
+    rootgrp.close()
+    rmax_ = rmax*dx[0]
+    var_av = np.zeros((len(times), nr-1), dtype=np.double)
+    var_mean_polar = np.zeros((len(times)), dtype=np.double)
+    var_mean_euclidian = np.zeros((len(times)), dtype=np.double)
+    for it, t0 in enumerate(times):
+        fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
+        print(fullpath_in)
+        root_field = nc.Dataset(fullpath_in, 'r')
+        var = root_field.groups['fields'].variables[var_name][:, :, k0]
+        root_field.close()
+        var_mean_euclidian[it] = np.average(var)
+        var_av[it,:] = compute_average_var(var[:,:], rmax, 1, r_field)
+        for i,r in enumerate(r_range[:-1]):
+            var_mean_polar[it] += r*var_av[it,i]
+        var_mean_polar = var_mean_polar / ( rmax_*(rmax_-1)/2 )
+
+
+    print('area: ', nx*ny, np.pi*rmax**2)
+    fig_name = 'test_timeseries.png'
+    ncol = 3
+    fig, axes = plt.subplots(2, ncol, sharey='none', figsize=(5 * ncol, 10))
+    for it,t0 in enumerate(times):
+        axes[0,0].plot(var_av[it,:], label='t='+str(t0))
+    axes[1,0].plot(times, var_mean_euclidian, label='euclidian')
+    axes[1,0].plot(times, (nx*ny)/(np.pi*rmax**2)*var_mean_euclidian, label='euclidian 2')
+    axes[1,1].plot(times, var_mean_polar, label='polar')
+    axes[1,2].plot(times, np.mean(var_av, axis=1), label='polar')
+
+    axes[1,-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
+                   fancybox=True, shadow=True, ncol=1, fontsize=10)
+    plt.subplots_adjust(bottom=0.12, right=.95, left=0.1, top=0.9, wspace=0.3)
+    plt.suptitle('z='+str(k0*dx[2])+'m')
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
 
 
     print ''
@@ -244,6 +298,7 @@ def compute_radial_velocity(th_field, r_field, times, filename, ic, jc, rmax, pa
 # _______________________________
 
 def compute_angular_average(rmax, times, file_name, path_out_data, path_out_data_2D):
+    print('compute_angular_average: rmax='+str(rmax))
     t0 = time.time()
     var_list = ['w', 's', 'phi', 'temperature']
     # file_name = 'stats_radial_averaged_test.nc'
@@ -402,6 +457,7 @@ def read_in_vars(fullpath_in, var_list):
 
 def compute_average_var(var, rmax, kmax_, r_field):
     count = np.zeros(rmax, dtype=np.int)
+    print('compute_average_var: rmax='+str(rmax), count.shape, var.shape)
 
     if kmax_ == 1:
         var_av = np.zeros((rmax), dtype=np.double)
@@ -416,8 +472,9 @@ def compute_average_var(var, rmax, kmax_, r_field):
         for i in range(nx):
             for j in range(ny):
                 r = r_field[i, j]
-                count[r] += 1
-                var_av[r, :] += var[i, j, :]
+                if r < rmax:
+                    count[r] += 1
+                    var_av[r, :] += var[i, j, :]
 
     for r in range(rmax):
         if count[r] > 0:
@@ -500,8 +557,7 @@ def compute_CP_height_radial_av(rmax, times, file_name_in, path_out_data, path_o
     var[:itmax, :] = CP_height_av[:, :]
     file.close()
     return
-# _______________________________
-# _______________________________
+# ______________________________________________________________
 
 def plot_radially_averaged_vars(times, file_name, path_out_data, path_out_figs):
 
@@ -641,8 +697,7 @@ def plot_configuration(ic, jc, radius, times, path_out):
     del s
     return
 
-# _______________________________
-# _______________________________
+# ______________________________________________________________
 def set_input_parameters(args):
     print ''' setting parameters '''
     global path, path_fields
