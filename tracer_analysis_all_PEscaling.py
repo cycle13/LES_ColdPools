@@ -44,7 +44,9 @@ def main():
     dTh, z_params, r_params = set_input_parameters(args)
 
     # reference case: dTh3_z1000_r1000
-    id_ref = 'dTh3_z1000_r1000'
+    rstar_ref = 1000
+    zstar_ref = 1000
+    id_ref = 'dTh3_z'+str(zstar_ref) + '_r' + str(rstar_ref)
     # path_ref = os.path.join(path_root, id_ref)
     path_ref = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2_dx100m/' + id_ref
     # path_ref = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run5_PE_scaling_dx100m/' + id_ref
@@ -68,7 +70,8 @@ def main():
     ''' (a) read in data from tracer output (text-file)'''
     n_params = len(r_params)
     dist_av = np.zeros((n_params, nt, nk))
-    r_av = np.zeros((n_params, nt, nk))
+    r_av = np.zeros((n_params, nt, nk))         # absolute radius
+    r_av_abs = np.zeros((n_params, nt, nk))     # radius minus initial radius (r(t) - r(t=0))
     drdt_av = np.zeros((n_params, nt, nk))
     drdt_av_ref = np.zeros((nt, nk))
     U_rad_av = np.zeros((n_params, nt, nk))
@@ -89,7 +92,9 @@ def main():
             dist_av[istar, it, k0], U_rad_av[istar, it, k0] = get_radius_vel(fullpath_in, it, cp_id, n_tracers, n_cps)
             dist_av_ref[it, k0], U_rad_av_ref[it, k0] = get_radius_vel(fullpath_in_ref, it, cp_id, n_tracers, n_cps)
         r_av = dist_av * dx[0]
+        r_av_abs[istar,:,:] = r_av[istar,:,:] - rstar
         r_av_ref = dist_av_ref * dx[0]
+        r_av_ref_abs = r_av_ref - rstar_ref
         for it, t0 in enumerate(times[1:]):
             drdt_av[:,it,:] = 1./dt_fields * (r_av[:,it,:] - r_av[:,it-1,:])
             drdt_av_ref[it,:] = 1./dt_fields * (r_av_ref[it,:] - r_av_ref[it-1,:])
@@ -103,15 +108,25 @@ def main():
     plot_dist_vel(r_av, drdt_av, U_rad_av, r_av_ref, drdt_av_ref, U_rad_av_ref,
                   [dTh], z_params, r_params, n_params, k0, id_ref, title, figname)
     ''' fit function to r_av '''
-    plot_dist_fitting(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
+    plot_dist_fitting(r_av, r_av_ref,
                      [dTh], z_params, r_params, n_params, k0, id_ref, figname)
     ''' fit function to U_rad '''
-    plot_vel_fitting(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
+    plot_vel_fitting(r_av, r_av_ref,
                   [dTh], z_params, r_params, n_params, k0, id_ref, figname)
 
+    ''' (c) plot r_av_abs'''
+    figname = 'CP_rim_dTh' + str(dTh) + '_r_abs.png'
+    title = 'CP rim (dTh=' + str(dTh) + 'K, dx=' + str(dx[0]) + 'm)'
+    plot_dist_vel(r_av_abs, drdt_av, U_rad_av, r_av_ref_abs, drdt_av_ref, U_rad_av_ref,
+                  [dTh], z_params, r_params, n_params, k0, id_ref, title, figname)
+    ''' fit function to r_av '''
+    plot_dist_fitting(r_av_abs, r_av_ref_abs,
+                      [dTh], z_params, r_params, n_params, k0, id_ref, figname)
 
 
-    # ''' (c) plot normalized radius / velocity'''
+
+
+    # ''' (d) plot normalized radius / velocity'''
     # # (i) for vertical velocity from crosssection in 3D field
     # # (ii) for azimuthally averaged vertical vleocity
     # print('plotting normalized')
@@ -465,7 +480,7 @@ def plot_dist_vel(r_av, drdt_av, U_rad_av, r_av_ref, drdt_av_ref, U_rad_av_ref,
 
 
 
-def plot_dist_fitting(r_av, drdt_av, U_rad_av, r_av_ref, U_rad_av_ref,
+def plot_dist_fitting(r_av, r_av_ref,
                       dTh_params, z_params, r_params, n_params, k0,
                       id_ref, fig_name):
     # Fit the first set
