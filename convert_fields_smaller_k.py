@@ -21,8 +21,6 @@ def main():
     parser.add_argument("--hor")
     args = parser.parse_args()
 
-
-    # case_name = args.casename
     path_root = args.path
     # nml = simplejson.loads(open(os.path.join(path_in, case_name + '.in')).read())
 
@@ -91,7 +89,7 @@ def main():
         print('vertical xz-crossection at CP center: j0='+str(j0_center))
         # convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_center)
         convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files, k_max, path_fields, path_out_, j0_center)
-        if case_name == 'ColdPoolDry_triple_3D':
+        if case_name[:21] == 'ColdPoolDry_triple_3D':
             # print('vertical xz-crossection at 3-CP collision: j0='+str(j0_coll))
             convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files,
                                                                k_max, path_fields, path_out_, j0_coll)
@@ -679,7 +677,7 @@ def define_geometry(path_root, args):
         jc2 = jc1 + jsep
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
-    elif case_name == 'ColdPoolDry_triple_3D':
+    elif case_name[:21] == 'ColdPoolDry_triple_3D':
         try:
             rstar = nml['init']['r']
         except:
@@ -716,7 +714,7 @@ def define_geometry(path_root, args):
         j0_coll = 0.5 * (jc_arr[0] + jc_arr[1])
         j0_center = jc_arr[0]
         # domain boundaries for plotting
-    elif case_name == 'ColdPoolDry_triple_3D':
+    elif case_name[:21] == 'ColdPoolDry_triple_3D':
         i0_coll = np.int(np.round(ic1 + np.sqrt(3.)/6*(ic3-ic1)))
         j0_coll = jc3
         i0_center = ic_arr[0]
