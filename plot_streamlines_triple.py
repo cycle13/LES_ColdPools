@@ -290,6 +290,8 @@ def plot_streamplot_xy_collision(cont_var_name, cont_var, vel, speed,
     #  Varying line width along a streamline
     if np.abs(speed[ic-di:ic+di+1, jc-dj:jc+dj+1, k0].max()) > 0.0:
         lw = 5 * speed[ic-di:ic+di+1, jc-dj:jc+dj+1, k0] / speed[ic-di:ic+di+1, jc-dj:jc+dj+1, k0].max()
+    else:
+        lw = 5 * np.ones(shape=speed[ic-di:ic+di+1, jc-dj:jc+dj+1, k0].shape)
 
     fig, ax = plt.subplots(figsize=(10, 8))
     ax.set_aspect('equal')  # ax.set_aspect(1.0)
