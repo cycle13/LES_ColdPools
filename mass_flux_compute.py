@@ -264,6 +264,14 @@ def plot_massflux_locations(mf_mean, mf_mean_pos,
     ax = axis[0, 3]
     ax.plot(time_range, mf_mean_triple, label='flux')
     ax.plot(time_range, mf_mean_triple_pos, '--', label='flux w>0')
+    y0 = np.amax(mf_mean_single)
+    ax.plot([tmin,tmax+dt_fields], [y0,y0], 'k', linewidth=0.5)
+    y0 = np.amax(mf_mean_single_pos)
+    ax.plot([tmin,tmax+dt_fields], [y0,y0], 'k--', linewidth=0.5)
+    y0 = np.amax(mf_mean_double)
+    ax.plot([tmin,tmax+dt_fields], [y0,y0], 'k', linewidth=0.5)
+    y0 = np.amax(mf_mean_double_pos)
+    ax.plot([tmin,tmax+dt_fields], [y0,y0], 'k--', linewidth=0.5)
 
     ax = axis[1, 1]
     ax.plot(np.arange(tmin, tmax+dt_fields, dt_fields), mf_mean_single_acc, label='accumulated flux')
@@ -274,6 +282,14 @@ def plot_massflux_locations(mf_mean, mf_mean_pos,
     ax = axis[1, 3]
     ax.plot(np.arange(tmin, tmax+dt_fields, dt_fields), mf_mean_triple_acc, label='accumulated flux')
     ax.plot(np.arange(tmin, tmax+dt_fields, dt_fields), mf_mean_triple_pos_acc, '--', label='accumulated positive flux')
+    y0 = np.amax(mf_mean_single_acc)
+    ax.plot([tmin,tmax+dt_fields], [y0,y0], 'k', linewidth=0.5)
+    y0 = np.amax(mf_mean_single_pos_acc)
+    ax.plot([tmin,tmax+dt_fields], [y0,y0], 'k--', linewidth=0.5)
+    y0 = np.amax(mf_mean_double_acc)
+    ax.plot([tmin,tmax+dt_fields], [y0,y0], 'k', linewidth=0.5)
+    y0 = np.amax(mf_mean_double_pos_acc)
+    ax.plot([tmin,tmax+dt_fields], [y0,y0], 'k--', linewidth=0.5)
 
     axis[0,1].set_title('flux single')
     axis[0,2].set_title('flux double')
