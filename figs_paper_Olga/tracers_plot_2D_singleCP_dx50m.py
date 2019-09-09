@@ -31,7 +31,7 @@ def main():
     if args.dx:
         dx = np.int(args.dx)
     else:
-        dx = 25
+        dx = 50
 
     case_name = 'ColdPoolDry_single_3D'
     if dx == 25:
@@ -193,6 +193,8 @@ def main():
 
 
     colmap = cm_grey_r
+    # tracercolor = 'royalblue'
+    # tracercolor = 'blue'
     tracercolor = 'mediumblue'
     fig_name = 'timerange2_t' + str(timerange) + '_k' + str(k0) + '.png'
     textprops = dict(boxstyle='round', facecolor='white', alpha=0.5, linewidth=0.)
