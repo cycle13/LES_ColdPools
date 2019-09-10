@@ -144,7 +144,7 @@ def main():
     else:
         shift = 0
     if args.shift_t:
-        shift_t = np.double(args.shift_t)
+        shift_t = np.int(args.shift_t)
     elif dx == 50:
         shift_t = 1
     else:
@@ -154,15 +154,16 @@ def main():
     print('')
 
 
-
-    fig_name = 'timerange_t' + str(timerange) + '_k' + str(k0) + '.png'
+    '''------- plot timerange -------'''
+    fig_name = 'timerange_t' + str(timerange) + '_k' + str(k0) + '_tshift'+str(shift_t)+'.png'
     textprops = dict(facecolor='white', alpha=0.5, linewidth=0.)
+    label_list = ['a)', 'b)', 'c)']
     fig, axes = plt.subplots(nrows=2, ncols=len(timerange), figsize=(12,7), sharey='row', sharex='col')
     for i,t0 in enumerate(timerange):
         it = np.int(t0 / dt_fields)
         ax = axes[0,i]
         im0 = ax.contourf(var[it, :, :].T, cmap=colmap, levels=lvls_var)
-        textstr = 't='+str(t0)+'s'
+        textstr = label_list[i] + ' t='+str(t0)+'s'
         ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
                 verticalalignment='top', bbox=textprops)
         ax = axes[1,i]
@@ -208,7 +209,7 @@ def main():
     # tracercolor = 'royalblue'
     # tracercolor = 'blue'
     tracercolor = 'mediumblue'
-    fig_name = 'timerange2_t' + str(timerange) + '_k' + str(k0) + '.png'
+    fig_name = 'timerange2_t' + str(timerange) + '_k' + str(k0) + '_tshift'+str(shift_t)+ '.png'
     textprops = dict(boxstyle='round', facecolor='white', alpha=0.5, linewidth=0.)
     fig, axes = plt.subplots(nrows=2, ncols=len(timerange), figsize=(11, 7), sharey='row', sharex='col')
     for i, t0 in enumerate(timerange):
@@ -261,6 +262,23 @@ def main():
 
 
 
+    # '''------- plot each timestep -------'''
+    # plot_each_timestep(coordinates, n_tracers, var_name, var, v_rad, lvls_var, lvls_v_rad,
+    #                    k0, shift_t, shift, times, path_out_figs, colmap)
+    #
+    #
+    #
+    # '''------- plot each timestep incl. circle of average radius -------'''
+    # plot_each_timestep_circles(coordinates, cp_id, n_tracers, n_cps,
+    #                            var_name, var, v_rad, lvls_var, lvls_v_rad,
+    #                            k0, shift_t, shift, dx, times, path_data, path_tracer_file, path_out_figs, colmap)
+
+
+    return
+# ----------------------------------------------------------------------
+
+def plot_each_timestep(coordinates, n_tracers, var_name, var, v_rad, lvls_var, lvls_v_rad,
+                       k0, shift_t, shift, times, path_out_figs, colmap):
     '''------- plot each timestep -------'''
     for t0 in times[:-1]:
         it = np.int(t0 / dt_fields)
@@ -284,8 +302,11 @@ def main():
 
 
 
-    '''------- plot each timestep incl. average radius -------'''
-    # a) read in CP radius r_torus(t)=r_av and CP spreading velocity u_torus(t)=U_rad_av from tracer statistics
+def plot_each_timestep_circles(coordinates, cp_id, n_tracers, n_cps,
+                               var_name, var, v_rad, lvls_var, lvls_v_rad,
+                               k0, shift_t, shift, dx, times, path_data, path_tracer_file, path_out_figs, colmap):
+    '''------- plot each timestep incl. circle of average radius -------'''
+    ''' a) read in CP radius r_torus(t)=r_av and CP spreading velocity u_torus(t)=U_rad_av from tracer statistics '''
     print('path tracers: ', path_tracer_file)
     nt = len(times)
     nk = 1
@@ -297,17 +318,14 @@ def main():
     r_tracers_av = dist_av * dx
     del dist_av
 
-    ''' get azimuthally averaged fields '''
+    ''' b) get azimuthally averaged fields '''
     rad_stats_file = nc.Dataset(os.path.join(path_data, 'data_analysis', 'stats_radial_averaged.nc'))
     v_rad_av = rad_stats_file.groups['stats'].variables['v_rad'][:, :, :]
-    # w_av = rad_stats_file.groups['stats'].variables['w'][:, :, k0]
     r_av = rad_stats_file.groups['stats'].variables['r'][:]  # nr
-    # time_av = rad_stats_file.groups['timeseries'].variables['time'][:]  # nt
     rad_stats_file.close()
     v_rad_gradient = np.zeros(shape=v_rad_av.shape)
     for ir, r in enumerate(r_av[1:-1]):
         v_rad_gradient[:, ir, :] = (v_rad_av[:, ir + 1, :] - v_rad_av[:, ir - 1, :]) / (r_av[ir + 1] - r_av[ir - 1])
-    # ir_vrad_max = np.argmax(v_rad_av, axis=1)  # nt, nk
     ir_vrad_grad_max = np.argmin(v_rad_gradient, axis=1)  # nt, nk
 
     print ''
@@ -321,16 +339,12 @@ def main():
         it = np.int(t0 / dt_fields)
         print('plot: t=' + str(t0) + ', ' + str(it))
         fig_name = 'circle_' + var_name + '_t' + str(np.int(t0)) + '_k' + str(k0) + '.png'
-        # fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(20, 10))
-        # # # ax0.set_title('w')
-        # # # ax1.set_title('v_{rad}')
         fig, axis = plt.subplots(2, 2, figsize=(12, 10))
         ax11 = axis[0, 0]
         ax12 = axis[0, 1]
         ax21 = axis[1, 0]
         ax22 = axis[1, 1]
         radius_tracers = r_tracers_av[it+shift_t, k0] / dx
-        # radius_gradient  = r_av[ir_vrad_grad_max[it,k0]]
         radius_gradient  = ir_vrad_grad_max[it,k0]
         circle1_grad = plt.Circle((ic+0.5, jc+0.5), radius_gradient, fill=False, color='b', linewidth=2)
         circle2_grad = plt.Circle((ic+0.5, jc+0.5), radius_gradient, fill=False, color='b', linewidth=2)
@@ -355,7 +369,6 @@ def main():
         plt.colorbar(cf, ax=ax22, shrink=0.5)
 
         for ax in [ax11, ax12, ax21, ax22]:
-        # for ax in [ax21, ax22]:
             # ax.set_aspect('equal')
             for i in range(n_tracers):
                 ax.plot(coordinates[it + shift_t, i, 0] + shift, coordinates[it + shift_t, i, 1] + shift, 'ok',
@@ -367,17 +380,11 @@ def main():
         for ax in axis.flat:
             ax.set_xlim(imin, nx-imin)
             ax.set_ylim(imin, nx-imin)
-        # ax11.set_ylim(0, ny)
-        # ax12.set_xlim(0, nx)
-        # ax12.set_ylim(0, ny)
         plt.tight_layout()
         plt.suptitle('t-shift ' + str(shift_t) + ', x-shift ' + str(shift))
         plt.savefig(os.path.join(path_out_figs, fig_name))
         plt.close()
 
-
-
-    return
 # ----------------------------------------------------------------------
 
 def plot_tracer_input_fields(coordinates, n_tracers, shift, path_tracers, path_out_figs):

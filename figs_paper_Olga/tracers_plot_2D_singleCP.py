@@ -94,11 +94,7 @@ def main():
 
     ''' get 2D field '''
     var_name = 'w'
-    # print('')
-    # print('!!!! old merged fields file !!!')
-    # print('')
     root = nc.Dataset(os.path.join(path_fields_merged, 'fields_allt_xy_k'+str(k0)+'.nc'))
-    # root = nc.Dataset(os.path.join(path_fields_merged, 'fields_allt_xy_k'+str(k0)+'_v1.nc'))
     var = root.variables[var_name][:,:,:]
     root.close()
     root = nc.Dataset(os.path.join(path_data, 'fields_v_rad', 'v_rad.nc'))
@@ -248,37 +244,37 @@ def main():
 
 
 
-    # shift = 0
-    # for t0 in times[:-1]:
-    #     it = np.int(t0 / dt_fields)
-    #     print('plot: t='+str(t0) + ', '+str(it))
-    #     fig_name = var_name + '_t' + str(np.int(t0)) + '_k'+str(k0) + '.png'
-    #     fig, (ax0, ax1) = plt.subplots(1,2, figsize=(20,10))
-    #     for ax in [ax0, ax1]:
-    #         cf = ax.contourf(var[it,:,:].T, cmap=colmap, levels=lvls)
-    #         ax.set_aspect('equal')
-    #         plt.colorbar(cf, ax=ax, shrink=0.5)
-    #     for i in range(n_tracers):
-    #         ax1.plot(coordinates[it+1, i, 0] + shift, coordinates[it+1, i, 1] + shift, 'ok', markersize=2)
-    #     plt.tight_layout()
-    #     plt.savefig(os.path.join(path_out_figs, fig_name))
-    #     plt.close(fig)
+    shift = 0
+    for t0 in times[:-1]:
+        it = np.int(t0 / dt_fields)
+        print('plot: t='+str(t0) + ', '+str(it))
+        fig_name = var_name + '_t' + str(np.int(t0)) + '_k'+str(k0) + '.png'
+        fig, (ax0, ax1) = plt.subplots(1,2, figsize=(20,10))
+        for ax in [ax0, ax1]:
+            cf = ax.contourf(var[it,:,:].T, cmap=colmap, levels=lvls)
+            ax.set_aspect('equal')
+            plt.colorbar(cf, ax=ax, shrink=0.5)
+        for i in range(n_tracers):
+            ax1.plot(coordinates[it+1, i, 0] + shift, coordinates[it+1, i, 1] + shift, 'ok', markersize=2)
+        plt.tight_layout()
+        plt.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
 
-    # colmap = cm_bwr
-    # for t0 in times:
-    #     it = np.int(t0 / dt_fields)
-    #     print('t: '+str(t0) + ', '+str(it))
-    #     fig_name = 'v_rad' + '_t' + str(np.int(t0)) + '_k'+str(k0) + '.png'
-    #     fig, (ax0, ax1) = plt.subplots(1,2, figsize=(20,10))
-    #     for ax in [ax0, ax1]:
-    #         cf = ax.contourf(v_rad[it,:,:].T, cmap=colmap, levels=lvls)
-    #         ax.set_aspect('equal')
-    #         plt.colorbar(cf, ax=ax, shrink=0.5)
-    #     for i in range(n_tracers):
-    #         ax1.plot(coordinates[it+1, i, 0] + shift, coordinates[it+1, i, 1] + shift, 'ok', markersize=2)
-    #     plt.tight_layout()
-    #     plt.savefig(os.path.join(path_out_figs, fig_name))
-    #     plt.close(fig)
+    colmap = cm_bwr
+    for t0 in times:
+        it = np.int(t0 / dt_fields)
+        print('t: '+str(t0) + ', '+str(it))
+        fig_name = 'v_rad' + '_t' + str(np.int(t0)) + '_k'+str(k0) + '.png'
+        fig, (ax0, ax1) = plt.subplots(1,2, figsize=(20,10))
+        for ax in [ax0, ax1]:
+            cf = ax.contourf(v_rad[it,:,:].T, cmap=colmap, levels=lvls)
+            ax.set_aspect('equal')
+            plt.colorbar(cf, ax=ax, shrink=0.5)
+        for i in range(n_tracers):
+            ax1.plot(coordinates[it+1, i, 0] + shift, coordinates[it+1, i, 1] + shift, 'ok', markersize=2)
+        plt.tight_layout()
+        plt.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
 
 
     return
