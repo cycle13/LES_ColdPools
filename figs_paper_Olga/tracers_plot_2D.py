@@ -21,7 +21,8 @@ def main():
     # parser.add_argument("--tmin")
     # parser.add_argument("--tmax")
     # parser.add_argument("--path_tracers")
-    # parser.add_argument("--shift")
+    parser.add_argument("--t_shift")
+    parser.add_argument("--x_shift")
     args = parser.parse_args()
     # set_input_parameters(args)
 
@@ -29,8 +30,15 @@ def main():
     file_olga = 'coldpool_tracer_out_all.txt'
     CP_id_olga = 3
     col_id = 4  # column in textfile of CP-ID
+    # tracer file:
+    # - col=0:      timestep of simulation
+    # - col=1:      age of CP (timestep since beginning of first CP)
+    # - col=2:      tracer id
+    # - col=3:      CP id
+    # - col=4,5:
+    # - col=14,15:  CP center (xc,yc)
 
-    path_out_figs = os.path.join('/nbi/ac/conv1/meyerbe/paper_olga/figs_2D/')
+    path_out_figs = os.path.join('/nbi/home/meyerbe/paper_olga/figs_2D_real/')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
 
@@ -43,44 +51,69 @@ def main():
 
     print('???? dt_fields')
     dt_fields = 100
-    #
-    # if args.k0:
-    #     k0 = np.int(args.k0)
-    # else:
-    #     k0 = 0
-    #
-    # if args.shift:
-    #     shift = np.int(args.shift)
-    # else:
-    #     shift = -1
-    #
-    # if args.path_tracers:
-    #     path_tracers = os.path.join(path, args.path_tracers)
-    #     path_tracer_file = os.path.join(path, args.path_tracers, 'output')
-    # else:
-    #     k_tracers = 0
-    #     path_tracers = os.path.join(path, 'tracer_k' + str(k_tracers))
-    #     path_tracer_file = os.path.join(path, 'tracer_k' + str(k_tracers), 'output')
-    #
+
+    if args.t_shift:
+        t_shift = np.int(args.t_shift)
+    else:
+        t_shift = 0
+    if args.x_shift:
+        x_shift = np.int(args.x_shift)
+    else:
+        x_shift = 0
+    print('t_shift: '+str(t_shift))
+    print('x_shift: '+str(x_shift))
+
+
     print('')
     print('path figs:    ' + path_out_figs)
     print('path tracers: ' + path_tracer_file)
     print('')
 
+
+
+
     cp_id = CP_id_olga
     print('CP ID: ' + str(cp_id))
-    n_cps = get_number_cps(path_tracer_file)
+    # n_cps = get_number_cps(path_tracer_file)
+    n_cps = 2265
     print('number of CPs: ' + str(n_cps))
-    n_tracers = get_number_tracers(path_tracer_file)
+    # n_tracers = get_number_tracers(path_tracer_file)
+    n_tracers = 999
     print('number of tracers: ' + str(n_tracers))
-    get_tracer_coords(cp_id, n_cps, n_tracers, times, dt_fields, path_tracer_file)
-    # coordinates = get_tracer_coords(cp_id, n_cps, n_tracers, times, dt_fields, path_tracer_file)
+
+    tau, t0, t1 = get_cp_lifetime(cp_id, path_tracer_file)
+    xc, yc = get_cp_center(cp_id, tau, n_tracers, path_tracer_file)
+    # tau = 5
+    # t0 = 47
+    # t1 = 51
+    lifetime = np.arange(t0, t1+1)
+    print('CP lifetime: ' + str(tau))
+    print('CP center: '+ str(xc)+', '+str(yc))
     print('')
-    #
-    # '''' plot input fields '''
-    # plot_input_fields(coordinates, n_tracers, shift, path_tracers, path_out_figs)
-    #
-    #
+
+    ''' tracer coordinates '''
+    coordinates = get_tracer_coords(cp_id, n_cps, n_tracers, lifetime, path_tracer_file)
+    print('')
+    print('COORDINATES')
+    print(coordinates[-1,:,:])
+    print('')
+
+    ''' averaging '''
+    aux = np.zeros(shape=coordinates.shape)
+    # for it in range(tau):
+    #     aux[it,:,:] = coordinates[it,:,:] -
+
+
+    '''' plot input fields '''
+    # plot_tracers(coordinates, cp_id, n_tracers, x_shift, t_shift, lifetime, path_out_figs)
+    path_fields = path_out_figs
+    plot_input_fields(coordinates, xc, yc, cp_id, n_tracers, x_shift, t_shift, lifetime,
+                      'u', path_fields, path_out_figs)
+
+
+
+
+
     # var_list = ['s', 'w']
     # for it,t0 in enumerate(times):
     #     print('-plot time: '+str(t0))
@@ -168,30 +201,81 @@ def main():
     return
 # ----------------------------------------------------------------------
 
-def plot_input_fields(coordinates, n_tracers, shift, path_tracers, path_out_figs):
-    print(os.path.join(path_tracers, 'input', 'uv_alltimes.nc'))
-    rootgrp = nc.Dataset(os.path.join(path_tracers, 'input', 'uv_alltimes.nc'))
-    for it, t0 in enumerate(times):
-        if it > 0:
-            print('-plot time: ' + str(t0))
-            fig_name = 'uv_input_fields' + '_t' + str(t0) + '_tracers.png'
-            fig, ax = plt.subplots(1, 1, figsize=(7, 6), sharey='all')
-            var1 = rootgrp.variables['u'][it, :, :]
-            var2 = rootgrp.variables['v'][it, :, :]
-            max = np.amax(var1)
-            min = -max
-            # min = np.amin(var)
-            ax.contourf(var1.T, levels=np.linspace(min, max, 1e2), cmap=cm_bwr)
-            # ax.contour(var2.T, levels=np.linspace(min, max, 2e1), colors='k', linewidth=0.5)
-            ax.contour(var2.T, colors='k', linewidths=0.5)
-            ax.set_title('u and v')
-            ax.set_aspect('equal')
-            # for i in range(n_tracers):
-            #     ax.plot(coordinates[it, i, 0] + shift, coordinates[it, i, 1] + shift, 'ok', markersize=2)
-            plt.tight_layout()
-            fig.savefig(os.path.join(path_out_figs, fig_name))
-            plt.close(fig)
+def plot_tracers(coordinates, cp_id, n_tracers, x_shift, t_shift, lifetime, path_out_figs):
+    print('plot tracers: ', n_tracers)
+    lvls = np.linspace(0,1,n_tracers)
+    for it, t0 in enumerate(lifetime):
+        print('-plot time: ' + str(t0))
+        fig_name = 'cp'+str(cp_id)+'_tracers_t' + str(t0) + '_tracers.png'
+        fig, axis = plt.subplots(2, 2, figsize=(7, 6), sharey='none')
+        ax0 = axis[0,0]
+        ax1 = axis[0,1]
+        ax2 = axis[1,0]
+        ax0.set_aspect('equal')
+        for i in range(n_tracers):
+            ax0.plot(coordinates[it, i, 0] + shift, coordinates[it, i, 1] + shift,
+                    'o', color=cm_hsv(lvls[i]), markeredgecolor='w', markersize=5)
+            ax1.plot(i, coordinates[it, i, 1],
+                     'o', color=cm_hsv(lvls[i]), markeredgecolor='w', markersize=5)
+            ax2.plot(coordinates[it,i,0], i,
+                     'o', color=cm_hsv(lvls[i]), markeredgecolor='w', markersize=5)
+        plt.tight_layout()
+        fig.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
+    return
+
+
+
+
+def plot_input_fields(coordinates, xc, yc, cp_id, n_tracers, x_shift, t_shift, lifetime,
+                      field_name, path_fields, path_out_figs):
+    k0 = 0
+    rootgrp = nc.Dataset(os.path.join(path_fields, 'input_u.nc'))
+    var1 = rootgrp.variables['var1'][:, k0, :, :]
     rootgrp.close()
+    rootgrp = nc.Dataset(os.path.join(path_fields, 'input_v.nc'))
+    var2 = rootgrp.variables['var1'][:, k0, :, :]
+    rootgrp.close()
+    print('plot input fields: ')
+    print(lifetime)
+
+    for it, t0 in enumerate(lifetime):
+        print('-plot time: ' + str(t0), it)
+        fig_name = 'uv_input_fields' + '_t' + str(t0) + '_tracers.png'
+        fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(11, 5), sharey='all')
+        max = np.amax(var1[t0,:,:])
+        min = -max
+        lvls = np.linspace(min, max, 10)
+        cf = ax0.contourf(var1[t0,:,:], levels=lvls, cmap=cm_bwr)
+        ax0.set_title('u')
+        plt.colorbar(cf, ax=ax0)
+        max = np.amax(var2[t0,:,:])
+        min = -max
+        lvls = np.linspace(min, max, 10)
+        cf = ax1.contourf(var2[t0,:,:], levels=lvls, cmap=cm_bwr)
+        ax1.set_title('v')
+        plt.colorbar(cf, ax=ax1)
+        # # ax.contour(var2.T, levels=np.linspace(min, max, 2e1), colors='k', linewidth=0.5)
+        # ax.contour(var2.T, colors='k', linewidths=0.5)
+        # ax.set_title('u and v')
+
+        # print(coordinates[it,:,0])
+        print(np.amin(coordinates[it,:,0]), np.amax(coordinates[it,:,0]))
+        print(np.amin(coordinates[it,:,1]), np.amax(coordinates[it,:,1]))
+        for i in range(n_tracers):
+            ax0.plot(coordinates[it, i, 0] + x_shift, coordinates[it, i, 1] + x_shift, 'ok', markersize=2)
+            ax1.plot(coordinates[it, i, 0] + x_shift, coordinates[it, i, 1] + x_shift, 'ok', markersize=2)
+        for ax in [ax0, ax1]:
+            ax.set_aspect('equal')
+            # ax.set_xlim(np.amin(coordinates[it, :, 0] - 1), np.amax(coordinates[it, :, 0] + 1))
+            # ax.set_ylim(np.amin(coordinates[it, :, 1] - 1), np.amax(coordinates[it, :, 1] + 1))
+            ax.set_xlim(630, 670)
+            ax.set_ylim(580, 620)
+            ax.plot(xc[it],yc[it], 'xk', markersize=20)
+        plt.suptitle('t='+str(t0)+'s, t-shift '+str(t_shift)+', x-shift '+str(x_shift))
+        plt.tight_layout()
+        fig.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
 
     return
 
@@ -200,52 +284,59 @@ def plot_input_fields(coordinates, n_tracers, shift, path_tracers, path_out_figs
 # ----------------------------------------------------------------------
 
 
-# def get_tracer_coords(cp_id, n_cps, n_tracers, times, dt_fields, fullpath_in):
-def get_tracer_coords(cp_id, n_cps, n_tracers, fullpath_in):
+def get_tracer_coords(cp_id, n_cps, n_tracers, times, fullpath_in):
     print('get tracer coordinates')
     f = open(fullpath_in, 'r')
     lines = f.readlines()
     column = lines[0].split()
 
-    # nt = len(times)
-    # coords = np.zeros((nt, n_tracers, 2))
-    #
-    # for it, t0 in enumerate(times):
-    #     print('----t0='+str(t0), it, '----')
-    #     i = 0
-    #     # count = t0 * n_cps * n_tracers + (cp_id - 1) * n_tracers
-    #     # count = it * n_cps * n_tracers + (cp_id - 1) * n_tracers
-    #     count = t0/dt_fields * n_cps * n_tracers + (cp_id - 1) * n_tracers
-    #     # while CP age is 0 and CP ID is cp_id
-    #     timestep = int(lines[count].split()[0])
-    #     cp_ID = int(lines[count].split()[3])
-    #     # while (timestep - 1 == it and cp_ID == cp_id):
-    #     while (timestep - 1 == t0/dt_fields and cp_ID == cp_id):
-    #         columns = lines[count].split()
-    #         coords[it,i,0] = float(columns[4])
-    #         coords[it,i,1] = float(columns[5])
-    #         i += 1
-    #         count += 1
-    #         cp_ID = int(lines[count].split()[3])
-    #         timestep = int(lines[count].split()[0])
+    nt = len(times)
+    coords = np.zeros((nt, n_tracers, 2))
 
+    count_start = 0
+    ID = int(lines[count_start].split()[3])
+    while (ID < cp_id):
+        count_start += 1
+        ID = int(lines[count_start].split()[3])
+    print('count start', count_start)
+
+    for it, t0 in enumerate(times):
+        print('----t0='+str(t0), it, '----')
+        i = 0
+        count = count_start + it * n_tracers
+        # count = it * n_cps * n_tracers + (cp_id - 1) * n_tracers
+        print('count: ', count)
+        print(int(lines[count].split()[3]),
+              int(lines[count-1].split()[0]), int(lines[count].split()[0]),
+              int(lines[count].split()[2]))
+        # count = t0/dt_fields * n_cps * n_tracers + (cp_id - 1) * n_tracers
+        # while CP age is 0 and CP ID is cp_id
+        timestep = int(lines[count].split()[0])
+        print('timestep: ', timestep, t0)
+        # cp_ID = int(lines[count].split()[3])
+        tracer_ID = int(lines[count].split()[2])
+        # while (timestep - 1 == it and cp_ID == cp_id):
+        # while (timestep - 1 == t0/dt_fields and cp_ID == cp_id):
+        while (timestep == t0 and tracer_ID <= n_tracers):
+            columns = lines[count].split()
+            coords[it,i,0] = float(columns[4])
+            coords[it,i,1] = float(columns[5])
+            i += 1
+            count += 1
+            tracer_ID = int(lines[count].split()[2])
+            timestep = int(lines[count].split()[0])
+        print('i', i)
     f.close()
-    # print ''
-    # return coords
-    return
+    print ''
+    return coords
+
 
 
 def get_number_cps(fullpath_in):
     # get number of tracers in each CP
     f = open(fullpath_in, 'r')
     lines = f.readlines()
-    # count = 0
-    # # while CP age is 0 and CP ID is 1
-    # while (int(lines[count].split()[0]) == 1):
-    #     count += 1
-    # cp_number = int(lines[count-1].split()[3])
     cp_number = int(lines[-1].split()[3])
-
     f.close()
 
     return cp_number
@@ -256,18 +347,68 @@ def get_number_tracers(fullpath_in):
     f = open(fullpath_in, 'r')
     lines = f.readlines()
     count = 0
-    # while CP age is 0 and CP ID is 1
     cp_age = int(lines[count].split()[0])
     cp_ID = int(lines[count].split()[3])
-    print('cp_age', cp_age)
-    while (cp_age == 1 and cp_ID == 1):
+    # print('cp_age', cp_age)
+    # print('cp_ID', cp_ID)
+    age = cp_age
+    ID = cp_ID
+    while (age == cp_age and ID == cp_ID):
         count += 1
-        cp_age = int(lines[count].split()[0])
-        cp_ID = int(lines[count].split()[3])
+        age = int(lines[count].split()[0])
+        ID = int(lines[count].split()[3])
     n_tracers = count
     f.close()
 
     return n_tracers
+
+
+
+def get_cp_lifetime(cp_ID, fullpath_in):
+    f = open(fullpath_in, 'r')
+    lines = f.readlines()
+    count = 0
+    ID = int(lines[count].split()[3])
+    while (ID < cp_ID):
+        count += 1
+        ID = int(lines[count].split()[3])
+    t0 = int(lines[count].split()[0])
+    ID = int(lines[count].split()[3])
+
+    while (ID == cp_ID):
+        count += 1
+        ID = int(lines[count].split()[3])
+    t1 = int(lines[count-1].split()[0])
+    tau = t1-t0+1
+
+
+    f.close()
+    print('lifetime: tau='+str(tau), t0, t1)
+    return tau, t0, t1
+
+
+
+def get_cp_center(cp_ID, tau, n_tracers, fullpath_in):
+    xc = np.zeros(tau)
+    yc = np.zeros(tau)
+
+    f = open(fullpath_in, 'r')
+    lines = f.readlines()
+    count = 0
+    ID = int(lines[count].split()[3])
+    while (ID < cp_ID):
+        count += 1
+        ID = int(lines[count].split()[3])
+    count_start = count
+
+    for it in range(tau):
+        xc[it] = float(lines[count_start+it*n_tracers].split()[14])
+        yc[it] = float(lines[count_start+it*n_tracers].split()[15])
+
+    f.close()
+    print('xc: ', xc)
+    print('yc: ', yc)
+    return xc, yc
 # ----------------------------------------------------------------------
 
 def set_input_parameters(args):
