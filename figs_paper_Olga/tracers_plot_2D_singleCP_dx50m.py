@@ -6,6 +6,9 @@ import argparse
 import json as simplejson
 import os
 
+import plot_CP_singleCP
+from plot_CP_singleCP import get_radius_vel
+
 label_size = 12
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
@@ -23,9 +26,9 @@ def main():
     parser.add_argument("--timerange", nargs='+', type=int)
     parser.add_argument("--dx")
     parser.add_argument("--imin")
-    parser.add_argument("--shift")
+    parser.add_argument("--shift_x")
+    parser.add_argument("--shift_t")
     args = parser.parse_args()
-    # set_input_parameters(args)
 
     k0 = 0
     if args.dx:
@@ -43,12 +46,15 @@ def main():
     path_fields = os.path.join(path_data, 'fields')
     path_fields_merged = os.path.join(path_data, 'fields_merged')
     # path_out_figs = '/Users/bettinameyer/Dropbox/ClimatePhysics/Copenhagen/Projects/ColdPool_LES/data_olga/figs_2D_1CP'
-    path_out_figs = os.path.join('/nbi/home/meyerbe/paper_olga/figs_2D_1CP_dx'+str(dx)+'m/')
+    path_out_figs = os.path.join('/nbi/home/meyerbe/paper_olga/figs_2D_1CP_dx'+str(dx)+'m_nointerpol/')
+    # path_out_figs = os.path.join('/nbi/home/meyerbe/paper_olga/figs_2D_1CP_dx'+str(dx)+'m_interpol/')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
     print('path figures: ' + path_out_figs)
     print('path tracers: ' + path_tracer_file)
     print('')
+    set_input_parameters(case_name, path_data)
+
 
 
     global cm_bwr, cm_grey, cm_vir, cm_hsv
@@ -80,7 +86,6 @@ def main():
     nml = simplejson.loads(open(os.path.join(path_data, case_name + '.in')).read())
     global dt_fields
     dt_fields = nml['fields_io']['frequency']
-    nx = nml['grid']['nx']
 
     ''' get tracer coordinates '''
     cp_id = 1
@@ -114,10 +119,10 @@ def main():
     else:
         min_var = np.amin(var[:itmax,:,:])
     lvls_var = np.linspace(min_var, max_var, 25)
-    # lvls_var = np.linspace(min_var, max_var, 5)
+    # lvls_var = np.linspace(min_var, max_var, 10)
     max = np.amax(np.abs(v_rad[:,:,:]))
     lvls_v_rad = np.linspace(-max, max, 25)
-    # lvls_v_rad = np.linspace(-max, max, 5)
+    # lvls_v_rad = np.linspace(-max, max, 10)
     colmap = cm_hsv
     colmap = cm_bwr
     print('min max: ', min_var, max_var)
@@ -132,13 +137,20 @@ def main():
     imax = nx-imin
     print('imin, imax', imin, imax)
 
-    if args.shift:
-        shift = np.double(args.shift)
+    if args.shift_x:
+        shift = np.double(args.shift_x)
     elif dx == 50:
         shift = -0.5
     else:
         shift = 0
-    print('shift: '+str(shift))
+    if args.shift_t:
+        shift_t = np.double(args.shift_t)
+    elif dx == 50:
+        shift_t = 1
+    else:
+        shift_t = 1
+    print('x-shift: '+str(shift))
+    print('t-shift: '+str(shift_t))
     print('')
 
 
@@ -159,7 +171,7 @@ def main():
                 verticalalignment='top', bbox=textprops)
         for ax in axes[:,i].flat:
             for i in range(n_tracers):
-                ax.plot(coordinates[it + 1, i, 0] + shift, coordinates[it + 1, i, 1] + shift, 'ok', markersize=1)
+                ax.plot(coordinates[it + shift_t, i, 0] + shift, coordinates[it + shift_t, i, 1] + shift, 'ok', markersize=1)
     for ax in axes.flat:
         # ax.set_aspect('equal')
         ax.set_xlim(imin,imax)
@@ -212,7 +224,7 @@ def main():
                 verticalalignment='top', bbox=textprops)
         for ax in axes[:, i].flat:
             for i in range(n_tracers):
-                ax.plot(coordinates[it + 1, i, 0] + shift, coordinates[it + 1, i, 1] + shift, 'o',
+                ax.plot(coordinates[it + shift_t, i, 0] + shift, coordinates[it + shift_t, i, 1] + shift, 'o',
                         markerfacecolor=tracercolor, markeredgecolor=tracercolor, markersize=1)
     for ax in axes.flat:
         # ax.set_aspect('equal')
@@ -249,44 +261,126 @@ def main():
 
 
 
+    '''------- plot each timestep -------'''
+    for t0 in times[:-1]:
+        it = np.int(t0 / dt_fields)
+        print('plot: t='+str(t0) + ', '+str(it))
+        fig_name = var_name + '_t' + str(np.int(t0)) + '_k'+str(k0) + '.png'
+        fig, (ax0, ax1) = plt.subplots(1,2, figsize=(20,10))
+        cf = ax0.contourf(var[it,:,:].T, cmap=colmap, levels=lvls_var)
+        plt.colorbar(cf, ax=ax0, shrink=0.5)
+        cf = ax1.contourf(v_rad[it,:,:].T, cmap=colmap, levels=lvls_v_rad)
+        plt.colorbar(cf, ax=ax1, shrink=0.5)
+        for ax in [ax0, ax1]:
+            ax.set_aspect('equal')
+            for i in range(n_tracers):
+                ax.plot(coordinates[it+shift_t, i, 0] + shift, coordinates[it+shift_t, i, 1] + shift, 'ok', markersize=2)
+        ax0.set_title('w')
+        ax1.set_title('v_{rad}')
+        plt.suptitle('t-shift '+str(shift_t)+', x-shift '+str(shift))
+        plt.tight_layout()
+        plt.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
 
-    # shift = 0
-    # for t0 in times[:-1]:
-    #     it = np.int(t0 / dt_fields)
-    #     print('plot: t='+str(t0) + ', '+str(it))
-    #     fig_name = var_name + '_t' + str(np.int(t0)) + '_k'+str(k0) + '.png'
-    #     fig, (ax0, ax1) = plt.subplots(1,2, figsize=(20,10))
-    #     for ax in [ax0, ax1]:
-    #         cf = ax.contourf(var[it,:,:].T, cmap=colmap, levels=lvls)
-    #         ax.set_aspect('equal')
-    #         plt.colorbar(cf, ax=ax, shrink=0.5)
-    #     for i in range(n_tracers):
-    #         ax1.plot(coordinates[it+1, i, 0] + shift, coordinates[it+1, i, 1] + shift, 'ok', markersize=2)
-    #     plt.tight_layout()
-    #     plt.savefig(os.path.join(path_out_figs, fig_name))
-    #     plt.close(fig)
 
-    # colmap = cm_bwr
-    # for t0 in times:
-    #     it = np.int(t0 / dt_fields)
-    #     print('t: '+str(t0) + ', '+str(it))
-    #     fig_name = 'v_rad' + '_t' + str(np.int(t0)) + '_k'+str(k0) + '.png'
-    #     fig, (ax0, ax1) = plt.subplots(1,2, figsize=(20,10))
-    #     for ax in [ax0, ax1]:
-    #         cf = ax.contourf(v_rad[it,:,:].T, cmap=colmap, levels=lvls)
-    #         ax.set_aspect('equal')
-    #         plt.colorbar(cf, ax=ax, shrink=0.5)
-    #     for i in range(n_tracers):
-    #         ax1.plot(coordinates[it+1, i, 0] + shift, coordinates[it+1, i, 1] + shift, 'ok', markersize=2)
-    #     plt.tight_layout()
-    #     plt.savefig(os.path.join(path_out_figs, fig_name))
-    #     plt.close(fig)
+
+    '''------- plot each timestep incl. average radius -------'''
+    # a) read in CP radius r_torus(t)=r_av and CP spreading velocity u_torus(t)=U_rad_av from tracer statistics
+    print('path tracers: ', path_tracer_file)
+    nt = len(times)
+    nk = 1
+    dist_av = np.zeros((nt, nk))
+    U_rad_av = np.zeros((nt, nk))
+    for it, t0 in enumerate(times):
+        # print('---t0: ' + str(t0) + '---', it)
+        dist_av[it, k0], U_rad_av[it, k0] = get_radius_vel(path_tracer_file, it, cp_id, n_tracers, n_cps)
+    r_tracers_av = dist_av * dx
+    del dist_av
+
+    ''' get azimuthally averaged fields '''
+    rad_stats_file = nc.Dataset(os.path.join(path_data, 'data_analysis', 'stats_radial_averaged.nc'))
+    v_rad_av = rad_stats_file.groups['stats'].variables['v_rad'][:, :, :]
+    # w_av = rad_stats_file.groups['stats'].variables['w'][:, :, k0]
+    r_av = rad_stats_file.groups['stats'].variables['r'][:]  # nr
+    # time_av = rad_stats_file.groups['timeseries'].variables['time'][:]  # nt
+    rad_stats_file.close()
+    v_rad_gradient = np.zeros(shape=v_rad_av.shape)
+    for ir, r in enumerate(r_av[1:-1]):
+        v_rad_gradient[:, ir, :] = (v_rad_av[:, ir + 1, :] - v_rad_av[:, ir - 1, :]) / (r_av[ir + 1] - r_av[ir - 1])
+    # ir_vrad_max = np.argmax(v_rad_av, axis=1)  # nt, nk
+    ir_vrad_grad_max = np.argmin(v_rad_gradient, axis=1)  # nt, nk
+
+    print ''
+    for t0 in times[:-1]:
+        if t0 < 1000:
+            imin = 100
+        elif t0 < 2000:
+            imin = 50
+        else:
+            imin = 0
+        it = np.int(t0 / dt_fields)
+        print('plot: t=' + str(t0) + ', ' + str(it))
+        fig_name = 'circle_' + var_name + '_t' + str(np.int(t0)) + '_k' + str(k0) + '.png'
+        # fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(20, 10))
+        # # # ax0.set_title('w')
+        # # # ax1.set_title('v_{rad}')
+        fig, axis = plt.subplots(2, 2, figsize=(12, 10))
+        ax11 = axis[0, 0]
+        ax12 = axis[0, 1]
+        ax21 = axis[1, 0]
+        ax22 = axis[1, 1]
+        radius_tracers = r_tracers_av[it+shift_t, k0] / dx
+        # radius_gradient  = r_av[ir_vrad_grad_max[it,k0]]
+        radius_gradient  = ir_vrad_grad_max[it,k0]
+        circle1_grad = plt.Circle((ic+0.5, jc+0.5), radius_gradient, fill=False, color='b', linewidth=2)
+        circle2_grad = plt.Circle((ic+0.5, jc+0.5), radius_gradient, fill=False, color='b', linewidth=2)
+        circle1_tr = plt.Circle((ic+0.5, jc+0.5), radius_tracers, fill=False, color='g', linewidth=3)
+        circle2_tr = plt.Circle((ic+0.5, jc+0.5), radius_tracers, fill=False, color='g', linewidth=3)
+        circle3 = plt.Circle((ic, jc), radius_tracers, fill=False, color='g', linewidth=3)
+        circle4 = plt.Circle((ic, jc), radius_tracers, fill=False, color='g', linewidth=3)
+        cf = ax11.contourf(var[it, :, :].T, cmap=colmap, levels=lvls_var)
+        plt.colorbar(cf, ax=ax11, shrink=0.5)
+        cf = ax12.contourf(v_rad[it, :, :].T, cmap=colmap, levels=lvls_v_rad)
+        plt.colorbar(cf, ax=ax12, shrink=0.5)
+        ax11.set_title('vertical velocity')
+        ax11.add_artist(circle1_grad)
+        ax11.add_artist(circle1_tr)
+        ax12.add_artist(circle2_grad)
+        ax12.add_artist(circle2_tr)
+        ax11.plot(ic - 0.5, jc - 0.5, 'ow', markersize=7)
+        ax12.set_title('radial velocity')
+        cf = ax21.contourf(var[it, :, :].T, cmap=colmap, levels=lvls_var)
+        plt.colorbar(cf, ax=ax21, shrink=0.5)
+        cf = ax22.contourf(v_rad[it, :, :].T, cmap=colmap, levels=lvls_v_rad)
+        plt.colorbar(cf, ax=ax22, shrink=0.5)
+
+        for ax in [ax11, ax12, ax21, ax22]:
+        # for ax in [ax21, ax22]:
+            # ax.set_aspect('equal')
+            for i in range(n_tracers):
+                ax.plot(coordinates[it + shift_t, i, 0] + shift, coordinates[it + shift_t, i, 1] + shift, 'ok',
+                        markersize=1)
+
+        ax21.add_artist(circle3)
+        ax22.add_artist(circle4)
+        ax22.set_title('v')
+        for ax in axis.flat:
+            ax.set_xlim(imin, nx-imin)
+            ax.set_ylim(imin, nx-imin)
+        # ax11.set_ylim(0, ny)
+        # ax12.set_xlim(0, nx)
+        # ax12.set_ylim(0, ny)
+        plt.tight_layout()
+        plt.suptitle('t-shift ' + str(shift_t) + ', x-shift ' + str(shift))
+        plt.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close()
+
 
 
     return
 # ----------------------------------------------------------------------
 
-def plot_input_fields(coordinates, n_tracers, shift, path_tracers, path_out_figs):
+def plot_tracer_input_fields(coordinates, n_tracers, shift, path_tracers, path_out_figs):
     print(os.path.join(path_tracers, 'input', 'uv_alltimes.nc'))
     rootgrp = nc.Dataset(os.path.join(path_tracers, 'input', 'uv_alltimes.nc'))
     for it, t0 in enumerate(times):
@@ -380,44 +474,27 @@ def get_number_tracers(fullpath_in):
     return n_tracers
 # ----------------------------------------------------------------------
 
-def set_input_parameters(args):
-    print('--- set input parameters ---')
-    global path, path_fields, case_name
-    path = args.path
-    path_fields = os.path.join(path, 'fields')
-    case_name = args.casename
-
-    nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
-    global nx, ny, nz, dx, dV, gw
+def set_input_parameters(case_name, path_data):
+    nml = simplejson.loads(open(os.path.join(path_data, case_name + '.in')).read())
+    global nx, ny
     nx = nml['grid']['nx']
     ny = nml['grid']['ny']
-    nz = nml['grid']['nz']
-    dx = np.zeros(3, dtype=np.int)
-    dx[0] = nml['grid']['dx']
-    dx[1] = nml['grid']['dy']
-    dx[2] = nml['grid']['dz']
-    gw = nml['grid']['gw']
-    dV = dx[0] * dx[1] * dx[2]
+    # nz = nml['grid']['nz']
+    # dx = np.zeros(3, dtype=np.int)
+    # dx[0] = nml['grid']['dx']
+    # dx[1] = nml['grid']['dy']
+    # dx[2] = nml['grid']['dz']
+    # gw = nml['grid']['gw']
+    # dV = dx[0] * dx[1] * dx[2]
 
-    global tmin, tmax
-    if args.tmin:
-        tmin = np.int(args.tmin)
-    else:
-        tmin = 100
-    if args.tmax:
-        tmax = np.int(args.tmax)
-    else:
-        tmax = 100
-
-    ''' time range '''
-    global times, files
-    times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
-             and tmin <= np.int(name[:-3]) <= tmax]
-    times.sort()
-    files = [str(t) + '.nc' for t in times]
-    print('tmin, tmax: ', tmin, tmax)
-    print('times: ', times)
-    print('')
+    global ic, jc
+    try:
+        ic = nml['init']['ic']
+        jc = nml['init']['jc']
+    except:
+        ic = np.int(nx/2)
+        jc = np.int(ny/2)
+    print('ic, jc', ic, jc)
 
     return
 
