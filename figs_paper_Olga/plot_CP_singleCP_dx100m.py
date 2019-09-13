@@ -457,13 +457,13 @@ def plot_vrad_w(r_av, U_rad_av, radius_rad_av,
         ax1.plot(radius_rad_av[ir_tracer_0], w_av[it, ir_tracer_0], 'ko')  # tracer
         # ax1.plot(radius_rad_av[ir_tracer_1], w_av[it, ir_tracer_1], 'ko')  # tracer
 
-    ax0.legend(loc='center left', bbox_to_anchor=(.77, 0.89), frameon=False)
-    ax1.legend(loc='center left', bbox_to_anchor=(.77, 1.67), frameon=False)
-    rect = mpatches.Rectangle((6.9e3, 2.4), 2.e3, 5.9, fill=True, linewidth=1, edgecolor='k', facecolor='white')
+    ax0.legend(loc='center left', bbox_to_anchor=(.78, 0.90), frameon=False)
+    ax1.legend(loc='center left', bbox_to_anchor=(.78, 1.67), frameon=False)
+    rect = mpatches.Rectangle((7.e3, 1.8), 1.9e3, 4.5, fill=True, linewidth=1, edgecolor='k', facecolor='white')
     ax0.add_patch(rect)
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    ax0.text(4.9e2, 7.2, 'a)', fontsize=18, bbox=textprops)
+    ax0.text(4.9e2, 5.7, 'a)', fontsize=18, bbox=textprops)
     ax1.text(4.9e2, 1.13, 'b)', fontsize=18)
 
     ax0.set_ylim(np.amin(v_rad_av), np.amax(v_rad_av))
