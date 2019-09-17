@@ -1,3 +1,10 @@
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+import netCDF4 as nc
+import argparse
+import json as simplejson
+
 # figures 'figs_rim_tracers_noint/figs_rim/v_rad_gradient_k0.png' from figs_updraft_strength.py
 
 def main():
@@ -6,7 +13,7 @@ def main():
     CP_id_olga = 3
     col_id = 4      # column in textfile of CP-ID
 
-    path_single_dx50m = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run3_dx50m/dTh3_z1000_r1000'
+    # path_single_dx50m = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run3_dx50m/dTh3_z1000_r1000'
 
     # (1)
     return

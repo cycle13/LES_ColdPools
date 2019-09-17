@@ -154,111 +154,140 @@ def main():
     print('')
 
 
-    '''------- plot timerange -------'''
-    fig_name = 'timerange_t' + str(timerange) + '_k' + str(k0) + '_tshift'+str(shift_t)+'.png'
-    textprops = dict(facecolor='white', alpha=0.5, linewidth=0.)
-    label_list = ['a)', 'b)', 'c)']
-    fig, axes = plt.subplots(nrows=2, ncols=len(timerange), figsize=(12,7), sharey='row', sharex='col')
-    for i,t0 in enumerate(timerange):
-        it = np.int(t0 / dt_fields)
-        ax = axes[0,i]
-        im0 = ax.contourf(var[it, :, :].T, cmap=colmap, levels=lvls_var)
-        textstr = label_list[i] + ' t='+str(t0)+'s'
-        ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
-                verticalalignment='top', bbox=textprops)
-        ax = axes[1,i]
-        im1 = ax.contourf(v_rad[it, :, :].T, cmap=colmap, levels=lvls_v_rad)
-        ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
-                verticalalignment='top', bbox=textprops)
-        for ax in axes[:,i].flat:
-            for i in range(n_tracers):
-                ax.plot(coordinates[it + shift_t, i, 0] + shift, coordinates[it + shift_t, i, 1] + shift, 'ok', markersize=1)
-    for ax in axes.flat:
-        # ax.set_aspect('equal')
-        ax.set_xlim(imin,imax)
-        ax.set_ylim(imin,imax)
-    for ax in axes[1,:].flat:
-        ax.set_xlabel('Distance / km')
-        print('xticks', ax.get_xticks())
-        x_ticks = [np.int((ti-imin) * dx * 1e-3) for ti in ax.get_xticks()]
-        # x_ticks = ax.get_xticks()
-        # x_ticks = x_ticks * dx *1e-3
-        print('      ', x_ticks)
-        ax.set_xticklabels(x_ticks)
-        for label in ax.xaxis.get_ticklabels()[1::2]:
-            label.set_visible(False)
-    for ax in axes[:,0].flat:
-        ax.set_ylabel('Distance / km')
-        y_ticks = [np.int((ti-imin) * dx * 1e-3) for ti in ax.get_yticks()]
-        ax.set_yticklabels(y_ticks)
-        for label in ax.yaxis.get_ticklabels()[1::2]:
-            label.set_visible(False)
-    # for ax in axes.flat:
-    #     ax.set_aspect('equal')
-    cbar_ax0 = fig.add_axes([0.9, 0.58, 0.015, 0.3])
-    cbar_ax1 = fig.add_axes([0.9, 0.14, 0.015, 0.3])
-    cb0 = fig.colorbar(im0, cax=cbar_ax0, ticks=np.arange(np.floor(min_var), np.floor(max_var) + 1, 1))
-    cb1 = fig.colorbar(im1, cax=cbar_ax1, ticks=[-10,-5,0,5,10])
-    cb0.set_label('vertical velocity / ms' + r'$^{-1}$')
-    cb1.set_label('radial velocity / ms'+r'$^{-1}$')
-    fig.subplots_adjust(top=0.95, bottom=0.07, left=0.07, right=0.87, hspace=0.1, wspace=0.1)
-    plt.savefig(os.path.join(path_out_figs, fig_name))
+    # ''' from script tracking '''
+    # rad = 1000
+    # res = dx
+    # radius=rad / res + 5  # radius of initial tracer circle
+    # radius2=rad / res + 10
+    # ic_circle1=nx/2
+    # jc_circle1=nx/2
+    # ic_circle2=nx/2
+    # jc_circle2=nx/2
+    # print("center circles: ", ic_circle1, jc_circle1)
+    # print("radius circle 1: ", radius)
+    # print("radius circle 2: ", radius2)
+    # shift = 0.25
+    # fig_name = 'test_tracer_init.png'
+    # fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(7, 7), sharey='row', sharex='col')
+    # for i in range(n_tracers):
+    #     ax.plot(coordinates[0, i, 0] + shift, coordinates[0, i, 1] + shift, 'ok',
+    #                 markersize=1)
+    # circle1 = plt.Circle((ic, jc), radius, fill=True, color='b', linewidth=2)
+    # circle2 = plt.Circle((ic_circle1, jc_circle2), radius, fill=False, color='r', linewidth=3)
+    # # circle1 = plt.Circle((ic + 0.5, jc + 0.5), radius, fill=True, color='b', linewidth=2)
+    # # circle2 = plt.Circle((ic_circle1 + 0.5, jc_circle2 + 0.5), radius, fill=False, color='b', linewidth=2)
+    # ax.add_artist(circle1)
+    # ax.add_artist(circle2)
+    # ax.set_aspect('equal')
+    # plt.title('shift='+str(shift))
+    # plt.savefig(os.path.join(path_out_figs, fig_name))
 
 
-    colmap = cm_grey_r
-    # tracercolor = 'royalblue'
-    # tracercolor = 'blue'
-    tracercolor = 'mediumblue'
-    fig_name = 'timerange2_t' + str(timerange) + '_k' + str(k0) + '_tshift'+str(shift_t)+ '.png'
-    textprops = dict(boxstyle='round', facecolor='white', alpha=0.5, linewidth=0.)
-    fig, axes = plt.subplots(nrows=2, ncols=len(timerange), figsize=(11, 7), sharey='row', sharex='col')
-    for i, t0 in enumerate(timerange):
-        it = np.int(t0 / dt_fields)
-        ax = axes[0, i]
-        im0 = ax.contourf(var[it, :, :].T, cmap=colmap, levels=lvls_var)
-        textstr = 't=' + str(t0) + 's'
-        ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
-                verticalalignment='top', bbox=textprops)
-        ax = axes[1, i]
-        im1 = ax.contourf(v_rad[it, :, :].T, cmap=colmap, levels=lvls_v_rad)
-        ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
-                verticalalignment='top', bbox=textprops)
-        for ax in axes[:, i].flat:
-            for i in range(n_tracers):
-                ax.plot(coordinates[it + shift_t, i, 0] + shift, coordinates[it + shift_t, i, 1] + shift, 'o',
-                        markerfacecolor=tracercolor, markeredgecolor=tracercolor, markersize=1)
-    for ax in axes.flat:
-        # ax.set_aspect('equal')
-        ax.set_xlim(imin, imax)
-        ax.set_ylim(imin, imax)
-    for ax in axes[1,:].flat:
-        ax.set_xlabel('Distance / km')
-        print('xticks', ax.get_xticks())
-        x_ticks = [np.int((ti-imin) * dx * 1e-3) for ti in ax.get_xticks()]
-        print('      ', x_ticks)
-        ax.set_xticklabels(x_ticks)
-        for label in ax.xaxis.get_ticklabels()[1::2]:
-            label.set_visible(False)
-    for ax in axes[:,0].flat:
-        ax.set_ylabel('Distance / km')
-        y_ticks = [np.int((ti-imin) * dx * 1e-3) for ti in ax.get_yticks()]
-        ax.set_yticklabels(y_ticks)
-        for label in ax.yaxis.get_ticklabels()[1::2]:
-            label.set_visible(False)
+    # '''------- plot timerange -------'''
+    # fig_name = 'timerange_t' + str(timerange) + '_k' + str(k0) + '_tshift'+str(shift_t)+'.png'
+    # textprops = dict(facecolor='white', alpha=0.5, linewidth=0.)
+    # label_list = ['a)', 'b)', 'c)']
+    # fig, axes = plt.subplots(nrows=2, ncols=len(timerange), figsize=(12,7), sharey='row', sharex='col')
+    # for i,t0 in enumerate(timerange):
+    #     it = np.int(t0 / dt_fields)
+    #     ax = axes[0,i]
+    #     im0 = ax.contourf(var[it, :, :].T, cmap=colmap, levels=lvls_var)
+    #     textstr = label_list[i] + ' t='+str(t0)+'s'
+    #     ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
+    #             verticalalignment='top', bbox=textprops)
+    #     ax = axes[1,i]
+    #     im1 = ax.contourf(v_rad[it, :, :].T, cmap=colmap, levels=lvls_v_rad)
+    #     ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
+    #             verticalalignment='top', bbox=textprops)
+    #     for ax in axes[:,i].flat:
+    #         for i in range(n_tracers):
+    #             ax.plot(coordinates[it + shift_t, i, 0] + shift, coordinates[it + shift_t, i, 1] + shift, 'ok', markersize=1)
     # for ax in axes.flat:
     #     # ax.set_aspect('equal')
     #     ax.set_xlim(imin,imax)
     #     ax.set_ylim(imin,imax)
-    cbar_ax0 = fig.add_axes([0.92, 0.60, 0.015, 0.3])
-    cbar_ax1 = fig.add_axes([0.92, 0.14, 0.015, 0.3])
-    cb0 = fig.colorbar(im0, cax=cbar_ax0, ticks=np.arange(np.floor(min_var), np.floor(max_var) + 1, 1))
-    cb1 = fig.colorbar(im1, cax=cbar_ax1, ticks=[-10, -5, 0, 5, 10])
-    cb0.set_label('vertical velocity / ms' + r'$^{-1}$')
-    cb1.set_label('radial velocity / ms' + r'$^{-1}$')
+    # for ax in axes[1,:].flat:
+    #     ax.set_xlabel('Distance / km')
+    #     print('xticks', ax.get_xticks())
+    #     x_ticks = [np.int((ti-imin) * dx * 1e-3) for ti in ax.get_xticks()]
+    #     # x_ticks = ax.get_xticks()
+    #     # x_ticks = x_ticks * dx *1e-3
+    #     print('      ', x_ticks)
+    #     ax.set_xticklabels(x_ticks)
+    #     for label in ax.xaxis.get_ticklabels()[1::2]:
+    #         label.set_visible(False)
+    # for ax in axes[:,0].flat:
+    #     ax.set_ylabel('Distance / km')
+    #     y_ticks = [np.int((ti-imin) * dx * 1e-3) for ti in ax.get_yticks()]
+    #     ax.set_yticklabels(y_ticks)
+    #     for label in ax.yaxis.get_ticklabels()[1::2]:
+    #         label.set_visible(False)
+    # # for ax in axes.flat:
+    # #     ax.set_aspect('equal')
+    # cbar_ax0 = fig.add_axes([0.9, 0.58, 0.015, 0.3])
+    # cbar_ax1 = fig.add_axes([0.9, 0.14, 0.015, 0.3])
+    # cb0 = fig.colorbar(im0, cax=cbar_ax0, ticks=np.arange(np.floor(min_var), np.floor(max_var) + 1, 1))
+    # cb1 = fig.colorbar(im1, cax=cbar_ax1, ticks=[-10,-5,0,5,10])
+    # cb0.set_label('vertical velocity / ms' + r'$^{-1}$')
+    # cb1.set_label('radial velocity / ms'+r'$^{-1}$')
     # fig.subplots_adjust(top=0.95, bottom=0.07, left=0.07, right=0.87, hspace=0.1, wspace=0.1)
-    fig.subplots_adjust(top=0.95, bottom=0.1, left=0.07, right=0.90, hspace=0.1, wspace=0.1)
-    plt.savefig(os.path.join(path_out_figs, fig_name))
-
+    # plt.savefig(os.path.join(path_out_figs, fig_name))
+    #
+    #
+    # colmap = cm_grey_r
+    # # tracercolor = 'royalblue'
+    # # tracercolor = 'blue'
+    # tracercolor = 'mediumblue'
+    # fig_name = 'timerange2_t' + str(timerange) + '_k' + str(k0) + '_tshift'+str(shift_t)+ '.png'
+    # textprops = dict(boxstyle='round', facecolor='white', alpha=0.5, linewidth=0.)
+    # fig, axes = plt.subplots(nrows=2, ncols=len(timerange), figsize=(11, 7), sharey='row', sharex='col')
+    # for i, t0 in enumerate(timerange):
+    #     it = np.int(t0 / dt_fields)
+    #     ax = axes[0, i]
+    #     im0 = ax.contourf(var[it, :, :].T, cmap=colmap, levels=lvls_var)
+    #     textstr = 't=' + str(t0) + 's'
+    #     ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
+    #             verticalalignment='top', bbox=textprops)
+    #     ax = axes[1, i]
+    #     im1 = ax.contourf(v_rad[it, :, :].T, cmap=colmap, levels=lvls_v_rad)
+    #     ax.text(0.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
+    #             verticalalignment='top', bbox=textprops)
+    #     for ax in axes[:, i].flat:
+    #         for i in range(n_tracers):
+    #             ax.plot(coordinates[it + shift_t, i, 0] + shift, coordinates[it + shift_t, i, 1] + shift, 'o',
+    #                     markerfacecolor=tracercolor, markeredgecolor=tracercolor, markersize=1)
+    # for ax in axes.flat:
+    #     # ax.set_aspect('equal')
+    #     ax.set_xlim(imin, imax)
+    #     ax.set_ylim(imin, imax)
+    # for ax in axes[1,:].flat:
+    #     ax.set_xlabel('Distance / km')
+    #     print('xticks', ax.get_xticks())
+    #     x_ticks = [np.int((ti-imin) * dx * 1e-3) for ti in ax.get_xticks()]
+    #     print('      ', x_ticks)
+    #     ax.set_xticklabels(x_ticks)
+    #     for label in ax.xaxis.get_ticklabels()[1::2]:
+    #         label.set_visible(False)
+    # for ax in axes[:,0].flat:
+    #     ax.set_ylabel('Distance / km')
+    #     y_ticks = [np.int((ti-imin) * dx * 1e-3) for ti in ax.get_yticks()]
+    #     ax.set_yticklabels(y_ticks)
+    #     for label in ax.yaxis.get_ticklabels()[1::2]:
+    #         label.set_visible(False)
+    # # for ax in axes.flat:
+    # #     # ax.set_aspect('equal')
+    # #     ax.set_xlim(imin,imax)
+    # #     ax.set_ylim(imin,imax)
+    # cbar_ax0 = fig.add_axes([0.92, 0.60, 0.015, 0.3])
+    # cbar_ax1 = fig.add_axes([0.92, 0.14, 0.015, 0.3])
+    # cb0 = fig.colorbar(im0, cax=cbar_ax0, ticks=np.arange(np.floor(min_var), np.floor(max_var) + 1, 1))
+    # cb1 = fig.colorbar(im1, cax=cbar_ax1, ticks=[-10, -5, 0, 5, 10])
+    # cb0.set_label('vertical velocity / ms' + r'$^{-1}$')
+    # cb1.set_label('radial velocity / ms' + r'$^{-1}$')
+    # # fig.subplots_adjust(top=0.95, bottom=0.07, left=0.07, right=0.87, hspace=0.1, wspace=0.1)
+    # fig.subplots_adjust(top=0.95, bottom=0.1, left=0.07, right=0.90, hspace=0.1, wspace=0.1)
+    # plt.savefig(os.path.join(path_out_figs, fig_name))
+    #
 
 
 
