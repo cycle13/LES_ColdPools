@@ -74,7 +74,7 @@ def main():
 
 
 
-
+    ''' ----- get CP properties ----- '''
     cp_id = CP_id_olga
     print('CP ID: ' + str(cp_id))
     # n_cps = get_number_cps(path_tracer_file)
@@ -100,12 +100,17 @@ def main():
     print('')
 
 
-    # ''' tracer coordinates '''
+    ''' ----- tracer coordinates ----- '''
     # coordinates = get_tracer_coords(cp_id, n_cps, n_tracers, lifetime, path_tracer_file)
-    # print('')
+    # var_list = ['s', 'w']
+    # shift = 0
+    # fig_name = 's_w'
+    # plot_tracers_field(coordinates, n_tracers, shift, var_list, lifetime,
+    #                    path_fields, path_out_figs, fig_name)
+    print('')
 
 
-    # ''' averaging tracer radius'''
+    ''' averaging tracer radius'''
     # aux = np.zeros(shape=coordinates.shape)
     # for it in range(tau):
     #     aux[it,:,0] = coordinates[it,:,0] - xc[it]
@@ -123,8 +128,7 @@ def main():
     # # plt.close(fig)
 
 
-    '''compute & average radial velocity field'''
-    # read in fields
+    ''' ----- read in input fields ----- '''
     k0 = 0
     path_fields = path_out_figs
     rootgrp = nc.Dataset(os.path.join(path_fields, 'input_u.nc'))
@@ -134,84 +138,63 @@ def main():
     v_in = rootgrp.variables['var1'][:, k0, :, :]
     rootgrp.close()
 
+
+    '''' plot input fields & tracer coordinates '''
+    # # path_fields = path_out_figs
+    # # plot_input_fields(coordinates, xc, yc, cp_id, n_tracers, x_shift, t_shift, lifetime,
+    # #                   'u', path_fields, path_out_figs)
+    # plot_input_fields(coordinates, u_in, v_in, xc, yc, cp_id, n_tracers, x_shift, t_shift, lifetime,
+    #                   'u', path_out_figs)
+
+
+
+    ''' ----- compute & average radial velocity field ----- '''
     # define subdomain for which to compute radial veloctiy wrt CP center (xc,yc)
     [nx,ny] = u_in.shape[1:3]
     lx = 10e3
-    irange = np.int(np.minimum(np.int(lx / dx), np.minimum(nx - xc[0], xc[0])))
-    jrange = np.int(np.minimum(np.int(lx / dx), np.minimum(ny - yc[0], yc[0])))
+    irange = np.int(np.minimum(np.int(lx / dx), np.minimum(nx - ic[0], ic[0])))
+    jrange = np.int(np.minimum(np.int(lx / dx), np.minimum(ny - jc[0], jc[0])))
     nx_ = 2 * irange
     ny_ = 2 * jrange
+    rmax = np.minimum(irange, jrange)
     print('subdomain: ')
     print(nx, xc, xc / dx, lx, lx / dx, irange)
     print(ny, yc, yc / dx)
 
-    # compute theta, r
-    # th_field, r_field = compute_radius(50, 50, 50, 50, 100, 100, path_out_figs)     # ic at center; whole domain
-    # th_field, r_field = compute_radius(50, 50, 40, 40, 100, 100, path_out_figs)   # ic at cetner; part domain
-    # n = 100
-    # xc = 30
-    # nxh_ = np.int(np.minimum(np.int(n / 2), np.minimum(nx - xc, xc)))
-    # print(n, xc, nxh_)
-    # th_field, r_field = compute_radius(xc, xc, nxh_, nxh_, n, n, path_out_figs)   # ic not at center; part of domain
-    print(nx, xc[0], irange)
+    print('')
+    print('compute theta, r')
+    # print(nx, xc[0], irange)
     th_field, r_field = compute_radius(ic[0], jc[0], irange, jrange, nx, nx, path_out_figs)
 
     # interpolate horizontal velocity field to cell centre in subdomain
     v_hor_int = compute_v_hor_int(u_in, v_in, ic, jc, irange, jrange, nx, ny, t_ini, t_end, tau, path_out_figs)
-
-
+    # compute and average radial and tangential velocity
     # v_rad_int = np.zeros((tau, nx, ny))
     # v_tan_int = np.zeros((tau, nx, ny))
     v_rad_int = np.zeros((tau, nx_, ny_))
     v_tan_int = np.zeros((tau, nx_, ny_))
-    it = 0
+    v_rad_av = np.zeros((tau, rmax))
+    v_tan_av = np.zeros((tau, rmax))
     for it, t0 in enumerate(lifetime):
         v_rad_int[it,:,:], v_tan_int[it,:,:] = compute_radial_vel(v_hor_int[:,it,:,:], th_field,
-                                                                  irange, jrange, nx_, ny_, ic[it], jc[it],
+                                                                  irange, jrange, rmax, nx_, ny_, ic[it], jc[it],
                                                                   t0, path_out_figs)
+        # average radial velocity
+        print('r field: ', r_field[ic[0],:])
+        v_rad_av[it, :] = compute_average_var(v_rad_int[it,:,:], rmax, r_field, nx_, ny_)
+        v_tan_av[it, :] = compute_average_var(v_tan_int[it,:,:], rmax, r_field, nx_, ny_)
+
+        print('')
+        print('FIGURE: ', rmax, v_rad_av.shape)
+        print(v_rad_av[it,:])
+        fig_name = 'vrad_vtan_radial_av_t'+str(t0)+'.png'
+        fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(11, 6), sharey='all')
+        ax0.plot(np.arange(rmax), v_rad_av[it,:rmax])
+        ax1.plot(v_tan_av[it,:])
+        fig.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
 
 
-
-
-
-
-    # '''' plot input fields '''
-    # # plot_tracers(coordinates, cp_id, n_tracers, x_shift, t_shift, lifetime, path_out_figs)
-    # path_fields = path_out_figs
-    # plot_input_fields(coordinates, xc, yc, cp_id, n_tracers, x_shift, t_shift, lifetime,
-    #                   'u', path_fields, path_out_figs)
-
-
-
-
-
-    # var_list = ['s', 'w']
-    # for it,t0 in enumerate(times):
-    #     print('-plot time: '+str(t0))
-    #     fig_name = 's_w' + '_t' + str(t0) + '_tracers.png'
-    #     fig, axis = plt.subplots(1, 2, figsize=(11, 6), sharey='all')
-    #     rootgrp = nc.Dataset(os.path.join(path_fields, str(t0)+'.nc'))
-    #     for j, var_name in enumerate(var_list):
-    #         print(var_name, j)
-    #         var = rootgrp.groups['fields'].variables[var_name][:,:,k0]
-    #         max = np.amax(var)
-    #         if var_name in ['w', 'v_rad', 'v_tan']:
-    #             min = -max
-    #             cm_ = cm_bwr
-    #         else:
-    #             min = np.amin(var)
-    #             cm_ = cm_hsv
-    #         # axis[j].contourf(var.T, levels=np.linspace(min, max, 1e2), cmap=cm_)
-    #         axis[j].imshow(var.T, vmin=min, vmax=max, cmap=cm_, origin='lower')
-    #         axis[j].set_title(var_name)
-    #         axis[j].set_aspect('equal')
-    #     rootgrp.close()
-    #     for i in range(n_tracers):
-    #         for j in range(len(var_list)):
-    #             axis[j].plot(coordinates[it,i,0]+shift, coordinates[it,i,1]+shift, 'ok', markersize=2)
-    #     plt.tight_layout()
-    #     fig.savefig(os.path.join(path_out_figs, fig_name))
-    #     plt.close(fig)
     #
     #
     # var_list = ['v_rad', 'v_tan']
@@ -272,41 +255,19 @@ def main():
     return
 # ----------------------------------------------------------------------
 
-def plot_tracers(coordinates, cp_id, n_tracers, x_shift, t_shift, lifetime, path_out_figs):
-    print('plot tracers: ', n_tracers)
-    lvls = np.linspace(0,1,n_tracers)
-    for it, t0 in enumerate(lifetime):
-        print('-plot time: ' + str(t0))
-        fig_name = 'cp'+str(cp_id)+'_tracers_t' + str(t0) + '_tracers.png'
-        fig, axis = plt.subplots(2, 2, figsize=(7, 6), sharey='none')
-        ax0 = axis[0,0]
-        ax1 = axis[0,1]
-        ax2 = axis[1,0]
-        ax0.set_aspect('equal')
-        for i in range(n_tracers):
-            ax0.plot(coordinates[it, i, 0] + shift, coordinates[it, i, 1] + shift,
-                    'o', color=cm_hsv(lvls[i]), markeredgecolor='w', markersize=5)
-            ax1.plot(i, coordinates[it, i, 1],
-                     'o', color=cm_hsv(lvls[i]), markeredgecolor='w', markersize=5)
-            ax2.plot(coordinates[it,i,0], i,
-                     'o', color=cm_hsv(lvls[i]), markeredgecolor='w', markersize=5)
-        plt.tight_layout()
-        fig.savefig(os.path.join(path_out_figs, fig_name))
-        plt.close(fig)
-    return
 
 
 
 
-def plot_input_fields(coordinates, xc, yc, cp_id, n_tracers, x_shift, t_shift, lifetime,
-                      field_name, path_fields, path_out_figs):
-    k0 = 0
-    rootgrp = nc.Dataset(os.path.join(path_fields, 'input_u.nc'))
-    var1 = rootgrp.variables['var1'][:, k0, :, :]
-    rootgrp.close()
-    rootgrp = nc.Dataset(os.path.join(path_fields, 'input_v.nc'))
-    var2 = rootgrp.variables['var1'][:, k0, :, :]
-    rootgrp.close()
+def plot_input_fields(coordinates, var1, var2, xc, yc, cp_id, n_tracers, x_shift, t_shift, lifetime,
+                      field_name, path_out_figs):
+    # k0 = 0
+    # rootgrp = nc.Dataset(os.path.join(path_fields, 'input_u.nc'))
+    # var1 = rootgrp.variables['var1'][:, k0, :, :]
+    # rootgrp.close()
+    # rootgrp = nc.Dataset(os.path.join(path_fields, 'input_v.nc'))
+    # var2 = rootgrp.variables['var1'][:, k0, :, :]
+    # rootgrp.close()
     print('plot input fields: ')
     print(lifetime)
 
@@ -351,6 +312,37 @@ def plot_input_fields(coordinates, xc, yc, cp_id, n_tracers, x_shift, t_shift, l
     return
 
 
+def plot_tracers_field(coordinates, n_tracers, shift, var_list, times,
+                       path_fields, path_out_figs, fig_name_prefix):
+    # var_list = ['s', 'w']
+    for it,t0 in enumerate(times):
+        print('-plot time: '+str(t0))
+        # print(os.path.join(path_fields, str(t0)+'.nc'))
+        fig_name = fig_name_prefix + '_t' + str(t0) + '_tracers.png'
+        fig, axis = plt.subplots(1, 2, figsize=(11, 6), sharey='all')
+        rootgrp = nc.Dataset(os.path.join(path_fields, str(t0)+'.nc'))
+        for j, var_name in enumerate(var_list):
+            print(var_name, j)
+            var = rootgrp.groups['fields'].variables[var_name][:,:,k0]
+            max = np.amax(var)
+            if var_name in ['w', 'v_rad', 'v_tan']:
+                min = -max
+                cm_ = cm_bwr
+            else:
+                min = np.amin(var)
+                cm_ = cm_hsv
+            # axis[j].contourf(var.T, levels=np.linspace(min, max, 1e2), cmap=cm_)
+            axis[j].imshow(var.T, vmin=min, vmax=max, cmap=cm_, origin='lower')
+            axis[j].set_title(var_name)
+            axis[j].set_aspect('equal')
+        rootgrp.close()
+        for i in range(n_tracers):
+            for j in range(len(var_list)):
+                axis[j].plot(coordinates[it,i,0]+shift, coordinates[it,i,1]+shift, 'ok', markersize=2)
+        plt.tight_layout()
+        fig.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
+    return
 
 # ------------------------- CP STATISTICS ---------------------------------------------
 
@@ -471,7 +463,6 @@ def get_cp_center(cp_ID, tau, n_tracers, fullpath_in):
     # print('xc: ', xc)
     # print('yc: ', yc)
     return xc, yc
-
 
 
 # def get_radius_vel(fullpath_in, t0, cp_id, n_tracers, n_cps):
@@ -613,7 +604,7 @@ def compute_v_hor_int(u_in, v_in, xc, yc, irange, jrange, nx, ny, t0, t1, tau, p
     return v_hor_int
 
 
-def compute_radial_vel(uv, th_field, irange, jrange, nx, ny, ic, jc, t0, path_out_figs):
+def compute_radial_vel(uv, th_field, irange, jrange, rmax, nx, ny, ic, jc, t0, path_out_figs):
     ur = np.zeros((nx,ny), dtype=np.double)
     utan = np.zeros((nx,ny), dtype=np.double)
     print('compute radial velocity: ')
@@ -633,7 +624,6 @@ def compute_radial_vel(uv, th_field, irange, jrange, nx, ny, ic, jc, t0, path_ou
     print('ij', i, ii, ic-np.int(nx/2), j, jj, jc-np.int(ny/2))
     print(nx, np.int(nx/2))
     print('ur, utan ', np.amin(ur), np.amax(ur), np.amin(utan), np.amax(utan))
-    # print(np.amax(uv[0,:,:]), np.amax(uv[1,:,:]))
     # print()
 
 
@@ -650,11 +640,11 @@ def compute_radial_vel(uv, th_field, irange, jrange, nx, ny, ic, jc, t0, path_ou
     cf = ax12.imshow(uv[1, :, :].T, origin='lower')
     plt.colorbar(cf, ax=ax12, shrink=0.5)
     ax12.set_title('v')
-    # circle1 = plt.Circle((xc[0], yc[0]), rmax / 2, fill=False, color='r', linewidth=2)
+    circle1 = plt.Circle((ic, jc), rmax / 2, fill=False, color='k', linewidth=2)
     cf = ax21.imshow(ur[:, :].T, origin='lower')
     plt.colorbar(cf, ax=ax21, shrink=0.5)
     ax21.set_title('radial velocity')
-    # ax11.add_artist(circle1)
+    ax21.add_artist(circle1)
     # ax11.plot(xc[0] - 0.5, jc - 0.5, 'ow', markersize=7)
     cf = ax22.imshow(utan[:, :].T, origin='lower')
     plt.colorbar(cf, ax=ax22, shrink=0.5)
@@ -667,46 +657,33 @@ def compute_radial_vel(uv, th_field, irange, jrange, nx, ny, ic, jc, t0, path_ou
     plt.close()
 
     return ur, utan
+
+
+def compute_average_var(var, rmax, r_field, nx_, ny_):
+    count = np.zeros(rmax, dtype=np.int)
+    print('compute_average_var: rmax='+str(rmax), count.shape, var.shape)
+
+    var_av = np.zeros((rmax), dtype=np.double)
+    for i in range(nx_):
+        for j in range(ny_):
+            r = r_field[i, j]
+            if r < rmax:
+                count[r] += 1
+                var_av[r] += var[i, j]
+    print('ij', i, j, nx_, ny_)
+    print('r', r, rmax)
+    # print('r field', r_field[ic, :])
+
+    for r in range(rmax):
+        if count[r] > 0:
+            var_av[r] /= count[r]
+
+    return var_av
 # ----------------------------------------------------------------------
 
 def set_input_parameters(args):
     print('--- set input parameters ---')
     global path, path_fields, case_name
-    # path = args.path
-    # path_fields = os.path.join(path, 'fields')
-    # case_name = args.casename
-
-    # nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
-    # global nx, ny, nz, dx, dV, gw
-    # nx = nml['grid']['nx']
-    # ny = nml['grid']['ny']
-    # nz = nml['grid']['nz']
-    # dx = np.zeros(3, dtype=np.int)
-    # dx[0] = nml['grid']['dx']
-    # dx[1] = nml['grid']['dy']
-    # dx[2] = nml['grid']['dz']
-    # gw = nml['grid']['gw']
-    # dV = dx[0] * dx[1] * dx[2]
-    #
-    # global tmin, tmax
-    # if args.tmin:
-    #     tmin = np.int(args.tmin)
-    # else:
-    #     tmin = 100
-    # if args.tmax:
-    #     tmax = np.int(args.tmax)
-    # else:
-    #     tmax = 100
-    #
-    # ''' time range '''
-    # global times, files
-    # times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
-    #          and tmin <= np.int(name[:-3]) <= tmax]
-    # times.sort()
-    # files = [str(t) + '.nc' for t in times]
-    # print('tmin, tmax: ', tmin, tmax)
-    # print('times: ', times)
-    # print('')
 
     return
 
