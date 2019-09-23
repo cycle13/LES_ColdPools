@@ -27,6 +27,9 @@ def main():
     # set_input_parameters(args)
 
     path_olga = '/nbi/ac/conv1/henneb/results/coldpool/lindp2K_13/output/cp/'
+    path_out_figs = os.path.join('/nbi/home/meyerbe/paper_olga/figs_2D_real/')
+    if not os.path.exists(path_out_figs):
+        os.mkdir(path_out_figs)
     file_olga = 'coldpool_tracer_out_all.txt'
     CP_id_olga = 3
     col_id = 4  # column in textfile of CP-ID
@@ -39,9 +42,6 @@ def main():
     # - col=8:      tracer radius
     # - col=14,15:  CP center (xc,yc)
 
-    path_out_figs = os.path.join('/nbi/home/meyerbe/paper_olga/figs_2D_real/')
-    if not os.path.exists(path_out_figs):
-        os.mkdir(path_out_figs)
 
     path_tracer_file = os.path.join(path_olga, file_olga)
 
@@ -84,15 +84,15 @@ def main():
     n_tracers = 999
     print('number of tracers: ' + str(n_tracers))
 
-    # tau, t0, t1 = get_cp_lifetime(cp_id, path_tracer_file)
+    # tau, t_ini, t_end = get_cp_lifetime(cp_id, path_tracer_file)
     tau = 5
-    t0 = 47
-    t1 = 51
-    lifetime = np.arange(t0, t1+1)
+    t_ini = 47
+    t_end = 51
+    lifetime = np.arange(t_ini, t_end+1)
     print('CP lifetime: ' + str(tau), lifetime)
     xc, yc = get_cp_center(cp_id, tau, n_tracers, path_tracer_file)
-    # ic = np.asarray([np.int(i/dx) for i in xc])
-    # jc = np.asarray([np.int(i/dy) for i in yc])
+    ic = np.asarray([np.int(i) for i in xc])
+    jc = np.asarray([np.int(i) for i in yc])
     print('CP center: ')
     print('xc: ', xc)
     print('yc: ', yc)
@@ -154,10 +154,11 @@ def main():
     # print(n, xc, nxh_)
     # th_field, r_field = compute_radius(xc, xc, nxh_, nxh_, n, n, path_out_figs)   # ic not at center; part of domain
     print(nx, xc[0], irange)
-    th_field, r_field = compute_radius(xc[0], xc[0], irange, jrange, nx, nx, path_out_figs)
+    th_field, r_field = compute_radius(ic[0], jc[0], irange, jrange, nx, nx, path_out_figs)
 
     # interpolate horizontal velocity field to cell centre in subdomain
-    v_hor_int = compute_v_hor_int(u_in, v_in, xc, yc, irange, jrange, nx, ny, t0, t1, tau, path_out_figs)
+    v_hor_int = compute_v_hor_int(u_in, v_in, ic, jc, irange, jrange, nx, ny, t_ini, t_end, tau, path_out_figs)
+
 
     # v_rad_int = np.zeros((tau, nx, ny))
     # v_tan_int = np.zeros((tau, nx, ny))
@@ -165,37 +166,12 @@ def main():
     v_tan_int = np.zeros((tau, nx_, ny_))
     it = 0
     for it, t0 in enumerate(lifetime):
-        # v_rad_int[it, :, :, k0], v_tan_int[it, :, :, k0] = compute_radial_vel(v_hor_int[:,it,:,:], th_field, nx, ny)
         v_rad_int[it,:,:], v_tan_int[it,:,:] = compute_radial_vel(v_hor_int[:,it,:,:], th_field,
-                                                                  irange, jrange, nx_, ny_, xc[it], yc[it])
+                                                                  irange, jrange, nx_, ny_, ic[it], jc[it],
+                                                                  t0, path_out_figs)
 
 
-        fig, axis = plt.subplots(3, 2, figsize=(10, 15))
-        ax11 = axis[0, 0]
-        ax12 = axis[0, 1]
-        ax21 = axis[1, 0]
-        ax22 = axis[1, 1]
-        cf = ax11.imshow(v_hor_int[0, it, :, :].T, origin='lower')
-        plt.colorbar(cf, ax=ax11, shrink=0.8)
-        ax11.set_title('u')
-        cf = ax12.imshow(v_hor_int[1, it, :, :].T, origin='lower')
-        plt.colorbar(cf, ax=ax12, shrink=0.8)
-        ax12.set_title('v')
-        # circle1 = plt.Circle((xc[0], yc[0]), rmax / 2, fill=False, color='r', linewidth=2)
-        cf = ax21.imshow(v_rad_int[it, :, :].T, origin='lower')
-        plt.colorbar(cf, ax=ax21, shrink=0.8)
-        ax21.set_title('radial velocity')
-        # ax11.add_artist(circle1)
-        # ax11.plot(xc[0] - 0.5, jc - 0.5, 'ow', markersize=7)
-        cf = ax22.imshow(v_tan_int[it, :, :].T, origin='lower')
-        plt.colorbar(cf, ax=ax22, shrink=0.8)
-        ax22.set_title('tangential velocity')
-        for ax in axis[0,:].flat:
-            ax.set_xlim(xc[0] - irange, xc[0] + irange)
-            ax.set_ylim(yc[0] - jrange, yc[0] + jrange)
-        plt.tight_layout()
-        plt.savefig(os.path.join(path_out_figs, 'test_field_vrad_vtan_t' + str(t0) + '.png'))
-        plt.close()
+
 
 
 
@@ -216,7 +192,7 @@ def main():
     #     fig, axis = plt.subplots(1, 2, figsize=(11, 6), sharey='all')
     #     rootgrp = nc.Dataset(os.path.join(path_fields, str(t0)+'.nc'))
     #     for j, var_name in enumerate(var_list):
-    #         print var_name, j
+    #         print(var_name, j)
     #         var = rootgrp.groups['fields'].variables[var_name][:,:,k0]
     #         max = np.amax(var)
     #         if var_name in ['w', 'v_rad', 'v_tan']:
@@ -245,7 +221,7 @@ def main():
     #     fig_name = 'v_rad_tan' + '_t' + str(t0) + '_tracers.png'
     #     fig, axis = plt.subplots(1, 2, figsize=(11, 6), sharey='all')
     #     for j, var_name in enumerate(var_list):
-    #         print var_name, j
+    #         print(var_name, j)
     #         var = rootgrp.variables[var_name][it, :, :, k0]
     #         max = np.amax(var)
     #         if var_name in ['w', 'v_rad', 'v_tan']:
@@ -273,7 +249,7 @@ def main():
     #     fig_name = 'uv_alltimes' + '_t' + str(t0) + '_tracers.png'
     #     fig, axis = plt.subplots(1, 2, figsize=(11, 6), sharey='all')
     #     for j, var_name in enumerate(var_list):
-    #         print var_name, j
+    #         print(var_name, j)
     #         var = rootgrp.variables[var_name][it, :, :]
     #         max = np.amax(var)
     #         if var_name in ['w', 'v_rad', 'v_tan']:
@@ -402,7 +378,7 @@ def get_tracer_coords(cp_id, n_cps, n_tracers, times, fullpath_in):
             timestep = int(lines[count_start].split()[0])
         age = int(lines[count_start].split()[1])
         cp_ID = int(lines[count_start].split()[3])
-        # print('t1 - timestep: ', t0, timestep, cp_ID, count_start)
+        # print('t_end - timestep: ', t_ini, timestep, cp_ID, count_start)
 
         count = count_start
         i = 0
@@ -417,7 +393,7 @@ def get_tracer_coords(cp_id, n_cps, n_tracers, times, fullpath_in):
             cp_ID = int(lines[count].split()[3])
 
     f.close()
-    print ''
+    print('')
     return coords
 
 
@@ -535,42 +511,40 @@ def compute_radius(ic, jc, irange, jrange, nx, ny, path_out_figs):
             r_field[ic-i, jc-j] = r_field[ic+i,jc+j]
             r_field[ic+i, jc-j] = r_field[ic+i,jc+j]
             if i == 0:
-                i = 1e-9
-            aux = np.arctan(np.double(j)/i)
-            # print(aux, np.pi-aux, np.pi + aux, 2*np.pi - aux)
+                # i = 1e-9
+                aux = np.arctan(np.double(j)/1e-9)
+            else:
+                aux = np.arctan(np.double(j)/i)
+            # print('i,j', i, j, aux, np.pi-aux, np.pi + aux, 2*np.pi - aux)
             th_field[ic+i, jc+j] = aux
             th_field[ic-i, jc+j] = np.pi - aux
             th_field[ic-i, jc-j] = np.pi + aux
             th_field[ic+i, jc-j] = 2*np.pi - aux
 
-    fig, axis = plt.subplots(2, 2)
-    ax1 = axis[0, 0]
-    ax2 = axis[0, 1]
-    ax3 = axis[1, 0]
-    ax4 = axis[1, 1]
+    fig, axis = plt.subplots(3, 2)
     # cf = ax1.imshow(r_field[ic - irange:ic + irange + 1, jc - jrange:jc + jrange + 1].T, origin='lower')
-    cf = ax1.imshow(r_field.T, origin='lower')
-    plt.colorbar(cf, ax=ax1)
-    ax1.set_title('r(x,y)')
-    # cf = ax2.imshow(th_field[ic - irange:ic + irange + 1, jc - jrange:jc + jrange + 1].T, origin='lower')
-    cf = ax2.imshow(th_field.T, origin='lower')
-    plt.colorbar(cf, ax=ax2)
-    ax1.set_title('th(x,y)')
+    for ax in axis[:,0].flat:
+        cf = ax.imshow(r_field.T, origin='lower')
+        plt.colorbar(cf, ax=ax)
+        ax.set_title('r(x,y)')
+    for ax in axis[:,1].flat:
+        cf = ax.imshow(th_field.T, origin='lower')
+        # cf = ax2.imshow(th_field[ic - irange:ic + irange + 1, jc - jrange:jc + jrange + 1].T, origin='lower')
+        plt.colorbar(cf, ax=ax)
+        ax.set_title('th(x,y)')
 
-    cf = ax3.imshow(r_field.T, origin='lower')
-    plt.colorbar(cf, ax=ax3)
-    ax3.plot([ic,ic], [0, ny], 'k')
-    ax3.plot([0, nx], [jc,jc], 'k')
-    ax3.set_title('r(x,y)')
-    cf = ax4.imshow(th_field.T, origin='lower')
-    ax4.plot([ic,ic], [0, ny], 'k')
-    ax4.plot([0, nx], [jc,jc], 'k')
-    plt.colorbar(cf, ax=ax4)
-    ax4.set_title('th(x,y)')
+    for ax in axis[1:,:].flat:
+        ax.plot([ic,ic], [0, ny], 'k', linewidth=1)
+        ax.plot([0, nx], [jc,jc], 'k', linewidth=1)
+    # ax4.plot([ic,ic], [0, ny], 'k')
+    # ax4.plot([0, nx], [jc,jc], 'k')
 
-    for ax in axis.flat:
+    for ax in axis[:2,:].flat:
         ax.set_xlim(0, nx)
         ax.set_ylim(0, ny)
+    for ax in axis[2,:].flat:
+        ax.set_xlim(ic-irange-5, ic+irange+5)
+        ax.set_ylim(jc-jrange-5, jc+jrange+5)
 
     plt.suptitle('ic,jc='+str(ic) + ', '+str(jc) + ', (nxh = '+str(irange)+')')
     plt.savefig(os.path.join(path_out_figs, 'r_th_field.png'))
@@ -580,6 +554,9 @@ def compute_radius(ic, jc, irange, jrange, nx, ny, path_out_figs):
 
 def compute_v_hor_int(u_in, v_in, xc, yc, irange, jrange, nx, ny, t0, t1, tau, path_out_figs):
     v_hor_int = np.zeros((2, tau, nx, ny))
+    print('')
+    print('compute v hor')
+    print('v_hor_int: ', v_hor_int.shape)
     imin = xc[0] - irange
     imax = xc[0] + irange
     jmin = yc[0] - jrange
@@ -600,44 +577,45 @@ def compute_v_hor_int(u_in, v_in, xc, yc, irange, jrange, nx, ny, t0, t1, tau, p
     # for j in range(1, ny - 1):
     #     v_hor_int[1,:,:,j] = 0.5 * (v_in[t0:t1+1,:,j] + v_in[t0:t1+1,:,j-1])
 
-    fig, axis = plt.subplots(2, 2, figsize=(10, 10))
-    ax11 = axis[0, 0]
-    ax12 = axis[0, 1]
-    ax21 = axis[1, 0]
-    ax22 = axis[1, 1]
-    cf = ax11.imshow(v_hor_int[0, 0, :, :].T, origin='lower')
-    plt.colorbar(cf, ax=ax11, shrink=0.8)
-    ax11.plot([xc[0], xc[0]], [0, ny], 'k')
-    ax11.plot([xc[0]+irange, xc[0]+irange], [0, ny], 'k')
-    ax11.plot([xc[0]-irange, xc[0]-irange], [0, ny], 'k')
-    ax11.set_title('u')
-    cf = ax12.imshow(v_hor_int[1, 0, :, :].T, origin='lower')
-    plt.colorbar(cf, ax=ax12, shrink=0.8)
-    ax12.plot([0, nx], [yc[0], yc[0]], 'k')
-    ax12.plot([0, nx], [yc[0]+jrange, yc[0]+jrange], 'k')
-    ax12.plot([0, nx], [yc[0]-jrange, yc[0]-jrange], 'k')
-    ax12.set_title('v')
-    cf = ax21.contourf(v_hor_int[0, 0, :, :].T)
-    plt.colorbar(cf, ax=ax21, shrink=0.8)
-    ax21.set_title('u')
-    cf = ax22.contourf(v_hor_int[1, 0, :, :].T)
-    plt.colorbar(cf, ax=ax22, shrink=0.8)
-    ax22.set_title('v')
-    for ax in axis[0,:].flat:
-        ax.set_xlim(0, nx)
-        ax.set_ylim(0, ny)
-    for ax in axis[1,:].flat:
-        ax.set_xlim(xc[0]-irange, xc[0]+irange)
-        ax.set_ylim(yc[0]-jrange, yc[0]+jrange)
-    plt.tight_layout()
-    plt.savefig(os.path.join(path_out_figs, 'test_field_vhor_int_t' + str(t0) + '.png'))
-    plt.close()
+    for it, t0_ in enumerate(np.arange(t0, t1+1)):
+        fig, axis = plt.subplots(2, 2, figsize=(10, 10))
+        ax11 = axis[0, 0]
+        ax12 = axis[0, 1]
+        ax21 = axis[1, 0]
+        ax22 = axis[1, 1]
+        cf = ax11.imshow(v_hor_int[0, 0, :, :].T, origin='lower')
+        plt.colorbar(cf, ax=ax11, shrink=0.8)
+        ax11.plot([xc[0], xc[0]], [0, ny], 'k')
+        ax11.plot([xc[0]+irange, xc[0]+irange], [0, ny], 'k')
+        ax11.plot([xc[0]-irange, xc[0]-irange], [0, ny], 'k')
+        ax11.set_title('u hor int')
+        cf = ax12.imshow(v_hor_int[1, 0, :, :].T, origin='lower')
+        plt.colorbar(cf, ax=ax12, shrink=0.8)
+        ax12.plot([0, nx], [yc[0], yc[0]], 'k')
+        ax12.plot([0, nx], [yc[0]+jrange, yc[0]+jrange], 'k')
+        ax12.plot([0, nx], [yc[0]-jrange, yc[0]-jrange], 'k')
+        ax12.set_title('v hor int')
+        cf = ax21.contourf(v_hor_int[0, 0, :, :].T)
+        plt.colorbar(cf, ax=ax21, shrink=0.8)
+        ax21.set_title('u hor int')
+        cf = ax22.contourf(v_hor_int[1, 0, :, :].T)
+        plt.colorbar(cf, ax=ax22, shrink=0.8)
+        ax22.set_title('v hor int')
+        for ax in axis[0,:].flat:
+            ax.set_xlim(0, nx)
+            ax.set_ylim(0, ny)
+        for ax in axis[1,:].flat:
+            ax.set_xlim(xc[0]-irange-10, xc[0]+irange+10)
+            ax.set_ylim(yc[0]-jrange-10, yc[0]+jrange+10)
+        plt.tight_layout()
+        plt.savefig(os.path.join(path_out_figs, 'test_field_vhor_int_t' + str(t0_) + '.png'))
+        plt.close()
     return v_hor_int
 
 
-def compute_radial_vel(uv, th_field, irange, jrange, nx, ny, ic, jc):
+def compute_radial_vel(uv, th_field, irange, jrange, nx, ny, ic, jc, t0, path_out_figs):
     ur = np.zeros((nx,ny), dtype=np.double)
-    uth = np.zeros((nx,ny), dtype=np.double)
+    utan = np.zeros((nx,ny), dtype=np.double)
     print('compute radial velocity: ')
     print(uv.shape, th_field.shape)
     for i in range(nx):
@@ -648,18 +626,47 @@ def compute_radial_vel(uv, th_field, irange, jrange, nx, ny, ic, jc):
             # # # clockwise rotation
             # # ur[i,j] = uv[0,i,j]*np.cos(th) + uv[1,i,j]*np.sin(th)
             # counter-clockwise rotation
-            # ur[i,j] = uv[0,ii,jj]*np.cos(th) + uv[1,ii,jj]*np.sin(th)
-            # uth[i,j] = -uv[0,ii,jj]*np.sin(th) + uv[1,ii,jj]*np.cos(th)
-            ur[i,j] = uv[0,ii,jj]*np.cos(th) #+ uv[1,ii,jj]*np.sin(th)
-            uth[i,j] = -uv[0,ii,jj]*np.sin(th) #+ uv[1,ii,jj]*np.cos(th)
+            ur[i,j] = uv[0,ii,jj]*np.cos(th) + uv[1,ii,jj]*np.sin(th)
+            utan[i,j] = -uv[0,ii,jj]*np.sin(th) + uv[1,ii,jj]*np.cos(th)
 
 
     print('ij', i, ii, ic-np.int(nx/2), j, jj, jc-np.int(ny/2))
     print(nx, np.int(nx/2))
-    print('ur, utan ', np.amax(ur), np.amax(uth))
+    print('ur, utan ', np.amin(ur), np.amax(ur), np.amin(utan), np.amax(utan))
     # print(np.amax(uv[0,:,:]), np.amax(uv[1,:,:]))
     # print()
-    return ur, uth
+
+
+
+
+    fig, axis = plt.subplots(2, 2, figsize=(10, 15))
+    ax11 = axis[0, 0]
+    ax12 = axis[0, 1]
+    ax21 = axis[1, 0]
+    ax22 = axis[1, 1]
+    cf = ax11.imshow(uv[0, :, :].T, origin='lower')
+    plt.colorbar(cf, ax=ax11, shrink=0.5)
+    ax11.set_title('u')
+    cf = ax12.imshow(uv[1, :, :].T, origin='lower')
+    plt.colorbar(cf, ax=ax12, shrink=0.5)
+    ax12.set_title('v')
+    # circle1 = plt.Circle((xc[0], yc[0]), rmax / 2, fill=False, color='r', linewidth=2)
+    cf = ax21.imshow(ur[:, :].T, origin='lower')
+    plt.colorbar(cf, ax=ax21, shrink=0.5)
+    ax21.set_title('radial velocity')
+    # ax11.add_artist(circle1)
+    # ax11.plot(xc[0] - 0.5, jc - 0.5, 'ow', markersize=7)
+    cf = ax22.imshow(utan[:, :].T, origin='lower')
+    plt.colorbar(cf, ax=ax22, shrink=0.5)
+    ax22.set_title('tangential velocity')
+    for ax in axis[0, :].flat:
+        ax.set_xlim(ic - irange, ic + irange)
+        ax.set_ylim(jc - jrange, jc + jrange)
+    plt.tight_layout()
+    plt.savefig(os.path.join(path_out_figs, 'test_field_vrad_vtan_t' + str(t0) + '.png'))
+    plt.close()
+
+    return ur, utan
 # ----------------------------------------------------------------------
 
 def set_input_parameters(args):
