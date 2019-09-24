@@ -97,7 +97,7 @@ def main():
 
 
     ''' ----- tracer coordinates ----- '''
-    coordinates = get_tracer_coords(cp_id, n_cps, n_tracers, lifetime, path_tracer_file)
+    # coordinates = get_tracer_coords(cp_id, n_cps, n_tracers, lifetime, path_tracer_file)
     # var_list = ['s', 'w']
     # shift = 0
     # fig_name = 's_w'
@@ -160,10 +160,10 @@ def main():
 
 
     ''' ----- compute & average radial velocity field ----- '''
-    # print('compute theta, r')
-    # # th_field, r_field = compute_radius(ic[0], jc[0], irange, jrange, nx, nx, path_out_figs)
-    # th_field, r_field = compute_radius(irange, jrange, irange, jrange, nx_, nx_, path_out_figs)
-    # print('shapes: r, th', r_field.shape, th_field.shape)
+    print('compute theta, r')
+    # th_field, r_field = compute_radius(ic[0], jc[0], irange, jrange, nx, nx, path_out_figs)
+    th_field, r_field = compute_radius(irange, jrange, irange, jrange, nx_, nx_, path_out_figs)
+    print('shapes: r, th', r_field.shape, th_field.shape)
 
     # interpolate horizontal velocity field to cell centre in subdomain
     # v_hor_int = compute_v_hor_int(u_in, v_in, ic, jc, irange, jrange, nx, ny, t_ini, t_end, tau, path_out_figs)
@@ -176,16 +176,15 @@ def main():
     v_rad_av = np.zeros((tau, rmax))
     v_tan_av = np.zeros((tau, rmax))
 
-    # print('nnnn', np.int(nx_/2), irange)
     # print(r_field.shape, ic[0], ic[0]-irange, ic[0] + irange, jc[0], jc-jrange, jc[0] + jrange)
     # fig = plt.figure()
     # plt.contourf(r_field[ic[0]-irange:ic[0]+irange, jc[0]-jrange:jc[0]+jrange])
     # fig.show()
     #
-    # for it, t0 in enumerate(lifetime):
-    #     v_rad_int[it,:,:], v_tan_int[it,:,:] = compute_radial_vel(v_hor_int[:,it,:,:], th_field,
-    #                                                               irange, jrange, rmax, nx_, ny_, ic[it], jc[it],
-    #                                                               t0, path_out_figs)
+    for it, t0 in enumerate(lifetime):
+        v_rad_int[it,:,:], v_tan_int[it,:,:] = compute_radial_vel(v_hor_int[:,it,:,:], th_field,
+                                                    irange, jrange, rmax, nx_, ny_, ic[it], jc[it],
+                                                    t0, path_out_figs)
     #     # average radial velocity
     #     print('r field: ', r_field.shape)
     #     print(r_field[0,:])
@@ -543,7 +542,7 @@ def compute_radius(ic, jc, irange, jrange, nx, ny, path_out_figs):
             th_field[ic-i, jc-j] = np.pi + aux
             th_field[ic+i, jc-j] = 2*np.pi - aux
 
-    fig, axis = plt.subplots(3, 2)
+    fig, axis = plt.subplots(3, 2, figsize=(10,10))
     # cf = ax1.imshow(r_field[ic - irange:ic + irange + 1, jc - jrange:jc + jrange + 1].T, origin='lower')
     for ax in axis[:,0].flat:
         cf = ax.imshow(r_field.T, origin='lower')
@@ -594,8 +593,6 @@ def compute_v_hor_int(u_in, v_in, xc, yc, irange, jrange, nx_, ny_,
     [nt, nx, ny] = np.shape(u_in)
     print('imin: ', imin, xc, imax, irange)
     print('jmin: ', jmin, yc, jmax, jrange)
-    aux = np.zeros(shape=u_in.shape[1:])
-    print('aux', aux.shape)
 
     # for i in range(irange):
     #     v_hor_int[0, :, xc[0] + i, jmin:jmax] = 0.5 * (
@@ -618,13 +615,11 @@ def compute_v_hor_int(u_in, v_in, xc, yc, irange, jrange, nx_, ny_,
             for i in range(nx_):
                 v_hor_int[0, it, j, i] = 0.5 * ( u_in[t0, jmin+j, imin+i] + u_in[t0, jmin+j-1, imin+i] )
                 v_hor_int[1, it, j, i] = 0.5 * ( v_in[t0, jmin+j, imin+i] + v_in[t0, jmin+j, imin+i-1] )
-                # aux[imin+i, jmin+j] = 1
 
         print('it, t, i, imin+i', it, t0, i, imin, imin+i, j, jmin, jmin+j)
-        # print('difference', np.amax(np.abs(u_in[t0,imin:imin+nx_,jmin:jmin+ny_]-v_hor_int[0,it,:,:])))
 
-    print('geometry', xc, irange)
 
+    # plotting
     for it, t0 in enumerate(np.arange(t_ini, t_end+1)):
         print('plot t='+str(t0), it)
         max_in = np.amax(u_in[t0, :, :])
@@ -700,14 +695,13 @@ def compute_radial_vel(uv, th_field, irange, jrange, rmax, nx, ny, ic, jc, t0, p
     print('compute radial velocity: ')
     print(uv.shape, th_field.shape)
 
-    # for th of size of subdomain
-    for i in range(nx):
-        for j in range(ny):
+    # for th of size of subdomain & adjusting for switched indices in velocity field
+    for j in range(ny):
+        for i in range(nx):
             th = th_field[i, j]
             # counter-clockwise rotation
-            ur[i, j] = uv[0, i, j] * np.cos(th) + uv[1, i, j] * np.sin(th)
-            utan[i, j] = -uv[0, i, j] * np.sin(th) + uv[1, i, j] * np.cos(th)
-
+            ur[j,i] = uv[0,j,i] * np.cos(th) + uv[1,j,i] * np.sin(th)
+            utan[j,i] = -uv[0,j,i] * np.sin(th) + uv[1,j,i] * np.cos(th)
     # for th of size of large domain
     # for i in range(nx):
     #     for j in range(ny):
@@ -720,40 +714,120 @@ def compute_radial_vel(uv, th_field, irange, jrange, rmax, nx, ny, ic, jc, t0, p
     #         ur[i,j] = uv[0,ii,jj]*np.cos(th) + uv[1,ii,jj]*np.sin(th)
     #         utan[i,j] = -uv[0,ii,jj]*np.sin(th) + uv[1,ii,jj]*np.cos(th)
 
-    print('ij', i, ic-np.int(nx/2), j, jc-np.int(ny/2))
-    print(nx, np.int(nx/2))
-    print('ur, utan ', np.amin(ur), np.amax(ur), np.amin(utan), np.amax(utan))
-    # print()
 
 
+    fig, axis = plt.subplots(1, 3, figsize=(12, 5))
+    ax = axis[0]
+    ax.set_title('th(x,y)')
+    cf = ax.imshow(th_field.T, origin='lower')
+    plt.colorbar(cf, ax=ax, shrink=0.5)
+    # ax.plot([ic, ic], [0, ny], 'k', linewidth=1)
+    # ax.plot([0, nx], [jc, jc], 'k', linewidth=1)
+    ax = axis[1]
+    ax.set_title('cos')
+    cf = ax.imshow(np.cos(th_field), origin='lower')
+    plt.colorbar(cf, ax=ax, shrink=0.5)
+    ax = axis[2]
+    ax.set_title('sin')
+    cf = ax.imshow(np.sin(th_field), origin='lower')
+    plt.colorbar(cf, ax=ax, shrink=0.5)
+    plt.tight_layout()
+    plt.suptitle('ic,jc=' + str(ic) + ', ' + str(jc) + ', (nxh = ' + str(irange) + ')')
+    plt.savefig(os.path.join(path_out_figs, 'th_cos_sin_field.png'))
+    plt.close()
 
 
-    fig, axis = plt.subplots(2, 2, figsize=(10, 15))
-    ax11 = axis[0, 0]
-    ax12 = axis[0, 1]
-    ax21 = axis[1, 0]
-    ax22 = axis[1, 1]
-    cf = ax11.imshow(uv[0, :, :].T, origin='lower')
-    plt.colorbar(cf, ax=ax11, shrink=0.5)
-    ax11.set_title('u')
-    cf = ax12.imshow(uv[1, :, :].T, origin='lower')
-    plt.colorbar(cf, ax=ax12, shrink=0.5)
-    ax12.set_title('v')
-    circle1 = plt.Circle((ic, jc), rmax / 2, fill=False, color='k', linewidth=2)
-    cf = ax21.imshow(ur[:, :].T, origin='lower')
-    plt.colorbar(cf, ax=ax21, shrink=0.5)
-    ax21.set_title('radial velocity')
-    ax21.add_artist(circle1)
-    # ax11.plot(xc[0] - 0.5, jc - 0.5, 'ow', markersize=7)
-    cf = ax22.imshow(utan[:, :].T, origin='lower')
-    plt.colorbar(cf, ax=ax22, shrink=0.5)
-    ax22.set_title('tangential velocity')
-    for ax in axis[0, :].flat:
-        ax.set_xlim(ic - irange, ic + irange)
-        ax.set_ylim(jc - jrange, jc + jrange)
+    max = np.maximum(np.amax(np.abs(uv)), np.maximum(np.amax(ur), np.amax(utan)))
+    print('max: ', max)
+    lvls = np.linspace(-max, max, 20)
+
+    fig, axis = plt.subplots(2, 2, figsize=(11, 11))
+
+    ax = axis[0,0]
+    ax.set_title('u')
+    cf = ax.contourf(uv[0, :, :], levels=lvls, alpha=0.5, cmap=cm_bwr)
+    plt.colorbar(cf, ax=ax, shrink=0.8)
+    ax = axis[1,0]
+    ax.set_title('v')
+    cf = ax.contourf(uv[1, :, :], levels=lvls, alpha=0.5, cmap=cm_bwr)
+    plt.colorbar(cf, ax=ax, shrink=0.8)
+    for ax in axis.flat:
+        ax.quiver(uv[0, :, :], uv[1, :, :], pivot='tip',
+                  width=0.22, units='x')
+
+    ax = axis[0,1]
+    ax.set_title('radial velocity')
+    cf = ax.contourf(ur[:, :], levels=lvls, alpha=0.5, cmap=cm_bwr)
+    plt.colorbar(cf, ax=ax, shrink=0.8)
+    ax = axis[1,1]
+    ax.set_title('tangential velocity')
+    cf = ax.contourf(utan[:, :], levels=lvls, alpha=0.5, cmap=cm_bwr)
+    plt.colorbar(cf, ax=ax, shrink=0.8)
+
+    for ax in axis.flat:
+        ax.plot(irange, jrange, 'xk', markersize=20)
+        ax.set_aspect('equal')
+        ax.set_xlim(25, 70)
+        ax.set_ylim(30, 75)
     plt.tight_layout()
     plt.savefig(os.path.join(path_out_figs, 'test_field_vrad_vtan_t' + str(t0) + '.png'))
     plt.close()
+
+
+    # fig, axis = plt.subplots(2, 4, figsize=(30, 11))
+    # ax01 = axis[0, 0]
+    # ax02 = axis[1, 0]
+    # ax11 = axis[0, 1]
+    # ax12 = axis[1, 1]
+    # ax21 = axis[0, 2]
+    # ax22 = axis[1, 2]
+    # ax31 = axis[0, 3]
+    # ax32 = axis[1, 3]
+    #
+    # cf = ax01.contourf(uv[0, :, :], levels=lvls, alpha=0.3, cmap=cm_bwr)
+    # plt.colorbar(cf, ax=ax01, shrink=0.8)
+    # cf = ax02.contourf(uv[1, :, :], levels=lvls, alpha=0.3, cmap=cm_bwr)
+    # plt.colorbar(cf, ax=ax02, shrink=0.8)
+    # for ax in axis[:,0].flat:
+    #     ax.quiver(uv[0,:,:], uv[1, :,:], pivot='tip',
+    #               width=0.22, units='x')
+    #
+    # cf = ax11.contourf(uv[0, :, :], levels=lvls, cmap=cm_bwr)
+    # plt.colorbar(cf, ax=ax11, shrink=0.8)
+    # ax11.set_title('u')
+    # cf = ax12.contourf(uv[1, :, :], levels=lvls, cmap=cm_bwr)
+    # plt.colorbar(cf, ax=ax12, shrink=0.8)
+    # ax12.set_title('v')
+    #
+    # circle1 = plt.Circle((ic, jc), rmax / 2, fill=False, color='k', linewidth=2)
+    # ax21.set_title('radial velocity')
+    # cf = ax21.contourf(ur[:, :], levels=lvls, cmap=cm_bwr)
+    # plt.colorbar(cf, ax=ax21, shrink=0.8)
+    # ax21.add_artist(circle1)
+    #
+    # ax22.set_title('tangential velocity')
+    # # ax11.plot(xc[0] - 0.5, jc - 0.5, 'ow', markersize=7)
+    # cf = ax22.contourf(utan[:, :], levels=lvls, cmap=cm_bwr)
+    # plt.colorbar(cf, ax=ax22, shrink=0.8)
+    #
+    # ax31.set_title('radial velocity')
+    # cf = ax31.contourf(ur[:, :], levels=lvls, alpha=0.5, cmap=cm_bwr)
+    # plt.colorbar(cf, ax=ax31, shrink=0.8)
+    # ax32.set_title('tangential velocity')
+    # cf = ax32.contourf(utan[:, :], levels=lvls, alpha=0.5, cmap=cm_bwr)
+    # plt.colorbar(cf, ax=ax32, shrink=0.8)
+    # for ax in axis[:,3].flat:
+    #     ax.quiver(uv[0, :, :], uv[1, :, :], pivot='tip',
+    #               width=0.22, units='x')
+    #
+    # for ax in axis.flat:
+    #     ax.plot(irange, jrange, 'xk', markersize=20)
+    #     ax.set_aspect('equal')
+    #     ax.set_xlim(25, 70)
+    #     ax.set_ylim(30, 75)
+    # plt.tight_layout()
+    # plt.savefig(os.path.join(path_out_figs, 'test_field_uv_vrad_vtan_t' + str(t0) + '.png'))
+    # plt.close()
 
     return ur, utan
 
