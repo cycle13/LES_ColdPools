@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import netCDF4 as nc
 import argparse
 import json as simplejson
@@ -12,6 +13,8 @@ plt.rcParams['ytick.labelsize'] = label_size
 plt.rcParams['lines.linewidth'] = 2
 plt.rcParams['legend.fontsize'] = 10
 plt.rcParams['axes.labelsize'] = 15
+plt.rcParams['text.usetex'] = 'true'
+
 
 def main():
     parser = argparse.ArgumentParser(prog='LES_CP')
@@ -44,10 +47,10 @@ def main():
     cm_grey = plt.cm.get_cmap('gist_gray_r')
     cm_hsv = plt.cm.get_cmap('hsv')
 
-    print('???? dt_fields, dx')
-    dt_fields = 100
+    dt_fields = 300
     dx = 200
     dy = dx
+    print('???? dt_fields, dx', dt_fields, dx)
 
     if args.t_shift:
         t_shift = np.int(args.t_shift)
@@ -97,7 +100,7 @@ def main():
 
 
     ''' ----- tracer coordinates ----- '''
-    # coordinates = get_tracer_coords(cp_id, n_cps, n_tracers, lifetime, path_tracer_file)
+    coordinates = get_tracer_coords(cp_id, n_cps, n_tracers, lifetime, path_tracer_file)
     # var_list = ['s', 'w']
     # shift = 0
     # fig_name = 's_w'
@@ -107,14 +110,16 @@ def main():
 
 
     ''' averaging tracer radius'''
-    # aux = np.zeros(shape=coordinates.shape)
-    # for it in range(tau):
-    #     aux[it,:,0] = coordinates[it,:,0] - xc[it]
-    #     aux[it,:,1] = coordinates[it,:,0] - yc[it]
-    # rad_ = np.sqrt(aux[:,:,0]**2 + aux[:,:,1]**2)
-    # rad = np.average(rad_, axis=1)
+    aux = np.zeros(shape=coordinates.shape)
+    for it in range(tau):
+        aux[it,:,0] = coordinates[it,:,0] - xc[it]
+        aux[it,:,1] = coordinates[it,:,1] - yc[it]
+    rad_ = np.sqrt(aux[:,:,0]**2 + aux[:,:,1]**2)
+    tracer_dist = np.average(rad_, axis=1)
     # del aux
-    # print('averaging: ', rad_.shape, rad.shape, coordinates.shape)
+    print('averaging: ', rad_.shape, tracer_dist.shape, coordinates.shape)
+    print(np.amax(rad_))
+    print('av tracer dist: ', tracer_dist)
     # # fig_name = 'dist_tracers.png'
     # # fig, axis = plt.subplots(1, 2, figsize=(11, 6))
     # # ax0 = axis[0]
@@ -182,29 +187,176 @@ def main():
     # fig.show()
     #
     for it, t0 in enumerate(lifetime):
-        v_rad_int[it,:,:], v_tan_int[it,:,:] = compute_radial_vel(v_hor_int[:,it,:,:], th_field,
-                                                    irange, jrange, rmax, nx_, ny_, ic[it], jc[it],
-                                                    t0, path_out_figs)
-    #     # average radial velocity
-    #     print('r field: ', r_field.shape)
-    #     print(r_field[0,:])
-    #     # v_rad_av[it, :] = compute_average_var(v_rad_int[it,:,:], rmax, r_field, nx, ny)
-    #     # v_tan_av[it, :] = compute_average_var(v_tan_int[it,:,:], rmax, r_field, nx, ny)
-    #     v_rad_av[it, :] = compute_average_var(v_rad_int[it, :, :], rmax,
-    #                                           r_field[ic[0]-irange:ic[0]+irange, jc[0]-jrange:jc[0] + jrange],
-    #                                           nx_, ny_)
-    #     v_tan_av[it, :] = compute_average_var(v_tan_int[it, :, :], rmax, r_field, nx_, ny_)
-    #
-    #     print('')
-    #     print('FIGURE: ', rmax, v_rad_av.shape)
-    #     print(v_rad_av[it,:])
-    #     fig_name = 'vrad_vtan_radial_av_t'+str(t0)+'.png'
-    #     fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(11, 6), sharey='all')
-    #     ax0.plot(np.arange(rmax), v_rad_av[it,:rmax])
-    #     ax1.plot(v_tan_av[it,:])
-    #     fig.savefig(os.path.join(path_out_figs, fig_name))
-    #     plt.close(fig)
-    #
+        v_rad_int[it,:,:], v_tan_int[it,:,:] = compute_radial_vel(v_hor_int[:,it,:,:], th_field, coordinates, n_tracers,
+                                                                  irange, jrange, nx_, ny_, ic[it], jc[it],
+                                                                  t0, path_out_figs)
+        # average radial velocity
+        v_rad_av[it, :] = compute_average_var(v_rad_int[it,:,:], rmax, r_field, nx_, ny_)
+        v_tan_av[it, :] = compute_average_var(v_tan_int[it,:,:], rmax, r_field, nx_, ny_)
+
+        print('')
+        fig_name = 'test_vrad_vtan_radial_av_t'+str(t0)+'.png'
+        fig, (ax0, ax1, ax2) = plt.subplots(1, 3, figsize=(11, 4), sharey='none')
+        ax0.set_title('radial velocity')
+        ax0.plot(np.arange(rmax)*dx, v_rad_av[it,:rmax])
+        ax0.plot([tracer_dist[it]*dx, tracer_dist[it]*dx], [np.amin(v_rad_av[it,:]), np.amax(v_rad_av[it,:])], 'k', linewidth=1)
+        ax0.set_xlabel('radius / m')
+        ax0.set_ylabel(r'v$_r$ / ms$^{-1}$')
+
+        ax1.set_title('tangential velocity')
+        ax1.plot(np.arange(rmax)*dx, v_tan_av[it,:rmax])
+        ax1.plot([tracer_dist[it]*dx, tracer_dist[it]*dx], [np.amin(v_rad_av[it,:]), np.amax(v_rad_av[it,:])], 'k', linewidth=1)
+        ax1.set_ylabel(r'v$_{tan}$ / ms$^{-1}$')
+        ax2.set_title('tracer distance  / m')
+        ax2.plot(lifetime, tracer_dist*dx, 'o-')
+        ax2.set_xlabel('time / [-]')
+        plt.tight_layout()
+        fig.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
+
+    ''' compute average spreading velocity '''
+    print('')
+    print('average spreading velocity')
+    # based on tracer position
+    v_spread1 = dx*np.asarray([(tracer_dist[i+1]-tracer_dist[i])/dt_fields for i in range(len(tracer_dist)-1)])
+    # based on position of peak in v_r
+    r_vmax = np.argmax(v_rad_av[:,:rmax], axis=1)*dx
+    print(r_vmax.shape, tau)
+    v_spread2 = np.asarray([(r_vmax[i+1] - r_vmax[i])/dt_fields for i in range(len(tracer_dist)-1)])
+    print(v_spread1.shape)
+    print(tracer_dist)
+    print(v_spread1)
+    print(r_vmax)
+    print(v_spread2)
+    print('')
+
+
+
+    ''' PLOTTING '''
+    colmap = plt.cm.winter
+
+    fig_name = 'vrad_vtan_radial_av.png'
+    fig, axis = plt.subplots(2, 1, figsize=(8, 8), sharey='none')
+    ax0 = axis[0]
+    ax1 = axis[1]
+    min = np.amin(v_rad_av)
+    max = np.amax(v_rad_av)+0.2
+    for it, t0 in enumerate(lifetime):
+        count_color = np.double(it) / (len(lifetime)-1)
+        ax0.plot(np.arange(rmax) * dx, v_rad_av[it, :rmax], color=colmap(count_color), label='t=' + str(t0) + 's')
+        # ax0.plot([tracer_dist[it] * dx, tracer_dist[it] * dx], [min, max], 'k', linewidth=1)
+        ax0.plot([tracer_dist[it] * dx, tracer_dist[it] * dx], [min, max], '-',
+                 linewidth=1, color=colmap(count_color))
+        ax0.plot(tracer_dist[it]*dx, v_rad_av[it, tracer_dist[it]], 'ko', markersize=6)
+        if it<4:
+            ax0.plot([0,6e3], [v_spread1[it], v_spread1[it]], '-', linewidth=1, color=colmap(count_color))
+        # ax0.plot([r_vmax[it], r_vmax[it]],[min, max], 'k')
+        if it == tau-1:
+            ax0.plot(tracer_dist[it]*dx, v_rad_av[it, tracer_dist[it]], 'ko', markersize=6, label='tracer')
+        else:
+            ax0.plot(tracer_dist[it]*dx, v_rad_av[it, tracer_dist[it]], 'ko', markersize=6)
+    ax1.plot(lifetime, tracer_dist * dx, 'o-')
+
+    ax0.set_xlabel('radius r / km')
+    ax0.set_ylabel('radial velocity / ms' + r'$^{-1}$')
+    ax1.set_xlabel('time / [-]')
+    ax1.set_ylabel('radius of tracer position / km')
+
+    x_ticks = [np.int(ti * 1e-3) for ti in ax0.get_xticks()]
+    ax0.set_xticklabels(x_ticks)
+    y_ticks = [ti for ti in ax0.get_yticks()]
+    ax0.set_yticklabels(y_ticks)
+    # for label in ax0.xaxis.get_ticklabels()[1::2]:
+    #     label.set_visible(False)
+    x_ticks = [np.round(ti, 1) for ti in ax1.get_xticks()]
+    ax1.set_xticklabels(x_ticks)
+    y_ticks = [np.round(ti*1e-3,1) for ti in ax1.get_yticks()]
+    ax1.set_yticklabels(y_ticks)
+
+    # rect = mpatches.Rectangle((4.8e3, 1.4), 1.e3, 1., fill=True, linewidth=1, edgecolor='k', facecolor='white', zorder=10)
+    # ax0.add_patch(rect)
+    ax0.legend(loc='center left', bbox_to_anchor=(.8, 0.81), frameon=True)
+    textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
+    ax0.text(3e2, 2, 'a)', fontsize=18, bbox=textprops)
+    # ax1.text(0, 1, 'b)', fontsize=18, bbox=textprops)
+    # ax1.text(1, 50, 'b)', fontsize=18, bbox=textprops)
+    # ax1.text(1, 1, 'b)', fontsize=18, bbox=textprops)
+    # ax1.text(8e2, 1, 'b)', fontsize=18, bbox=textprops)
+    # ax1.text(50, 1, 'b)', fontsize=18, bbox=textprops)
+    ax1.text(47.2, 1.95e3, 'b)', fontsize=18, bbox=textprops)
+    ax0.set_xlim(0, 6e3)
+    ax0.set_ylim(min, max)
+    fig.subplots_adjust(top=0.97, bottom=0.07, left=0.11, right=0.95, hspace=0.2, wspace=0.25)
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+
+
+
+
+
+    fig_name = 'vrad_vtan_radial_av2.png'
+    fig, axis = plt.subplots(2, 1, figsize=(8, 8), sharey='none')
+    ax0 = axis[0]
+    ax1 = axis[1]
+    min_av = np.amin(v_rad_av)
+    max_av = np.amax(v_rad_av)+0.2
+    for it, t0 in enumerate(lifetime):
+        count_color = np.double(it) / (len(lifetime)-1)
+        ax0.plot(np.arange(rmax) * dx, v_rad_av[it, :rmax], color=colmap(count_color), label='t=' + str(t0) + 's')
+        ax0.plot([tracer_dist[it] * dx, tracer_dist[it] * dx], [min_av, max_av],
+                 linewidth=1, color=colmap(count_color))
+        if it == tau-1:
+            ax0.plot(tracer_dist[it]*dx, v_rad_av[it, tracer_dist[it]], 'ko', markersize=6, label='tracer')
+        else:
+            ax0.plot(tracer_dist[it]*dx, v_rad_av[it, tracer_dist[it]], 'ko', markersize=6)
+
+    max = np.amax(np.abs(v_hor_int[:,-1,:,:]))
+    lvls = np.linspace(-max, max, 20)
+    cf = ax1.contourf(v_rad_int[-1,:,:], levels=lvls, alpha=0.5, cmap=cm_bwr)
+    cbar_ax1 = fig.add_axes([0.75, 0.14, 0.015, 0.3])
+    ax1.quiver(v_hor_int[0,-1,:,:], v_hor_int[1,-1,:,:], pivot='tip',
+                  width=0.22, units='x')
+    for i in range(n_tracers):
+        ax1.plot(coordinates[-1,i,0]-xc[-1]+irange+x_shift, coordinates[-1, i, 1]-yc[-1]+irange + x_shift, 'ok', markersize=2)
+    cb1 = fig.colorbar(cf, cax=cbar_ax1, ticks=np.arange(np.floor(-max),np.ceil(max)+1, 1))
+    cb1.set_label('radial velocity / ms' + r'$^{-1}$')
+
+    ax0.set_xlabel('radius r / km')
+    ax0.set_ylabel('radial velocity / ms' + r'$^{-1}$')
+    ax1.set_xlabel('distance / km')
+    ax1.set_ylabel('distance / km')
+
+    x_ticks = [np.int(ti * 1e-3) for ti in ax0.get_xticks()]
+    ax0.set_xticklabels(x_ticks)
+    y_ticks = [ti for ti in ax0.get_yticks()]
+    ax0.set_yticklabels(y_ticks)
+    # for label in ax0.xaxis.get_ticklabels()[1::2]:
+    #     label.set_visible(False)
+    x_ticks = [np.round(ti*dx*1e-3, 1) for ti in ax1.get_xticks()]
+    ax1.set_xticklabels(x_ticks)
+    y_ticks = [np.round(ti*dx*1e-3) for ti in ax1.get_yticks()]
+    ax1.set_yticklabels(y_ticks)
+
+    ax0.legend(loc='center left', bbox_to_anchor=(.77, 0.78), frameon=False)
+    rect = mpatches.Rectangle((4.5e3, 1.25), 1.2e3, 1.15, fill=True, linewidth=1, edgecolor='k', facecolor='white')
+    ax0.add_patch(rect)
+
+    textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
+    # ax0.text(1e3, 7.2, 'a)', fontsize=18, bbox=textprops)
+    # ax1.text(1e3, 1.13, 'b)', fontsize=18)
+    ax0.text(3e2,2, 'a)', fontsize=18, bbox=textprops)
+    # ax1.text(10,40, 'b)', fontsize=18, bbox=textprops)      # ok
+    ax1.text(25,72, 'b)', fontsize=18, bbox=textprops)
+
+    ax0.set_xlim(0, 6e3)
+    ax0.set_ylim(min_av, max_av)
+    ax1.set_xlim(20,80)
+    ax1.set_ylim(20,80)
+    ax1.set_aspect('equal')
+    fig.subplots_adjust(top=0.98, bottom=0.07, left=0.11, right=0.95, hspace=0.2, wspace=0.1)
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+
     #
     # #
     # #
@@ -542,34 +694,34 @@ def compute_radius(ic, jc, irange, jrange, nx, ny, path_out_figs):
             th_field[ic-i, jc-j] = np.pi + aux
             th_field[ic+i, jc-j] = 2*np.pi - aux
 
-    fig, axis = plt.subplots(3, 2, figsize=(10,10))
-    # cf = ax1.imshow(r_field[ic - irange:ic + irange + 1, jc - jrange:jc + jrange + 1].T, origin='lower')
-    for ax in axis[:,0].flat:
-        cf = ax.imshow(r_field.T, origin='lower')
-        plt.colorbar(cf, ax=ax)
-        ax.set_title('r(x,y)')
-    for ax in axis[:,1].flat:
-        cf = ax.imshow(th_field.T, origin='lower')
-        # cf = ax2.imshow(th_field[ic - irange:ic + irange + 1, jc - jrange:jc + jrange + 1].T, origin='lower')
-        plt.colorbar(cf, ax=ax)
-        ax.set_title('th(x,y)')
-
-    for ax in axis[1:,:].flat:
-        ax.plot([ic,ic], [0, ny], 'k', linewidth=1)
-        ax.plot([0, nx], [jc,jc], 'k', linewidth=1)
-    # ax4.plot([ic,ic], [0, ny], 'k')
-    # ax4.plot([0, nx], [jc,jc], 'k')
-
-    for ax in axis[:2,:].flat:
-        ax.set_xlim(0, nx)
-        ax.set_ylim(0, ny)
-    for ax in axis[2,:].flat:
-        ax.set_xlim(ic-irange-5, ic+irange+5)
-        ax.set_ylim(jc-jrange-5, jc+jrange+5)
-
-    plt.suptitle('ic,jc='+str(ic) + ', '+str(jc) + ', (nxh = '+str(irange)+')')
-    plt.savefig(os.path.join(path_out_figs, 'r_th_field.png'))
-    plt.close()
+    # fig, axis = plt.subplots(3, 2, figsize=(10,10))
+    # # cf = ax1.imshow(r_field[ic - irange:ic + irange + 1, jc - jrange:jc + jrange + 1].T, origin='lower')
+    # for ax in axis[:,0].flat:
+    #     cf = ax.imshow(r_field.T, origin='lower')
+    #     plt.colorbar(cf, ax=ax)
+    #     ax.set_title('r(x,y)')
+    # for ax in axis[:,1].flat:
+    #     cf = ax.imshow(th_field.T, origin='lower')
+    #     # cf = ax2.imshow(th_field[ic - irange:ic + irange + 1, jc - jrange:jc + jrange + 1].T, origin='lower')
+    #     plt.colorbar(cf, ax=ax)
+    #     ax.set_title('th(x,y)')
+    #
+    # for ax in axis[1:,:].flat:
+    #     ax.plot([ic,ic], [0, ny], 'k', linewidth=1)
+    #     ax.plot([0, nx], [jc,jc], 'k', linewidth=1)
+    # # ax4.plot([ic,ic], [0, ny], 'k')
+    # # ax4.plot([0, nx], [jc,jc], 'k')
+    #
+    # for ax in axis[:2,:].flat:
+    #     ax.set_xlim(0, nx)
+    #     ax.set_ylim(0, ny)
+    # for ax in axis[2,:].flat:
+    #     ax.set_xlim(ic-irange-5, ic+irange+5)
+    #     ax.set_ylim(jc-jrange-5, jc+jrange+5)
+    #
+    # plt.suptitle('ic,jc='+str(ic) + ', '+str(jc) + ', (nxh = '+str(irange)+')')
+    # plt.savefig(os.path.join(path_out_figs, 'r_th_field.png'))
+    # plt.close()
     return th_field, r_field
 
 
@@ -619,77 +771,80 @@ def compute_v_hor_int(u_in, v_in, xc, yc, irange, jrange, nx_, ny_,
         print('it, t, i, imin+i', it, t0, i, imin, imin+i, j, jmin, jmin+j)
 
 
-    # plotting
-    for it, t0 in enumerate(np.arange(t_ini, t_end+1)):
-        print('plot t='+str(t0), it)
-        max_in = np.amax(u_in[t0, :, :])
-        lvls_in = np.linspace(-max_in, max_in, 10)
-
-        fig, axis = plt.subplots(4, 2, figsize=(8, 12))
-        ax = axis[0, 0]
-        ax.set_title('u in')
-        cf = ax.contourf(u_in[t0, :, :], cmap=cm_bwr, levels=lvls_in)
-        plt.colorbar(cf, ax=ax, shrink=0.8)
-        ax.plot(xc, yc, 'xk', markersize=20)
-        ax.plot([xc+irange, xc+irange], [0, ny], 'k')
-        ax.plot([xc-irange, xc-irange], [0, ny], 'k')
-        ax = axis[0, 1]
-        ax.set_title('v in')
-        cf = ax.contourf(v_in[t0, :, :], cmap=cm_bwr, levels=lvls_in)
-        plt.colorbar(cf, ax=ax, shrink=0.8)
-        ax.plot(xc, yc, 'xk', markersize=20)
-        ax = axis[1, 0]
-        ax.set_title('u hor int')
-        cf = ax.contourf(v_hor_int[0, it, :, :], cmap=cm_bwr, levels=lvls_in)
-        plt.colorbar(cf, ax=ax, shrink=0.8)
-        ax.plot(irange, jrange, 'xk', markersize=20)
-        ax = axis[1, 1]
-        ax.set_title('v hor int')
-        cf = ax.contourf(v_hor_int[1, it, :, :], cmap=cm_bwr, levels=lvls_in)
-        plt.colorbar(cf, ax=ax, shrink=0.8)
-        ax.plot(irange, jrange, 'xk', markersize=20)
-
-        ax = axis[2, 0]
-        ax.set_title('u hor int')
-        cf = ax.contourf(v_hor_int[0, it, :, :], cmap=cm_bwr, levels=lvls_in)
-        plt.colorbar(cf, ax=ax, shrink=0.8)
-        ax.plot(irange, jrange, 'xk', markersize=20)
-        ax = axis[2, 1]
-        ax.set_title('v hor int')
-        cf = ax.contourf(v_hor_int[1, it, :, :], cmap=cm_bwr, levels=lvls_in)
-        plt.colorbar(cf, ax=ax, shrink=0.8)
-        ax.plot(irange, jrange, 'xk', markersize=20)
-        ax = axis[3, 0]
-        ax.set_title('u in')
-        cf = ax.contourf(u_in[t0, :, :], cmap=cm_bwr, levels=lvls_in)
-        plt.colorbar(cf, ax=ax, shrink=0.8)
-        ax.plot(xc, yc, 'xk', markersize=20)
-        ax = axis[3, 1]
-        ax.set_title('v in')
-        cf = ax.contourf(v_in[t0, :, :], cmap=cm_bwr, levels=lvls_in)
-        plt.colorbar(cf, ax=ax, shrink=0.8)
-        ax.plot(xc, yc, 'xk', markersize=20)
-
-        for ax in axis[0,:].flat:
-            ax.set_xlim(imin-5, imin+i+5)
-            ax.set_ylim(jmin-5, jmin+j+5)
-        for ax in axis[1,:].flat:
-            ax.set_xlim(-5, nx_+5)
-            ax.set_ylim(-5, ny_+5)
-        for ax in axis[2,:].flat:
-            ax.set_xlim(irange-(xc-625), irange+(665-xc))
-            ax.set_ylim(jrange-(yc-570), jrange+(610-yc))
-        for ax in axis[3,:].flat:
-            ax.set_xlim(625, 665)
-            ax.set_ylim(570, 610)
-        # plt.tight_layout()
-        plt.suptitle('t='+str(t0))
-        plt.savefig(os.path.join(path_out_figs, 'test_field_vhor_int_t' + str(t0) + '.png'))
-        plt.close()
+    # # plotting
+    # for it, t0 in enumerate(np.arange(t_ini, t_end+1)):
+    #     print('plot t='+str(t0), it)
+    #     max_in = np.amax(u_in[t0, :, :])
+    #     lvls_in = np.linspace(-max_in, max_in, 10)
+    #
+    #     fig, axis = plt.subplots(4, 2, figsize=(8, 12))
+    #     ax = axis[0, 0]
+    #     ax.set_title('u in')
+    #     cf = ax.contourf(u_in[t0, :, :], cmap=cm_bwr, levels=lvls_in)
+    #     plt.colorbar(cf, ax=ax, shrink=0.8)
+    #     ax.plot(xc, yc, 'xk', markersize=20)
+    #     ax.plot([xc+irange, xc+irange], [0, ny], 'k')
+    #     ax.plot([xc-irange, xc-irange], [0, ny], 'k')
+    #     ax = axis[0, 1]
+    #     ax.set_title('v in')
+    #     cf = ax.contourf(v_in[t0, :, :], cmap=cm_bwr, levels=lvls_in)
+    #     plt.colorbar(cf, ax=ax, shrink=0.8)
+    #     ax.plot(xc, yc, 'xk', markersize=20)
+    #     ax = axis[1, 0]
+    #     ax.set_title('u hor int')
+    #     cf = ax.contourf(v_hor_int[0, it, :, :], cmap=cm_bwr, levels=lvls_in)
+    #     plt.colorbar(cf, ax=ax, shrink=0.8)
+    #     ax.plot(irange, jrange, 'xk', markersize=20)
+    #     ax = axis[1, 1]
+    #     ax.set_title('v hor int')
+    #     cf = ax.contourf(v_hor_int[1, it, :, :], cmap=cm_bwr, levels=lvls_in)
+    #     plt.colorbar(cf, ax=ax, shrink=0.8)
+    #     ax.plot(irange, jrange, 'xk', markersize=20)
+    #
+    #     ax = axis[2, 0]
+    #     ax.set_title('u hor int')
+    #     cf = ax.contourf(v_hor_int[0, it, :, :], cmap=cm_bwr, levels=lvls_in)
+    #     plt.colorbar(cf, ax=ax, shrink=0.8)
+    #     ax.plot(irange, jrange, 'xk', markersize=20)
+    #     ax = axis[2, 1]
+    #     ax.set_title('v hor int')
+    #     cf = ax.contourf(v_hor_int[1, it, :, :], cmap=cm_bwr, levels=lvls_in)
+    #     plt.colorbar(cf, ax=ax, shrink=0.8)
+    #     ax.plot(irange, jrange, 'xk', markersize=20)
+    #     ax = axis[3, 0]
+    #     ax.set_title('u in')
+    #     cf = ax.contourf(u_in[t0, :, :], cmap=cm_bwr, levels=lvls_in)
+    #     plt.colorbar(cf, ax=ax, shrink=0.8)
+    #     ax.plot(xc, yc, 'xk', markersize=20)
+    #     ax = axis[3, 1]
+    #     ax.set_title('v in')
+    #     cf = ax.contourf(v_in[t0, :, :], cmap=cm_bwr, levels=lvls_in)
+    #     plt.colorbar(cf, ax=ax, shrink=0.8)
+    #     ax.plot(xc, yc, 'xk', markersize=20)
+    #
+    #     for ax in axis[0,:].flat:
+    #         ax.set_xlim(imin-5, imin+i+5)
+    #         ax.set_ylim(jmin-5, jmin+j+5)
+    #     for ax in axis[1,:].flat:
+    #         ax.set_xlim(-5, nx_+5)
+    #         ax.set_ylim(-5, ny_+5)
+    #     for ax in axis[2,:].flat:
+    #         ax.set_xlim(irange-(xc-625), irange+(665-xc))
+    #         ax.set_ylim(jrange-(yc-570), jrange+(610-yc))
+    #     for ax in axis[3,:].flat:
+    #         ax.set_xlim(625, 665)
+    #         ax.set_ylim(570, 610)
+    #     # plt.tight_layout()
+    #     plt.suptitle('t='+str(t0))
+    #     plt.savefig(os.path.join(path_out_figs, 'test_field_vhor_int_t' + str(t0) + '.png'))
+    #     plt.close()
     return v_hor_int
 
 
-def compute_radial_vel(uv, th_field, irange, jrange, rmax, nx, ny, ic, jc, t0, path_out_figs):
+def compute_radial_vel(uv, th_field,
+                       coordinates, n_tracers,
+                       irange, jrange, nx, ny, ic, jc, t0, path_out_figs):
+    x_shift_coords = -2
     ur = np.zeros((nx,ny), dtype=np.double)
     utan = np.zeros((nx,ny), dtype=np.double)
     print('compute radial velocity: ')
@@ -716,33 +871,31 @@ def compute_radial_vel(uv, th_field, irange, jrange, rmax, nx, ny, ic, jc, t0, p
 
 
 
-    fig, axis = plt.subplots(1, 3, figsize=(12, 5))
-    ax = axis[0]
-    ax.set_title('th(x,y)')
-    cf = ax.imshow(th_field.T, origin='lower')
-    plt.colorbar(cf, ax=ax, shrink=0.5)
-    # ax.plot([ic, ic], [0, ny], 'k', linewidth=1)
-    # ax.plot([0, nx], [jc, jc], 'k', linewidth=1)
-    ax = axis[1]
-    ax.set_title('cos')
-    cf = ax.imshow(np.cos(th_field), origin='lower')
-    plt.colorbar(cf, ax=ax, shrink=0.5)
-    ax = axis[2]
-    ax.set_title('sin')
-    cf = ax.imshow(np.sin(th_field), origin='lower')
-    plt.colorbar(cf, ax=ax, shrink=0.5)
-    plt.tight_layout()
-    plt.suptitle('ic,jc=' + str(ic) + ', ' + str(jc) + ', (nxh = ' + str(irange) + ')')
-    plt.savefig(os.path.join(path_out_figs, 'th_cos_sin_field.png'))
-    plt.close()
+    # fig, axis = plt.subplots(1, 3, figsize=(12, 5))
+    # ax = axis[0]
+    # ax.set_title('th(x,y)')
+    # cf = ax.imshow(th_field.T, origin='lower')
+    # plt.colorbar(cf, ax=ax, shrink=0.5)
+    # # ax.plot([ic, ic], [0, ny], 'k', linewidth=1)
+    # # ax.plot([0, nx], [jc, jc], 'k', linewidth=1)
+    # ax = axis[1]
+    # ax.set_title('cos')
+    # cf = ax.imshow(np.cos(th_field), origin='lower')
+    # plt.colorbar(cf, ax=ax, shrink=0.5)
+    # ax = axis[2]
+    # ax.set_title('sin')
+    # cf = ax.imshow(np.sin(th_field), origin='lower')
+    # plt.colorbar(cf, ax=ax, shrink=0.5)
+    # plt.tight_layout()
+    # plt.suptitle('ic,jc=' + str(ic) + ', ' + str(jc) + ', (nxh = ' + str(irange) + ')')
+    # plt.savefig(os.path.join(path_out_figs, 'th_cos_sin_field.png'))
+    # plt.close()
 
 
     max = np.maximum(np.amax(np.abs(uv)), np.maximum(np.amax(ur), np.amax(utan)))
-    print('max: ', max)
     lvls = np.linspace(-max, max, 20)
 
     fig, axis = plt.subplots(2, 2, figsize=(11, 11))
-
     ax = axis[0,0]
     ax.set_title('u')
     cf = ax.contourf(uv[0, :, :], levels=lvls, alpha=0.5, cmap=cm_bwr)
@@ -763,6 +916,11 @@ def compute_radial_vel(uv, th_field, irange, jrange, rmax, nx, ny, ic, jc, t0, p
     ax.set_title('tangential velocity')
     cf = ax.contourf(utan[:, :], levels=lvls, alpha=0.5, cmap=cm_bwr)
     plt.colorbar(cf, ax=ax, shrink=0.8)
+
+    for ax in axis.flat:
+        for i in range(n_tracers):
+            ax.plot(coordinates[t0-47, i, 0]-ic+irange+x_shift_coords,
+                     coordinates[t0-47, i, 1]-jc+irange+x_shift_coords, 'ok', markersize=2)
 
     for ax in axis.flat:
         ax.plot(irange, jrange, 'xk', markersize=20)
@@ -828,23 +986,22 @@ def compute_radial_vel(uv, th_field, irange, jrange, rmax, nx, ny, ic, jc, t0, p
     # plt.tight_layout()
     # plt.savefig(os.path.join(path_out_figs, 'test_field_uv_vrad_vtan_t' + str(t0) + '.png'))
     # plt.close()
-
+    print('')
     return ur, utan
 
 
-def compute_average_var(var, rmax, r_field, nx_, ny_):
+def compute_average_var(var, rmax, r_field, nx, ny):
     count = np.zeros(rmax, dtype=np.int)
-    print('compute_average_var: rmax='+str(rmax), count.shape, var.shape)
 
     var_av = np.zeros((rmax), dtype=np.double)
-    for i in range(nx_):
-        for j in range(ny_):
+    for i in range(nx):
+        for j in range(ny):
             r = r_field[i, j]
             if r < rmax:
                 count[r] += 1
                 var_av[r] += var[i, j]
-    print('ij', i, j, nx_, ny_)
-    print('r', r, rmax)
+    # print('ij', i, j, nx, ny)
+    # print('r', r, rmax)
     # print('r field', r_field[ic, :])
 
     for r in range(rmax):
