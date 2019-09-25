@@ -83,8 +83,9 @@ def main():
     n_tracers = 999
     print('number of tracers: ' + str(n_tracers))
 
-    tau, t_ini, t_end, n_lines = get_cp_lifetime(cp_id, n_tracers, path_tracer_file)
-    lifetime = np.arange(t_ini, t_end+1)
+    lifetime, n_lines = get_cp_lifetime(cp_id, n_tracers, path_tracer_file)
+    t_ini = lifetime[0]
+    t_end = lifetime[-1]
     print('CP lifetime computed: ' + str(tau), lifetime)
     print('line #: ', n_lines)
     tau = 5
@@ -92,7 +93,7 @@ def main():
     t_end = 51
     lifetime = np.arange(t_ini, t_end+1)
     print('CP lifetime: ' + str(tau), lifetime)
-    xc, yc = get_cp_center(cp_id, tau, n_tracers, path_tracer_file)
+    xc, yc = get_cp_center(cp_id, t_ini, tau, n_tracers, n_lines, path_tracer_file)
     # yc, xc = get_cp_center(cp_id, tau, n_tracers, path_tracer_file)
     # print('CP center: (!!! switching coordinates)')
     ic = np.asarray([np.int(i) for i in xc])
@@ -228,11 +229,11 @@ def main():
     r_vmax = np.argmax(v_rad_av[:,:rmax], axis=1)*dx
     print(r_vmax.shape, tau)
     v_spread2 = np.asarray([(r_vmax[i+1] - r_vmax[i])/dt_fields for i in range(len(tracer_dist)-1)])
-    print(v_spread1.shape)
-    print(tracer_dist)
-    print(v_spread1)
-    print(r_vmax)
-    print(v_spread2)
+    print('CP velocity')
+    # print(tracer_dist)
+    print('v spread1', v_spread1)
+    # print(v_rad_av)
+    # print(v_spread2)
     print('')
 
 
@@ -241,11 +242,11 @@ def main():
     colmap = plt.cm.winter
 
     fig_name = 'vrad_vtan_radial_av.png'
-    fig, axis = plt.subplots(1, 1, figsize=(8, 4), sharey='none')
-    ax0 = axis[0]
+    fig, ax0 = plt.subplots(1, 1, figsize=(8, 4), sharey='none')
     min = np.amin(v_rad_av)
     max = np.amax(v_rad_av)+0.2
     for it, t0 in enumerate(lifetime):
+        print('plotting ', it, t0)
         count_color = np.double(it) / (len(lifetime)-1)
         ax0.plot(np.arange(rmax)*dx, v_rad_av[it, :rmax], '-x', color=colmap(count_color), label='t=' + str((t0-t_ini)*dt_fields) + 's')
         # ax0.plot([tracer_dist[it] * dx, tracer_dist[it] * dx], [min, max], 'k', linewidth=1)
@@ -253,16 +254,19 @@ def main():
                  linewidth=1, color=colmap(count_color))
         ax0.plot(tracer_dist[it]*dx, v_rad_av[it, tracer_dist[it]], 'ko', markersize=6)
         if it<4:
-            aux = np.asarray([np.int(v_rad_av[it,i]) for i in range(rmax)])
-            # a = np.where(np.int(v_rad_av[it,:15])==np.int(v_spread1[it]))
-            a = np.where(aux[:6]==np.int(v_spread1[it]))[0][0]
-            b = np.where(aux[6:]==np.int(v_spread1[it]))[0][0]
+            i = 0
+            while (v_rad_av[it,i] < v_spread1[it]) and (i<rmax-1):
+                i+=1
+            a = i
+            while (v_rad_av[it,i] > v_spread1[it]) and (i<rmax-1):
+                i+=1
+            b = i
             ax0.plot([0,6e3], [v_spread1[it], v_spread1[it]], '-', linewidth=1, color=colmap(count_color))
-            # ax0.plot([a,b], [v_spread1[it], v_spread1[it]], '-', linewidth=2, color=colmap(count_color))
+            ax0.plot([a*dx,b*dx], [v_spread1[it], v_spread1[it]], '-', linewidth=2, color=colmap(count_color))
             print('-------a, b', a, b, aux.shape, v_spread1.shape)
         # ax0.plot([r_vmax[it], r_vmax[it]],[min, max], 'k')
-        ax0.plot([a*dx, a*dx], [min, max], '--', linewidth=1, color=colmap(count_color))
-        ax0.plot([b*dx, b*dx], [min, max], '-.', linewidth=1, color=colmap(count_color))
+        ax0.plot([a*dx, a*dx], [min, max], '--', linewidth=1, color=colmap(count_color), label='a')
+        ax0.plot([b*dx, b*dx], [min, max], '-.', linewidth=1, color=colmap(count_color), label='b')
         ax0.plot([6*dx, 6*dx], [min, max], 'r-', linewidth=2)
         if it == tau-1:
             ax0.plot(tracer_dist[it]*dx, v_rad_av[it, tracer_dist[it]], 'ko', markersize=6, label='tracer')
@@ -283,10 +287,10 @@ def main():
     # ax0.add_patch(rect)
     ax0.legend(loc='center left', bbox_to_anchor=(.8, 0.81), frameon=True)
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    ax0.text(3e2, 2, 'c)', fontsize=18, bbox=textprops)
+    ax0.text(3e2, 2.1, 'c)', fontsize=18, bbox=textprops)
     ax0.set_xlim(0, 6e3)
     ax0.set_ylim(min, max)
-    fig.subplots_adjust(top=0.97, bottom=0.07, left=0.11, right=0.95, hspace=0.2, wspace=0.25)
+    fig.subplots_adjust(top=0.97, bottom=0.08, left=0.11, right=0.95, hspace=0.2, wspace=0.25)
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 
@@ -671,10 +675,8 @@ def get_cp_lifetime(cp_ID, n_tracers, fullpath_in):
     print('get cp lifetime')
     f = open(fullpath_in, 'r')
     lines = f.readlines()
-    print('lines', type(lines))
-    print(len(lines))
-    # print(lines)
     n_lines = []
+    times = []
     count = 0
     ID = int(lines[count].split()[3])
     while (ID < cp_ID):
@@ -682,58 +684,72 @@ def get_cp_lifetime(cp_ID, n_tracers, fullpath_in):
         ID = int(lines[count].split()[3])
     t0 = int(lines[count].split()[0])
     ID = int(lines[count].split()[3])
-    print(t0, ID, count)
-    # while (ID == cp_ID):
-    #     count += 1
-    #     ID = int(lines[count].split()[3])
-    # t1 = int(lines[count-1].split()[0])
+    # print(t0, ID, count)
 
-    while (ID == cp_ID):
-        print('id tracer: ', int(lines[count].split()[2]))
+    t1 = t0
+    while (ID == cp_ID) and (count<len(lines)):
         id_tr = int(lines[count].split()[2])
-        if id_tr == 1:
-            n_lines.append(count)
-        elif id_tr > 1 and n_lines[-1] < count + 10:
-            count_ = count
-            id_tr = int(lines[count].split()[2])
-            while id_tr > 1:
-                count_ -= 1
-                id_tr = int(lines[count_].split()[2])
-            n_lines.append(count_)
         t1 = int(lines[count].split()[0])
-        print(t1, ID, count)
-        # count += 1
+        # print('loop', count, ID, id_tr, t1)
+        if id_tr == 1:
+            # print('append')
+            n_lines.append(count)
+            times.append(t1)
+        elif id_tr > 1 and t1 == times[-1]:
+            while id_tr > 1 and t1 == times[-1]:
+                count += 1
+                id_tr = int(lines[count].split()[2])
+                t1 = int(lines[count].split()[0])
+            if int(lines[count].split()[3]) == cp_ID:
+                n_lines.append(count)
+                times.append(t1)
+                # print('diff append', count)
+        # print(times)
+        if t1 > times[-1]:
+            break
         count += n_tracers
         ID = int(lines[count].split()[3])
         t2 = t1
         while (ID != cp_ID) and (t2 <= t1 + 1):
-            # count += 1
             count += n_tracers
             ID = int(lines[count].split()[3])
             t2 = int(lines[count].split()[0])
-    tau = t1-t0+1
-
+    # tau = t1-t0+1
+    print('lifetime: ', len(times), t0, t1)
+    print(times)
 
     f.close()
-    return tau, t0, t1, n_lines
+    return times, n_lines
 
 
-def get_cp_center(cp_ID, tau, n_tracers, fullpath_in):
+def get_cp_center(cp_ID, t_ini, tau, n_tracers, n_lines, fullpath_in):
     xc = np.zeros(tau)
     yc = np.zeros(tau)
 
     f = open(fullpath_in, 'r')
     lines = f.readlines()
-    count = 0
-    ID = int(lines[count].split()[3])
-    while (ID < cp_ID):
-        count += 1
-        ID = int(lines[count].split()[3])
-    count_start = count
+    # count = 0
+    # ID = int(lines[count].split()[3])
+    # while (ID < cp_ID):
+    #     count += 1
+    #     ID = int(lines[count].split()[3])
+    # count_start = count
+    #
+    # for it in range(tau):
+    #     xc[it] = float(lines[count_start+it*n_tracers].split()[14])
+    #     yc[it] = float(lines[count_start+it*n_tracers].split()[15])
 
     for it in range(tau):
-        xc[it] = float(lines[count_start+it*n_tracers].split()[14])
-        yc[it] = float(lines[count_start+it*n_tracers].split()[15])
+        count = n_lines[it]
+        ID = int(lines[count].split()[3])
+        t_ = int(lines[count].split()[0])
+        print('cp center: ', it, count, ID, cp_ID, t_, it+t_ini)
+        if ID == cp_ID and t_ == (it+t_ini):
+            xc[it] = float(lines[count].split()[14])
+            yc[it] = float(lines[count].split()[15])
+        else:
+            print('ERROR ERROR ERROR in reading out CP centre')
+            print(ID, cp_ID, t_, it, count)
 
     f.close()
     # print('xc: ', xc)
