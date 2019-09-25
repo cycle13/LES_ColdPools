@@ -7,15 +7,17 @@ import argparse
 import json as simplejson
 import os
 
-label_size = 10
+label_size = 13
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
 plt.rcParams['lines.linewidth'] = 2
-plt.rcParams['legend.fontsize'] = 10
-plt.rcParams['axes.labelsize'] = 15
+plt.rcParams['lines.markersize'] = 6
+plt.rcParams['legend.fontsize'] = 12
+plt.rcParams['axes.labelsize'] = 16
+plt.rcParams['font.sans-serif'] = 'Helvetica'
 plt.rcParams['text.usetex'] = 'true'
 plt.rcParams['legend.numpoints'] = 1
-plt.rcParams["legend.handlelength"] = 2.0
+plt.rcParams["legend.handlelength"] = 1.5
 
 
 def main():
@@ -86,18 +88,18 @@ def main():
     lifetime, n_lines = get_cp_lifetime(cp_id, n_tracers, path_tracer_file)
     t_ini = lifetime[0]
     t_end = lifetime[-1]
+    tau = len(lifetime)
     print('CP lifetime computed: ' + str(tau), lifetime)
     print('line #: ', n_lines)
-    tau = 5
-    t_ini = 47
-    t_end = 51
+    tau = 3
+    t_ini = 48
+    t_end = 50
     lifetime = np.arange(t_ini, t_end+1)
     print('CP lifetime: ' + str(tau), lifetime)
     xc, yc = get_cp_center(cp_id, t_ini, tau, n_tracers, n_lines, path_tracer_file)
-    # yc, xc = get_cp_center(cp_id, tau, n_tracers, path_tracer_file)
-    # print('CP center: (!!! switching coordinates)')
     ic = np.asarray([np.int(i) for i in xc])
     jc = np.asarray([np.int(i) for i in yc])
+    print('')
     print('CP center: ')
     print('xc: ', xc)
     print('yc: ', yc)
@@ -106,7 +108,7 @@ def main():
 
 
     ''' ----- tracer coordinates ----- '''
-    coordinates = get_tracer_coords(cp_id, n_cps, n_tracers, lifetime, path_tracer_file)
+    coordinates = get_tracer_coords(cp_id, n_lines, n_tracers, lifetime, path_tracer_file)
     # var_list = ['s', 'w']
     # shift = 0
     # fig_name = 's_w'
@@ -242,32 +244,30 @@ def main():
     colmap = plt.cm.winter
 
     fig_name = 'vrad_vtan_radial_av.png'
-    fig, ax0 = plt.subplots(1, 1, figsize=(8, 4), sharey='none')
+    fig, ax0 = plt.subplots(1, 1, figsize=(8, 4.3), sharey='none')
     min = np.amin(v_rad_av)
     max = np.amax(v_rad_av)+0.2
     for it, t0 in enumerate(lifetime):
         print('plotting ', it, t0)
         count_color = np.double(it) / (len(lifetime)-1)
-        ax0.plot(np.arange(rmax)*dx, v_rad_av[it, :rmax], '-x', color=colmap(count_color), label='t=' + str((t0-t_ini)*dt_fields) + 's')
+        ax0.plot(np.arange(rmax)*dx, v_rad_av[it, :rmax], '-', color=colmap(count_color), label='t=' + str((t0-t_ini)*dt_fields) + 's')
         # ax0.plot([tracer_dist[it] * dx, tracer_dist[it] * dx], [min, max], 'k', linewidth=1)
         ax0.plot([tracer_dist[it] * dx, tracer_dist[it] * dx], [min, max], '-',
                  linewidth=1, color=colmap(count_color))
         ax0.plot(tracer_dist[it]*dx, v_rad_av[it, tracer_dist[it]], 'ko', markersize=6)
-        if it<4:
+        if it<(tau-1):
             i = 0
             while (v_rad_av[it,i] < v_spread1[it]) and (i<rmax-1):
                 i+=1
-            a = i
+            a = i-1
             while (v_rad_av[it,i] > v_spread1[it]) and (i<rmax-1):
                 i+=1
             b = i
-            ax0.plot([0,6e3], [v_spread1[it], v_spread1[it]], '-', linewidth=1, color=colmap(count_color))
-            ax0.plot([a*dx,b*dx], [v_spread1[it], v_spread1[it]], '-', linewidth=2, color=colmap(count_color))
-            print('-------a, b', a, b, aux.shape, v_spread1.shape)
+            # ax0.plot([0,6e3], [v_spread1[it], v_spread1[it]], '-', linewidth=1, color=colmap(count_color))
+            ax0.plot([a*dx,b*dx], [v_spread1[it], v_spread1[it]], '-', linewidth=1, color=colmap(count_color))
         # ax0.plot([r_vmax[it], r_vmax[it]],[min, max], 'k')
-        ax0.plot([a*dx, a*dx], [min, max], '--', linewidth=1, color=colmap(count_color), label='a')
-        ax0.plot([b*dx, b*dx], [min, max], '-.', linewidth=1, color=colmap(count_color), label='b')
-        ax0.plot([6*dx, 6*dx], [min, max], 'r-', linewidth=2)
+        # ax0.plot([a*dx, a*dx], [min, max], '--', linewidth=1, color=colmap(count_color), label='a')
+        # ax0.plot([b*dx, b*dx], [min, max], '-.', linewidth=1, color=colmap(count_color), label='b')
         if it == tau-1:
             ax0.plot(tracer_dist[it]*dx, v_rad_av[it, tracer_dist[it]], 'ko', markersize=6, label='tracer')
         else:
@@ -285,12 +285,12 @@ def main():
 
     # rect = mpatches.Rectangle((4.8e3, 1.4), 1.e3, 1., fill=True, linewidth=1, edgecolor='k', facecolor='white', zorder=10)
     # ax0.add_patch(rect)
-    ax0.legend(loc='center left', bbox_to_anchor=(.8, 0.81), frameon=True)
+    ax0.legend(loc='center left', bbox_to_anchor=(.8, 0.75), frameon=True)
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    ax0.text(3e2, 2.1, 'c)', fontsize=18, bbox=textprops)
+    ax0.text(2.1e2, 2.3, 'c)', fontsize=18, bbox=textprops)
     ax0.set_xlim(0, 6e3)
     ax0.set_ylim(min, max)
-    fig.subplots_adjust(top=0.97, bottom=0.08, left=0.11, right=0.95, hspace=0.2, wspace=0.25)
+    fig.subplots_adjust(top=0.96, bottom=0.12, left=0.11, right=0.95, hspace=0.2, wspace=0.25)
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 
@@ -598,7 +598,7 @@ def plot_tracers_field(coordinates, n_tracers, shift, var_list, times,
 # ------------------------- CP STATISTICS ---------------------------------------------
 
 
-def get_tracer_coords(cp_id, n_cps, n_tracers, times, fullpath_in):
+def get_tracer_coords(cp_ID, n_lines, n_tracers, times, fullpath_in):
     print('get tracer coordinates')
     f = open(fullpath_in, 'r')
     lines = f.readlines()
@@ -606,26 +606,41 @@ def get_tracer_coords(cp_id, n_cps, n_tracers, times, fullpath_in):
     nt = len(times)
     coords = np.zeros((nt, n_tracers, 2))
 
-    count_start = 0
-    for it,t0 in enumerate(times):
-        print('----t0='+str(t0), it, '----', count_start)
-        timestep = int(lines[count_start].split()[0])
-        age = int(lines[count_start].split()[1])
-        cp_ID = int(lines[count_start].split()[3])
-        while (cp_ID < cp_id):
-            count_start += 1
-            cp_ID = int(lines[count_start].split()[3])
-        # print('t0 - cp_ID:', t0, timestep, cp_ID, count_start)
-        while (timestep < t0):
-            count_start += 1
-            timestep = int(lines[count_start].split()[0])
-        age = int(lines[count_start].split()[1])
-        cp_ID = int(lines[count_start].split()[3])
-        # print('t_end - timestep: ', t_ini, timestep, cp_ID, count_start)
+    # count_start = 0
+    # for it,t0 in enumerate(times):
+    #     print('----t0='+str(t0), it, '----', count_start)
+    #     timestep = int(lines[count_start].split()[0])
+    #     ID = int(lines[count_start].split()[3])
+    #     while (ID < cp_ID):
+    #         count_start += 1
+    #         ID = int(lines[count_start].split()[3])
+    #     # print('t0 - cp_ID:', t0, timestep, ID, count_start)
+    #     while (timestep < t0):
+    #         count_start += 1
+    #         timestep = int(lines[count_start].split()[0])
+    #     age = int(lines[count_start].split()[1])
+    #     ID = int(lines[count_start].split()[3])
+    #     # print('t_end - timestep: ', t_ini, timestep, ID, count_start)
+    #     print('count starts at ', count_start)
+    #     count = count_start
+    #     i = 0
+    #     while (timestep == t0 and age == it and ID == cp_ID):
+    #         columns = lines[count].split()
+    #         coords[it,i,0] = float(columns[4])
+    #         coords[it,i,1] = float(columns[5])
+    #         i += 1
+    #         count += 1
+    #         timestep = int(lines[count].split()[0])
+    #         age = int(lines[count].split()[1])
+    #         ID = int(lines[count].split()[3])
 
-        count = count_start
+    for it,t0 in enumerate(times):
+        count = n_lines[it]
+        timestep = int(lines[count].split()[0])
+        age = int(lines[count].split()[1])
+        ID = int(lines[count].split()[3])
         i = 0
-        while (timestep == t0 and age == it and cp_ID == cp_id):
+        while (timestep == t0 and age == it and ID == cp_ID):
             columns = lines[count].split()
             coords[it,i,0] = float(columns[4])
             coords[it,i,1] = float(columns[5])
@@ -633,7 +648,7 @@ def get_tracer_coords(cp_id, n_cps, n_tracers, times, fullpath_in):
             count += 1
             timestep = int(lines[count].split()[0])
             age = int(lines[count].split()[1])
-            cp_ID = int(lines[count].split()[3])
+            ID = int(lines[count].split()[3])
 
     f.close()
     print('')
@@ -743,7 +758,7 @@ def get_cp_center(cp_ID, t_ini, tau, n_tracers, n_lines, fullpath_in):
         count = n_lines[it]
         ID = int(lines[count].split()[3])
         t_ = int(lines[count].split()[0])
-        print('cp center: ', it, count, ID, cp_ID, t_, it+t_ini)
+        # print('cp center: ', it, count, ID, cp_ID, t_, it+t_ini)
         if ID == cp_ID and t_ == (it+t_ini):
             xc[it] = float(lines[count].split()[14])
             yc[it] = float(lines[count].split()[15])
