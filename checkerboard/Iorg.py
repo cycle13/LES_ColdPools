@@ -65,49 +65,30 @@ def main():
     # max_ID = 100
 
 
-    min_dist = 999999.9*np.ones((max_ID+1, n_time), dtype=np.double)
-    i_start_cells = np.zeros(max_ID+2, dtype=np.int)
-    l = 0
-    for ID in range(1,max_ID+1):
-        l = np.min(np.where(f[:,0] == ID))
-        i_start_cells[ID] = l
-        print(ID, 'l', l)
+    ''' compute NND '''
+    data_file = 'min_dist.nc'
+    # compute_NND(f, max_ID, n_time, data_file, path_figs)
+    
+
+    ''' read in NND '''
+    root = nc.Dataset(os.path.join(path_figs, data_file), 'r')
+    min_dist = root.variables['NND'][:,:]
+    root.close()
+    print('shape: ', min_dist.shape, n_time, max_ID)
+
+
+    ''' compute random distribution '''
+    # lambda: number of points per unit area (normalizing factor)
+    # r: nearest-neighbour distance
+    lam = 10
     print('')
-
-    # max_d = 15. # search-radius: 15km = 15pts
-    max_d = 400. # search-radius: 15km = 15pts
-    for ID in range(1, max_ID + 1):
-        l = i_start_cells[ID]
-        it = 0
-        t = np.int(f[l+it,1])
-        print('--- ID', ID, l, t)
-        x = f[l,8]
-        y = f[l,9]
-        for ID_ in range(1, max_ID+1):
-            if ID_ != ID:
-                l_1 = i_start_cells[ID_]
-                l_2 = i_start_cells[ID_+1]
-                t_ = np.int(f[l_1,1])
-                # print('ID_', f[l_1,0], l_1, t_, l_2, np.int(f[l_2-1,1]))
-                if np.int(f[l_1,1])<=t and np.int(f[l_2-1,1]) >= t:
-                    while f[l_1,0] == ID_ and (t_ < t):
-                        ## print('l_, t_', l_1, t_, f[l_1,0])
-                        l_1 += 1
-                        t_ = np.int(f[l_1,1])
-                    # print('t_', t_, t)
-                    while (t_ == t) and (f[l_1,0]==ID_):
-                        # print('testing', ID_, t_, np.int(f[l_1,1]), np.abs(f[l_1,8] - x), np.abs(f[l_1,9] - y))
-                        if np.abs(f[l_1,8] - x) <= max_d and np.abs(f[l_1,9] - y) <= max_d:
-                            d = np.sqrt((f[l_1,8]-x)**2 + (f[l_1,9]-y)**2)
-                            # print('dist: ',  d, min_dist[ID,it])
-                            min_dist[ID,it] = np.minimum(min_dist[ID,it], d)
-                        l_1 += 1
-                        t_ = f[l_1, 1]
-    print(min_dist[:,0])
-    dump_file('min_dist.nc', path_figs, n_time, max_ID, min_dist)
+    print('?!?!?!? lambda: how many cells per unit area??')
+    print('')
+    r = np.arange(0, 500)
+    NND_rand = 1-np.exp(-lam*np.pi*r**2)
 
 
-
+    ''' plot histogram '''
     figname = root1 + '_NN.png'
     data = [i for i in min_dist[:,0] if i < 999999.9]
     n_bins = 1e2
@@ -123,8 +104,9 @@ def main():
     n, bins, patches = axes[0].hist(min_dist[:, 0].flatten(), bins)
     # max_hist = np.amax(n)
     # print('n', np.amax(n), n.shape)
-    bins = np.linspace(min, max, 5e1)
-    n, bins, patches = axes[1].hist(data, bins, normed=False, facecolor='red', alpha=0.4, label='w')
+    bins = np.linspace(min, max, 1e2)
+    n, bins, patches = axes[1].hist(data, bins, normed=True, facecolor='red', alpha=0.4, label='w')
+    axes[1].plot(r, NND_rand, 'k')
     # for i, p in enumerate(perc_range):
     #     plt.plot([perc[i], perc[i]], [0, max_hist], 'k', linewidth=1, label=str(p) + 'th percentile')
 
@@ -146,7 +128,7 @@ def main():
         ax.set_xlabel('NND [km]')
         ax.set_ylabel('n')
     # plt.ylabel('log_10(n)')
-    # plt.suptitle('Histogram of w' + '   (t=' + str(t0) + r',  k$\in$[0,' + str(kmax) + '])')
+    plt.suptitle('max(NND)='+str(max))
     plt.savefig(os.path.join(path_figs, figname))
     plt.close()
 
@@ -155,11 +137,51 @@ def main():
 
     return
 
-#_______________________________
+# ----------------------------------------------------------------------
+def compute_NND(f, max_ID, n_time, data_file, path_figs):
+    min_dist = 999999.9 * np.ones((max_ID + 1, n_time), dtype=np.double)
+    i_start_cells = np.zeros(max_ID + 2, dtype=np.int)
+    l = 0
+    for ID in range(1, max_ID + 1):
+        l = np.min(np.where(f[:, 0] == ID))
+        i_start_cells[ID] = l
+        print(ID, 'l', l)
+    print('')
 
-# def dump_file(fname, dTh_range, zstar_range, rstar_range,
-#               PE_ref, scaling, PE_ref_range, PE_numerical,
-#               params_dict, count, path_out):
+    # max_d = 15. # search-radius: 15km = 15pts
+    max_d = 400.  # search-radius: 15km = 15pts
+    for ID in range(1, max_ID + 1):
+        l = i_start_cells[ID]
+        it = 0
+        t = np.int(f[l + it, 1])
+        print('--- ID', ID, l, t)
+        x = f[l, 8]
+        y = f[l, 9]
+        for ID_ in range(1, max_ID + 1):
+            if ID_ != ID:
+                l_1 = i_start_cells[ID_]
+                l_2 = i_start_cells[ID_ + 1]
+                t_ = np.int(f[l_1, 1])
+                # print('ID_', f[l_1,0], l_1, t_, l_2, np.int(f[l_2-1,1]))
+                if np.int(f[l_1, 1]) <= t and np.int(f[l_2 - 1, 1]) >= t:
+                    while f[l_1, 0] == ID_ and (t_ < t):
+                        ## print('l_, t_', l_1, t_, f[l_1,0])
+                        l_1 += 1
+                        t_ = np.int(f[l_1, 1])
+                    # print('t_', t_, t)
+                    while (t_ == t) and (f[l_1, 0] == ID_):
+                        # print('testing', ID_, t_, np.int(f[l_1,1]), np.abs(f[l_1,8] - x), np.abs(f[l_1,9] - y))
+                        if np.abs(f[l_1, 8] - x) <= max_d and np.abs(f[l_1, 9] - y) <= max_d:
+                            d = np.sqrt((f[l_1, 8] - x) ** 2 + (f[l_1, 9] - y) ** 2)
+                            # print('dist: ',  d, min_dist[ID,it])
+                            min_dist[ID, it] = np.minimum(min_dist[ID, it], d)
+                        l_1 += 1
+                        t_ = f[l_1, 1]
+    print(min_dist[:, 0])
+    dump_file(data_file, path_figs, n_time, max_ID, min_dist)
+    return
+
+# ----------------------------------------------------------------------
 
 def dump_file(fname, path_out, n_time, n_cells, min_dist):
     rootgrp = nc.Dataset(os.path.join(path_out, fname), 'w', format='NETCDF4')
