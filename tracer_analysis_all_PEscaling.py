@@ -141,18 +141,24 @@ def main():
     # func_log_romps(x, a, b, c) = a + b * np.log(1 + x * c)
     ''' fit function to r_av '''
     figname = 'CP_rim' + '.png'
-    p1_r, p_log1_r, p_log2_r, p_log_romps_r = plot_dist_fitting(r_av, [dTh], z_params, r_params, n_params, tmin, k0, id_ref, colorlist5, figname)
+    p1_r, p_log1_r, p_log2_r, p_log_romps_r = plot_dist_fitting(r_av,
+                    [dTh], z_params, r_params, n_params, tmin, k0, id_ref, colorlist5, figname)
     plot_parameters(p1_r, p_log1_r, p_log2_r, p_log_romps_r, 'r')
-    # ''' fit function to U_rad '''
-    # figname = 'CP_rim_dTh' + str(dTh) + '_vrad_'
-    # plot_vel_fitting(r_av, U_rad_av,
-    #                  [dTh], z_params, r_params, n_params, k0, id_ref, figname, colorlist4)
-    # ''' fit function to dr/dt '''
-    # figname = 'CP_rim_dTh' + str(dTh) + '_dRdt_'
-    # plot_vel_fitting(r_av, drdt_av, r_av_ref, drdt_av_ref,
-    #                  [dTh], z_params, r_params, n_params, k0, id_ref, figname, colorlist4)
-    # # # ''' fit functions to r_av, U_rad '''
-    # # # plot_fitting(r_av, r_av_ref, [dTh], z_params, r_params, n_params, k0, id_ref, figname)
+    ''' fit function to U_rad '''
+    figname = 'CP_rim_fit_vrad'
+    tmin = 5
+    p0 = [0, 1, -1]
+    p1_vel, p_log1_vel, p_log2_vel, p_log_romps_vel = plot_vel_fitting(r_av, U_rad_av, p0,
+                    [dTh], z_params, r_params, n_params, tmin, k0, id_ref, colorlist5, figname)
+    plot_parameters(p1_vel, p_log1_vel, p_log2_vel, p_log_romps_vel, 'U_rad')
+    ''' fit function to dr/dt '''
+    figname = 'CP_rim_fit_dRdt'
+    tmin = 8
+    p1_vel, p_log1_vel, p_log2_vel, p_log_romps_vel = plot_vel_fitting(r_av, drdt_av, [0,1,-1],
+                     [dTh], z_params, r_params, n_params, tmin, k0, id_ref, colorlist5, figname)
+    plot_parameters(p1_vel, p_log1_vel, p_log2_vel, p_log_romps_vel, 'dRdt')
+    # ''' fit functions to r_av, U_rad '''
+    # plot_fitting(r_av, r_av_ref, [dTh], z_params, r_params, n_params, k0, id_ref, figname)
     #
     # # ''' (c) plot r_av_abs'''
     # # figname = 'CP_rim_dTh' + str(dTh) + '_r_abs.png'
@@ -586,73 +592,73 @@ def plot_dist_fitting(r_av,
         f_log_romps[istar, :] = popt_log_romps
 
 
-        # ''' plotting separately for each case '''
-        # fig, axis = plt.subplots(2, 4, sharex='none', figsize=(18, 12))
-        # for i in range(2):
-        #     axis[i,0].plot(times, r_av[istar, :, k0], 'ko-', label=id)
-        #     axis[i,1].semilogx(times, r_av[istar, :, k0], 'ko-', label=id)
-        #     axis[i,2].loglog(times, r_av[istar, :, k0], 'ko-', label=id)
-        #     axis[i,3].semilogy(times, r_av[istar, :, k0], 'ko-', label=id)
-        #     # mark the ones used for fitting
-        #     axis[i,0].plot(times[:tmin], r_av[istar, :tmin, k0], 'ow', alpha=0.75)
-        #     axis[i,1].semilogx(times[:tmin], r_av[istar, :tmin, k0], 'ow', alpha=0.75)
-        #     axis[i,2].loglog(times[:tmin], r_av[istar, :tmin, k0], 'ow', alpha=0.75)
-        #     axis[i,3].semilogy(times[:tmin], r_av[istar, :tmin, k0], 'ow', alpha=0.75)
-        # # reference CP
-        # axis[0,0].plot(times, r_av[1, :, k0], 'd-', color='0.7', label=id_ref)
-        # axis[0,1].semilogx(times, r_av[1, :, k0], 'd-', color='0.7', label=id_ref)
-        # axis[0,2].loglog(times, r_av[1, :, k0], 'd-', color='0.7', label=id_ref)
-        # axis[0,3].semilogy(times, r_av[1, :, k0], 'd-', color='0.7', label=id_ref)
-        # # fitted functions
-        # axis[1,0].plot(times, func(times, *popt), 'r-', label='a+b*x^c ('+str(popt)+')')
-        # axis[1,1].semilogx(times, func(times, *popt), 'r-', label='a+b*x^c ('+str(popt)+')')
-        # axis[1,2].loglog(times, func(times, *popt), 'r-')
-        # axis[1,3].semilogy(times, func(times, *popt), 'r-')
-        # axis[1,0].plot(times, func_log1(times, *popt_log1), '-', linewidth=3, color='limegreen', label='b*log(x) ('+str(popt_log1)+')')
-        # axis[1,1].semilogx(times, func_log1(times, *popt_log1), '-', color='limegreen', label='b*log(x) ('+str(popt_log1)+')')
-        # axis[1,2].loglog(times, func_log1(times, *popt_log1), '-', color='limegreen', )
-        # axis[1,3].semilogy(times, func_log1(times, *popt_log1), '-', color='limegreen', )
-        # axis[1,0].plot(times, func_log2(times, *popt_log2), '-', color='darkgreen', label='a+b*log(x) ('+str(popt_log2)+')')
-        # axis[1,1].semilogx(times, func_log2(times, *popt_log2), '-', color='darkgreen', label='a+b*log(x) ('+str(popt_log2)+')')
-        # axis[1,2].loglog(times, func_log2(times, *popt_log2), '-', color='darkgreen', )
-        # axis[1,3].semilogy(times, func_log2(times, *popt_log2), '-', color='darkgreen', )
-        # axis[1,0].plot(times, func_log_romps(times, *popt_log_romps), '-', color='navy', label='a+b*log(1+c*x) (' + str(popt_log_romps) + ')')
-        # axis[1,1].semilogx(times, func_log_romps(times, *popt_log_romps), '-', color='navy', label='a+b*log(1+c*x) (' + str(popt_log_romps) + ')')
-        # axis[1,2].loglog(times, func_log_romps(times, *popt_log_romps), '-', color='navy')
-        # axis[1,3].semilogy(times, func_log_romps(times, *popt_log_romps), '-', color='navy')
-        # for i in range(n_init):
-        #     for j in range(n_init):
-        #         ij = i*n_init+j
-        #         p1[ij, :], success = optimize.leastsq(errfunc, [p0[i,0], p0[i,1], p0[j,2]], args=(times[tmin:], r_av[istar, tmin:, k0]))
-        #         # print(i, 'success: ', success)
-        #         axis[0,0].plot(times[tmin:], fitfunc1(p1[i,:], times[tmin:]), "-", label='p='+str(p1[ij,:]))  # Plot of the data and the fit
-        #         axis[0,1].semilogx(times, fitfunc1(p1[i,:], times), "-", label='p='+str(p1[ij,:]))  # Plot of the data and the fit
-        #         axis[0,2].loglog(times, fitfunc1(p1[i,:], times), "-", label='p='+str(p1[ij,:]))  # Plot of the data and the fit
-        #         axis[0,3].semilogy(times, fitfunc1(p1[i,:], times), "-", label='p='+str(p1[ij,:]))  # Plot of the data and the fit
-        # axis[0,0].set_title('scipy.optizmize.leastsq: a + b*x^c', fontsize=18)
-        # axis[1,0].set_title('scipy.optizmize.curve_fit: a + b*x^c, a+b*log(c), a+b*log(1+c)', fontsize=18)
-        # for i in range(2):
-        #     axis[i,0].set_xlabel('time [s]')
-        #     axis[i,1].set_xlabel('log(time) [s]')
-        #     axis[i,2].set_xlabel('log(time) [s]')
-        #     axis[i,3].set_xlabel('time [s]')
-        #     axis[i,0].set_ylabel('r_av  [m/s]')
-        #     axis[i,2].set_ylabel('log(r_av)  [m/s]')
-        #     axis[i,1].set_xlim([1e2,4e3])
-        #     axis[i,2].set_xlim([1e2,4e3])
-        #     axis[i,0].set_ylim([0,rmax])
-        #     axis[i,1].set_ylim([0,rmax])
-        #     axis[i,2].set_ylim([1.5e3,rmax])
-        #     axis[i,3].set_ylim([1.5e3,rmax])
-        #     # axis[i,3].set_ylim([1e3,1e4])
-        # plt.subplots_adjust(bottom=0.15, right=.95, left=0.07, top=0.93, wspace=0.25, hspace=0.7)
-        # axis[0,0].legend(loc='upper left', bbox_to_anchor=(0., -0.2),
-        #            fancybox=True, shadow=False, ncol=3)
-        # axis[1,0].legend(loc='upper left', bbox_to_anchor=(0., -0.2),
-        #                   fancybox=True, shadow=False, ncol=2)
-        # fig.suptitle('CP radius (' + id +', dx='+str(dx[0]) +'m)', fontsize=21)
-        # fig.savefig(os.path.join(path_out_figs, fig_name[:-4] + '_fit_r_' + id + '.png'))
-        # plt.close(fig)
+        ''' plotting separately for each case '''
+        fig, axis = plt.subplots(2, 4, sharex='none', figsize=(18, 12))
+        for i in range(2):
+            axis[i,0].plot(times, r_av[istar, :, k0], 'ko-', label=id)
+            axis[i,1].semilogx(times, r_av[istar, :, k0], 'ko-', label=id)
+            axis[i,2].loglog(times, r_av[istar, :, k0], 'ko-', label=id)
+            axis[i,3].semilogy(times, r_av[istar, :, k0], 'ko-', label=id)
+            # mark the ones used for fitting
+            axis[i,0].plot(times[:tmin], r_av[istar, :tmin, k0], 'ow', alpha=0.75)
+            axis[i,1].semilogx(times[:tmin], r_av[istar, :tmin, k0], 'ow', alpha=0.75)
+            axis[i,2].loglog(times[:tmin], r_av[istar, :tmin, k0], 'ow', alpha=0.75)
+            axis[i,3].semilogy(times[:tmin], r_av[istar, :tmin, k0], 'ow', alpha=0.75)
+        # reference CP
+        axis[0,0].plot(times, r_av[1, :, k0], 'd-', color='0.7', label=id_ref)
+        axis[0,1].semilogx(times, r_av[1, :, k0], 'd-', color='0.7', label=id_ref)
+        axis[0,2].loglog(times, r_av[1, :, k0], 'd-', color='0.7', label=id_ref)
+        axis[0,3].semilogy(times, r_av[1, :, k0], 'd-', color='0.7', label=id_ref)
+        # fitted functions
+        axis[1,0].plot(times, func(times, *popt), 'r-', label='a+b*x^c ('+str(popt)+')')
+        axis[1,1].semilogx(times, func(times, *popt), 'r-', label='a+b*x^c ('+str(popt)+')')
+        axis[1,2].loglog(times, func(times, *popt), 'r-')
+        axis[1,3].semilogy(times, func(times, *popt), 'r-')
+        axis[1,0].plot(times, func_log1(times, *popt_log1), '-', linewidth=3, color='limegreen', label='b*log(x) ('+str(popt_log1)+')')
+        axis[1,1].semilogx(times, func_log1(times, *popt_log1), '-', color='limegreen', label='b*log(x) ('+str(popt_log1)+')')
+        axis[1,2].loglog(times, func_log1(times, *popt_log1), '-', color='limegreen', )
+        axis[1,3].semilogy(times, func_log1(times, *popt_log1), '-', color='limegreen', )
+        axis[1,0].plot(times, func_log2(times, *popt_log2), '-', color='darkgreen', label='a+b*log(x) ('+str(popt_log2)+')')
+        axis[1,1].semilogx(times, func_log2(times, *popt_log2), '-', color='darkgreen', label='a+b*log(x) ('+str(popt_log2)+')')
+        axis[1,2].loglog(times, func_log2(times, *popt_log2), '-', color='darkgreen', )
+        axis[1,3].semilogy(times, func_log2(times, *popt_log2), '-', color='darkgreen', )
+        axis[1,0].plot(times, func_log_romps(times, *popt_log_romps), '-', color='navy', label='a+b*log(1+c*x) (' + str(popt_log_romps) + ')')
+        axis[1,1].semilogx(times, func_log_romps(times, *popt_log_romps), '-', color='navy', label='a+b*log(1+c*x) (' + str(popt_log_romps) + ')')
+        axis[1,2].loglog(times, func_log_romps(times, *popt_log_romps), '-', color='navy')
+        axis[1,3].semilogy(times, func_log_romps(times, *popt_log_romps), '-', color='navy')
+        for i in range(n_init):
+            for j in range(n_init):
+                ij = i*n_init+j
+                p1[ij, :], success = optimize.leastsq(errfunc, [p0[i,0], p0[i,1], p0[j,2]], args=(times[tmin:], r_av[istar, tmin:, k0]))
+                # print(i, 'success: ', success)
+                axis[0,0].plot(times[tmin:], fitfunc1(p1[i,:], times[tmin:]), "-", label='p='+str(p1[ij,:]))  # Plot of the data and the fit
+                axis[0,1].semilogx(times, fitfunc1(p1[i,:], times), "-", label='p='+str(p1[ij,:]))  # Plot of the data and the fit
+                axis[0,2].loglog(times, fitfunc1(p1[i,:], times), "-", label='p='+str(p1[ij,:]))  # Plot of the data and the fit
+                axis[0,3].semilogy(times, fitfunc1(p1[i,:], times), "-", label='p='+str(p1[ij,:]))  # Plot of the data and the fit
+        axis[0,0].set_title('scipy.optizmize.leastsq: a + b*x^c', fontsize=18)
+        axis[1,0].set_title('scipy.optizmize.curve_fit: a + b*x^c, a+b*log(c), a+b*log(1+c)', fontsize=18)
+        for i in range(2):
+            axis[i,0].set_xlabel('time [s]')
+            axis[i,1].set_xlabel('log(time) [s]')
+            axis[i,2].set_xlabel('log(time) [s]')
+            axis[i,3].set_xlabel('time [s]')
+            axis[i,0].set_ylabel('r_av  [m/s]')
+            axis[i,2].set_ylabel('log(r_av)  [m/s]')
+            axis[i,1].set_xlim([1e2,4e3])
+            axis[i,2].set_xlim([1e2,4e3])
+            axis[i,0].set_ylim([0,rmax])
+            axis[i,1].set_ylim([0,rmax])
+            axis[i,2].set_ylim([1.5e3,rmax])
+            axis[i,3].set_ylim([1.5e3,rmax])
+            # axis[i,3].set_ylim([1e3,1e4])
+        plt.subplots_adjust(bottom=0.15, right=.95, left=0.07, top=0.93, wspace=0.25, hspace=0.7)
+        axis[0,0].legend(loc='upper left', bbox_to_anchor=(0., -0.2),
+                   fancybox=True, shadow=False, ncol=3)
+        axis[1,0].legend(loc='upper left', bbox_to_anchor=(0., -0.2),
+                          fancybox=True, shadow=False, ncol=2)
+        fig.suptitle('CP radius (' + id +', dx='+str(dx[0]) +'m)', fontsize=21)
+        fig.savefig(os.path.join(path_out_figs, fig_name[:-4] + '_fit_r_' + id + '.png'))
+        plt.close(fig)
 
 
 
@@ -660,7 +666,6 @@ def plot_dist_fitting(r_av,
     ''' all '''
     fig, axis = plt.subplots(3, 4, sharex='none', figsize=(18, 16))
     for istar in range(n_params):
-        i_color = np.double(istar) / n_params
         col = colorlist[istar]
         if len(dTh_params) == 1:
             dTh = dTh_params[0]
@@ -712,8 +717,8 @@ def plot_dist_fitting(r_av,
         axis[i,2].set_xlabel('log(time) [s]')
         axis[i,3].set_xlabel('time [s]')
     for i in range(3):
-        axis[i,0].set_ylabel('r_av  [m/s]')
-        axis[i,2].set_ylabel('log(r_av)  [m/s]')
+        axis[i,0].set_ylabel('r_av  [m]')
+        axis[i,2].set_ylabel('log(r_av)  [m]')
         axis[i,1].set_xlim(0,4e3)
         axis[i,2].set_xlim(0,4e3)
         axis[i,2].set_ylim(5e2,2e4)
@@ -773,9 +778,10 @@ def plot_dist_fitting(r_av,
     return f1, f_log1, f_log2, f_log_romps
 
 
-def plot_vel_fitting(r_av, vel, r_av_ref, vel_ref,
-                      dTh_params, z_params, r_params, n_params, k0,
-                      id_ref, fig_name):
+
+def plot_vel_fitting(r_av, vel, init_params,
+                      dTh_params, z_params, r_params, n_params, tmin, k0,
+                      id_ref, colorlist, fig_name):
     print('fitting velocity')
 
     # Fit the first set
@@ -783,24 +789,21 @@ def plot_vel_fitting(r_av, vel, r_av_ref, vel_ref,
     fitfunc1 = lambda p, x: p[0] + p[1] * x ** p[2]  # Target function
     errfunc = lambda p, x, y: fitfunc1(p, x) - y  # Distance to the target function
 
-    # use optimize.curve_fit
-    def func(x, a, b, c):
-        return a + b * x ** c
-    def func_log(x, a, b, c):
-        return a + b*np.log(x)
     # matrix of optimal parameters
-    f1 = np.zeros((n_params + 1, 3))
-    f_log = np.zeros((n_params + 1, 3))
+    f1 = np.zeros((n_params, 3))
+    f_log1 = np.zeros((n_params, 3))
+    f_log2 = np.zeros((n_params, 3))
+    f_log_romps = np.zeros((n_params, 3))
 
     # initial guess for the parameters of power-law relation
     n_init = 3
     p0 = np.zeros((n_init, 3))
     p1 = np.zeros((n_init**3, 3))
-    a = [1e0, 1e1, 1e2]
+    a = [1e0, 1e2, 1e3]
     p0[:,0] = a
-    b = [1e1, 1e2, 1e3]
+    b = [-1e1, 1e0, 1e1]
     p0[:,1] = b
-    c = [-1e0, -1e-1, 1e-1]
+    c = [-1e-1, -1e0, 1e-1]
     p0[:, 2] = c
     # initial guess for the parameters of log-relation
     p0_log = np.zeros((3))
@@ -808,6 +811,8 @@ def plot_vel_fitting(r_av, vel, r_av_ref, vel_ref,
     p0_log[1] = 1.
     p0_log[2] = .5
 
+    vmax = np.amax(vel[:, :, k0])
+
     for istar in range(n_params):
         if len(dTh_params) == 1:
             dTh = dTh_params[0]
@@ -815,114 +820,103 @@ def plot_vel_fitting(r_av, vel, r_av_ref, vel_ref,
             dTh = dTh_params[istar]
         zstar = z_params[0]
         rstar = r_params[istar]
-        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-        tmin = 5
+        if rstar == 1000:
+            id = id_ref
+        else:
+            id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
         print('fitting vel: ' + id, 'tmin: '+str(tmin))
+        tmax = -1
+
 
         ''' fitting '''
-        popt, pcov = optimize.curve_fit(func, times[tmin:], vel[istar, tmin:, k0], p0[0, :])
-        f1[istar, :] = popt
-        popt_log, pcov = optimize.curve_fit(func_log, times[tmin:], vel[istar, tmin:, k0], p0_log[:])
-        f_log[istar, :] = popt_log
-
+        print('init', init_params, tmin)
+        try:
+            popt, pcov = optimize.curve_fit(func, times[tmin:tmax], vel[istar, tmin:tmax, k0], init_params)
+            f1[istar, :] = popt
+        except:
+            print('no fitting possible')
+            f1[istar,:] = [1,0,1]
+        popt_log1, pcov = optimize.curve_fit(func_log1, times[tmin:], vel[istar, tmin:, k0], p0_log[:])
+        f_log1[istar, :] = popt_log1
+        popt_log2, pcov = optimize.curve_fit(func_log2, times[tmin:], vel[istar, tmin:, k0], p0_log[:])
+        f_log2[istar, :] = popt_log2
+    #     popt_log_romps, pcov = optimize.curve_fit(func_log_romps_U, times[tmin:], vel[istar, tmin:, k0], p0_log[:])
+    #     f_log_romps[istar, :] = popt_log_romps
+    #
+    #
         ''' plotting separately for each case '''
-        fig, axis = plt.subplots(2, 4, sharex='none', figsize=(18, 10))
+        fig, axis = plt.subplots(2, 4, sharex='none', figsize=(18, 12))
         for i in range(2):
-            axis[i,0].plot(times, vel[istar, :, k0], 'o-', label=id)
-            axis[i,1].semilogx(times, vel[istar, :, k0], 'o-', label=id)
-            axis[i,2].loglog(times, vel[istar, :, k0], 'o-', label=id)
-            axis[i,3].semilogy(times, vel[istar, :, k0], 'o-', label=id)
+            axis[i,0].plot(times, vel[istar, :, k0], 'ko-', label=id)
+            axis[i,1].semilogx(times, vel[istar, :, k0], 'ko-', label=id)
+            axis[i,2].loglog(times, vel[istar, :, k0], 'ko-', label=id)
+            axis[i,3].semilogy(times, vel[istar, :, k0], 'ko-', label=id)
             # mark the ones used for fitting
             axis[i, 0].plot(times[:tmin], vel[istar, :tmin, k0], 'ow', alpha=0.7)
             axis[i, 1].semilogx(times[:tmin], vel[istar, :tmin, k0], 'ow', alpha=0.7)
             axis[i, 2].loglog(times[:tmin], vel[istar, :tmin, k0], 'ow', alpha=0.7)
             axis[i, 3].semilogy(times[:tmin], vel[istar, :tmin, k0], 'ow', alpha=0.7)
+            axis[i, 0].plot(times[tmax:], vel[istar, tmax:, k0], 'ow', alpha=0.7)
+            axis[i, 1].semilogx(times[tmax:], vel[istar, tmax:, k0], 'ow', alpha=0.7)
+            axis[i, 2].loglog(times[tmax:], vel[istar, tmax:, k0], 'ow', alpha=0.7)
+            axis[i, 3].semilogy(times[tmax:], vel[istar, tmax:, k0], 'ow', alpha=0.7)
         # reference CP
-        axis[0,0].plot(times, vel_ref[:, k0], 'ko-', label=id)
-        axis[0,1].semilogx(times, vel_ref[:, k0], 'ko-', label=id)
-        axis[0,2].loglog(times, vel_ref[:, k0], 'ko-', label=id)
-        axis[0,3].semilogy(times, vel_ref[:, k0], 'ko-', label=id)
+        axis[0,0].plot(times, vel[1, :, k0], 'd-', color='0.7', label=id_ref)
+        axis[0,1].semilogx(times, vel[1, :, k0], 'd-', color='0.7', label=id_ref)
+        axis[0,2].loglog(times, vel[1, :, k0], 'd-', color='0.7', label=id_ref)
+        axis[0,3].semilogy(times, vel[1, :, k0], 'd-', color='0.7', label=id_ref)
         # fitted functions
-        axis[0, 0].plot(times, func(times, *popt), 'r--', label='a+b*x^c (' + str(popt) + ')')
-        axis[0, 1].semilogx(times, func(times, *popt), 'r--', label='a+b*x^c (' + str(popt) + ')')
-        axis[0, 2].loglog(times, func(times, *popt), 'r--')
-        axis[0, 3].semilogy(times, func(times, *popt), 'r-')
-        axis[1, 0].plot(times, func_log(times, *popt_log), 'r--', label='a+b*log(x) (' + str(popt_log) + ')')
-        axis[1, 1].semilogx(times, func_log(times, *popt_log), 'r--', label='a+b*log(x) (' + str(popt_log) + ')')
-        axis[1, 2].loglog(times, func_log(times, *popt_log), 'r--')
-        axis[1, 3].semilogy(times, func_log(times, *popt_log), 'r-')
-        for i in range(n_init):
-            for j in range(n_init):
-                for k in range(n_init):
-                    ij = i*n_init**2+j*n_init+k
-                    # print(i, j, k, p0[i,0], p0[j,1], p0[k,2])
-                    p1[ij, :], success = optimize.leastsq(errfunc, [p0[i,0], p0[j,1], p0[k,2]], args=(times[tmin:], r_av[istar, tmin:, k0]))
-                    axis[0,0].plot(times[tmin:], fitfunc1(p1[ij,:], times[tmin:]), "-", label='p='+str(p1[i,:]))  # Plot of the data and the fit
-                    axis[0,1].semilogx(times, fitfunc1(p1[ij,:], times), "-", label='p='+str(p1[i,:]))  # Plot of the data and the fit
-                    axis[0,2].loglog(times, fitfunc1(p1[ij,:], times), "-", label='p='+str(p1[i,:]))  # Plot of the data and the fit
-    #     # # axis[0, 1].set_title('radial spreading velocity (U_av)', fontsize=18)
-        axis[0, 1].set_title('scipy.optizmize.leastsq', fontsize=18)
-        axis[1, 1].set_title('scipy.optizmize.curve_fit', fontsize=18)
-        axis[0, 0].set_xlabel('time [s]')
-        axis[0, 1].set_xlabel('log(time) [s]')
-        axis[0, 2].set_xlabel('log(time) [s]')
-        axis[1, 0].set_xlabel('time [s]')
-        axis[1, 1].set_xlabel('log(time) [s]')
-        axis[1, 2].set_xlabel('log(time) [s]')
-        axis[0, 0].set_ylabel('U  [m/s]')
-        axis[1, 0].set_ylabel('U [m/s]')
-        axis[0, 2].set_ylabel('log(U)  [m/s]')
-        axis[1, 2].set_ylabel('log(U)  [m/s]')
+        axis[1, 0].plot(times, func(times, *popt), 'r-', label='a+b*x^c (' + str(popt) + ')')
+        axis[1, 1].semilogx(times, func(times, *popt), 'r-', label='a+b*x^c (' + str(popt) + ')')
+        axis[1, 2].loglog(times, func(times, *popt), 'r-')
+        axis[1, 3].semilogy(times, func(times, *popt), 'r-')
+        axis[1, 0].plot(times, func_log1(times, *popt_log1), color='limegreen', label='b*log(x) (' + str(popt_log1) + ')')
+        axis[1, 1].semilogx(times, func_log1(times, *popt_log1), color='limegreen')
+        axis[1, 2].loglog(times, func_log1(times, *popt_log1), color='limegreen')
+        axis[1, 3].semilogy(times, func_log1(times, *popt_log1), color='limegreen')
+        axis[1, 0].plot(times, func_log2(times, *popt_log2), color='darkgreen', label='a+b*log(x) (' + str(popt_log2) + ')')
+        axis[1, 1].semilogx(times, func_log2(times, *popt_log2), color='darkgreen')
+        axis[1, 2].loglog(times, func_log2(times, *popt_log2), color='darkgreen')
+        axis[1, 3].semilogy(times, func_log2(times, *popt_log2), color='darkgreen')
+        # axis[1, 0].plot(times[1:], func_log_romps_U(times[1:], *popt_log_romps), color='navy',
+        #                 label='a*(1+bx)^(-1) (' + str(popt_log_romps) + ')')
+        # axis[1, 1].semilogx(times[1:], func_log_romps_U(times[1:], *popt_log_romps), color='navy')
+        # axis[1, 2].loglog(times[1:], func_log_romps_U(times[1:], *popt_log_romps), color='navy')
+        # axis[1, 3].semilogy(times[1:], func_log_romps_U(times[1:], *popt_log_romps), color='navy')
+        # for i in range(n_init):
+        #     for j in range(n_init):
+        #         for k in range(n_init):
+        #             ij = i*n_init**2+j*n_init+k
+        #             # print(i, j, k, p0[i,0], p0[j,1], p0[k,2])
+        #             p1[ij, :], success = optimize.leastsq(errfunc, [p0[i,0], p0[j,1], p0[k,2]], args=(times[tmin:], r_av[istar, tmin:, k0]))
+        #             axis[0,0].plot(times[tmin:], fitfunc1(p1[ij,:], times[tmin:]), "-", label='p='+str(p1[i,:]))  # Plot of the data and the fit
+        #             axis[0,1].semilogx(times, fitfunc1(p1[ij,:], times), "-", label='p='+str(p1[i,:]))  # Plot of the data and the fit
+        #             axis[0,2].loglog(times, fitfunc1(p1[ij,:], times), "-", label='p='+str(p1[i,:]))  # Plot of the data and the fit
+        # # # axis[0, 1].set_title('radial spreading velocity (U_av)', fontsize=18)
+        axis[0,0].set_title('scipy.optizmize.leastsq: a + b*x^c', fontsize=18)
+        axis[1,0].set_title('scipy.optizmize.curve_fit: a + b*x^c, a+b*log(c), a+b*log(1+c)', fontsize=18)
+        for i in range(2):
+            axis[i, 0].set_xlabel('time [s]')
+            axis[i, 1].set_xlabel('log(time) [s]')
+            axis[i, 2].set_xlabel('log(time) [s]')
+            axis[i, 3].set_xlabel('time [s]')
+            axis[i, 0].set_ylabel('U  [m/s]')
+            axis[i, 2].set_ylabel('U  [m/s]')
+            axis[i, 0].set_ylim(0.,1e1)
+            axis[i, 1].set_ylim(0.,1e1)
+        axis[1,3].set_ylim(1.1e-1,1e1)
+        axis[1,2].set_ylim(1.1e-1,1e1)
+        axis[1,3].set_ylim(1.1e-1,1e1)
         plt.subplots_adjust(bottom=0.1, right=.95, left=0.07, top=0.9, wspace=0.25, hspace=0.9)
-        axis[0, 1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
+        axis[0, 0].legend(loc='upper left', bbox_to_anchor=(0.5, -0.2),
                           fancybox=True, shadow=True, ncol=3)
-        axis[1, 1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
+        axis[1, 0].legend(loc='upper left', bbox_to_anchor=(0.5, -0.2),
                           fancybox=True, shadow=True, ncol=3)
         fig.suptitle('CP rim velocity (' + id +', dx='+str(dx[0]) +'m)', fontsize=21)
-        fig.savefig(os.path.join(path_out_figs, fig_name[:-4] + '_fit_' + id + '.png'))
+        fig.savefig(os.path.join(path_out_figs, fig_name + '_' + id + '.png'))
         plt.close(fig)
 
 
-
-    ''' reference '''
-    fig, axis = plt.subplots(2, 3, sharex='none', figsize=(18, 10))
-    tmin = 2
-    axis[0,0].plot(times, vel_ref[:, k0], 'ko-', label=id)
-    axis[0,1].semilogx(times, vel_ref[:, k0], 'ko-', label=id)
-    axis[0,2].loglog(times, vel_ref[:, k0], 'ko-', label=id)
-    for istar in range(n_params):
-        if len(dTh_params) == 1:
-            dTh = dTh_params[0]
-        else:
-            dTh = dTh_params[istar]
-        zstar = z_params[0]
-        rstar = r_params[istar]
-        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-        axis[0,0].plot(times, vel[istar, :, k0], 'o-', label=id)
-        axis[0,1].semilogx(times, vel[istar, :, k0], 'o-', label=id)
-        axis[0,2].loglog(times, vel[istar, :, k0], 'o-', label=id)
-    popt, pcov = optimize.curve_fit(func, times[tmin:], vel_ref[tmin:, k0], [0., 0., 0.])
-    f1[-1, :] = popt
-    # for i in range(n_init):
-    #     p1[i, :], success = optimize.leastsq(errfunc, p0[i, :], args=(times[tmin:], vel_ref[tmin:, k0]))
-    #     axis[0,0].plot(times[tmin:], fitfunc1(p1[i, :], times[tmin:]), "-",
-    #                  label='p=' + str(p1[i, :]))  # Plot of the data and the fit
-    #     axis[0,1].semilogx(times, fitfunc1(p1[i, :], times), "-",
-    #                      label='p=' + str(p1[i, :]))  # Plot of the data and the fit
-    #     axis[0,2].loglog(times, fitfunc1(p1[i, :], times), "-",
-    #                    label='p=' + str(p1[i, :]))  # Plot of the data and the fit
-    # # axis[0, 1].set_title('radial spreading velocity (U_av)', fontsize=18)
-    axis[0,0].set_xlabel('time [s]')
-    axis[0,1].set_xlabel('time [s]')
-    axis[0,2].set_xlabel('time [s]')
-    axis[0,0].set_ylabel('U  [m/s]')
-    # axis[1, 1].set_ylabel('U  [m/s]')
-    plt.subplots_adjust(bottom=0.3, right=.95, left=0.07, top=0.9, wspace=0.25)
-    axis[0,1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
-                   fancybox=True, shadow=True, ncol=3)
-    fig.suptitle('CP rim (' + id + ', dx=' + str(dx[0]) + 'm)', fontsize=21)
-    fig.savefig(os.path.join(path_out_figs, fig_name[:-4] + '_fit_vel_' + id_ref + '.png'))
-    plt.close(fig)
 
 
 
@@ -930,50 +924,89 @@ def plot_vel_fitting(r_av, vel, r_av_ref, vel_ref,
     ''' all '''
     print('plotting all')
     cmap = cm_hsv
-    fig, axis = plt.subplots(1, 3, sharex='none', figsize=(18, 7))
-    axis[0].plot(times, vel_ref[:, k0], 'ko-', linewidth=1, label=id)
-    axis[1].semilogx(times, vel_ref[:, k0], 'ko-', linewidth=1, label=id)
-    axis[2].loglog(times, vel_ref[:, k0], 'ko-', linewidth=1, label=id)
-    axis[0].plot(times[tmin:], func(times[tmin:], *f1[-1, :]), 'k-', label='curve_fit (' + str(f1[-1, :]) + ')')
-    axis[1].semilogx(times[tmin:], func(times[tmin:], *f1[-1, :]), 'k-', label='curve_fit (' + str(f1[-1, :]) + ')')
-    axis[2].loglog(times[tmin:], func(times[tmin:], *f1[-1, :]), 'k-', label='curve_fit (' + str(f1[-1, :]) + ')')
+    fig, axis = plt.subplots(3, 4, sharex='none', figsize=(18, 16))
     for istar in range(n_params):
-        i_color = np.double(istar)/n_params
+        col = colorlist[istar]
         if len(dTh_params) == 1:
             dTh = dTh_params[0]
         else:
             dTh = dTh_params[istar]
         zstar = z_params[0]
         rstar = r_params[istar]
-        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-        axis[0].plot(times, vel[istar, :, k0], 'o-', linewidth=1, color=cmap(i_color), label=id)
-        axis[1].semilogx(times, vel[istar, :, k0], 'o-', linewidth=1, color=cmap(i_color), label=id)
-        axis[2].loglog(times, vel[istar, :, k0], 'o-', linewidth=1, color=cmap(i_color), label=id)
-        axis[0].plot(times[tmin:], func(times[tmin:], *f1[istar, :]), '-', linewidth=3, color=cmap(i_color),
-                     label='curve_fit (' + str(f1[istar, :]) + ')')
-        axis[1].semilogx(times[tmin:], func(times[tmin:], *f1[istar, :]), '-', linewidth=3, color=cmap(i_color),
-                         label='curve_fit (' + str(f1[istar, :]) + ')')
-        axis[2].loglog(times[tmin:], func(times[tmin:], *f1[istar, :]), '-', linewidth=3, color=cmap(i_color),
-                       label='curve_fit (' + str(f1[istar, :]) + ')')
-    axis[0].set_xlabel('time [s]')
-    axis[1].set_xlabel('log(time) [s]')
-    axis[2].set_xlabel('log(time) [s]')
-    axis[0].set_ylabel('U  [m/s]')
-    axis[1].set_ylabel('U  [m/s]')
-    axis[2].set_ylabel('log(U)  [m/s]')
-    # axis[1, 1].set_ylabel('U  [m/s]')
-    plt.subplots_adjust(bottom=0.3, right=.95, left=0.07, top=0.9, wspace=0.25)
-    axis[1].legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
-                   fancybox=True, shadow=True, ncol=3)
-    fig.suptitle('radial spreading velocity (U_av) (dx=' + str(dx[0]) + 'm)', fontsize=21)
-    fig.savefig(os.path.join(path_out_figs, fig_name[:-4] + '_fit_vel_all.png'))
+        tmin_plot = 3
+        if rstar == 1000:
+            id = id_ref
+        else:
+            id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        for i in range(3):
+            axis[i, 0].plot(times, vel[istar, :, k0], 'o-', linewidth=1, color=col, label=id)
+            axis[i, 1].semilogx(times, vel[istar, :, k0], 'o-', linewidth=1, color=col, label=id)
+            axis[i, 2].loglog(times, vel[istar, :, k0], 'o-', linewidth=1, color=col, label=id)
+            axis[i, 3].semilogy(times, vel[istar, :, k0], 'o-', linewidth=1, color=col, label=id)
+            axis[i, 0].plot(times[:tmin], vel[istar, :tmin, k0], 'ow', alpha=0.7)
+            axis[i, 1].semilogx(times[:tmin], vel[istar, :tmin, k0], 'ow', alpha=0.7)
+            axis[i, 2].loglog(times[:tmin], vel[istar, :tmin, k0], 'ow', alpha=0.7)
+            axis[i, 3].semilogy(times[:tmin], vel[istar, :tmin, k0], 'ow', alpha=0.7)
+        axis[0,0].plot(times[tmin_plot:], func(times[tmin_plot:], *f1[istar, :]), '-', linewidth=3, color=col,
+                         label='a+b*x^c (' + str(f1[istar, :]) + ')')
+        axis[0,1].semilogx(times[tmin_plot:], func(times[tmin_plot:], *f1[istar, :]), '-', linewidth=3, color=col,
+                             label='a+b*x^c (' + str(f1[istar, :]) + ')')
+        axis[0,2].loglog(times[tmin_plot:], func(times[tmin_plot:], *f1[istar, :]), '-', linewidth=3, color=col,
+                           label='a+b*x^c (' + str(f1[istar, :]) + ')')
+        axis[0,3].semilogy(times[tmin_plot:], func(times[tmin_plot:], *f1[istar, :]), '-', linewidth=3, color=col,
+                              label='a+b*x^c (' + str(f1[istar, :]) + ')')
+        axis[1, 0].plot(times[tmin_plot:], func(times[tmin_plot:], *f1[istar, :]), '-', linewidth=3, color=col,
+                        label='a+b*x^c (' + str(f1[istar, :]) + ')')
+        axis[1, 1].semilogx(times[tmin_plot:], func(times[tmin_plot:], *f1[istar, :]), '-', linewidth=3, color=col,
+                            label='a+b*x^c (' + str(f1[istar, :]) + ')')
+        axis[1, 2].loglog(times[tmin_plot:], func(times[tmin_plot:], *f1[istar, :]), '-', linewidth=3, color=col,
+                          label='a+b*x^c (' + str(f1[istar, :]) + ')')
+        axis[1, 3].semilogy(times[tmin_plot:], func(times[tmin_plot:], *f1[istar, :]), '-', linewidth=3, color=col,
+                            label='a+b*x^c (' + str(f1[istar, :]) + ')')
+        axis[2, 0].plot(times[tmin_plot:], func(times[tmin_plot:], *f1[istar, :]), '-', linewidth=3, color=col,
+                        label='a+b*x^c (' + str(f1[istar, :]) + ')')
+        axis[2, 1].semilogx(times[tmin_plot:], func(times[tmin_plot:], *f1[istar, :]), '-', linewidth=3, color=col,
+                            label='a+b*x^c (' + str(f1[istar, :]) + ')')
+        axis[2, 2].loglog(times[tmin_plot:], func(times[tmin_plot:], *f1[istar, :]), '-', linewidth=3, color=col,
+                          label='a+b*x^c (' + str(f1[istar, :]) + ')')
+        axis[2, 3].semilogy(times[tmin_plot:], func(times[tmin_plot:], *f1[istar, :]), '-', linewidth=3, color=col,
+                            label='a+b*x^c (' + str(f1[istar, :]) + ')')
+    for i in range(2,3):
+        axis[i,0].set_xlabel('time [s]')
+        axis[i,1].set_xlabel('log(time) [s]')
+        axis[i,2].set_xlabel('log(time) [s]')
+        axis[i,3].set_xlabel('time [s]')
+    for i in range(3):
+        axis[i,0].set_ylabel('U_av  [m/s]')
+        axis[i,2].set_ylabel('log(U_av)  [m/s]')
+        axis[i,1].set_xlim(0,3.6e3)
+        axis[i,2].set_xlim(0,3.6e3)
+        axis[i,0].set_ylim(0., vmax)
+        axis[i,1].set_ylim(0., vmax)
+        axis[i,2].set_ylim(1e-1, 1e1)
+        axis[i,3].set_ylim(1e-1, 1e1)
+        # axis[i,3].set_ylim(5e2,2e4)
+    # # plt.subplots_adjust(bottom=0.3, right=.95, left=0.07, top=0.9, wspace=0.25)
+    plt.subplots_adjust(bottom=0.1, right=.97, left=0.07, top=0.95, wspace=0.25, hspace=0.35)
+    axis[0, 0].legend(loc='upper left', bbox_to_anchor=(-0.1, -0.07),
+                      fancybox=True, shadow=False, ncol=3)
+    axis[1, 0].legend(loc='upper left', bbox_to_anchor=(-0.1, -0.07),
+                      fancybox=True, shadow=False, ncol=3)
+    axis[2, 0].legend(loc='upper left', bbox_to_anchor=(-0.1, -0.15),
+                      fancybox=True, shadow=False, ncol=3)
+    fig.suptitle('radial spreading velocity (' + fig_name[-4:] + ') (dx=' + str(dx[0]) + 'm)', fontsize=21)
+    fig.savefig(os.path.join(path_out_figs, fig_name + '_all.png'))
     plt.close(fig)
-    return
+
+
+    return f1, f_log1, f_log2, f_log_romps
+
 
 
 
 def plot_parameters(f1, f_log1, f_log2, f_log_romps, var):
     ''' plot parameters '''
+    print('plot parameters')
     PE_range_log = [-1, 0, 1, 2, 3]
     PE_range = [0.5, 1, 2, 4, 8]
 
@@ -1240,6 +1273,8 @@ def func_log2(x, a, b, c):
     return a + b * np.log(c*x)
 def func_log_romps(x, a, b, c):
     return a + b * np.log(1 + x * c)
+def func_log_romps_U(x, a, b, c):
+    return a * (1 + x * c)**(-1)
 # ----------------------------------------------------------------------
 
 if __name__ == '__main__':
