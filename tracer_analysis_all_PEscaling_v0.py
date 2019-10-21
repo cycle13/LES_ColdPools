@@ -1180,7 +1180,7 @@ def set_input_parameters(args):
     if args.rparams:
         r_params = args.rparams
     else:
-        r_params = [500, 1000, 1100, 1600, 2300]
+        r_params = [500, 1100, 1600, 2300]
     n_params = len(r_params)
 
 
