@@ -145,34 +145,34 @@ def main():
     p1_r, p_log1_r, p_log2_r, p_log_romps_r = plot_dist_fitting(r_av,
                     [dTh], z_params, r_params, n_params, tmin, k0, id_ref, colorlist5, figname)
     plot_parameters(p1_r, p_log1_r, p_log2_r, p_log_romps_r, 'r')
-    # ''' fit function to r_av_abs '''
-    # figname = 'CP_rim_abs.png'
-    # tmin = 4
-    # p1_r, p_log1_r, p_log2_r, p_log_romps_r = plot_dist_fitting(r_av_abs,
-    #                   [dTh], z_params, r_params, n_params, tmin, k0, id_ref, colorlist5, figname)
-    # plot_parameters(p1_r, p_log1_r, p_log2_r, p_log_romps_r, 'r_abs')
-    # ''' fit function to U_rad '''
-    # tmin = 5
-    # figname = 'CP_rim_fit_vrad'
-    # p0 = [0, 1, -1]
-    # p1_vel, p_log1_vel, p_log2_vel, p_log_romps_vel = plot_vel_fitting(r_av, U_rad_av, p0,
-    #                 [dTh], z_params, r_params, n_params, tmin, k0, id_ref, colorlist5, figname)
-    # plot_parameters(p1_vel, p_log1_vel, p_log2_vel, p_log_romps_vel, 'U_rad')
+    ''' fit function to r_av_abs '''
+    figname = 'CP_rim_abs.png'
+    tmin = 4
+    p1_r, p_log1_r, p_log2_r, p_log_romps_r = plot_dist_fitting(r_av_abs,
+                      [dTh], z_params, r_params, n_params, tmin, k0, id_ref, colorlist5, figname)
+    plot_parameters(p1_r, p_log1_r, p_log2_r, p_log_romps_r, 'r_abs')
+    ''' fit function to U_rad '''
+    tmin = 5
+    figname = 'CP_rim_fit_vrad'
+    p0 = [0, 1, -1]
+    p1_vel, p_log1_vel, p_log2_vel, p_log_romps_vel = plot_vel_fitting(r_av, U_rad_av, p0,
+                    [dTh], z_params, r_params, n_params, tmin, k0, id_ref, colorlist5, figname)
+    plot_parameters(p1_vel, p_log1_vel, p_log2_vel, p_log_romps_vel, 'U_rad')
     ''' fit function to dr/dt '''
     tmin = 8
     figname = 'CP_rim_fit_dRdt'
     p1_vel, p_log1_vel, p_log2_vel, p_log_romps_vel = plot_vel_fitting(r_av, drdt_av, [0,1,-1],
                      [dTh], z_params, r_params, n_params, tmin, k0, id_ref, colorlist5, figname)
     plot_parameters(p1_vel, p_log1_vel, p_log2_vel, p_log_romps_vel, 'dRdt')
-
-
-    ''' (d) error '''
-    fig_name = 'Fit_comparison_r.png'
-    test_fit('R', r_av[:,:,k0], p1_r, p_log2_r, p_log_romps_r,
-             n_params, [dTh], r_params, z_params, id_ref, tmin, colorlist5, fig_name)
-    fig_name = 'Fit_comparison_drdt.png'
-    test_fit('U', drdt_av[:, :, k0], p1_vel, p_log2_vel, p_log_romps_vel,
-             n_params, [dTh], r_params, z_params, id_ref, tmin, colorlist5, fig_name)
+    #
+    #
+    # ''' (d) error '''
+    # fig_name = 'Fit_comparison_r.png'
+    # test_fit('R', r_av[:,:,k0], p1_r, p_log2_r, p_log_romps_r,
+    #          n_params, [dTh], r_params, z_params, id_ref, tmin, colorlist5, fig_name)
+    # fig_name = 'Fit_comparison_drdt.png'
+    # test_fit('U', drdt_av[:, :, k0], p1_vel, p_log2_vel, p_log_romps_vel,
+    #          n_params, [dTh], r_params, z_params, id_ref, tmin, colorlist5, fig_name)
 
 
 
@@ -198,11 +198,11 @@ def main():
     # #     # plot_vel_normalized_w_av(r_av, times, istar, k0, id, figname_norm)
     #
     #
-    # ''' (e) scaling with PE'''
-    # trange = [100, 600, 1200, 1800, 2400, 3000, 3500 ]
-    # scaling = [-1, 0, 1, 2, 3]
-    # fig_name = 'PE_scaling_dTh' + str(dTh) + '.png'
-    # plot_PE_scaling(r_av, U_rad_av, scaling[:n_params+1], k0, trange, nt, n_params, fig_name, colorlist)
+    ''' (e) scaling with PE'''
+    trange = [600, 1200, 1800, 2400, 3000, 3500 ]
+    scaling = [-1, 0, 1, 2, 3]
+    fig_name = 'PE_scaling_dTh' + str(dTh) + '.png'
+    plot_PE_scaling(r_av, U_rad_av, scaling[:n_params+1], k0, trange, nt, n_params, fig_name, colorlist)
     # fig_name = 'PE_scaling_dTh' + str(dTh) + '_log2.png'
     # plot_PE_scaling_log2(r_av, U_rad_av, drdt_av, scaling[:n_params+1], k0, trange, nt, n_params, fig_name)
 
@@ -241,79 +241,113 @@ def plot_PE_scaling_log2(r_av, U_rad_av, drdt_av, scaling, k0, trange, nt, n_par
     return
 
 
+
+
 def plot_PE_scaling(r_av, U_rad_av, scaling, k0, trange, nt, n_params, fig_name, colorlist):
     print('plot PE scaling')
-    PEPE0 = [2**s for s in scaling]
 
-    fig, axes = plt.subplots(1, 3, sharex='none', figsize=(18, 5))
-    ax0 = axes[0]
-    ax1 = axes[1]
-    ax2 = axes[2]
+    PEPE0 = [2**s for s in scaling]
+    it0 = np.where(times == trange[0])[0][0]
+    it1 = np.where(times == trange[-1])[0][0]
+    rmax = 1.1*np.amax(r_av[:,it1,k0])
+    r0 = r_av[1, :, k0]     # radius of PE=PE0
+    dr0 = r_av[1, :, k0]-r_av[1, it0, k0]
+    dr0_log = np.log10(r_av[1,:,k0])-np.log10(r_av[1,it0,k0])
+
+    fig, axes = plt.subplots(3, 4, sharex='none', figsize=(18, 10))
+    [ax0, ax1, ax2, ax3] = [axes[0,i] for i in range(4)]
     for ic,t0 in enumerate(trange):
         it = np.where(times == t0)[0][0]
-        # ax1.plot(scaling, r_av[1,it,k0] + 9.5e2 * np.asarray(scaling), 'k', linewidth=1)
-        # # ax1.plot(scaling, r_av[3,it,k0] + 12e2 * (np.asarray(scaling) - 2), 'k--', linewidth=1)
-        ax1.plot(scaling, 2e3 + 0.1 * 1e3 * (np.asarray(scaling) + 2) ** 2, 'r', linewidth=2)
         ax0.plot(PEPE0, r_av[:, it, k0], 'o-', color=colorlist[ic], label='t=' + str(t0))
         ax1.plot(scaling, r_av[:, it, k0], 'o-', color=colorlist[ic], label='t=' + str(t0))
-        ax2.plot(np.log(PEPE0), np.log(r_av[:, it, k0]), 'o-', color=colorlist[ic], )
-    a = 8.3
-    for m in np.arange(0.2, 0.4, 0.05):
-        ax0.plot(PEPE0, np.exp(a)*PEPE0**m, '-', color=str(2*m), linewidth=1)
-        ax2.plot(np.log(PEPE0), m * np.log(PEPE0) + a, '-', color=str(2*m), linewidth=1, label='m=' + str(m))
-    a = 8.7
-    for m in np.arange(0.2, 0.4, 0.05):
-        ax0.plot(PEPE0, np.exp(a)*PEPE0**m, '-', color=str(2*m), linewidth=1)
-        ax2.plot(np.log(PEPE0), m * np.log(PEPE0) + a, '-', color=str(2*m), linewidth=1)
+        ax2.plot(scaling, np.log10(r_av[:, it, k0]), 'o-', color=colorlist[ic], )
+        ax3.loglog(PEPE0, r_av[:, it, k0], 'o-', color=colorlist[ic], )
+        ax0.plot(PEPE0[1], (r0[it]), 'wo')
+        ax1.plot(scaling[1], (r0[it]), 'wo')
+        ax2.plot(scaling[1], np.log10(r0[it]), 'wo')
+        ax3.loglog(PEPE0[1], (r0[it]), 'wo')
+    ax0.legend(loc='best')
+
+    [ax0, ax1, ax2, ax3] = [axes[1,i] for i in range(4)]
+    ax2.fill_between(np.arange(-1,4), 5e4*np.ones(5))
+    for ic,t0 in enumerate(trange):
+        it = np.where(times == t0)[0][0]
+        ax0.plot(PEPE0, r_av[:, it, k0]-dr0[it], 'o-', color=colorlist[ic], label='t=' + str(t0))
+        ax1.plot(scaling, r_av[:, it, k0]-dr0[it], 'o-', color=colorlist[ic], label='t=' + str(t0))
+        ax2.semilogy(scaling, r_av[:, it, k0]-dr0[it], 'o-', color=colorlist[ic], )
+        ax3.loglog(PEPE0, r_av[:, it, k0]-dr0[it], 'o-', color=colorlist[ic], )
+
+    [ax0, ax1, ax2, ax3] = [axes[2,i] for i in range(4)]
+    for ic,t0 in enumerate(trange):
+        it = np.where(times == t0)[0][0]
+        ax0.plot(PEPE0, r_av[:,it,k0]*r0[it0]/r0[it], 'o-', color=colorlist[ic], label='t=' + str(t0))
+        ax1.plot(scaling, r_av[:,it,k0]*r0[it0]/r0[it], 'o-', color=colorlist[ic], label='t=' + str(t0))
+        ax2.plot(scaling, np.log10(r_av[:, it, k0])-dr0_log[it], 'o-', color=colorlist[ic], )
+        ax3.semilogx(PEPE0, np.log10(r_av[:, it, k0])-dr0_log[it], 'o-', color=colorlist[ic], )
+
+    r_fit = np.ndarray((5))
+    # for i,m in enumerate(np.arange(0.0, 0.12, 0.02)):
+    #     r_fit[i] = r0[it0]+m*scaling
+    for i,m in enumerate(np.arange(0.04, 0.12, 0.02)):
+        ax2.plot(scaling, np.log10(r0[it0])+m*np.asarray(scaling), color=str(np.double(i)/5), linewidth=1)
+
     ax0.set_xlabel('PE/PE0')
     ax1.set_xlabel('log2(PE/PE0)')
-    ax2.set_xlabel('log(PE/PE0)')
-    ax0.set_ylabel('r_av  [m]')
-    ax1.set_ylabel('r_av  [m]')
-    ax2.set_ylabel('log(r_av)  [m]')
-    # ax1.set_ylabel('U_rad_av [m/s]')
-    ax0.legend(loc='best')
-    ax1.legend(loc='best')
-    ax2.legend(loc='best')
-    fig.tight_layout()
+    ax2.set_xlabel('log2(PE/PE0)')
+    ax3.set_xlabel('log(PE/PE0)')
+    for i in range(3):
+        axes[i, 0].set_ylabel('r_av  [m]')
+        axes[i, 1].set_ylabel('r_av  [m]')
+        axes[i, 2].set_ylabel('log(r_av)  [m]')
+        axes[i, 3].set_ylabel('log(r_av)  [m]')
+    axes[0, 2].set_ylabel('log10(r_av)  [m]')
+    axes[2, 2].set_ylabel('log10(r_av)  [m]')
+    axes[2, 3].set_ylabel('log10(r_av)  [m]')
+    # axes[0,2].set_ylim(3,5)
+    for ax in axes[:,3].flatten():
+        ax.set_xlim(4e-1,1e1)
+    for ax in axes[:, 2].flatten():
+        ax.set_xlim(-1,3)
+    for ax in axes[:2,:2].flatten():
+        ax.set_ylim(1e3,rmax)
+    for ax in axes.flatten():
+        ax.grid(True, which='major', axis='x')
+        ax.grid(True, which='both', axis='y')
+    for ax in axes[:,0].flatten():
+        ax.legend(loc='best')
+    plt.suptitle('scaling of radius with PE', fontsize=18)
+    # fig.tight_layout()
+    plt.subplots_adjust(bottom=0.075, right=.95, left=0.06, top=0.9, wspace=0.25, hspace=0.2)
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 
 
-    fig, axes = plt.subplots(2, 3, sharex='none', figsize=(18, 10))
-    ax0 = axes[0]
-    ax1 = axes[1]
-    ax2 = axes[2]
-    r_av_abs = np.ndarray((n_params, nt))
-    for istar in range(n_params):
-        r_av_abs[istar,:] = r_av[istar,:,k0] - r_av[istar,0,k0]
-    for ic,t0 in enumerate(trange):
-        it = np.where(times == t0)[0][0]
-        # ax1.plot(scaling, 2e3 + 0.1 * 1e3 * (np.asarray(scaling) + 2) ** 2, 'r', linewidth=2)
-        # for istar in range(len(scaling)):
-        ax0.plot(PEPE0, r_av_abs[:, it], 'o-', color=colorlist[ic], label='t=' + str(t0))
-        ax1.plot(scaling, r_av_abs[:, it], 'o-', color=colorlist[ic], label='t=' + str(t0))
-        ax2.plot(np.log(PEPE0), np.log(r_av_abs[:, it]), 'o-', color=colorlist[ic])
-    # a = 8.3
-    # for m in np.arange(0.2, 0.4, 0.05):
-    #     ax0.plot(PEPE0, np.exp(a) * PEPE0 ** m, '-', color=str(2 * m), linewidth=1)
-    #     ax2.plot(np.log(PEPE0), m * np.log(PEPE0) + a, '-', color=str(2 * m), linewidth=1, label='m=' + str(m))
-    # a = 8.7
-    # for m in np.arange(0.2, 0.4, 0.05):
-    #     ax0.plot(PEPE0, np.exp(a) * PEPE0 ** m, '-', color=str(2 * m), linewidth=1)
-    #     ax2.plot(np.log(PEPE0), m * np.log(PEPE0) + a, '-', color=str(2 * m), linewidth=1)
-    ax0.set_xlabel('PE/PE0')
-    ax1.set_xlabel('log2(PE/PE0)')
-    ax2.set_xlabel('log(PE/PE0)')
-    ax0.set_ylabel('r_av  [m]')
-    ax1.set_ylabel('r_av  [m]')
-    ax2.set_ylabel('log(r_av)  [m]')
-    ax0.legend(loc='best')
-    ax1.legend(loc='best')
-    ax2.legend(loc='best')
+
+    ''' compute slope m '''
+    m10 = np.ndarray(len(times))
+    m10_ = np.ndarray((n_params, len(times)))
+    for it,t0 in enumerate(times):
+        m10_[2:,it] = np.log(r_av[2:,it,k0]/r0[it]) / scaling[2:]
+        # m10[it] = np.mean(np.log(r_av[:,it,k0]/r0[it])/scaling[:])
+    m10[:] = np.mean(m10_[2:,:], axis=0)
+    m = m10 * np.log(2)/np.log(10)
+
+    fig, (ax0, ax1, ax2) = plt.subplots(1, 3, sharex='none', figsize=(18, 5))
+    ax0.plot(times, m10, '-o')
+    ax1.plot(times, m, '-o')
+    ax0.set_title('m10')
+    ax1.set_title('m')
+    for ax in (ax0, ax1):
+        ax.grid(True)
     fig.tight_layout()
-    fig.savefig(os.path.join(path_out_figs, fig_name[:-4]+'_abs.png'))
+    fig.savefig(os.path.join(path_out_figs, fig_name[:-4] + '_slope.png'))
     plt.close(fig)
+
+
+
+
+
+
     return
 
 # ----------------------------------------------------------------------
@@ -1053,12 +1087,17 @@ def plot_parameters(f1, f_log1, f_log2, f_log_romps, var):
     axis[0, 0].set_title('a+b*x^c: a')
     axis[0, 1].set_title('a+b*x^c: b')
     axis[0, 2].set_title('a+b*x^c: c')
-    axis[1, 0].set_title('a+b*log(x): a')
-    axis[1, 1].set_title('a+b*log(x): b')
-    # axis[1, 2].set_title('a+b*x^c: c')
-    axis[2, 0].set_title('a+b*log(1+c*x): a')
-    axis[2, 1].set_title('a+b*log(1+c*x): b')
-    axis[2, 2].set_title('a+b*log(1+c*x): c')
+    axis[1, 0].set_title('a+b*log(c*x): a')
+    axis[1, 1].set_title('a+b*log(c*x): b')
+    axis[1, 2].set_title('a+b*log(c*x): c')
+    if var[0] in ['r','R']:
+        axis[2, 0].set_title('a+b*log(1+c*x): a')
+        axis[2, 1].set_title('a+b*log(1+c*x): b')
+        axis[2, 2].set_title('a+b*log(1+c*x): c')
+    elif var[0] == 'U' or var == 'dRdt':
+        axis[2, 0].set_title('b/(1+c*x): a')
+        axis[2, 1].set_title('b/(1+c*x): b')
+        axis[2, 2].set_title('b/(1+c*x): c')
     for i in range(3):
         axis[2, i].set_xlabel('PE/PE_ref')
     fig.suptitle('fitting parameters ' + var, fontsize=21)
@@ -1071,7 +1110,7 @@ def plot_parameters(f1, f_log1, f_log2, f_log_romps, var):
     axis[0, 2].plot(PE_range_log, f1[:, 2], '-o')
     axis[1, 0].plot(PE_range_log, f_log2[:, 0], '-o')
     axis[1, 1].plot(PE_range_log, f_log2[:, 1], '-o')
-    # axis[1,2].plot(f_log2[:,2], '-o')
+    axis[1,2].plot(PE_range_log, f_log2[:,2], '-o')
     axis[2, 0].plot(PE_range_log, f_log_romps[:, 0], '-o')
     axis[2, 1].plot(PE_range_log, f_log_romps[:, 1], '-o')
     axis[2, 2].plot(PE_range_log, f_log_romps[:, 2], '-o')
@@ -1080,10 +1119,16 @@ def plot_parameters(f1, f_log1, f_log2, f_log_romps, var):
     axis[0, 2].set_title('a+b*x^c: c')
     axis[1, 0].set_title('a+b*log(x): a')
     axis[1, 1].set_title('a+b*log(x): b')
+    axis[1, 1].set_title('a+b*log(c*x): c')
     # axis[1,2].set_title('a+b*x^c: c')
-    axis[2, 0].set_title('a+b*log(1+c*x): a')
-    axis[2, 1].set_title('a+b*log(1+c*x): b')
-    axis[2, 2].set_title('a+b*log(1+c*x): c')
+    if var[0] in ['r','R']:
+        axis[2, 0].set_title('a+b*log(1+c*x): a')
+        axis[2, 1].set_title('a+b*log(1+c*x): b')
+        axis[2, 2].set_title('a+b*log(1+c*x): c')
+    elif var[0] == 'U' or var == 'dRdt':
+        axis[2, 0].set_title('b/(1+c*x): a')
+        axis[2, 1].set_title('b/(1+c*x): b')
+        axis[2, 2].set_title('b/(1+c*x): c')
     for i in range(3):
         axis[2, i].set_xlabel('log2(PE/PE_ref)')
     fig.suptitle('fitting parameters ' + var, fontsize=21)
