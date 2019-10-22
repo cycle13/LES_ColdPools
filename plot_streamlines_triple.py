@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import netCDF4 as nc
@@ -27,7 +29,7 @@ plt.rcParams['ytick.minor.width'] = 1.
 # plt.rcParams['figure.titlesize'] = 35
 
 def main():
-
+    print('plot_streamlines_triple.py')
     # Parse information from the command line
     parser = argparse.ArgumentParser(prog='LES_CP')
     parser.add_argument("casename")
@@ -443,6 +445,9 @@ def set_input_parameters(args):
     path_out = os.path.join(path_in, 'streamlines')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
+    print('path in: ' + path_in)
+    print('path out: ' + path_out)
+    print('')
 
     global case_name
     case_name = args.casename

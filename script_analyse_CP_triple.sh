@@ -4,7 +4,8 @@
 
 # read in parameters
 #read -p "dTh: " dTh;
-dTh=3
+#dTh=3
+dTh=5
 read -p "tmin: " tmin;
 read -p "tmax: " tmax;
 read -p "kmax: " kmax;
@@ -19,7 +20,7 @@ if [[ $tmax = "" ]]
   tmax=100
 fi
 
-path="/nbi/ac/cond2/meyerbe/ColdPools/3D_sfc_fluxes_off/triple_3D_noise/"
+path="/nbi/ac/cond2/meyerbe/ColdPools/3D_sfc_fluxes_off/triple_3D/"
 casename="ColdPoolDry_triple_3D"
 
 # set geometry parameters
@@ -27,6 +28,11 @@ if [ $dTh -eq 3 ]
 then
   z_params=( 2000 )
   r_params=( 2000 )
+  d_params=( 10 15 20 )
+elif [ $dTh -eq 5 ]
+then 
+  z_params=( 1000 )
+  r_params=( 1100 ) 
   d_params=( 10 15 20 )
 fi
 
@@ -62,25 +68,25 @@ do
   echo $fullpath
   echo " "
 
-  echo "make smaller files"
-  python convert_fields_smaller_k.py $casename $fullpath --vert True --tmin $tmin --tmax $tmax --kmax $kmax
-  python convert_fields_smaller_k.py $casename $fullpath --hor True --tmin $tmin --tmax $tmax --kmax 3
+#  echo "make smaller files"
+#  python convert_fields_smaller_k.py $casename $fullpath --vert True --tmin $tmin --tmax $tmax --kmax $kmax
+#  python convert_fields_smaller_k.py $casename $fullpath --hor True --tmin $tmin --tmax $tmax --kmax 3
+#
+#  echo "MIN MAX VALUES (w, s)"
+#  python compute_minmax_tripleCP.py $casename $fullpath --tmin $tmin --tmax $tmax
+#  echo " "
 
-  echo "MIN MAX VALUES (w, s)"
-  python compute_minmax_tripleCP.py $casename $fullpath --tmin $tmin --tmax $tmax
-  echo " "
-
-  echo "CROSSSECTIONS"
-  python plot_crosssections.py $casename $fullpath --tmin $tmin --tmax $tmax
-  echo " "
-
-  echo "CP HEIGHT"
-  python CP_height_compute.py $casename $fullpath --tmin $tmin --tmax $tmax
-  echo " "
+#  echo "CROSSSECTIONS"
+#  python plot_crosssections.py $casename $fullpath --tmin $tmin --tmax $tmax
+#  echo " "
+#
+#  echo "CP HEIGHT"
+#  python CP_height_compute.py $casename $fullpath --tmin $tmin --tmax $tmax
+#  echo " "
 
   #echo "PLOT STREAMLINES"
-  #python plot_streamlines_singleCP.py ColdPoolDry_single_3D $fullpath --tmin $tmin --tmax $tmax
-  
+  #python plot_streamlines_triple.py $casename $fullpath --tmin $tmin --tmax $tmax --hor True
+
   #echo "CP RIM"
   ## for each simulation compute CP rim (a) Bettina, (b) Marielle
   ##     >> r(phi,t), U_r(phi,t), r_av(phi,t), U_r,av(phi,t)
@@ -91,23 +97,23 @@ do
   ##echo "ENERGY"
   ##python compute_energy_domain.py $casename $fullpath --tmin $tmin --tmax $tmax
 
-  #echo "VORTICITY"
-  #python vorticity_streamfct_compute.py $casename $fullpath --tmin $tmin --tmax $tmax
+#  echo "VORTICITY"
+#  python vorticity_compute.py $casename $fullpath --tmin $tmin --tmax $tmax
 
   echo " "
   ((count_geom++))
 done
 
-#echo "CP height all"
-#python plot_CP_height_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
+echo "CP height all"
+python plot_CP_height_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
 
 #echo "plot CP RIM all"
 #python plot_CP_rim_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
 
-echo "plot CP RIM from tracers"
-z_params_r1km=( 900 1000 900 )
-r_params_r1km=( 1300 1000 900 )
-python plot_tracer_analysis_all.py ColdPoolDry_single_3D $path $dTh --zparams_r1km ${z_params_r1km[*]} --rparams_r1km ${r_params_r1km[*]} --k0 0 --tmin 100 --tmax 3600
+#echo "plot CP RIM from tracers"
+#z_params_r1km=( 900 1000 900 )
+#r_params_r1km=( 1300 1000 900 )
+#python plot_tracer_analysis_all.py ColdPoolDry_single_3D $path $dTh --zparams_r1km ${z_params_r1km[*]} --rparams_r1km ${r_params_r1km[*]} --k0 0 --tmin 100 --tmax 3600
 
 #echo "ENERGY all"
 #python compute_energy_domain_all.py $casename $path $dTh --zparams ${z_params[*]} --rparams ${r_params[*]} --tmin $tmin --tmax $tmax
