@@ -140,9 +140,9 @@ def plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2,
     for var_name in var_list:
         var_min1 = 9999.9       # min/max along axis through CP 1
         var_max1 = -9999.9
-        var_min2 = 9999.9       # min/max along axis through CP 2 (collision)
+        # var_min2 = 9999.9       # min/max along axis through CP 2 (collision)
         var_max2 = -9999.9
-        var_min3 = 9999.9       # min/max along axis through CP 2 (2 CP collision)
+        # var_min3 = 9999.9       # min/max along axis through CP 2 (2 CP collision)
         var_max3 = -9999.9
 
         fig, axis = plt.subplots(3, 1, figsize=(12, 12))
@@ -165,12 +165,12 @@ def plot_xz_crosssections(var_list, j0, k0, ic1, jc1, ic2, jc2,
             var = read_in_netcdf_fields(var_name, os.path.join(path_fields,file))
             if var_name == 's':
                 var_min1 = np.minimum(var_min1,np.maximum(6000,np.amin(var[:,jc1,k0])))
-                var_min2 = np.minimum(var_min2,np.maximum(6000,np.amin(var[ic1-delta:ic1+delta-3,jc2,k0])))
-                var_min3 = np.minimum(var_min3,np.maximum(6000,np.amin(var[ic1+delta-3:,jc2,k0])))
+                # var_min2 = np.minimum(var_min2,np.maximum(6000,np.amin(var[ic1-delta:ic1+delta-3,jc2,k0])))
+                # var_min3 = np.minimum(var_min3,np.maximum(6000,np.amin(var[ic1+delta-3:,jc2,k0])))
             else:
                 var_min1 = np.minimum(var_min1, np.amin(var[:, jc1, k0]))
-                var_min2 = np.minimum(var_min2, np.amin(var[ic1-delta:ic1+delta-3, jc2, k0]))
-                var_min3 = np.minimum(var_min3, np.amin(var[ic1+delta-3:, jc2, k0]))
+                # var_min2 = np.minimum(var_min2, np.amin(var[ic1-delta:ic1+delta-3, jc2, k0]))
+                # var_min3 = np.minimum(var_min3, np.amin(var[ic1+delta-3:, jc2, k0]))
             var_max1 = np.maximum(var_max1, np.amax(var[:,jc1,k0]))
             var_max2 = np.maximum(var_max2, np.amax(var[ic1-delta:ic1+delta-3,jc2,k0]))
             var_max3 = np.maximum(var_max3, np.amax(var[ic1+delta-3:,jc2,k0]))
@@ -367,20 +367,20 @@ def set_input_parameters(args):
 
 
     ''' determine file range '''
+    global tmin, tmax
     if args.tmin:
-        time_min = np.int(args.tmin)
+        tmin = np.int(args.tmin)
     else:
-        time_min = np.int(100)
+        tmin = np.int(0)
     if args.tmax:
-        time_max = np.int(args.tmax)
+        tmax = np.int(args.tmax)
     else:
-        time_max = np.int(10000)
+        tmax = np.int(10000)
     times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
-             and np.int(name[:-3]) >= time_min and np.int(name[:-3]) <= time_max]
+             and np.int(name[:-3]) >= tmin and np.int(name[:-3]) <= tmax]
     times.sort()
     print('times', times)
     files = [str(t) + '.nc' for t in times]
-    # print('files', files)
     print('')
 
     if args.kmin:
