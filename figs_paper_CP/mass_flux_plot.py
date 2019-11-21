@@ -69,19 +69,19 @@ def main():
     time_windows['15'] = [1200, 1600, 3600]
     time_windows['20'] = [1200, 1600, 3600]
 
-
+    ''' Mass Flux '''
     # read in flux (2D-field)
     filename_data_2CP = 'mass_flux_z'+str(zlevel)+'.nc'
     filename_data_3CP = 'mass_flux_z'+str(zlevel)+'.nc'
     root_in = nc.Dataset(os.path.join(path_3CP, 'data_analysis', filename_data_3CP), 'r')
     mass_flux_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:,:,:]
-    mass_flux_pos_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:,:,:]
-    time_data_3CP = root_in.groups['timeseries'].variables['time'][:]
+    # mass_flux_pos_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:,:,:]
+    # time_data_3CP = root_in.groups['timeseries'].variables['time'][:]
     root_in.close()
     root_in = nc.Dataset(os.path.join(path_2CP, 'data_analysis', filename_data_2CP), 'r')
     mass_flux_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
-    mass_flux_pos_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
-    time_data_2CP = root_in.groups['timeseries'].variables['time'][:]
+    # mass_flux_pos_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
+    # time_data_2CP = root_in.groups['timeseries'].variables['time'][:]
     root_in.close()
 
     # averaged mass_flux_3CP
@@ -93,8 +93,213 @@ def main():
     MF_mean_3CP = np.mean(MF_3CP[:, jc_3CP - delta:jc_3CP + delta + 1], axis=1)
 
 
+    ''' CP height '''
+    filename_CP_height = 'CP_height_' + case + '_sth0.5' + '.nc'
+    root_in = nc.Dataset(os.path.join(path_3CP, 'data_analysis', filename_CP_height), 'r')
+    time_CPheight_3CP = root_in.groups['timeseries'].variables['time'][:]
+    CP_height_3CP = root_in.groups['fields_2D'].variables['CP_height_2d'][:, :, :]
+    root_in.close()
+    root_in = nc.Dataset(os.path.join(path_2CP, 'data_analysis', filename_CP_height), 'r')
+    time_CPheight_2CP = root_in.groups['timeseries'].variables['time'][:]
+    CP_height_2CP = root_in.groups['fields_2D'].variables['CP_height_2d'][:, :, :]
+    root_in.close()
+    global dt_CP_height_2CP, dt_CP_height_3CP
+    dt_CP_height_2CP = time_CPheight_2CP[1] - time_CPheight_2CP[0]
+    dt_CP_height_3CP = time_CPheight_3CP[1] - time_CPheight_3CP[0]
+    # print(time_CPheight_2CP)
+    # print(time_CPheight_3CP)
 
-    fig_name = 'collisions_massflux_' + case + '.png'
+    fig_name = 'collisions_massflux_CPheight_' + case + '.png'
+    timerange = np.arange(tmin, tmax+100, 100)
+    time_bins = time_windows[str(d)][:-1]
+    time_bins.insert(0,tmin)
+    time_bins.append(tmax)
+    print('------', time_bins)
+    plot_collision_massflux_CPheight(CP_height_2CP, CP_height_3CP, time_CPheight_2CP, time_CPheight_3CP,
+                                     MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
+                            delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
+                            ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
+                            case, timerange, time_bins, path_out_figs, fig_name)
+
+    # fig_name = 'collisions_massflux_' + case + '.png'
+    # plot_collision_massflux(MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
+    #                         delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
+    #                         ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
+    #                         case, path_out_figs, fig_name)
+    #
+    #
+    # # fig_name = 'collisions_massflux_2CP_3CP.png'
+    # # plot_collision_massflux_testfigures(MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
+    # #                                     delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
+    # #                                     ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
+    # #                                     case, time_windows, path_out_figs, fig_name):
+    return
+
+
+
+def plot_collision_massflux_CPheight(CP_height_2CP, CP_height_3CP, time_CPheight_2CP, time_CPheight_3CP,
+                                     MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
+                            delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
+                            ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
+                            case, times, time_bins, path_out_figs, fig_name):
+
+
+    ncol = 4
+    fig, axis = plt.subplots(4, ncol, figsize=(ncol * 5, 4*5))
+    ax = axis[0,0]
+    # for it_CP,t0 in enumerate(time_CPheight_2CP):
+    #     ax.plot(CP_height_2CP[it_CP, ic_arr_2CP, :], color=cm_bwr(count_color), label='t=' + str(t0))
+    print('!!!!', times)
+    for i,t0 in enumerate(time_bins):
+        it = np.int(t0/dt_CP_height_2CP)
+        ax = axis[1,i]
+        cf = ax.contourf(CP_height_2CP[it,:,:], cmap=cm_gray)
+        # cf = ax.pcolor(CP_height_2CP[it,:,:], cmap=cm_gray)
+        plt.colorbar(cf, ax=ax, shrink=0.75)
+        ax.set_title('t='+str(time_CPheight_2CP[it]))
+        ax.set_ylim(200, 600)
+        ax.plot([0, nx_2CP[1]], [ic_2CP, ic_2CP], '-y')
+
+        it = np.int(t0/dt_CP_height_3CP)
+        ax = axis[2, i]
+        cf = ax.contourf(CP_height_3CP[it, :, :].T, cmap=cm_gray)
+        # cf = ax.pcolor(CP_height_3CP[it, :, :].T, cmap=cm_gray)
+        plt.colorbar(cf, ax=ax, shrink=0.75)
+        ax.set_title('t='+str(time_CPheight_3CP[it]))
+        ax.plot([0, nx_3CP[0]], [jc_3CP, jc_3CP], '-y')
+        ax.set_xlim(160, 500)
+        ax.set_ylim(160, 500)
+
+    for ax in axis[1:3,:].flatten():
+        ax.set_aspect('equal')
+
+
+    for it, t0 in enumerate(times):
+        it_2CP = np.where(time_CPheight_2CP == t0)[0][0]
+        it_2CP_ = np.int(t0/dt_CP_height_2CP)
+        it_3CP = np.where(time_CPheight_3CP == t0)[0][0]
+        it_3CP_ = np.int(t0/dt_CP_height_3CP)
+        print('comp: ', it_2CP, it_2CP_, it_3CP, it_3CP_)
+        if t0 > time_bins[0] and t0 <= time_bins[-1]:
+            # var = read_in_netcdf_fields(var_name, os.path.join(path_fields, str(t0)+'.nc'))
+            if t0 <= time_bins[1]:
+                cm = cm_gray
+                count_color = (np.double(t0)-time_bins[0]) / (time_bins[1]- time_bins[0]) * 0.8
+            elif t0 <= time_bins[2]:
+                cm = cm_bwr_r
+                count_color = (np.double(t0)-time_bins[1]) / (time_bins[2]- time_bins[1]) * 0.5 + 0.5
+            elif t0 <= time_bins[3]:
+                cm = cm_bwr
+                count_color = (np.double(t0)-time_bins[2]) / (time_bins[3]- time_bins[2]) * 0.45 + 0.5
+
+            for i in range(ncol):
+                ax = axis[0,i]
+                # ax.plot([0, nx_2CP[0]], [0, 0], '0.5', linewidth=1)
+                ax.plot(CP_height_2CP[it_2CP, ic_2CP, :], color=cm(count_color), label='t=' + str(t0))
+                ax.set_xlim(100, 300)
+
+                ax = axis[3, i]
+                ax.plot(CP_height_3CP[it_3CP, :, jc_3CP], color=cm(count_color), label='t=' + str(t0))
+                ax.set_xlim(160, 500)
+    plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, hspace=0.2, wspace=0.2)
+    fig.savefig(os.path.join(path_out_figs, 'CP_height_test_' + case + '.png'))
+    plt.close(fig)
+
+
+
+
+    ncol = 4
+    vmin = 1e-2
+    vmax = 6.5
+    fig, axis = plt.subplots(1, ncol, figsize=(ncol * 5, 5))
+    ax = axis[0]
+    pcm = ax.pcolormesh(np.arange(nx_2CP[1])-jc_2CP, np.arange(nx_2CP[0]), MF_2CP,
+                        # norm = colors.SymLogNorm(linthresh=0.03,linscale=0.03,vmin=-max,vmax=max),
+                        # norm = colors.PowerNorm(),
+                        norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
+    plt.colorbar(pcm, ax=ax, extend='both')
+    imin = 100
+    jmin = 250
+    jmax = nx_2CP[0] - jmin
+    rect = mpatches.Rectangle((-imin, ic_2CP-delta), 200, 2*delta, fill=True,
+                              linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
+    ax.add_patch(rect)
+    ax.set_xlim(-imin, imin)
+    ax.set_ylim(jmin, jmax)
+    ax.set_aspect('equal')
+
+    ax = axis[1]
+    ax.pcolormesh(np.arange(nx_3CP[0])-ic_arr_3CP[0], np.arange(nx_3CP[1]), MF_3CP.T,
+                        # norm = colors.SymLogNorm(linthresh=0.03,linscale=0.03,vmin=-max,vmax=max),
+                        # norm = colors.PowerNorm(),
+                        norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
+    imin = 170
+    imax = nx_3CP[0] - imin
+    rect2 = mpatches.Rectangle((-100, jc_arr_3CP[2]-delta), 300, 2*delta, fill=True,
+                               linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
+    ax.add_patch(rect2)
+    ax.set_xlim(-100, 200)
+    ax.set_ylim(imin, imax)
+    ax.set_aspect('equal')
+
+    ax = axis[2]
+    ax.plot(np.arange(nx_2CP[1]) - jc_2CP, MF_mean_2CP, label='double CP', color=cm_bwr_r(.9))#color=colorlist2[0])
+    ax.plot(np.arange(nx_3CP[0]) - ic_arr_3CP[0], MF_mean_3CP, label='triple CP', color=cm_bwr(.9))#color=colorlist2[1])
+    ax.legend()
+    ax.set_xlim(-150, 250)
+    ax.set_ylim(-2,6)
+
+    for it, t0 in enumerate(times[::2]):
+        print('-- it, t0: ', it, t0)
+        it_3CP = np.where(time_CPheight_3CP == t0)[0][0]
+        it_3CP_ = np.int(t0/dt_CP_height_3CP)
+        if t0 >= time_bins[0] and t0 <= time_bins[-1]:
+            if t0 <= time_bins[1]:
+                cm = cm_gray
+                count_color = (np.double(t0)-time_bins[0]) / (time_bins[1]- time_bins[0]) * 0.8
+            elif t0 <= time_bins[2]:
+                cm = cm_bwr_r
+                count_color = (np.double(t0)-time_bins[1]) / (time_bins[2]- time_bins[1]) * 0.5 + 0.5
+            elif t0 <= time_bins[3]:
+                cm = cm_bwr
+                count_color = (np.double(t0)-time_bins[2]) / (time_bins[3]- time_bins[2]) * 0.45 + 0.5
+        print(count_color)
+        ax = axis[3]
+        if t0 == time_bins[0]:
+            ax.plot(np.arange(nx_3CP[0]) - ic_3CP, CP_height_3CP[it_3CP, :, jc_3CP], color=cm(count_color), label='single CP')
+        elif t0 == time_bins[1] or t0 == time_bins[1]+100:
+            ax.plot(np.arange(nx_3CP[0]) - ic_3CP, CP_height_3CP[it_3CP, :, jc_3CP], color=cm(count_color), label='double CP')
+        elif t0 == time_bins[2] or t0 == time_bins[2]+100:
+            ax.plot(np.arange(nx_3CP[0]) - ic_3CP, CP_height_3CP[it_3CP, :, jc_3CP], color=cm(count_color), label='triple CP')
+        else:
+            # ax.plot(np.arange(nx_3CP[0]) - ic_3CP, CP_height_3CP[it_3CP, :, jc_3CP], color=cm(count_color), label='t=' + str(t0))
+            ax.plot(np.arange(nx_3CP[0]) - ic_3CP, CP_height_3CP[it_3CP, :, jc_3CP], color=cm(count_color))
+        ax.set_xlim(-150,250)
+        ax.legend()
+    for ax in axis.flatten():
+        ax.set_xlabel('x')
+    axis[0].set_ylabel('y')
+    axis[1].set_ylabel('y')
+    axis[2].set_ylabel(r'Integrated Mass Flux  [kg/m$^2$]')
+    axis[2].set_ylabel(r'Integrated Mass Flux  [kg/m$^2$]')
+    axis[3].set_ylabel(r'CP Height  [m]')
+    textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
+    axis[0].text(-85, 520, 'a)', fontsize=18, bbox=textprops)
+    axis[1].text(-85, 440, 'b)', fontsize=18, bbox=textprops)
+    axis[2].text(-130, 5.2, 'c)', fontsize=18, bbox=textprops)
+    axis[3].text(-130, 1250, 'd)', fontsize=18, bbox=textprops)
+
+    plt.subplots_adjust(bottom=0.12, right=.98, left=0.02, top=0.9, hspace=0.2, wspace=0.25)
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+    return
+
+
+def plot_collision_massflux(MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
+                            delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
+                            ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
+                            case, path_out_figs, fig_name):
+
     ncol = 3
     vmin = 1e-2
     vmax = 6.5
@@ -151,12 +356,16 @@ def main():
     plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, hspace=0.2, wspace=0.2)
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
+    return
 
 
 
 
+def plot_collision_massflux_testfigures(MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
+                            delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
+                            ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
+                            case, time_windows, path_out_figs, fig_name):
 
-    fig_name = 'collisions_massflux_2CP_3CP.png'
     itmax = 15
 
     times = time_windows[d]
@@ -382,7 +591,7 @@ def set_input_output_parameters(args, case_name_2CP, case_name_3CP, path_2CP, pa
     if args.tmax:
         tmax = np.int(args.tmax)
     else:
-        tmax = 100
+        tmax = 3600
 
     # times = [np.int(name[:-3]) for name in os.listdir(os.path.join(path_3CP, 'fields')) if name[-2:] == 'nc'
     #          and tmin <= np.int(name[:-3]) <= tmax]
