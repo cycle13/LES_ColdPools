@@ -33,8 +33,10 @@ def main():
     # parser.add_argument("--nsub")
     args = parser.parse_args()
 
-    res = 50
-    run = 'run3'
+    # res = 50
+    # run = 'run3'
+    res = 25
+    run = 'run4'
     dTh = 3
     rstar = 1000
     zstar = 1000
@@ -44,6 +46,7 @@ def main():
 
     path_root = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/'
     path = os.path.join(path_root, run + '_dx'+str(res)+'m', case)
+    print(path)
     path_fields = os.path.join(path, 'fields')
     path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
 
@@ -61,9 +64,13 @@ def main():
     print('CP centre: '+ str(ic)+', '+str(jc))
     print('')
 
-    root_vort = nc.Dataset(os.path.join(path, 'fields_vorticity/field_vort_xz.nc'))
+    # root_vort = nc.Dataset(os.path.join(path, 'fields_vorticity/field_vort_xz.nc'))
+    # time_vort = root_vort.groups['fields'].variables['time'][:]
+    # vorticity_ = root_vort.groups['fields'].variables['vort_xz'][:, :, :kmax]
+    # root_vort.close()
+    root_vort = nc.Dataset(os.path.join(path, 'fields_vorticity/field_vort_yz.nc'))
     time_vort = root_vort.groups['fields'].variables['time'][:]
-    vorticity_ = root_vort.groups['fields'].variables['vort_xz'][:, :, :kmax]
+    vorticity_ = root_vort.groups['fields'].variables['vort_yz'][:, :, :kmax]
     root_vort.close()
 
     print('read in vorticity')
@@ -76,19 +83,21 @@ def main():
     vrad = root_vrad.groups['stats'].variables['v_rad'][:, :, :kmax]
     root_vrad.close()
 
-    imin_range = [150, 100, 100]
+    jmin_range = [150, 100, 100]
     for it,t0 in enumerate([900, 1200, 1500]):
-    # for t0 in [1200]:
+    # for it,t0 in enumerate([900]):
+        # print('')
         print('time: ', t0)
         # print('')
-        imin = imin_range[it]
-        imax = nx - imin
+        jmin = jmin_range[it]
+        jmax = ny - jmin
         fullpath_in = os.path.join(path_fields, str(t0)+'.nc')
         root_field = nc.Dataset(fullpath_in)
         grp = root_field.groups['fields']
-        s = grp.variables['s'][:,jc,:kmax]
-        w = grp.variables['w'][:,jc,:kmax]
-        v = grp.variables['v'][:,jc,:kmax]
+        s = grp.variables['s'][ic,:,:kmax]
+        w = grp.variables['w'][ic,:,:kmax]
+        # v = grp.variables['v'][ic,:,:kmax]
+        u = grp.variables['v'][ic,:,:kmax]
         root_field.close()
 
         theta = thetas_c(s, 0.0)[ic-nx/2:ic+nx/2, :]
@@ -98,13 +107,14 @@ def main():
 
 
         fig_name = 'CP_structure_dx' + str(res) + '_' + case + '_t'+str(t0)+'.png'
-        cm = plt.cm.get_cmap('rainbow')
-        cm_bwr = plt.cm.get_cmap('bwr')
+        # cm = plt.cm.get_cmap('rainbow')
+        # cm_bwr = plt.cm.get_cmap('bwr')
         nlev = 2e2
         ncol = 2
         nrow = 4
-        title_pos_x = 460
-        title_pos_y = 26
+        # title_pos_x = 850
+        title_pos_x = jmin
+        title_pos_y = 43
         textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
 
         fig, axes = plt.subplots(nrow, ncol, sharex='col', figsize=(5*ncol, 2*nrow))
@@ -115,7 +125,8 @@ def main():
         # min = 298
         min = np.round(np.amin(theta[:,:kmax]),1)
         max = 300
-        cf = ax[0].contourf(theta[:,:kmax].T, levels=np.linspace(min, max,nlev), cmap=cm_bw_r extend='max')
+        cf = ax[0].contourf(theta[:,:kmax].T, levels=np.linspace(min, max,nlev), cmap=cm_bw_r, extend='max')
+        # cbar = plt.colorbar(cf, ax=ax[0], shrink=.75, aspect=12, ticks=np.arange(min, max+0.5, 1.))
         cbar = plt.colorbar(cf, ax=ax[0], shrink=.75, aspect=12, ticks=np.arange(np.ceil(min), max+0.5, 1.))
         ax[1].plot(theta[:,0], 'k')
         ax[1].set_ylabel(r'$\theta$ [K]')
@@ -127,12 +138,12 @@ def main():
         ax[0].text(title_pos_x, title_pos_y, 'a) potential temperature', fontsize=15, horizontalalignment='left', bbox=textprops)
 
         ax = axes[1, :]
-        min = -0.25
+        min = -6.
         max = -min
-        cf = ax[0].contourf(v[:, :kmax].T, levels=np.linspace(min,max,nlev), cmap=cm_bwr, extend='both')
-        cbar = plt.colorbar(cf, ax=ax[0], shrink=0.75, aspect=12, ticks=np.arange(min,max+0.1, 0.5))
+        cf = ax[0].contourf(u[:, :kmax].T, levels=np.linspace(min,max,nlev), cmap=cm_bwr, extend='both')
+        cbar = plt.colorbar(cf, ax=ax[0], shrink=0.75, aspect=12, ticks=np.arange(min, max+0.5, 2))
         # cbar.set_label(cont_var_name, rotation=90)
-        ax[1].plot(v[:, 1], 'k')
+        ax[1].plot(u[:, 1], 'k')
         ax[1].set_ylabel(r'$v_r$ [m/s]')
         ax[1].set_ylim(-7,max)
         y_ticks = [np.int(ti) for ti in ax[1].get_yticks()]
@@ -155,7 +166,7 @@ def main():
         ax[0].text(title_pos_x, title_pos_y, 'c) vertical velocity', fontsize=15, horizontalalignment='left', bbox=textprops)
 
         ax = axes[3, :]
-        min = -0.1
+        min = -0.15
         max = -min
         cf = ax[0].contourf(vorticity[:, :kmax].T, levels=np.linspace(min,max,nlev), cmap=cm_bwr, extend='both')
         cbar = plt.colorbar(cf, ax=ax[0], shrink=0.75, aspect=12, ticks=np.arange(min, max+0.02, 0.05))
@@ -167,35 +178,29 @@ def main():
             label.set_visible(False)
         ax[0].text(title_pos_x, title_pos_y, 'd) vorticity', fontsize=15, horizontalalignment='left', bbox=textprops)
 
-        speed = np.sqrt(v**2 + w**2)
+        # speed = np.sqrt(v**2 + w**2)
+        speed = np.sqrt(u**2 + w**2)
         if speed[:, :kmax].max() > 0.:
             lw = 5 * speed[:, :kmax] / speed[:, :kmax].max()
         else:
             lw = 5 * speed[:, :kmax] / 1.
-        # ax[1].streamplot(np.arange(nx), np.arange(kmax), v[:, :kmax].T, w[:, :kmax].T,
-        #                  color='k', density=1.5, linewidth=lw[:, :].T)
-        # ax[1].streamplot(np.arange(nx), np.arange(kmax), v[:, :kmax].T, w[:, :kmax].T, color='w')
-        ax[1].streamplot(np.arange(nx), np.arange(kmax), w[:, :kmax].T, v[:, :kmax].T, density=1.5, linewidth=lw[:, :].T)
+        ax[0].streamplot(np.arange(ny), np.arange(kmax), w[:, :kmax].T, u[:, :kmax].T, density=1.5, linewidth=lw[:, :].T, color='k')
 
         for ax in axes[:,0].flat:
-            ax.set_xlim(imin,imax)
+            ax.set_xlim(jmin,jmax)
             x_ticks = [ti*dx[0]*1e-3 for ti in ax.get_xticks()]
             ax.set_xticklabels(x_ticks)
             y_ticks = [ti*dx[2]*1e-3 for ti in ax.get_yticks()]
             ax.set_yticklabels(y_ticks)
-            # for label in ax.yaxis.get_ticklabels()[1::2]:
-            #     label.set_visible(dFalse)
+            for label in ax.yaxis.get_ticklabels()[1::2]:
+                label.set_visible(False)
             ax.set_ylabel('height  [km]')
         for label in axes[-1,0].yaxis.get_ticklabels()[1::2]:
             label.set_visible(False)
         for ax in axes[:,1].flat:
-            ax.set_xlim(imin,imax)
+            ax.set_xlim(jmin,jmax)
             x_ticks = [ti*dx[0]*1e-3 for ti in ax.get_xticks()]
             ax.set_xticklabels(x_ticks)
-            y_ticks = [ti for ti in ax.get_yticks()]
-            ax.set_yticklabels(y_ticks)
-            # for label in ax.yaxis.get_ticklabels()[1::2]:
-            #     label.set_visible(False)
         for ax in axes[-1,:]:
             ax.set_xlabel('distance [km]')
 
