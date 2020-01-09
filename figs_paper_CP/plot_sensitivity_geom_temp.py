@@ -91,6 +91,7 @@ def main():
         v_rad_max_k0 = np.amax(v_rad_[:,:,lvl], axis=1)
         del v_rad_
         s_ = stats_root.groups['stats'].variables['s'][:,:,:]
+        s_min = np.amin(np.amin(s_, axis=-1), axis=-1)
         theta_ = thetas_c(s_, 0)
         theta_min = np.amin(np.amin(theta_, axis=-1), axis=-1)
         theta_min_k0 = np.amin(theta_[:,:,lvl], axis=1)
@@ -105,19 +106,23 @@ def main():
         # vort_phi_min = vort_root.variables['vort_phi_min'][:]
         # vort_root.close()
 
-        # root = nc.Dataset(os.path.join(path_in, 'data_analysis', filename_CPheight))
-        # CP_height_ = root.variables['CP_height'][:,:,:]
-        # CP_height_max = np.amax(np.amax(CP_height_, axis=1), axis=1)
-        # root.close()
-        # del CP_height_
-        # root = nc.Dataset(os.path.join(path_in, 'data_analysis', filename_CPvol))
-        # CP_vol = root.variables['CP_volume'][:]
-        # root.close()
+        root = nc.Dataset(os.path.join(path_in, 'data_analysis', filename_CPheight))
+        CP_height_ = root.variables['CP_height'][:,:,:]
+        CP_height_max = np.amax(np.amax(CP_height_, axis=1), axis=1)
+        root.close()
+        del CP_height_
+        root = nc.Dataset(os.path.join(path_in, 'data_analysis', filename_CPvol))
+        CP_vol = root.variables['CP_volume'][:]
+        root.close()
 
-        ax1.plot(time_stats, theta_min, '-o', color=colorlist3[i])
-        ax2.plot(time_stats, w_max, '-o', color=colorlist3[i])
-        # ax3.plot(time_vort, vort_phi_max, '-o', color=colorlist3[i])
+        ax0.plot(time_stats, s_min, '-o', color=colorlist3[i], label=rootname)
+        ax1.plot(time_stats, theta_min, '-o', color=colorlist3[i], label=rootname)
+        ax2.plot(time_stats, w_max, '-o', color=colorlist3[i], label=rootname)
+        # ax3.plot(time_vort, vort_phi_max, '-o', color=colorlist3[i], label=rootname)
+        ax4.plot(time_vort, CP_height_max, '-o', color=colorlist3[i], label=rootname)
+        ax5.plot(time_vort, CP_vol, '-o', color=colorlist3[i], label=rootname)
 
+    ax1.legend(loc='best')
     # fig.suptitle(title, fontsize=18)
     plt.subplots_adjust(bottom=0.12, right=.95, left=0.06, top=0.9, wspace=0.15)
     fig.savefig(os.path.join(path_out_figs, fig_name))
