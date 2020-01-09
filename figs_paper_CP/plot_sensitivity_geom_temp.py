@@ -128,7 +128,15 @@ def main():
 
 
 # ----------------------------------------------------------------------
+def cpm_c(qt):
+    cpd = 1004.0
+    cpv = 1859.0
+    return (1.0-qt) * cpd + qt * cpv
+
 def thetas_c(s, qt):
+    T_tilde = 298.15
+    sd_tilde = 6864.8
+    sv_tilde = 10513.6
     return T_tilde*np.exp((s-(1.0-qt)*sd_tilde - qt*sv_tilde)/cpm_c(qt))
 
 # ----------------------------------------------------------------------
