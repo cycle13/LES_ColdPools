@@ -17,17 +17,114 @@ def main():
 
     case_name = 'ColdPoolDry_single_3D'
     path_root = '/nbi/ac/conv4/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/single_3D_noise/run5_PE_scaling_dx100m/'
-    path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single/figs_run5'
+    path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single/figs_run5/'
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
 
     # loop through all cases
+    # use azimuthally averaged statistics
+    # statistics:
+    # - radius
+    # (- spreading velocity)
+    # - max. radial velocity component ?
+    # - max vertical velocity
+    # - min vertical velocity ?
+    # - min theta
+    # - CP volume
+    # - CP height
+    # - max vorticity
+    # - mean over CP volume of
+    #     - vorticity
+    #     - theta
 
+    # in stats_radial_averaged.nc:
+    # - v_rad
+    # - v_tan
+    # - w
+    # - s
+    # - phi
+    # - temperature
 
+    # - CP height: in data_analysis/CP_height_dTh3_z1000_r1000_sth0.5.nc
+    # - CP volume: in data_analysis/CP_volume_dTh3_z1000_r1000.nc:
+
+    ''' for run2 (dx=100m) '''
+    dTh_range_A = [2, 3, 4]
+    rstar_range_A = [1300, 1000, 900]
+    zstar_range_A = [900, 1000, 900]
+
+    dTh_range_B = [3, 3, 3, 3, 3]
+    rstar_range_B = [500, 600, 700, 1000, 1500]
+    zstar_range_B = [500, 1000, 1600, 2000, 2500]
+
+    filename_stats = 'stats_radial_averaged.nc'
+    filename_vort = 'Stats_vorticity_phi.nc'
+    lvl_w = 1
+    lvl = 0
+
+    fig_name = 'sensitivity_plots_temperature.png'
+    ncols = 6
+    fig, axis = plt.subplots(1, ncols, sharex='all', figsize=(ncols*3, 5))
+    ax1 = axis[1]
+    ax2 = axis[2]
+    ax3 = axis[3]
+
+    for i, dTh in enumerate(dTh_range_A):
+        rstar = rstar_range_A[i]
+        zstar = zstar_range_A[i]
+        rootname = 'dTh'+str(dTh) + '_z'+str(zstar) + '_r'+str(rstar)
+        filename_CPheight = 'CP_height_'+rootname+'_sth0.5.nc'
+        filename_CPvol = 'CP_volume_'+rootname+'.nc'
+
+        stats_root = nc.Dataset(os.path.join(path_root, 'data_analysis', filename_stats))
+        w_ = stats_root.groups['stats'].variables['w'][:,:,:]
+        w_max = np.amax(np.amax(w_, axis=-1), axis=-1)
+        w_max_k0 = np.amax(w_[:,:,lvl_w], axis=1)
+        w_min = np.amin(np.amin(w_, axis=-1), axis=-1)
+        w_min_k0 = np.amin(w_[:,:,lvl_w], axis=1)
+        del w_
+        v_rad_ = stats_root.groups['stats'].variables['v_rad'][:,:,:]
+        v_rad_max = np.amax(np.amax(v_rad_, axis=-1), axis=-1)
+        v_rad_max_k0 = np.amax(v_rad_[:,:,lvl], axis=1)
+        del v_rad_
+        s_ = stats_root.groups['stats'].variables['s'][:,:,:]
+        theta_ = thetas_c(s_, 0)
+        theta_min = np.amin(np.amin(theta_, axis=-1), axis=-1)
+        theta_min_k0 = np.amin(theta_[:,:,lvl], axis=1)
+        del s_, theta_
+        stats_root.close()
+
+        # vorticity from azimuthally averaged velocity fields (v_rad, v_tan, w)
+        vort_root = nc.Dataset(os.path.join(path_root, 'fields_vorticity', filename_vort))
+        vort_phi_max = vort_root.variables['vort_phi_max'][:]
+        vort_phi_min = vort_root.variables['vort_phi_min'][:]
+        vort_root.close()
+
+        # root = nc.Dataset(os.path.join(path_root, 'data_analysis', filename_CPheight))
+        # CP_height_ = root.variables['CP_height'][:,:,:]
+        # CP_height_max = np.amax(np.amax(CP_height_, axis=1), axis=1)
+        # root.close()
+        # del CP_height_
+        # root = nc.Dataset(os.path.join(path_root, 'data_analysis', filename_CPvol))
+        # CP_vol = root.variables['CP_volume'][:]
+        # root.close()
+
+        ax1.plot(time, theta_min, '-o', color=colorlist3[i])
+        ax2.plot(time, w_max, '-o', color=colorlist3[i])
+        ax3.plot(time, vort_phi_max, '-o', color=colorlist3[i])
+
+    # fig.suptitle(title, fontsize=18)
+    plt.subplots_adjust(bottom=0.12, right=.95, left=0.06, top=0.9, wspace=0.15)
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
 
 
     return
 
+
+# ----------------------------------------------------------------------
+def thetas_c(s, qt):
+    return T_tilde*np.exp((s-(1.0-qt)*sd_tilde - qt*sv_tilde)/cpm_c(qt))
 
 # ----------------------------------------------------------------------
 
