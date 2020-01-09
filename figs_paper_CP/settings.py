@@ -43,6 +43,7 @@ colorlist = ['maroon', 'indianred', 'orange',
 colorlist5 = ['maroon', 'indianred', 'orange', 'darkcyan', 'navy']
     # colorlist5 = ['orange', 'indianred', 'maroon', 'navy', 'lightseagreen']
 colorlist4 = ['indianred', 'orange', 'darkcyan', 'navy']
+colorlist3 = ['indianred', 'darkcyan', 'navy']
 
 colorlist2 = ['maroon', 'navy']
 colorlist2 = [cm_bw(0.5), cm_bw(1.)]
