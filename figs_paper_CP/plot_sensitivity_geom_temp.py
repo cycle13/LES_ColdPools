@@ -77,6 +77,7 @@ def main():
         filename_CPvol = 'CP_volume_'+rootname+'.nc'
         path_root = os.path.join(path_root, rootname)
 
+        print(os.path.join(path_root, 'data_analysis', filename_stats))
         stats_root = nc.Dataset(os.path.join(path_root, 'data_analysis', filename_stats))
         time_stats = stats_root.groups['timeseries'].variables['time'][:]
         w_ = stats_root.groups['stats'].variables['w'][:,:,:]
@@ -97,6 +98,7 @@ def main():
         stats_root.close()
 
         # vorticity from azimuthally averaged velocity fields (v_rad, v_tan, w)
+        print(os.path.join(path_root, 'fields_vorticity', filename_vort))
         vort_root = nc.Dataset(os.path.join(path_root, 'fields_vorticity', filename_vort))
         time_vort = vort_root.variables['time'][:]
         vort_phi_max = vort_root.variables['vort_phi_max'][:]
