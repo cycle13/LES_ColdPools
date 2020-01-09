@@ -16,7 +16,7 @@ def main():
     args = parser.parse_args()
 
     case_name = 'ColdPoolDry_single_3D'
-    path_root = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2_dx100m/dTh3_z1000_r1000'
+    path_root = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2_dx100m/'
     path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single/figs_run2_dx100m/'
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
