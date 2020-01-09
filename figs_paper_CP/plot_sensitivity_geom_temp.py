@@ -107,7 +107,7 @@ def main():
         # vort_root.close()
 
         root = nc.Dataset(os.path.join(path_in, 'data_analysis', filename_CPheight))
-        CP_height_2D = root.groups['fields_2D'].variables['CP_height'][:,:,:]
+        CP_height_2D = root.groups['fields_2D'].variables['CP_height_2d'][:,:,:]
         CP_height_max = root.groups['timeseries'].variables['CP_height_max'][:]
         root.close()
         del CP_height_
