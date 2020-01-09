@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 
-label_size = 12
+label_size = 10
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
 plt.rcParams['lines.linewidth'] = 2
-plt.rcParams['legend.fontsize'] = 12
-plt.rcParams['axes.labelsize'] = 15
+plt.rcParams['legend.fontsize'] = label_size
+plt.rcParams['axes.labelsize'] = 12
 plt.rcParams['text.usetex'] = 'true'
 plt.rcParams['xtick.major.size'] = 5
 plt.rcParams['xtick.minor.size'] = 2
@@ -18,17 +18,21 @@ plt.rcParams['ytick.minor.width'] = 1.
 # plt.rcParams['axes.labelsize'] = 12
 # plt.rcParams['xtick.direction']='out'
 # plt.rcParams['ytick.direction']='out'
-plt.rcParams['lines.linewidth'] = 3
-plt.rcParams['grid.linewidth'] = 20
+plt.rcParams['lines.linewidth'] = 2
+# plt.rcParams['grid.linewidth'] = 20
 plt.rcParams['pdf.fonttype'] = 42         # Output Type 3 (Type3) or Type 42 (TrueType)
+plt.rcParams['font.sans-serif'] = 'Helvetica'
+
 
 cm = plt.cm.get_cmap('rainbow')
 # cm_bwr = plt.cm.get_cmap('bwr')
 cm_bwr = plt.cm.get_cmap('seismic')
 cm_bwr_r = plt.cm.get_cmap('seismic_r')
 cm_bw = plt.cm.get_cmap('bone_r')
+cm_bw_r = plt.cm.get_cmap('bone')
 cm_gray = plt.cm.get_cmap('gray')
 cm_contourfigs = cm_bwr
+# cm_twin = plt.cm.get_cmap('twilight')
 
 colorlist_all = ['darkred', 'maroon', 'r', 'tomato', 'indianred', 'orange', 'gold',
                  'limegreen', 'forestgreen', 'g', 'darkgreen', 'seagreen', 'lightseagreen', 'darkcyan',
