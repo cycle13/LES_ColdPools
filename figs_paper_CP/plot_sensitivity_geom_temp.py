@@ -116,7 +116,7 @@ def main():
 
         ax1.plot(time_stats, theta_min, '-o', color=colorlist3[i])
         ax2.plot(time_stats, w_max, '-o', color=colorlist3[i])
-        ax3.plot(time_vort, vort_phi_max, '-o', color=colorlist3[i])
+        # ax3.plot(time_vort, vort_phi_max, '-o', color=colorlist3[i])
 
     # fig.suptitle(title, fontsize=18)
     plt.subplots_adjust(bottom=0.12, right=.95, left=0.06, top=0.9, wspace=0.15)
