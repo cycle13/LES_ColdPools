@@ -107,12 +107,12 @@ def main():
         # vort_root.close()
 
         root = nc.Dataset(os.path.join(path_in, 'data_analysis', filename_CPheight))
-        CP_height_ = root.variables['CP_height'][:,:,:]
-        CP_height_max = np.amax(np.amax(CP_height_, axis=1), axis=1)
+        CP_height_2D = root.groups['fields_2D'].variables['CP_height'][:,:,:]
+        CP_height_max = root.groups['timeseries'].variables['CP_height_max'][:]
         root.close()
         del CP_height_
         root = nc.Dataset(os.path.join(path_in, 'data_analysis', filename_CPvol))
-        CP_vol = root.variables['CP_volume'][:]
+        CP_vol = root.grous['timeseries'].variables['CP_vol_sth0.5'][:]
         root.close()
 
         ax0.plot(time_stats, s_min, '-o', color=colorlist3[i], label=rootname)
