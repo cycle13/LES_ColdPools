@@ -8,6 +8,7 @@ from scipy import stats
 
 
 execfile('settings.py')
+plt.rcParams['lines.linewidth'] = 3
 
 def main():
     parser = argparse.ArgumentParser(prog='LES_CP')
@@ -308,7 +309,7 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
         z_max = zstar * (np.cos(x_half / rstar * np.pi / 2) ** 2)
         imin = nx-rstar*dxi
         imax = nx+rstar*dxi+1
-        ax0.plot(x_half[imin:imax], z_max[imin:imax], color=colorlist3[i])
+        ax0.plot(x_half[imin:imax], z_max[imin:imax], color=colorlist3[i], linewidth=2)
     ax0 = axis[1,0]
     for i, dTh in enumerate(dTh_range_B):
         rstar = rstar_range_B[i]
@@ -316,7 +317,7 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
         z_max = zstar * (np.cos(x_half / rstar * np.pi / 2) ** 2)
         imin = nx - rstar * dxi
         imax = nx + rstar * dxi + 1
-        ax0.plot(x_half[imin:imax], z_max[imin:imax], '-', color=colorlist5[i])
+        ax0.plot(x_half[imin:imax], z_max[imin:imax], '-', color=colorlist5[i], linewidth=2)
         ax0.set_xlabel('r  [km]')
     for ax in axis[:,0].flat:
         ax.set_ylim(0, zstar_max + 200)
