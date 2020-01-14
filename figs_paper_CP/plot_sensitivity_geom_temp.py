@@ -329,12 +329,14 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
 
 
     ''' min/max '''
+    ax0 = axis[0,0]
     ax1 = axis[0,1]
     ax2 = axis[0,2]
     ax3 = axis[0,3]
     ax4 = axis[0,4]
     ax5 = axis[0,5]
     ax6 = axis[0,6]
+    ax0.set_title('initial configuration')
     ax1.set_title('average radius')
     ax2.set_title('max. potential temperature')
     ax3.set_title('max. w')
@@ -603,7 +605,7 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
     for ax in axis[:,5]:
         y_ticks = [np.int(i) for i in ax.get_yticks()]
         ax.set_yticklabels(y_ticks)
-    plt.subplots_adjust(bottom=0.075, right=.99, left=0.14, top=0.95, wspace=0.3, hspace=0.1)
+    plt.subplots_adjust(bottom=0.075, right=.99, left=0.12, top=0.95, wspace=0.3, hspace=0.1)
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 
