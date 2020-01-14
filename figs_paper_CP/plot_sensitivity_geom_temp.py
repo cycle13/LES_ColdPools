@@ -338,11 +338,11 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
     ax6 = axis[0,6]
     ax0.set_title('initial configuration')
     ax1.set_title('average radius')
-    ax2.set_title('max. potential temperature')
-    ax3.set_title('max. w')
-    ax4.set_title('max. vorticity')
-    ax5.set_title('max. CP height')
-    ax6.set_title('CP volume')
+    ax2.set_title('max. CP height')
+    ax3.set_title('CP volume')
+    ax4.set_title('max. potential temperature')
+    ax5.set_title('max. w')
+    ax6.set_title('max. vorticity')
     for i, dTh in enumerate(dTh_range_A):
         rstar = rstar_range_A[i]
         zstar = zstar_range_A[i]
@@ -353,8 +353,6 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
         path_in = os.path.join(path_root, rootname)
         print('')
         print(rootname)
-
-
 
         ''' azimuthally averaged statistics '''
         print(os.path.join(path_in, 'data_analysis', filename_stats))
@@ -421,33 +419,32 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
         root.close()
 
         max_range[1] = np.maximum(max_range[1], np.amax(r_av))
-        max_range[2] = np.maximum(max_range[2], np.amax(theta_min_k0))
-        max_range[3] = np.maximum(max_range[3], np.amax(w_max))
-        max_range[4] = np.maximum(max_range[4], np.amax(vort_phi_max))
-        max_range[5] = np.maximum(max_range[5], np.amax(CP_height_max))
-        max_range[6] = np.maximum(max_range[6], 1e-9 * np.amax(CP_vol))
+        max_range[2] = np.maximum(max_range[2], np.amax(CP_height_max))
+        max_range[3] = np.maximum(max_range[3], 1e-9 * np.amax(CP_vol))
+        max_range[4] = np.maximum(max_range[4], np.amax(theta_min_k0))
+        max_range[5] = np.maximum(max_range[5], np.amax(w_max))
+        max_range[6] = np.maximum(max_range[6], np.amax(vort_phi_max))
         min_range[1] = np.minimum(min_range[1], np.amin(r_av))
-        min_range[2] = np.minimum(min_range[2], np.amin(theta_min))
+        min_range[4] = np.minimum(min_range[4], np.amin(theta_min))
         # ax0.plot(time_stats, s_min, '-', color=colorlist3[i], label=lbl)
         ax1.plot(times, r_av, '-', color=colorlist3[i], label=lbl)
-        ax2.plot(time_stats, theta_min, '-', color=colorlist3[i], label=lbl)
-        ax2.plot(time_stats,300*np.ones(shape=time_stats.shape), 'k-', linewidth=1)
-        ax3.plot(time_stats, w_max, '-', color=colorlist3[i], label=lbl)
-        ax4.plot(time_vort, vort_phi_max, '-', color=colorlist3[i], label=lbl)
-        ax5.plot(time_geom, CP_height_max, '-', color=colorlist3[i], label=lbl)
-        ax6.plot(time_geom, 1e-9*CP_vol, '-', color=colorlist3[i], label=lbl)
+        ax2.plot(time_geom, CP_height_max, '-', color=colorlist3[i], label=lbl)
+        ax3.plot(time_geom, 1e-9*CP_vol, '-', color=colorlist3[i], label=lbl)
+        ax4.plot(time_stats, theta_min, '-', color=colorlist3[i], label=lbl)
+        ax4.plot(time_stats,300*np.ones(shape=time_stats.shape), 'k-', linewidth=1)
+        ax5.plot(time_stats, w_max, '-', color=colorlist3[i], label=lbl)
+        ax6.plot(time_vort, vort_phi_max, '-', color=colorlist3[i], label=lbl)
 
     # ax0.set_ylabel('entropy [J/K]')
     ax1.set_ylabel('average radius [km]')
-    ax2.set_ylabel('pot. temperature [K]')
-    ax3.set_ylabel('max(w) [m/s]')
-    ax4.set_ylabel('max(vorticity) [1/s]')
-    ax5.set_ylabel('max(CP height) [m]')
-    ax6.set_ylabel('CP volume [km^3]')
+    ax2.set_ylabel('maximum CP height [m]')
+    ax3.set_ylabel('CP volume [km^3]')
+    ax4.set_ylabel('potential temperature [K]')
+    ax5.set_ylabel('maximum w [m/s]')
+    ax6.set_ylabel('maximum vorticity [1/s]')
     ax1.legend(loc='upper center', bbox_to_anchor=(-2., .75),
                fancybox=True, shadow=False, ncol=1, fontsize=10)
 
-    ax0 = axis[1, 0]
     ax1 = axis[1, 1]
     ax2 = axis[1, 2]
     ax3 = axis[1, 3]
@@ -464,19 +461,18 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
         path_in = os.path.join(path_root, rootname)
         print('')
         print(rootname)
-        print(os.path.join(path_in, 'data_analysis', filename_stats))
         # filename stats: variables = [nt,nr,nz]
         stats_root = nc.Dataset(os.path.join(path_in, 'data_analysis', filename_stats))
         time_stats = stats_root.groups['timeseries'].variables['time'][:]
         w_ = stats_root.groups['stats'].variables['w'][:,:-1,:]
         w_max = np.amax(np.amax(w_, axis=-1), axis=-1)
-        w_max_k0 = np.amax(w_[:,:,lvl_w], axis=1)
-        w_min = np.amin(np.amin(w_, axis=-1), axis=-1)
-        w_min_k0 = np.amin(w_[:,:,lvl_w], axis=1)
+        # w_max_k0 = np.amax(w_[:,:,lvl_w], axis=1)
+        # w_min = np.amin(np.amin(w_, axis=-1), axis=-1)
+        # w_min_k0 = np.amin(w_[:,:,lvl_w], axis=1)
         del w_
         v_rad_ = stats_root.groups['stats'].variables['v_rad'][:,:-1,:]
-        v_rad_max = np.amax(np.amax(v_rad_, axis=-1), axis=-1)
-        v_rad_max_k0 = np.amax(v_rad_[:,:,lvl], axis=1)
+        # v_rad_max = np.amax(np.amax(v_rad_, axis=-1), axis=-1)
+        # v_rad_max_k0 = np.amax(v_rad_[:,:,lvl], axis=1)
         del v_rad_
         s_ = stats_root.groups['stats'].variables['s'][:,:-1,:]
         # s_min = np.amin(np.amin(s_, axis=-1), axis=-1)
@@ -528,37 +524,38 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
         root.close()
 
         max_range[1] = np.maximum(max_range[1], np.amax(r_av))
-        max_range[2] = np.maximum(max_range[2], np.amax(theta_min_k0))
-        max_range[3] = np.maximum(max_range[3], np.amax(w_max))
-        max_range[4] = np.maximum(max_range[4], np.amax(vort_phi_max))
-        max_range[5] = np.maximum(max_range[5], np.amax(CP_height_max))
-        max_range[6] = np.maximum(max_range[6], 1e-9*np.amax(CP_vol))
+        max_range[2] = np.maximum(max_range[2], np.amax(CP_height_max))
+        max_range[3] = np.maximum(max_range[3], 1e-9*np.amax(CP_vol))
+        max_range[4] = np.maximum(max_range[4], np.amax(theta_min_k0))
+        max_range[5] = np.maximum(max_range[5], np.amax(w_max))
+        max_range[6] = np.maximum(max_range[6], np.amax(vort_phi_max))
         min_range[1] = np.minimum(min_range[1], np.amin(r_av))
-        min_range[2] = np.minimum(min_range[2], np.amin(theta_min))
+        min_range[4] = np.minimum(min_range[4], np.amin(theta_min))
+        min_range[2] = 0.
         min_range[3] = 0.
-        min_range[4] = 0.
+        # min_range[4] = 0.
         min_range[5] = 0.
         min_range[6] = 0.
         #     # ax0.plot(time_stats, s_min, '-', color=colorlist5[i], label=lbl)
         ax1.plot(times, r_av, '-', color=colorlist5[i], label=lbl)
-        ax2.plot(time_stats, theta_min, '-', color=colorlist5[i], label=lbl)
-        ax2.plot(time_stats, 300 * np.ones(shape=time_stats.shape), 'k-', linewidth=1)
-        ax3.plot(time_stats, w_max, '-', color=colorlist5[i], label=lbl)
-        ax4.plot(time_vort, vort_phi_max, '-', color=colorlist5[i], label=lbl)
-        ax5.plot(time_geom, CP_height_max, '-', color=colorlist5[i], label=lbl)
-        ax6.plot(time_geom, 1e-9*CP_vol, '-', color=colorlist5[i], label=lbl)
+        ax2.plot(time_geom, CP_height_max, '-', color=colorlist5[i], label=lbl)
+        ax3.plot(time_geom, 1e-9*CP_vol, '-', color=colorlist5[i], label=lbl)
+        ax4.plot(time_stats, theta_min, '-', color=colorlist5[i], label=lbl)
+        ax4.plot(time_stats, 300 * np.ones(shape=time_stats.shape), 'k-', linewidth=1)
+        ax5.plot(time_stats, w_max, '-', color=colorlist5[i], label=lbl)
+        ax6.plot(time_vort, vort_phi_max, '-', color=colorlist5[i], label=lbl)
     # ax0.set_ylabel('entropy [J/K]')
     ax1.set_ylabel('average radius [km]')
-    ax2.set_ylabel('pot. temperature [K]')
-    ax3.set_ylabel('max(w) [m/s]')
-    ax4.set_ylabel('max(vorticity) [1/s]')
-    ax5.set_ylabel('max(CP height) [m]')
-    ax6.set_ylabel('CP volume [km^3]')
+    ax2.set_ylabel('maximum CP height [m]')
+    ax3.set_ylabel('CP volume [km^3]')
+    ax4.set_ylabel('potential temperature [K]')
+    ax5.set_ylabel('maximum w [m/s]')
+    ax6.set_ylabel('maximum vorticity [1/s]')
 
     print('')
     ax1.legend(loc='upper center', bbox_to_anchor=(-2., .75),
                fancybox=True, shadow=False, ncol=1, fontsize=10)
-    for ax in axis[:, 1].flat:
+    for ax in axis[:,1].flat:
         ax.set_xticks(np.arange(0, 3600, step=900.))
     for ax in axis[:,1:].flat:
         ax.set_xlim(0,3600)
@@ -573,9 +570,9 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
         # for label in ax.xaxis.get_ticklabels()[1::2]:
         #     label.set_visible(False)
     print('')
-    max_range[2] += .5
-    max_range[4] = .13
-    max_range[6] += 0.1
+    max_range[3] += 0.1
+    max_range[4] += .5
+    max_range[6] = .13
     axis[0,1].set_ylim(min_range[1], max_range[1])
     axis[1,1].set_ylim(min_range[1], max_range[1])
     axis[0,2].set_ylim(min_range[2], max_range[2])
@@ -602,7 +599,7 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
     for ax in axis[:,1]:
         y_ticks = [np.int(i*1e-3) for i in ax.get_yticks()]
         ax.set_yticklabels(y_ticks)
-    for ax in axis[:,5]:
+    for ax in axis[:,2]:
         y_ticks = [np.int(i) for i in ax.get_yticks()]
         ax.set_yticklabels(y_ticks)
     plt.subplots_adjust(bottom=0.075, right=.99, left=0.12, top=0.95, wspace=0.3, hspace=0.1)
