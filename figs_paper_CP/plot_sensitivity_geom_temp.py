@@ -181,12 +181,12 @@ def plot_sensitivity_plots_temperature(dTh_range_A, rstar_range_A, zstar_range_A
         CP_vol = root.grous['timeseries'].variables['CP_vol_sth0.5'][:]
         root.close()
 
-        # ax0.plot(time_stats, s_min, '-o', color=colorlist3[i], label=rootname)
-        ax1.plot(time_stats, theta_min, '-o', color=colorlist3[i], label=rootname)
-        ax2.plot(time_stats, w_max, '-o', color=colorlist3[i], label=rootname)
-        # ax3.plot(time_vort, vort_phi_max, '-o', color=colorlist3[i], label=rootname)
-        ax4.plot(time_geom, CP_height_max, '-o', color=colorlist3[i], label=rootname)
-        ax5.plot(time_geom, CP_vol, '-o', color=colorlist3[i], label=rootname)
+        # ax0.plot(time_stats, s_min, '-', color=colorlist3[i], label=rootname)
+        ax1.plot(time_stats, theta_min, '-', color=colorlist3[i], label=rootname)
+        ax2.plot(time_stats, w_max, '-', color=colorlist3[i], label=rootname)
+        # ax3.plot(time_vort, vort_phi_max, '-', color=colorlist3[i], label=rootname)
+        ax4.plot(time_geom, CP_height_max, '-', color=colorlist3[i], label=rootname)
+        ax5.plot(time_geom, CP_vol, '-', color=colorlist3[i], label=rootname)
 
     ax1.legend(loc='best')
     # fig.suptitle(title, fontsize=18)
@@ -262,12 +262,12 @@ def plot_sensitivity_plots_geometry(dTh_range_B, rstar_range_B, zstar_range_B, p
         CP_vol = root.grous['timeseries'].variables['CP_vol_sth0.5'][:]
         root.close()
 
-        # ax0.plot(time_stats, s_min, '-o', color=colorlist3[i], label=rootname)
-        ax1.plot(time_stats, theta_min, '-o', color=colorlist3[i], label=rootname)
-        ax2.plot(time_stats, w_max, '-o', color=colorlist3[i], label=rootname)
-        # ax3.plot(time_vort, vort_phi_max, '-o', color=colorlist3[i], label=rootname)
-        ax4.plot(time_geom, CP_height_max, '-o', color=colorlist3[i], label=rootname)
-        ax5.plot(time_geom, CP_vol, '-o', color=colorlist3[i], label=rootname)
+        # ax0.plot(time_stats, s_min, '-', color=colorlist3[i], label=rootname)
+        ax1.plot(time_stats, theta_min, '-', color=colorlist3[i], label=rootname)
+        ax2.plot(time_stats, w_max, '-', color=colorlist3[i], label=rootname)
+        # ax3.plot(time_vort, vort_phi_max, '-', color=colorlist3[i], label=rootname)
+        ax4.plot(time_geom, CP_height_max, '-', color=colorlist3[i], label=rootname)
+        ax5.plot(time_geom, CP_vol, '-', color=colorlist3[i], label=rootname)
 
     ax1.legend(loc='best')
     # fig.suptitle(title, fontsize=18)
@@ -287,20 +287,56 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
                                filename_stats, filename_vort,
                                colorlist3, path_root, path_out_figs):
 
-
     ncols = 6
     nrows = 2
     max_range = np.zeros(ncols, dtype=np.double)
     min_range = 9999.9*np.ones(ncols, dtype=np.double)
     fig_name = 'sensitivity_plots_all_dx'+str(dx)+'m.png'
     fig, axis = plt.subplots(nrows, ncols, figsize=(ncols*4, nrows*5), sharex='col')
+    ''' envelopes '''
+    zstar_max = np.maximum(np.amax(zstar_range_A), np.amax(zstar_range_B))
+    rstar_max = np.maximum(np.amax(rstar_range_A), np.amax(rstar_range_B))
+    irstar_max = rstar_max/dx
+    nx = 1.2*irstar_max
+    dxi = 1./dx
+    x_half = np.arange(-nx, nx)*dx*1.
     ax0 = axis[0,0]
+    for i, dTh in enumerate(dTh_range_A):
+        zstar = zstar_range_A[i]
+        rstar = rstar_range_A[i]
+        z_max = zstar * (np.cos(x_half / rstar * np.pi / 2) ** 2)
+        imin = nx-rstar*dxi
+        imax = nx+rstar*dxi+1
+        ax0.plot(x_half[imin:imax], z_max[imin:imax], color=colorlist3[i])
+    ax0 = axis[1,0]
+    for i, dTh in enumerate(dTh_range_B):
+        rstar = rstar_range_B[i]
+        zstar = zstar_range_B[i]
+        z_max = zstar * (np.cos(x_half / rstar * np.pi / 2) ** 2)
+        imin = nx - rstar * dxi
+        imax = nx + rstar * dxi + 1
+        ax0.plot(x_half[imin:imax], z_max[imin:imax], '-', color=colorlist5[i])
+        ax0.set_xlabel('r  [km]')
+    for ax in axis[:,0].flat:
+    #     ax.set_xlim(-rstar_max, rstar_max)
+        ax.set_ylim(0, zstar_max + 200)
+        ax.set_xticklabels(1.e-3*ax.get_xticks())
+    #     y_ticks = [np.floor(ti) for ti in ax.get_yticks()]
+        y_ticks = [0*ti for ti in ax.get_yticks()]
+        print(y_ticks)
+        ax.set_yticklabels(y_ticks)
+        ax.set_ylabel('height  [m]')
+
+    #     # ax.legend()
+    #
+
+    ''' min/max '''
     ax1 = axis[0,1]
     ax2 = axis[0,2]
     ax3 = axis[0,3]
     ax4 = axis[0,4]
     ax5 = axis[0,5]
-    ax1.set_title('max. pot. temp.')
+    ax1.set_title('max. potential temperature')
     ax2.set_title('max. w')
     ax3.set_title('max. vorticity')
     ax4.set_title('max. CP height')
@@ -350,7 +386,7 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
         CP_height_2D = root.groups['fields_2D'].variables['CP_height_2d'][:,:,:]
         CP_height_max = root.groups['timeseries'].variables['CP_height_max'][:]
         root.close()
-    #     del CP_height_
+        #     del CP_height_
         root = nc.Dataset(os.path.join(path_in, 'data_analysis', filename_CPvol))
         time_geom_ = root.groups['timeseries'].variables['time'][:]
         if time_geom.any() != time_geom_.any():
@@ -362,19 +398,20 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
         max_range[2] = np.maximum(np.amax(w_max), max_range[2])
         max_range[3] = np.maximum(np.amax(vort_phi_max), max_range[3])
         min_range[1] = np.minimum(np.amin(theta_min), min_range[1])
-        # ax0.plot(time_stats, s_min, '-o', color=colorlist3[i], label=lbl)
-        ax1.plot(time_stats, theta_min, '-o', color=colorlist3[i], label=lbl)
-        ax2.plot(time_stats, w_max, '-o', color=colorlist3[i], label=lbl)
-        ax3.plot(time_vort, vort_phi_max, '-o', color=colorlist3[i], label=lbl)
-        ax4.plot(time_geom, CP_height_max, '-o', color=colorlist3[i], label=lbl)
-        ax5.plot(time_geom, 1e-9*CP_vol, '-o', color=colorlist3[i], label=lbl)
+        # ax0.plot(time_stats, s_min, '-', color=colorlist3[i], label=lbl)
+        ax1.plot(time_stats, theta_min, '-', color=colorlist3[i], label=lbl)
+        ax1.plot(time_stats,300*np.ones(shape=time_stats.shape), 'k-', linewidth=1)
+        ax2.plot(time_stats, w_max, '-', color=colorlist3[i], label=lbl)
+        ax3.plot(time_vort, vort_phi_max, '-', color=colorlist3[i], label=lbl)
+        ax4.plot(time_geom, CP_height_max, '-', color=colorlist3[i], label=lbl)
+        ax5.plot(time_geom, 1e-9*CP_vol, '-', color=colorlist3[i], label=lbl)
 
     # ax0.set_ylabel('entropy [J/K]')
     ax1.set_ylabel('pot. temperature [K]')
     ax2.set_ylabel('max(w) [m/s]')
     ax3.set_ylabel('max(vorticity) [1/s]')
     ax4.set_ylabel('max(CP height) [m]')
-    ax5.set_ylabel('CP volume [m^3]')
+    ax5.set_ylabel('CP volume [km^3]')
 
     # ax1.legend(loc='best')
     ax1.legend(loc='upper center', bbox_to_anchor=(-2., .75),
@@ -449,12 +486,13 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
         min_range[3] = 0.
         min_range[4] = 0.
         min_range[5] = 0.
-        # ax0.plot(time_stats, s_min, '-o', color=colorlist5[i], label=lbl)
-        ax1.plot(time_stats, theta_min, '-o', color=colorlist5[i], label=lbl)
-        ax2.plot(time_stats, w_max, '-o', color=colorlist5[i], label=lbl)
-        ax3.plot(time_vort, vort_phi_max, '-o', color=colorlist5[i], label=lbl)
-        ax4.plot(time_geom, CP_height_max, '-o', color=colorlist5[i], label=lbl)
-        ax5.plot(time_geom, 1e-9*CP_vol, '-o', color=colorlist5[i], label=lbl)
+        # ax0.plot(time_stats, s_min, '-', color=colorlist5[i], label=lbl)
+        ax1.plot(time_stats, theta_min, '-', color=colorlist5[i], label=lbl)
+        ax1.plot(time_stats, 300 * np.ones(shape=time_stats.shape), 'k-', linewidth=1)
+        ax2.plot(time_stats, w_max, '-', color=colorlist5[i], label=lbl)
+        ax3.plot(time_vort, vort_phi_max, '-', color=colorlist5[i], label=lbl)
+        ax4.plot(time_geom, CP_height_max, '-', color=colorlist5[i], label=lbl)
+        ax5.plot(time_geom, 1e-9*CP_vol, '-', color=colorlist5[i], label=lbl)
     # ax0.set_ylabel('entropy [J/K]')
     ax1.set_ylabel('pot. temperature [K]')
     ax2.set_ylabel('max(w) [m/s]')
@@ -465,7 +503,7 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
     print('')
     ax1.legend(loc='upper center', bbox_to_anchor=(-2., .75),
                fancybox=True, shadow=False, ncol=1, fontsize=10)
-    for ax in axis.flat:
+    for ax in axis[:,1:].flat:
         ax.set_xlim(0,3600)
         ax.set_xticks(np.arange(0, 3700, step=900.))
         x_ticks = [ti/3600 for ti in ax.get_xticks()]
