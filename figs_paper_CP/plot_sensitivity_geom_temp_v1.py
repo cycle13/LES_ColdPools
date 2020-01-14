@@ -93,9 +93,9 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
 
     axis[0,0].axis('off')
     axis[1,0].axis('off')
-    spec = [0.04, 0.68, .075, .25]
+    spec = [0.03, 0.68, .075, .25]
     ax00 = plt.axes(spec)
-    spec = [0.04, 0.24, .075, .25]
+    spec = [0.03, 0.24, .075, .25]
     ax01 = plt.axes(spec)
     for i, dTh in enumerate([2,3,4]):
         zstar = [900, 1000, 900][i]
@@ -430,8 +430,8 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
         axis[i,6].plot(time_vort, vort_phi_max, '-', color='k', label=lbl)
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    ftsize = 18
-    ax00.text(0.28, 0.9, 'a)',    transform=axis[0, 0].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
+    ftsize = 21
+    ax00.text(0.32, 0.91, 'a)',    transform=axis[0, 0].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
     axis[0,1].text(0.04, 0.97, 'b)',     transform=axis[0, 1].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
     axis[0,2].text(0.05, 0.97, 'c)',     transform=axis[0, 2].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
     axis[0,3].text(0.05, 0.97, 'd)',     transform=axis[0, 3].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
@@ -439,7 +439,7 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
     axis[0,4].text(0.3, 0.98, 'environmental temperature', transform=axis[0, 4].transAxes, fontsize=12, verticalalignment='top', bbox=textprops)
     axis[0,5].text(0.05, 0.97, 'f)',     transform=axis[0, 5].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
     axis[0,6].text(0.05, 0.97, 'g)',     transform=axis[0, 6].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
-    ax01.text(.25, 0.92, 'h)',     transform=axis[1, 0].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
+    ax01.text(.31, 0.94, 'h)',     transform=axis[1, 0].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
     axis[1,1].text(.05, 0.97, 'i)',     transform=axis[1, 1].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
     axis[1,2].text(.05, 0.97, 'j)',     transform=axis[1, 2].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
     axis[1,3].text(.05, 0.97, 'k)',     transform=axis[1, 3].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
@@ -504,7 +504,7 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
     for ax in axis[:,4]:
         y_ticks = [np.int(ti) for ti in ax.get_yticks()]
         ax.set_yticklabels(y_ticks)
-    plt.subplots_adjust(bottom=0.075, right=.99, left=0.02, top=0.95, wspace=0.3, hspace=0.1)
+    plt.subplots_adjust(bottom=0.075, right=.99, left=0.0, top=0.95, wspace=0.3, hspace=0.1)
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 
