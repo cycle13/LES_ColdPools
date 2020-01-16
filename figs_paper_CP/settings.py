@@ -35,15 +35,18 @@ cm_contourfigs = cm_bwr
 # cm_twin = plt.cm.get_cmap('twilight')
 
 colorlist_all = ['darkred', 'maroon', 'r', 'tomato', 'indianred', 'orange', 'gold',
-                 'limegreen', 'forestgreen', 'g', 'darkgreen', 'seagreen', 'lightseagreen', 'darkcyan',
+                 'limegreen', 'forestgreen', 'g', 'darkgreen', 'seagreen', 'lightseagreen',
+                 'darkcyan',
                  'mediumblue', 'darkblue', 'midnightblue', 'navy']
 colorlist = ['maroon', 'indianred', 'orange',
                      'limegreen', 'darkgreen', 'darkcyan', 'lightseagreen',
                      'mediumblue', 'navy']
 colorlist5 = ['maroon', 'indianred', 'orange', 'darkcyan', 'navy']
     # colorlist5 = ['orange', 'indianred', 'maroon', 'navy', 'lightseagreen']
-colorlist4 = ['indianred', 'orange', 'darkcyan', 'navy']
+colorlist4 = ['maroon', 'orange', 'darkcyan', 'navy']
+colorlist4_blue = ['orange', 'green', 'dodgerblue', 'mediumblue']
 colorlist3 = ['indianred', 'darkcyan', 'navy']
+# colorlist2 = ['maroon', 'navy']
+colorlist2 = ['maroon', 'tomato']
 
-colorlist2 = ['maroon', 'navy']
-colorlist2 = [cm_bw(0.5), cm_bw(1.)]
+colorlist2_bw = [cm_bw(0.5), cm_bw(1.)]
