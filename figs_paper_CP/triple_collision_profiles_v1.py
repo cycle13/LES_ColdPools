@@ -27,12 +27,12 @@ def main():
     path_single_dx50 = '/nbi/ac/conv4/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/single_3D_noise/run6_PE_scaling_dx50m'
     path_double = '/nbi/ac/coag/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/double_3D'
     path_triple = '/nbi/ac/cond2/meyerbe/ColdPools/3D_sfc_fluxes_off/triple_3D/'
-    path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
     case_name_single = 'ColdPoolDry_single_3D'
     case_name_double = 'ColdPoolDry_double_3D'
     case_name_triple = 'ColdPoolDry_triple_3D'
 
-    path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single/'
+    # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single/'
+    path_out_figs = '/nbi/home/meyerbe/paper_CP_single/'
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
 
