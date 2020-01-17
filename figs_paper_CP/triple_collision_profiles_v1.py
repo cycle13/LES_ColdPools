@@ -103,10 +103,9 @@ def main():
     n_tracers = get_number_tracers(fullpath_in)
     n_cps = get_number_cps(fullpath_in)
     dist_av = np.zeros((nt))
-    # U_rad_av = np.zeros((nt))
     for it, t0 in enumerate(times):
         cp_id = 2
-        dist_av[it], U_rad_av[it] = get_radius_vel(fullpath_in, it, cp_id, n_tracers, n_cps)
+        dist_av[it] = get_radius(fullpath_in, it, cp_id, n_tracers, n_cps)
     r_av = dist_av * dx
     rad_2CP = np.empty(3)
     rad_3CP = np.empty(3)
@@ -485,7 +484,67 @@ def read_in_minmax(kmax, path_out, filename):
 # --------------------------------------------------------------------
 # --------------------------------------------------------------------
 
+# ---------------------------- TRACER STATISTICS -----------------------
 
+def get_number_tracers(fullpath_in):
+    # get number of tracers in each CP
+    f = open(fullpath_in + '/coldpool_tracer_out.txt', 'r')
+    lines = f.readlines()
+    count = 0
+    # while CP age is 0 and CP ID is 1
+    cp_age = int(lines[count].split()[0])
+    cp_ID = int(lines[count].split()[3])
+    print('cp_age', cp_age)
+    while (cp_age == 1 and cp_ID == 1):
+        count += 1
+        cp_age = int(lines[count].split()[0])
+        cp_ID = int(lines[count].split()[3])
+    n_tracers = count
+    f.close()
+
+    return n_tracers
+
+
+
+def get_number_cps(fullpath_in):
+    # get number of tracers in each CP
+    f = open(fullpath_in + '/coldpool_tracer_out.txt', 'r')
+    lines = f.readlines()
+    cp_number = int(lines[-1].split()[3])
+    f.close()
+
+    return cp_number
+
+
+
+def get_radius_vel(fullpath_in, t0, cp_id, n_tracers, n_cps):
+    # print('in', fullpath_in)
+    f = open(fullpath_in + '/coldpool_tracer_out.txt', 'r')
+    # f = open(DIR+EXPID+'/'+child+'/output/irt_tracks_output_pure_sort.txt', 'r')
+    lines = f.readlines()
+    count = 0
+    dist = []
+    vel = []
+
+    count = t0 * n_cps * n_tracers + (cp_id - 1)*n_tracers
+    # while CP age is 0 and CP ID is cp_id
+    timestep = int(lines[count].split()[0])
+    cp_ID = int(lines[count].split()[3])
+    # print(timestep, cp_ID)
+    while (timestep-1 == t0 and int(lines[count].split()[3])==cp_id):
+        columns = lines[count].split()
+        dist.append(float(columns[8]))
+        # vel.append(np.sqrt(float(columns[10])**2 + float(columns[11])**2))
+        vel.append(float(columns[12]))
+        count += 1
+        timestep = int(lines[count].split()[0])
+    f.close()
+    r_av = np.average(dist)
+    vel_av = np.average(vel)
+
+    return r_av, vel_av
+
+# ----------------------------------------------------------------------
 def define_geometry(case_name_single, case_name_double, case_name_triple,
                     path_single, path_double, path_triple, id_list_s, id_list_d, id_list_t):
     print 'define geometry'
