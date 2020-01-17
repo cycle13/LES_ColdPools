@@ -193,7 +193,6 @@ def main():
         # jc = np.int(ny_t*0.5)
         # di = 20
         # rect_triple = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='grey', facecolor='none')
->>>>>>> 68920e4ba1b92766c47c61fce0211d6ff5840462
         axis[1,0].add_patch(rect_double)
         axis[2,0].add_patch(rect_triple)
 
