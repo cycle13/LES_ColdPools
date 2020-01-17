@@ -17,7 +17,7 @@ plt.rcParams['legend.fontsize'] = 12
 plt.rcParams['axes.labelsize'] = 16
 plt.rcParams['font.sans-serif'] = 'Helvetica'
 plt.rcParams['text.usetex'] = 'true'
-
+plt.rcParams['legend.numpoints'] = 1
 
 # tracer file:
 # - col=0:      timestep of simulation
@@ -72,7 +72,8 @@ def main():
         path_data = path_single_dx50m
         # path_tracer_file = os.path.join(path_data, 'tracer_k' + str(k0) + '_nointerpol/output/', 'coldpool_tracer_out.txt')
         if nsub > 0:
-            path_tracer_file = os.path.join(path_data, 'tracer_k' + str(k0) + '_interpol/output/', 'coldpool_tracer_out_nsub' + str(nsub) +'.txt')
+            path_tracer_file = os.path.join(path_data,'tracer_k'+str(k0)+'_noint_nsub'+str(nsub)+'/output/coldpool_tracer_out.txt')
+            # path_tracer_file = os.path.join(path_data,'tracer_k'+str(k0)+'_interpol/output/', 'coldpool_tracer_out_nsub' + str(nsub) +'.txt')
             # path_tracer_file = os.path.join(path_data, 'tracer_k' + str(k0) + '/output/', 'coldpool_tracer_out_nsub' + str(nsub) +'.txt')
         else:
             path_tracer_file = os.path.join(path_data, 'tracer_k' + str(k0) + '/output/', 'coldpool_tracer_out.txt')
@@ -362,7 +363,7 @@ def plot_vrad_w(r_av, U_rad_av, radius_rad_av,
     ax1 = axis[1]
     for i, t0 in enumerate(trange):
         it = np.int(t0 / dt_fields)
-        print('it, t0', it, t0, tmax)
+        print('plotting: it, t0', it, t0, tmax)
         if t0 < tmax-2*dt_fields:
             print('go', t0, tmax-2)
             count_color = np.double(i) / (len(trange))
@@ -426,6 +427,7 @@ def plot_vrad_w(r_av, U_rad_av, radius_rad_av,
     ax0.set_ylabel('radial velocity / ms' + r'$^{-1}$')
     ax1.set_ylabel('vertical velocity / ms' + r'$^{-1}$')
     fig.subplots_adjust(top=0.95, bottom=0.1, left=0.1, right=0.9, hspace=0.1, wspace=0.25)
+    print('saving at ', os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 
@@ -472,7 +474,10 @@ def plot_vrad_w(r_av, U_rad_av, radius_rad_av,
 
     ax0.legend(loc='center left', bbox_to_anchor=(.77, 0.89), frameon=False)
     ax1.legend(loc='center left', bbox_to_anchor=(.77, 1.67), frameon=False)
+    # irmax = 9e3
     rect = mpatches.Rectangle((6.9e3, 2.4), 2.e3, 5.9, fill=True, linewidth=1, edgecolor='k', facecolor='white')
+    # irmax = 9.5e3
+    # rect = mpatches.Rectangle((7.3e3, 2.4), 2.1e3, 5.9, fill=True, linewidth=1, edgecolor='k', facecolor='white')
     ax0.add_patch(rect)
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
@@ -486,7 +491,6 @@ def plot_vrad_w(r_av, U_rad_av, radius_rad_av,
         ax.set_xlim(0, irmax * dx)
         x_ticks = [np.int(ti * 1e-3) for ti in ax.get_xticks()]
         ax.set_xticklabels(x_ticks)
-        # y_ticks = [np.int(ti * 1e-3) for ti in ax.get_yticks()]
         y_ticks = ax.get_yticks()
         ax.set_yticklabels(y_ticks)
         # for label in ax.xaxis.get_ticklabels()[1::2]:
