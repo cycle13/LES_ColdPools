@@ -152,7 +152,7 @@ def main():
         di = 20
         dj = 5
         rect_double = mpatches.Rectangle((ic - di, jc - dj), 2 * di, 2 * dj, linewidth=1, edgecolor='k', facecolor='none')
-        axis[1,0].plot(ic, jc, 'o', markersize=20)
+            axis[1,0].plot(ic, jc, 'o', markersize=100)
         print('HAAAAAAAAAAAAAAAAAA', ic, jc)
         ic = np.int(nx_t*0.5)
         jc = np.int(ny_t*0.5)
