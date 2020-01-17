@@ -525,24 +525,30 @@ def thetas_c(s, qt):
     return T_tilde*np.exp((s-(1.0-qt)*sd_tilde - qt*sv_tilde)/cpm_c(qt))
 
 # ----------------------------------------------------------------------
-def get_radius(fullpath_in, t0, cp_id, n_tracers, n_cps):
+def get_radius_vel(fullpath_in, t0, cp_id, n_tracers, n_cps):
+    # print('in', fullpath_in)
     f = open(fullpath_in + '/coldpool_tracer_out.txt', 'r')
     # f = open(DIR+EXPID+'/'+child+'/output/irt_tracks_output_pure_sort.txt', 'r')
     lines = f.readlines()
     dist = []
+    vel = []
 
     count = t0 * n_cps * n_tracers + (cp_id - 1)*n_tracers
     # while CP age is 0 and CP ID is cp_id
     timestep = int(lines[count].split()[0])
+    cp_ID = int(lines[count].split()[3])
     while (timestep-1 == t0 and int(lines[count].split()[3])==cp_id):
         columns = lines[count].split()
         dist.append(float(columns[8]))
+        # vel.append(np.sqrt(float(columns[10])**2 + float(columns[11])**2))
+        vel.append(float(columns[12]))
         count += 1
         timestep = int(lines[count].split()[0])
     f.close()
     r_av = np.average(dist)
+    vel_av = np.average(vel)
 
-    return r_av
+    return r_av, vel_av
 
 
 def get_number_tracers(fullpath_in):
