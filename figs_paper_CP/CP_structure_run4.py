@@ -84,12 +84,12 @@ def main():
     root_vrad.close()
 
     jmin_range = [150, 100, 100]
-    for it,t0 in enumerate([900, 1200, 1500]):
+    for i,t0 in enumerate([900, 1200, 1500]):
     # for it,t0 in enumerate([900]):
         # print('')
         print('time: ', t0)
         # print('')
-        jmin = jmin_range[it]
+        jmin = jmin_range[i]
         jmax = ny - jmin
         fullpath_in = os.path.join(path_fields, str(t0)+'.nc')
         root_field = nc.Dataset(fullpath_in)
@@ -99,16 +99,11 @@ def main():
         # v = grp.variables['v'][ic,:,:kmax]
         u = grp.variables['v'][ic,:,:kmax]
         root_field.close()
-
         theta = thetas_c(s, 0.0)[ic-nx/2:ic+nx/2, :]
-
         vorticity = vorticity_[np.int(t0/100),:,:]
 
 
-
         fig_name = 'CP_structure_dx' + str(res) + '_' + case + '_t'+str(t0)+'.png'
-        # cm = plt.cm.get_cmap('rainbow')
-        # cm_bwr = plt.cm.get_cmap('bwr')
         nlev = 2e2
         ncol = 2
         nrow = 4
