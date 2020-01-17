@@ -93,7 +93,37 @@ def main():
     print('')
 
 
+    ''' determine sampling subdomain '''
+    # for single CP: search maximum within circle of radius CP has at 2-CP / 3-CP collision time
+    # tracer statistics
+    k0 = 0
+    # times = np.arange(0, 3600, 100)
+    # nt = len(times)
+    fullpath_in = os.path.join(path_single, id_list_s[0], 'tracer_k' + str(k0), 'output')
+    n_tracers = get_number_tracers(fullpath_in)
+    n_cps = get_number_cps(fullpath_in)
+    dist_av = np.zeros((nt))
+    # U_rad_av = np.zeros((nt))
+    for it, t0 in enumerate(times):
+        cp_id = 2
+        dist_av[it], U_rad_av[it] = get_radius_vel(fullpath_in, it, cp_id, n_tracers, n_cps)
+    r_av = dist_av * dx
+    rad_2CP = np.empty(3)
+    rad_3CP = np.empty(3)
+    delta_s = 6.e2/dx[0]
+    for d in range(len(d_range)):
+        rad_2CP[d] = r_av[t_2CP[d]]+delta_s
+        rad_3CP[d] = r_av[t_3CP[d]]+delta_s
+    [xs,ys] = nx_s[:2]*.5
 
+    delta_d = [2.e3/dx[0],6.e2/dx[1]]
+    [xd,yd] = nx_d[:2]*.5-delta_d*.5
+    rect_double = mpatches.Rectangle((xd, yd), delta_d[0], delta_d[1], linewidth=1, edgecolor='grey',
+                                     facecolor='none')
+    delta_t = 6.e2/dx[0]
+    [xt, yt] = nx_t[:2]*.5-delta_t*.5
+    rect_triple = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='grey',
+                                     facecolor='none')
 
 
 
@@ -123,7 +153,7 @@ def main():
         fullpath_in = os.path.join(path_double, id_list_d[d], 'fields', str(t_2CP[d]) + '.nc')
         root = nc.Dataset(fullpath_in, 'r')
         w = root.groups['fields'].variables['w'][:, :, k0]
-        [nx_d,ny_d] = w.shape
+        # [nx_d,ny_d] = w.shape
         root.close()
         cf = axis[1,0].contourf(w, levels=lvls, cmap=cm_bwr, extend='both')
         plt.colorbar(cf, ax=axis[1, 0], shrink=0.8)
@@ -137,7 +167,7 @@ def main():
         root = nc.Dataset(fullpath_in, 'r')
         w = root.groups['fields'].variables['w'][:, :, k0]
         root.close()
-        [nx_t, ny_t] = w.shape
+        # [nx_t, ny_t] = w.shape
         cf = axis[2,0].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
         plt.colorbar(cf, ax=axis[2, 0], shrink=0.8)
         fullpath_in = os.path.join(path_triple, id_list_t[d], 'fields', str(t_3CP[d]) + '.nc')
@@ -147,17 +177,23 @@ def main():
         cf = axis[2,1].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
         plt.colorbar(cf, ax=axis[2, 1], shrink=0.8)
 
-        ic = np.int(nx_d*.5)
-        jc = np.int(ny_d*0.5)
-        di = 20
-        dj = 5
-        rect_double = mpatches.Rectangle((ic - di, jc - dj), 2 * di, 2 * dj, linewidth=1, edgecolor='k', facecolor='none')
-            axis[1,0].plot(ic, jc, 'o', markersize=100)
-        print('HAAAAAAAAAAAAAAAAAA', ic, jc)
-        ic = np.int(nx_t*0.5)
-        jc = np.int(ny_t*0.5)
-        di = 20
-        rect_triple = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='grey', facecolor='none')
+        circle1 = plt.Circle((xs, ys), rad_2CP[d], fill=False, color='lime', linewidth=1)
+        circle2 = plt.Circle((xs, ys), rad_3CP[d], fill=False, color='lime', linewidth=1)
+        axis[0,0].add_artist(circle1)
+        axis[0,1].add_artist(circle2)
+        # ic = np.int(nx_d[0]*.5)
+        # jc = np.int(nx_d[1]*.5)
+        # di = 20
+        # dj = 5
+        # rect_double = mpatches.Rectangle((ic - di, jc - dj), 2 * di, 2 * dj, linewidth=1, edgecolor='grtey', facecolor='none')
+        # axis[1,0].plot(ic, jc, 'o', markersize=20)
+        axis[1,0].plot(xd,yd, 'o', markersize=20)
+        print('HAAAAAAAAAAAAAAAAAA', xd, yd)
+        # ic = np.int(nx_t*0.5)
+        # jc = np.int(ny_t*0.5)
+        # di = 20
+        # rect_triple = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='grey', facecolor='none')
+>>>>>>> 68920e4ba1b92766c47c61fce0211d6ff5840462
         axis[1,0].add_patch(rect_double)
         axis[2,0].add_patch(rect_triple)
 
@@ -455,6 +491,8 @@ def define_geometry(case_name_single, case_name_double, case_name_triple,
                     path_single, path_double, path_triple, id_list_s, id_list_d, id_list_t):
     print 'define geometry'
 
+
+    global nx_x, nx_d, nx_t
     nx_s = np.empty(3, dtype=np.int)
     nx_d = np.empty(3, dtype=np.int)
     nx_t = np.empty(3, dtype=np.int)
