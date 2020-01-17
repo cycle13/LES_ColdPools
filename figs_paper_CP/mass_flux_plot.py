@@ -46,7 +46,8 @@ def main():
     path_2CP = '/nbi/ac/coag/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/double_3D/'+case
     path_3CP = '/nbi/ac/cond2/meyerbe/ColdPools/3D_sfc_fluxes_off/triple_3D/'+case
     path_data = os.path.join(path_3CP, 'data_analysis')
-    path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
+    # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
+    path_out_figs = '/nbi/home/meyerbe/paper_CP_single'
     nml_2CP, nml_3CP, times, files = set_input_output_parameters(args, case_name_2CP, case_name_3CP, path_2CP, path_3CP)
     ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP, \
     ic_2CP, jc_2CP, ic_3CP, jc_3CP = define_geometry(nml_2CP, nml_3CP)
