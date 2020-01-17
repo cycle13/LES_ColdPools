@@ -179,6 +179,12 @@ def main():
     ir_vrad_grad_max = np.argmin(v_rad_gradient, axis=1)  # nt, nk
     ir_w_max = np.argmax(w_av[:,20:,:], axis=1)+20
 
+
+    # compute CP spreading velocity
+    # (1) based on radius of convergence zone = radius of max(w)
+    # (2) based on tracer position
+
+
     # test plot v_rad_av vs. r_av and U_rad_av
     # plot_vel_at_rim(r_tracers_av, U_rad_av, r_av, v_rad_av[:,:,k0], w_av[:,:,k0], v_rad_av_at_rim,
     #                 time_av, k0, krange, irmax,
@@ -210,6 +216,13 @@ def plot_vrad_w_trange(r_av, U_rad_av, radius_rad_av,
                 time_rad_av, k0_tracer, irmax, trange, path_out_figs):
     # r_av[t,k0]:              average radius of tracers
     # radius_rad_av[r]:        radius from azimuthally averaged profiles
+
+    # compute CP spreading velocity
+    # (1) based on radius of convergence zone = radius of max(w)
+    # (2) based on tracer position
+
+
+
 
     nt = len(trange)
     fig_name = 'w_v_rad_k' + str(k0_tracer) + '_test.png'
