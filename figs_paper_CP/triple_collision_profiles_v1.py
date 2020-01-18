@@ -117,7 +117,7 @@ def main():
         rad_3CP[d] = (r_av[np.int(t_3CP[d]/dt_fields)]+delta_s)/dx[0]
     [xs,ys] = nx_s[:2]*.5
 
-    delta_d = np.asarray([6.e2/dx[0],4.e3/dx[0]])
+    delta_d = np.asarray([4.e3/dx[0], 6.e2/dx[0]])
     # [ic, jc] = nx_d[d][:2]*.5
     # if rstar == 1100 and dstar == 10:
     #     ic = np.int(nx_d[d][0]*.5) - 80
