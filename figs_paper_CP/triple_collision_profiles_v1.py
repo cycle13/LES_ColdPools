@@ -49,7 +49,7 @@ def main():
     print('')
     if rstar == 1100:
         d_range = [10, 12, 15]
-        t_2CP = [1100, 1500, 2300]
+        t_2CP = [1100, 1500, 2400]
         t_3CP = [1500, 2200, 3300]
     elif rstar == 2000:
         d_range = [10, 15, 20]
@@ -140,8 +140,8 @@ def main():
         w_max = 3.
     elif k0 == 10:
         w_max = 1.
-    # lvls = np.arange(-w_max, w_max, .25)
-    lvls = np.linspace(-4, 4, 10)
+    lvls = np.arange(-w_max, w_max, .25)
+    # lvls = np.linspace(-4, 4, 10)
     for d, dstar in enumerate(d_range):
         print('plotting: d='+str(dstar), d)
         fig_name = 'collisions_subdomains_k'+str(k0)+'_d'+str(dstar)+ 'km_test.png'
@@ -194,9 +194,9 @@ def main():
         di = 5
         dj = 20
         rect_double = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='grey', facecolor='none')
-        print('DOUBLE: ', ic, jc, xd, yd)
-        axis[1,0].plot(jc, ic, 'o', color='k', markersize=10)
-        axis[1,0].plot(yd, xd, 'kx', markersize=10)
+        # print('DOUBLE: ', ic, jc, xd, yd)
+        # axis[1,0].plot(jc, ic, 'o', color='k', markersize=10)
+        # axis[1,0].plot(yd, xd, 'kx', markersize=10)
         axis[1,0].add_patch(rect_double)
         axis[1,1].add_patch(rect_double)
         ic = np.int(nx_t[d][0]*0.5)
