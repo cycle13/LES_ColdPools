@@ -128,7 +128,7 @@ def main():
 
     # plotting limits
     lim_single = [0,0,0]
-    lim_double = [[100, 200], [100, 200], [100, 200]]
+    lim_double = [[100, 200], [100, 250], [100, 220]]
     lim_triple = [80, 200, 200]
 
 
@@ -209,7 +209,7 @@ def main():
         for ax in axis[1,:].flat:
             ax.set_xlim(lim_double[d][0],nx_d[d][1]-lim_double[d][0])
             if rstar == 1100 and d == 0:
-                ax.set_ylim(lim_double[d][1],nx_d[d][0]-lim_double[d][1]-80)
+                ax.set_ylim(lim_double[d][1],nx_d[d][0]-lim_double[d][1]-2*80)
             else:
                 ax.set_ylim(lim_double[d][1],nx_d[d][0]-lim_double[d][1])
         for ax in axis[2, :].flat:
