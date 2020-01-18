@@ -129,7 +129,7 @@ def main():
     # plotting limits
     lim_single = [0,0,0]
     lim_double = [[100, 200], [100, 250], [100, 220]]
-    lim_triple = [80, 200, 200]
+    lim_triple = [120, 250, 300]
 
 
 
