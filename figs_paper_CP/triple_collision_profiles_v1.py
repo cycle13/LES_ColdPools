@@ -189,6 +189,8 @@ def main():
         axis[0,1].add_artist(circle2)
         ic = np.int(nx_d[d][0]*.5)
         jc = np.int(nx_d[d][1]*.5)
+        if rstar == 1100 and dstar == 10:
+            ic = np.int(nx_d[d][0] * .5) - 80
         di = 5
         dj = 20
         rect_double = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='grey', facecolor='none')
