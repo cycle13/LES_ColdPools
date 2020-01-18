@@ -96,7 +96,7 @@ def main():
 
     ''' determine sampling subdomain '''
     # for single CP: search maximum within circle of radius CP has at 2-CP / 3-CP collision time
-    # tracer statistics
+    # single: from tracer statistics
     k0 = 0
     # times = np.arange(0, 3600, 100)
     # nt = len(times)
@@ -116,19 +116,10 @@ def main():
         rad_2CP[d] = (r_av[np.int(t_2CP[d]/dt_fields)]+delta_s)/dx[0]
         rad_3CP[d] = (r_av[np.int(t_3CP[d]/dt_fields)]+delta_s)/dx[0]
     [xs,ys] = nx_s[:2]*.5
-
-    delta_d = np.asarray([1.e3, 4.e3]/dx[0])
-    # [ic, jc] = nx_d[d][:2]*.5
-    # if rstar == 1100 and dstar == 10:
-    #     ic = np.int(nx_d[d][0]*.5) - 80
-    # [xd,yd] = [ic,jc]-delta_d*.5
-    # print('DOUBLE: ', ic, jc, xd, yd, delta_d)
-    # rect_double = mpatches.Rectangle((xd, yd), delta_d[0], delta_d[1], linewidth=1, edgecolor='k', facecolor='none')
-    # rect_double2 = mpatches.Rectangle((xd, yd), delta_d[0], delta_d[1], linewidth=1, edgecolor='k', facecolor='none')
+    # double
+    delta_d = np.asarray([1.e3, 8.e3]/dx[0])
+    # triple
     delta_t = 2.e3/dx[0]
-    # [xt, yt] = nx_t[d][:2]*.5-delta_t*.5
-    # rect_triple = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='k', facecolor='none')
-    # rect_triple2 = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='k', facecolor='none')
 
     # plotting limits
     if rstar == 1100:
@@ -195,32 +186,16 @@ def main():
         jc = np.int(nx_d[d][1]*.5)
         if rstar == 1100 and dstar == 10:
             ic = np.int(nx_d[d][0] * .5) - 80
-        # di = 5
-        # dj = 20
-        # rect_double_ = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='b', facecolor='none')
-        # rect_double2_ = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='b', facecolor='none')
         [xd, yd] = [ic,jc] - delta_d*.5
         rect_double = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
         rect_double2 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
-        # print('DOUBLE: ', ic-di, jc-dj, di*2, dj*2, xd, yd, delta_d)
-        # axis[1,0].plot(jc, ic, 'o', color='k', markersize=10)
-        # axis[1,0].plot(yd, xd, 'kx', markersize=10)
         axis[1,0].add_patch(rect_double)
         axis[1,1].add_patch(rect_double2)
-        # axis[1,0].add_patch(rect_double_)
-        # axis[1,1].add_patch(rect_double2_)
-        # ic = np.int(nx_t[d][0]*0.5)
-        # jc = np.int(nx_t[d][1]*0.5)
-        # di = 20
-        # rect_triple_ = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='b', facecolor='none')
-        # rect_triple2_ = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='b', facecolor='none')
         [xt, yt] = nx_t[d][:2] * .5 - delta_t * .5
         rect_triple = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='k', facecolor='none')
         rect_triple2 = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='k', facecolor='none')
         axis[2, 0].add_patch(rect_triple)
         axis[2, 1].add_patch(rect_triple2)
-        # axis[2, 0].add_patch(rect_triple_)
-        # axis[2, 1].add_patch(rect_triple2_)
 
 
         axis[0,0].set_title('t='+str(t_2CP[d])+'s')
