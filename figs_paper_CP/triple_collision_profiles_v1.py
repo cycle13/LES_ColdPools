@@ -556,7 +556,7 @@ def define_geometry(case_name_single, case_name_double, case_name_triple,
     nd = len(id_list_d)
     global nx_s, nx_d, nx_t
     nx_s = np.empty(3, dtype=np.int)
-    nx_d = np.empty(nd)
+    nx_d = np.empty(nd, dtype=np.ndarray(3))
     nx_t = np.empty(3, dtype=np.int)
     dx_s = np.empty(3, dtype=np.int)
     dx_d = np.empty(3, dtype=np.int)
