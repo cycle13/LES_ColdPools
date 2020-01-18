@@ -129,7 +129,7 @@ def main():
     # plotting limits
     lim_single = [0,0,0]
     lim_double = [[100, 200], [100, 200], [100, 200]]
-    lim_triple = [80, 0, 0]
+    lim_triple = [80, 200, 200]
 
 
 
@@ -204,18 +204,15 @@ def main():
         axis[0,0].set_title('t='+str(t_2CP[d])+'s')
         axis[0,1].set_title('t='+str(t_3CP[d])+'s')
         for ax in axis[0,:].flat:
-            ax.set_xlim(0, nx_s[0])
-            ax.set_ylim(0, nx_s[1])
+            ax.set_xlim(lim_single[d], nx_s[0]-lim_single[d])
+            ax.set_ylim(lim_single[0], nx_s[1]-lim_single[d])
         for ax in axis[1,:].flat:
-            ax.set_xlim(100,nx_d[d][1]-100)
-            ax.set_ylim(200,nx_d[d][0]-200)
+            ax.set_xlim(lim_double[d][0],nx_d[d][1]-lim_double[d][0])
+            # if rstar == 1100 and d == 0:
+            ax.set_ylim(lim_double[d][1],nx_d[d][0]-lim_double[d][1])
         for ax in axis[2, :].flat:
-            if d == 0:
-                delta = 80
-            else:
-                delta = 200
-            ax.set_xlim(delta, nx_t[d][0]-delta)
-            ax.set_ylim(delta, nx_t[d][1]-delta)
+            ax.set_xlim(lim_triple[d], nx_t[d][0]-lim_triple[d])
+            ax.set_ylim(lim_triple[d], nx_t[d][1]-lim_triple[d])
         for ax in axis.flat:
             ax.set_aspect('equal')
         # plt.subplots_adjust(bottom=0.05, right=.95, left=0.05, top=0.95, hspace=0.05)
