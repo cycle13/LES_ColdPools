@@ -142,6 +142,7 @@ def main():
     # lvls = np.arange(-w_max, w_max, .25)
     lvls = np.linspace(-4, 4, 10)
     for d, dstar in enumerate(d_range):
+        print('plotting: d='+str(dstar), d)
         fig_name = 'collisions_subdomains_k'+str(k0)+'_d'+str(dstar)+ 'km_test.png'
         fig, axis = plt.subplots(3, 2, figsize=(11, 15))
         fullpath_in = os.path.join(path_single, id_list_s[0], 'fields', str(t_2CP[d])+'.nc')
@@ -218,6 +219,7 @@ def main():
         for ax in axis.flat:
             ax.set_aspect('equal')
         # plt.subplots_adjust(bottom=0.05, right=.95, left=0.05, top=0.95, hspace=0.05)
+        print('savig: ', fig_name)
         plt.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
 
