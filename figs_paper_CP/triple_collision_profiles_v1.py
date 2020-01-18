@@ -118,7 +118,7 @@ def main():
     [xs,ys] = nx_s[:2]*.5
 
     delta_d = np.asarray([2.e3/dx[0],6.e2/dx[1]])
-    [xd,yd] = nx_d[:2]*.5-delta_d*.5
+    [xd,yd] = nx_d[d][:2]*.5-delta_d*.5
     rect_double = mpatches.Rectangle((xd, yd), delta_d[0], delta_d[1], linewidth=1, edgecolor='grey',
                                      facecolor='none')
     delta_t = 6.e2/dx[0]
@@ -159,7 +159,6 @@ def main():
         fullpath_in = os.path.join(path_double, id_list_d[d], 'fields', str(t_2CP[d]) + '.nc')
         root = nc.Dataset(fullpath_in, 'r')
         w = root.groups['fields'].variables['w'][:, :, k0]
-        # [nx_d,ny_d] = w.shape
         root.close()
         cf = axis[1,0].contourf(w, levels=lvls, cmap=cm_bwr, extend='both')
         plt.colorbar(cf, ax=axis[1, 0], shrink=0.8)
@@ -187,8 +186,8 @@ def main():
         # circle2 = plt.Circle((xs, ys), rad_3CP[d], fill=False, color='lime', linewidth=1)
         # axis[0,0].add_artist(circle1)
         # axis[0,1].add_artist(circle2)
-        # # ic = np.int(nx_d[0]*.5)
-        # # jc = np.int(nx_d[1]*.5)
+        # # ic = np.int(nx_d[d][0]*.5)
+        # # jc = np.int(nx_d[d][1]*.5)
         # # di = 20
         # # dj = 5
         # # rect_double = mpatches.Rectangle((ic - di, jc - dj), 2 * di, 2 * dj, linewidth=1, edgecolor='grtey', facecolor='none')
@@ -208,8 +207,8 @@ def main():
             ax.set_xlim(0, nx_s[0])
             ax.set_ylim(0, nx_s[1])
         for ax in axis[1,:].flat:
-            ax.set_xlim(100,nx_d[1]-100)
-            ax.set_ylim(200,nx_d[0]-200)
+            ax.set_xlim(100,nx_d[d][1]-100)
+            ax.set_ylim(200,nx_d[d][0]-200)
         for ax in axis[2, :].flat:
             if d == 0:
                 delta = 80
@@ -572,7 +571,7 @@ def define_geometry(case_name_single, case_name_double, case_name_triple,
     # dt_fields_s = np.int(nml['fields_io']['frequency'])
     for d, ID in enumerate(id_list_d):
         nml = simplejson.loads(open(os.path.join(path_double, ID, case_name_double+ '.in')).read())
-        nx_d.append(nx_d, np.empty(3, dtype=np.int))
+        nx_d.append(np.empty(3, dtype=np.int))
         nx_d[d][0] = nml['grid']['nx']
         nx_d[d][1] = nml['grid']['ny']
         nx_d[d][2] = nml['grid']['nz']
