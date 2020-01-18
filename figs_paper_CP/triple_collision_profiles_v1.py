@@ -201,7 +201,7 @@ def main():
         rect_double2_ = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='b', facecolor='none')
         [xd, yd] = [ic, jc] - delta_d * .5
         rect_double = mpatches.Rectangle((yd, xd), delta_d[0], delta_d[1], linewidth=1, edgecolor='k', facecolor='none')
-        rect_double2 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=1, edgecolor='k', facecolor='none')
+        rect_double2 = mpatches.Rectangle((yd, xd), delta_d[0], delta_d[1], linewidth=1, edgecolor='k', facecolor='none')
         print('DOUBLE 2: ', ic, jc, di*2, dj*2, xd, yd, delta_d)
         # axis[1,0].plot(jc, ic, 'o', color='k', markersize=10)
         # axis[1,0].plot(yd, xd, 'kx', markersize=10)
