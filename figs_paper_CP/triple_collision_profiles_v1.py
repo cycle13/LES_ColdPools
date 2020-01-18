@@ -570,11 +570,12 @@ def define_geometry(case_name_single, case_name_double, case_name_triple,
     # dx_s[1] = nml['grid']['dy']
     # dx_s[2] = nml['grid']['dz']
     # dt_fields_s = np.int(nml['fields_io']['frequency'])
-    nml = simplejson.loads(open(os.path.join(path_double, id_list_d[0], case_name_double+ '.in')).read())
-    nx_d.append(np.empty(3, dtype=np.int))
-    nx_d[d][0] = nml['grid']['nx']
-    nx_d[d][1] = nml['grid']['ny']
-    nx_d[d][2] = nml['grid']['nz']
+    for d, ID in enumerate(id_list_d):
+        nml = simplejson.loads(open(os.path.join(path_double, ID, case_name_double+ '.in')).read())
+        nx_d.append(np.empty(3, dtype=np.int))
+        nx_d[d][0] = nml['grid']['nx']
+        nx_d[d][1] = nml['grid']['ny']
+        nx_d[d][2] = nml['grid']['nz']
     dx_d[0] = nml['grid']['dx']
     dx_d[1] = nml['grid']['dy']
     dx_d[2] = nml['grid']['dz']
