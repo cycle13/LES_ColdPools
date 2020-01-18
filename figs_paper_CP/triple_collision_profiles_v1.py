@@ -49,8 +49,10 @@ def main():
     print('')
     if rstar == 1100:
         d_range = [10, 12, 15]
+        t_ini = [600, 600, 600]
         t_2CP = [1100, 1500, 2400]
         t_3CP = [1500, 2200, 3300]
+        t_final = [1800, 2500, 3500]
     elif rstar == 2000:
         d_range = [10, 15, 20]
     # d_range = [15, 20]
@@ -109,12 +111,16 @@ def main():
         cp_id = 2
         dist_av[it] = get_radius(fullpath_in, it, cp_id, n_tracers, n_cps)
     r_av = dist_av * dx[0]
-    rad_2CP = np.empty(3)
-    rad_3CP = np.empty(3)
+    rad_1CP_ini = np.empty(3)
+    rad_2CP_ini = np.empty(3)
+    rad_3CP_ini = np.empty(3)
+    rad_3CP_end = np.empty(3)
     delta_s = 6.e2#/dx[0]
     for d in range(len(d_range)):
-        rad_2CP[d] = (r_av[np.int(t_2CP[d]/dt_fields)]+delta_s)/dx[0]
-        rad_3CP[d] = (r_av[np.int(t_3CP[d]/dt_fields)]+delta_s)/dx[0]
+        rad_1CP_ini[d] = r_av[np.int(t_ini[d]/dt_fields)]
+        rad_2CP_ini[d] = r_av[np.int(t_2CP[d]/dt_fields)]
+        rad_3CP_ini[d] = r_av[np.int(t_3CP[d]/dt_fields)]
+        rad_3CP_end[d] = r_av[np.int(t_final[d]/dt_fields)]
     [xs,ys] = nx_s[:2]*.5
     # double
     delta_d = np.asarray([1.e3, 8.e3]/dx[0])
@@ -178,8 +184,8 @@ def main():
         cf = axis[2,1].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
         plt.colorbar(cf, ax=axis[2, 1], shrink=0.8)
 
-        circle1 = plt.Circle((xs, ys), rad_2CP[d], fill=False, color='k', linewidth=1)
-        circle2 = plt.Circle((xs, ys), rad_3CP[d], fill=False, color='k', linewidth=1)
+        circle1 = plt.Circle((xs, ys), (rad_2CP_ini[d]+delta_s)/dx[0], fill=False, color='k', linewidth=1)
+        circle2 = plt.Circle((xs, ys), (rad_3CP_ini[d]+delta_s)/dx[0], fill=False, color='k', linewidth=1)
         axis[0,0].add_artist(circle1)
         axis[0,1].add_artist(circle2)
         ic = np.int(nx_d[d][0]*.5)
@@ -187,7 +193,9 @@ def main():
         if rstar == 1100 and dstar == 10:
             ic = np.int(nx_d[d][0] * .5) - 80
         [xd, yd] = [ic,jc] - delta_d*.5
+        delta_d[1] = 2*np.sqrt(rad_2CP_ini[d]**2 - dstar**2/4)
         rect_double = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
+        delta_d[1] = 2*np.sqrt(rad_3CP_ini[d]**2 - dstar**2/4)
         rect_double2 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
         axis[1,0].add_patch(rect_double)
         axis[1,1].add_patch(rect_double2)
