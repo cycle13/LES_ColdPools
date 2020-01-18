@@ -125,7 +125,7 @@ def main():
     # print('DOUBLE: ', ic, jc, xd, yd, delta_d)
     # rect_double = mpatches.Rectangle((xd, yd), delta_d[0], delta_d[1], linewidth=1, edgecolor='k', facecolor='none')
     # rect_double2 = mpatches.Rectangle((xd, yd), delta_d[0], delta_d[1], linewidth=1, edgecolor='k', facecolor='none')
-    delta_t = 6.e2/dx[0]
+    delta_t = 2.e3/dx[0]
     # [xt, yt] = nx_t[d][:2]*.5-delta_t*.5
     # rect_triple = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='k', facecolor='none')
     # rect_triple2 = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='k', facecolor='none')
@@ -200,9 +200,9 @@ def main():
         rect_double_ = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='b', facecolor='none')
         rect_double2_ = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='b', facecolor='none')
         [xd, yd] = [ic,jc] - delta_d*.5
-        rect_double = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=1, edgecolor='k', facecolor='none')
-        rect_double2 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=1, edgecolor='k', facecolor='none')
-        print('DOUBLE 2: ', ic, jc, di*2, dj*2, xd, yd, delta_d)
+        rect_double = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
+        rect_double2 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
+        print('DOUBLE: ', ic-di, jc-dj, di*2, dj*2, xd, yd, delta_d)
         # axis[1,0].plot(jc, ic, 'o', color='k', markersize=10)
         # axis[1,0].plot(yd, xd, 'kx', markersize=10)
         axis[1,0].add_patch(rect_double)
