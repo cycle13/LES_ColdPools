@@ -219,8 +219,8 @@ def main():
         rect_triple2 = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='k', facecolor='none')
         axis[2, 0].add_patch(rect_triple)
         axis[2, 1].add_patch(rect_triple2)
-        axis[2, 0].add_patch(rect_triple_)
-        axis[2, 1].add_patch(rect_triple2_)
+        # axis[2, 0].add_patch(rect_triple_)
+        # axis[2, 1].add_patch(rect_triple2_)
 
 
         axis[0,0].set_title('t='+str(t_2CP[d])+'s')
