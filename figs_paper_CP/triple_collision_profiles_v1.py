@@ -122,7 +122,7 @@ def main():
     rect_double = mpatches.Rectangle((xd, yd), delta_d[0], delta_d[1], linewidth=1, edgecolor='grey',
                                      facecolor='none')
     delta_t = 6.e2/dx[0]
-    [xt, yt] = nx_t[:2]*.5-delta_t*.5
+    [xt, yt] = nx_t[d][:2]*.5-delta_t*.5
     rect_triple = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='grey',
                                      facecolor='none')
 
@@ -172,7 +172,6 @@ def main():
         root = nc.Dataset(fullpath_in, 'r')
         w = root.groups['fields'].variables['w'][:, :, k0]
         root.close()
-        # [nx_t, ny_t] = w.shape
         cf = axis[2,0].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
         plt.colorbar(cf, ax=axis[2, 0], shrink=0.8)
         fullpath_in = os.path.join(path_triple, id_list_t[d], 'fields', str(t_3CP[d]) + '.nc')
@@ -194,8 +193,8 @@ def main():
         # # axis[1,0].plot(ic, jc, 'o', markersize=20)
         # axis[1,0].plot(xd,yd, 'o', markersize=20)
         # print('HAAAAAAAAAAAAAAAAAA', xd, yd)
-        # # ic = np.int(nx_t*0.5)
-        # # jc = np.int(ny_t*0.5)
+        # # ic = np.int(nx_t[d][0]*0.5)
+        # # jc = np.int(nx_t[d][1]*0.5)
         # # di = 20
         # # rect_triple = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='grey', facecolor='none')
         # axis[1,0].add_patch(rect_double)
@@ -214,8 +213,8 @@ def main():
                 delta = 80
             else:
                 delta = 200
-            ax.set_xlim(delta, nx_t[0]-delta)
-            ax.set_ylim(delta, nx_t[1]-delta)
+            ax.set_xlim(delta, nx_t[d][0]-delta)
+            ax.set_ylim(delta, nx_t[d][1]-delta)
         for ax in axis.flat:
             ax.set_aspect('equal')
         # plt.subplots_adjust(bottom=0.05, right=.95, left=0.05, top=0.95, hspace=0.05)
@@ -556,10 +555,10 @@ def define_geometry(case_name_single, case_name_double, case_name_triple,
     global nx_s, nx_d, nx_t
     nx_s = np.empty(3, dtype=np.int)
     nx_d = []
-    nx_t = np.empty(3, dtype=np.int)
+    nx_t = []
     dx_s = np.empty(3, dtype=np.int)
     dx_d = []
-    dx_t = np.empty(3, dtype=np.int)
+    dx_t = []
 
     nml = simplejson.loads(open(os.path.join(path_single, id_list_s[0], case_name_single+ '.in')).read())
     nx_s[0] = nml['grid']['nx']
@@ -575,18 +574,21 @@ def define_geometry(case_name_single, case_name_double, case_name_triple,
         nx_d[d][0] = nml['grid']['nx']
         nx_d[d][1] = nml['grid']['ny']
         nx_d[d][2] = nml['grid']['nz']
-        dx_d.append(dx_d, np.empty(3, dtype=np.int))
+        dx_d.append(np.empty(3, dtype=np.int))
         dx_d[d][0] = nml['grid']['dx']
         dx_d[d][1] = nml['grid']['dy']
         dx_d[d][2] = nml['grid']['dz']
     dt_fields_d = np.int(nml['fields_io']['frequency'])
-    nml = simplejson.loads(open(os.path.join(path_triple, id_list_t[0], case_name_triple+ '.in')).read())
-    nx_t[0] = nml['grid']['nx']
-    nx_t[1] = nml['grid']['ny']
-    nx_t[2] = nml['grid']['nz']
-    dx_t[0] = nml['grid']['dx']
-    dx_t[1] = nml['grid']['dy']
-    dx_t[2] = nml['grid']['dz']
+    for d, ID in enumerate(id_list_t):
+        nml = simplejson.loads(open(os.path.join(path_triple, ID, case_name_triple+ '.in')).read())
+        nx_t.append(np.empty(3, dtype=np.int))
+        nx_t[d][0] = nml['grid']['nx']
+        nx_t[d][1] = nml['grid']['ny']
+        nx_t[d][2] = nml['grid']['nz']
+        dx_t.append(np.empty(3, dtype=np.int))
+        dx_t[d][0] = nml['grid']['dx']
+        dx_t[d][1] = nml['grid']['dy']
+        dx_t[d][2] = nml['grid']['dz']
     dt_fields_t = np.int(nml['fields_io']['frequency'])
     print('')
     print('nx single: '+str(nx_s))
