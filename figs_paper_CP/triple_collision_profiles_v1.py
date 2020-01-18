@@ -117,10 +117,13 @@ def main():
         rad_3CP[d] = (r_av[np.int(t_3CP[d]/dt_fields)]+delta_s)/dx[0]
     [xs,ys] = nx_s[:2]*.5
 
-    delta_d = np.asarray([2.e3/dx[0],6.e2/dx[1]])
-    [xd,yd] = nx_d[d][:2]*.5-delta_d*.5
-    rect_double = mpatches.Rectangle((xd, yd), delta_d[0], delta_d[1], linewidth=1, edgecolor='grey',
-                                     facecolor='none')
+    delta_d = np.asarray([6.e2/dx[0],4.e3/dx[0]])
+    [ic, jc] = nx_d[d][:2]*.5
+    if rstar == 1100 and dstar == 10:
+        ic = np.int(nx_d[d][0] * .5) - 80
+    [xd,yd] = [ic,jc]-delta_d*.5
+    rect_double = mpatches.Rectangle((xd, yd), delta_d[0], delta_d[1], linewidth=1, edgecolor='k', facecolor='none')
+    rect_double2 = mpatches.Rectangle((xd, yd), delta_d[0], delta_d[1], linewidth=1, edgecolor='k', facecolor='none')
     delta_t = 6.e2/dx[0]
     [xt, yt] = nx_t[d][:2]*.5-delta_t*.5
     rect_triple = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='grey',
@@ -193,11 +196,11 @@ def main():
             ic = np.int(nx_d[d][0] * .5) - 80
         di = 5
         dj = 20
-        rect_double = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='k', facecolor='none')
-        rect_double2 = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='k', facecolor='none')
-        # print('DOUBLE: ', ic, jc, xd, yd)
-        # axis[1,0].plot(jc, ic, 'o', color='k', markersize=10)
-        # axis[1,0].plot(yd, xd, 'kx', markersize=10)
+        # rect_double = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='k', facecolor='none')
+        # rect_double2 = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='k', facecolor='none')
+        # # print('DOUBLE: ', ic, jc, xd, yd)
+        # # axis[1,0].plot(jc, ic, 'o', color='k', markersize=10)
+        # # axis[1,0].plot(yd, xd, 'kx', markersize=10)
         axis[1,0].add_patch(rect_double)
         axis[1,1].add_patch(rect_double2)
         ic = np.int(nx_t[d][0]*0.5)
