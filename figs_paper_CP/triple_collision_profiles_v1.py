@@ -143,41 +143,41 @@ def main():
         root = nc.Dataset(fullpath_in, 'r')
         w = root.groups['fields'].variables['w'][:,:,k0]
         root.close()
-        # cf = axis[0,0].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
-        # plt.colorbar(cf, ax=axis[0,0], shrink=0.8)
-        # fullpath_in = os.path.join(path_single, id_list_s[0], 'fields', str(t_3CP[d]) + '.nc')
-        # root = nc.Dataset(fullpath_in, 'r')
-        # w = root.groups['fields'].variables['w'][:, :, k0]
-        # root.close()
-        # cf = axis[0,1].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
-        # plt.colorbar(cf, ax=axis[0, 1], shrink=0.8)
-        # fullpath_in = os.path.join(path_double, id_list_d[d], 'fields', str(t_2CP[d]) + '.nc')
-        # root = nc.Dataset(fullpath_in, 'r')
-        # w = root.groups['fields'].variables['w'][:, :, k0]
-        # # [nx_d,ny_d] = w.shape
-        # root.close()
-        # cf = axis[1,0].contourf(w, levels=lvls, cmap=cm_bwr, extend='both')
-        # plt.colorbar(cf, ax=axis[1, 0], shrink=0.8)
-        # fullpath_in = os.path.join(path_double, id_list_d[d], 'fields', str(t_3CP[d]) + '.nc')
-        # root = nc.Dataset(fullpath_in, 'r')
-        # w = root.groups['fields'].variables['w'][:, :, k0]
-        # root.close()
-        # cf = axis[1,1].contourf(w, levels=lvls, cmap=cm_bwr, extend='both')
-        # plt.colorbar(cf, ax=axis[1, 1], shrink=0.8)
-        # fullpath_in = os.path.join(path_triple, id_list_t[d], 'fields', str(t_2CP[d]) + '.nc')
-        # root = nc.Dataset(fullpath_in, 'r')
-        # w = root.groups['fields'].variables['w'][:, :, k0]
-        # root.close()
-        # # [nx_t, ny_t] = w.shape
-        # cf = axis[2,0].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
-        # plt.colorbar(cf, ax=axis[2, 0], shrink=0.8)
-        # fullpath_in = os.path.join(path_triple, id_list_t[d], 'fields', str(t_3CP[d]) + '.nc')
-        # root = nc.Dataset(fullpath_in, 'r')
-        # w = root.groups['fields'].variables['w'][:, :, k0]
-        # root.close()
-        # cf = axis[2,1].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
-        # plt.colorbar(cf, ax=axis[2, 1], shrink=0.8)
-        #
+        cf = axis[0,0].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[0,0], shrink=0.8)
+        fullpath_in = os.path.join(path_single, id_list_s[0], 'fields', str(t_3CP[d]) + '.nc')
+        root = nc.Dataset(fullpath_in, 'r')
+        w = root.groups['fields'].variables['w'][:, :, k0]
+        root.close()
+        cf = axis[0,1].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[0, 1], shrink=0.8)
+        fullpath_in = os.path.join(path_double, id_list_d[d], 'fields', str(t_2CP[d]) + '.nc')
+        root = nc.Dataset(fullpath_in, 'r')
+        w = root.groups['fields'].variables['w'][:, :, k0]
+        # [nx_d,ny_d] = w.shape
+        root.close()
+        cf = axis[1,0].contourf(w, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[1, 0], shrink=0.8)
+        fullpath_in = os.path.join(path_double, id_list_d[d], 'fields', str(t_3CP[d]) + '.nc')
+        root = nc.Dataset(fullpath_in, 'r')
+        w = root.groups['fields'].variables['w'][:, :, k0]
+        root.close()
+        cf = axis[1,1].contourf(w, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[1, 1], shrink=0.8)
+        fullpath_in = os.path.join(path_triple, id_list_t[d], 'fields', str(t_2CP[d]) + '.nc')
+        root = nc.Dataset(fullpath_in, 'r')
+        w = root.groups['fields'].variables['w'][:, :, k0]
+        root.close()
+        # [nx_t, ny_t] = w.shape
+        cf = axis[2,0].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[2, 0], shrink=0.8)
+        fullpath_in = os.path.join(path_triple, id_list_t[d], 'fields', str(t_3CP[d]) + '.nc')
+        root = nc.Dataset(fullpath_in, 'r')
+        w = root.groups['fields'].variables['w'][:, :, k0]
+        root.close()
+        cf = axis[2,1].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[2, 1], shrink=0.8)
+
         # circle1 = plt.Circle((xs, ys), rad_2CP[d], fill=False, color='lime', linewidth=1)
         # circle2 = plt.Circle((xs, ys), rad_3CP[d], fill=False, color='lime', linewidth=1)
         # axis[0,0].add_artist(circle1)
