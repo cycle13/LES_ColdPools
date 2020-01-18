@@ -114,7 +114,7 @@ def main():
     delta_s = 6.e2#/dx[0]
     for d in range(len(d_range)):
         rad_2CP[d] = (r_av[np.int(t_2CP[d]/dt_fields)]+delta_s)/dx[0]
-        rad_3CP[d] = r_av[np.int(t_3CP[d]/dt_fields)]+delta_s
+        rad_3CP[d] = (r_av[np.int(t_3CP[d]/dt_fields)]+delta_s)/dx[0]
     [xs,ys] = nx_s[:2]*.5
 
     delta_d = np.asarray([2.e3/dx[0],6.e2/dx[1]])
