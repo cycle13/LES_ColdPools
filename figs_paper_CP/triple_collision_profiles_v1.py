@@ -84,6 +84,7 @@ def main():
     tmin = np.int(0)
     tmax = np.int(7200)
     tmax = np.int(3600)
+    tmax = np.int(3500)  # bcs. of tracer statistics
     times = np.arange(tmin, tmax + dt_fields, dt_fields)
     nt = len(times)
     print('tmin: ' + str(tmin))
@@ -104,18 +105,19 @@ def main():
     n_cps = get_number_cps(fullpath_in)
     dist_av = np.zeros((nt))
     for it, t0 in enumerate(times):
+        print('it, t0', it, t0)
         cp_id = 2
         dist_av[it] = get_radius(fullpath_in, it, cp_id, n_tracers, n_cps)
-    r_av = dist_av * dx
+    r_av = dist_av * dx[0]
     rad_2CP = np.empty(3)
     rad_3CP = np.empty(3)
     delta_s = 6.e2/dx[0]
     for d in range(len(d_range)):
-        rad_2CP[d] = r_av[t_2CP[d]]+delta_s
-        rad_3CP[d] = r_av[t_3CP[d]]+delta_s
+        rad_2CP[d] = r_av[np.int(t_2CP[d]/dt_fields)]+delta_s
+        rad_3CP[d] = r_av[np.int(t_3CP[d]/dt_fields)]+delta_s
     [xs,ys] = nx_s[:2]*.5
 
-    delta_d = [2.e3/dx[0],6.e2/dx[1]]
+    delta_d = np.asarray([2.e3/dx[0],6.e2/dx[1]])
     [xd,yd] = nx_d[:2]*.5-delta_d*.5
     rect_double = mpatches.Rectangle((xd, yd), delta_d[0], delta_d[1], linewidth=1, edgecolor='grey',
                                      facecolor='none')
@@ -198,15 +200,15 @@ def main():
         axis[0,0].set_title('t='+str(t_2CP[d])+'s')
         axis[0,1].set_title('t='+str(t_3CP[d])+'s')
         for ax in axis[1,:].flat:
-            ax.set_xlim(100,ny_d-100)
-            ax.set_ylim(200,nx_d-200)
+            ax.set_xlim(100,nx_d[1]-100)
+            ax.set_ylim(200,nx_d[0]-200)
         for ax in axis[2, :].flat:
             if d == 0:
                 delta = 80
             else:
                 delta = 200
-            ax.set_xlim(delta, nx_t-delta)
-            ax.set_ylim(delta, nx_t-delta)
+            ax.set_xlim(delta, nx_t[0]-delta)
+            ax.set_ylim(delta, nx_t[1]-delta)
         for ax in axis.flat:
             ax.set_aspect('equal')
         plt.subplots_adjust(bottom=0.05, right=.95, left=0.05, top=0.95, hspace=0.05)
@@ -544,7 +546,7 @@ def define_geometry(case_name_single, case_name_double, case_name_triple,
     print 'define geometry'
 
 
-    global nx_x, nx_d, nx_t
+    global nx_s, nx_d, nx_t
     nx_s = np.empty(3, dtype=np.int)
     nx_d = np.empty(3, dtype=np.int)
     nx_t = np.empty(3, dtype=np.int)
@@ -552,10 +554,10 @@ def define_geometry(case_name_single, case_name_double, case_name_triple,
     dx_d = np.empty(3, dtype=np.int)
     dx_t = np.empty(3, dtype=np.int)
 
-    # nml = simplejson.loads(open(os.path.join(path_single, id_list_s[0], case_name_single+ '.in')).read())
-    # nx_s[0] = nml['grid']['nx']
-    # nx_s[1] = nml['grid']['ny']
-    # nx_s[2] = nml['grid']['nz']
+    nml = simplejson.loads(open(os.path.join(path_single, id_list_s[0], case_name_single+ '.in')).read())
+    nx_s[0] = nml['grid']['nx']
+    nx_s[1] = nml['grid']['ny']
+    nx_s[2] = nml['grid']['nz']
     # dx_s[0] = nml['grid']['dx']
     # dx_s[1] = nml['grid']['dy']
     # dx_s[2] = nml['grid']['dz']
