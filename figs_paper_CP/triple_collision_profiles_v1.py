@@ -127,9 +127,10 @@ def main():
                                      facecolor='none')
 
     # plotting limits
-    lim_single = [0,0,0]
-    lim_double = [[100, 200], [100, 250], [100, 220]]
-    lim_triple = [120, 250, 300]
+    if rstar == 1100:
+        lim_single = [0,0,0]
+        lim_double = [[100, 200], [100, 250], [100, 220]]
+        lim_triple = [120, 220, 300]
 
 
 
@@ -182,10 +183,10 @@ def main():
         cf = axis[2,1].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
         plt.colorbar(cf, ax=axis[2, 1], shrink=0.8)
 
-        # circle1 = plt.Circle((xs, ys), rad_2CP[d], fill=False, color='lime', linewidth=1)
-        # circle2 = plt.Circle((xs, ys), rad_3CP[d], fill=False, color='lime', linewidth=1)
-        # axis[0,0].add_artist(circle1)
-        # axis[0,1].add_artist(circle2)
+        circle1 = plt.Circle((xs, ys), rad_2CP[d], fill=False, color='lime', linewidth=1)
+        circle2 = plt.Circle((xs, ys), rad_3CP[d], fill=False, color='lime', linewidth=1)
+        axis[0,0].add_artist(circle1)
+        axis[0,1].add_artist(circle2)
         # # ic = np.int(nx_d[d][0]*.5)
         # # jc = np.int(nx_d[d][1]*.5)
         # # di = 20
