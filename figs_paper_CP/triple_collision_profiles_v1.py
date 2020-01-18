@@ -192,10 +192,11 @@ def main():
         jc = np.int(nx_d[d][1]*.5)
         if rstar == 1100 and dstar == 10:
             ic = np.int(nx_d[d][0] * .5) - 80
-        [xd, yd] = [ic,jc] - delta_d*.5
         delta_d[1] = 2*np.sqrt(rad_2CP_ini[d]**2 - dstar**2/4)
+        [xd, yd] = [ic,jc] - delta_d*.5
         rect_double = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
         delta_d[1] = 2*np.sqrt(rad_3CP_ini[d]**2 - dstar**2/4)
+        [xd, yd] = [ic,jc] - delta_d*.5
         rect_double2 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
         axis[1,0].add_patch(rect_double)
         axis[1,1].add_patch(rect_double2)
