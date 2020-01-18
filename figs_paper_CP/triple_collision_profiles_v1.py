@@ -197,13 +197,15 @@ def main():
         print('DOUBLE: ', ic, jc, xd, yd)
         axis[1,0].plot(jc, ic, 'o', color='k', markersize=10)
         axis[1,0].plot(yd, xd, 'kx', markersize=10)
-        # print('HAAAAAAAAAAAAAAAAAA', xd, yd)
-        # # ic = np.int(nx_t[d][0]*0.5)
-        # # jc = np.int(nx_t[d][1]*0.5)
-        # # di = 20
-        # # rect_triple = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='grey', facecolor='none')
         axis[1,0].add_patch(rect_double)
-        # axis[2,0].add_patch(rect_triple)
+        axis[1,1].add_patch(rect_double)
+        ic = np.int(nx_t[d][0]*0.5)
+        jc = np.int(nx_t[d][1]*0.5)
+        di = 20
+        rect_triple = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='grey', facecolor='none')
+        axis[2, 0].add_patch(rect_triple)
+        axis[2, 1].add_patch(rect_triple)
+
 
         axis[0,0].set_title('t='+str(t_2CP[d])+'s')
         axis[0,1].set_title('t='+str(t_3CP[d])+'s')
