@@ -189,8 +189,8 @@ def main():
         axis[0,1].add_artist(circle2)
         ic = np.int(nx_d[d][0]*.5)
         jc = np.int(nx_d[d][1]*.5)
-        # di = 20
-        # dj = 5
+        di = 20
+        dj = 5
         rect_double = mpatches.Rectangle((jc - di, ic - dj), 2 * di, 2 * dj, linewidth=1, edgecolor='grtey', facecolor='none')
         print('DOUBLE: ', ic, jc, xd, yd)
         axis[1,0].plot(jc, ic, 'o', color='k', markersize=10)
