@@ -32,7 +32,7 @@ def main():
     case_name_triple = 'ColdPoolDry_triple_3D'
 
     # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single/'
-    path_out_figs = '/nbi/home/meyerbe/paper_CP_single/'
+    path_out_figs = '/nbi/home/meyerbe/paper_CP/'
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
 
@@ -126,6 +126,11 @@ def main():
     rect_triple = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='grey',
                                      facecolor='none')
 
+    # plotting limits
+    lim_single = [0,0,0]
+    lim_double = [[100, 200], [100, 200], [100, 200]]
+    lim_triple = [80, 0, 0]
+
 
 
     ''' testing '''
@@ -199,6 +204,9 @@ def main():
 
         axis[0,0].set_title('t='+str(t_2CP[d])+'s')
         axis[0,1].set_title('t='+str(t_3CP[d])+'s')
+        for ax in axis[0,:].flat:
+            ax.set_xlim(0, nx_s[0])
+            ax.set_ylim(0, nx_s[1])
         for ax in axis[1,:].flat:
             ax.set_xlim(100,nx_d[1]-100)
             ax.set_ylim(200,nx_d[0]-200)
@@ -211,7 +219,7 @@ def main():
             ax.set_ylim(delta, nx_t[1]-delta)
         for ax in axis.flat:
             ax.set_aspect('equal')
-        plt.subplots_adjust(bottom=0.05, right=.95, left=0.05, top=0.95, hspace=0.05)
+        # plt.subplots_adjust(bottom=0.05, right=.95, left=0.05, top=0.95, hspace=0.05)
         plt.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
 
@@ -545,10 +553,10 @@ def define_geometry(case_name_single, case_name_double, case_name_triple,
                     path_single, path_double, path_triple, id_list_s, id_list_d, id_list_t):
     print 'define geometry'
 
-
+    nd = len(id_list_d)
     global nx_s, nx_d, nx_t
     nx_s = np.empty(3, dtype=np.int)
-    nx_d = np.empty(3, dtype=np.int)
+    nx_d = np.empty(nd)
     nx_t = np.empty(3, dtype=np.int)
     dx_s = np.empty(3, dtype=np.int)
     dx_d = np.empty(3, dtype=np.int)
@@ -563,9 +571,10 @@ def define_geometry(case_name_single, case_name_double, case_name_triple,
     # dx_s[2] = nml['grid']['dz']
     # dt_fields_s = np.int(nml['fields_io']['frequency'])
     nml = simplejson.loads(open(os.path.join(path_double, id_list_d[0], case_name_double+ '.in')).read())
-    nx_d[0] = nml['grid']['nx']
-    nx_d[1] = nml['grid']['ny']
-    nx_d[2] = nml['grid']['nz']
+    nx_d[d] = np.emtpy(3, dtype=np.int)
+    nx_d[d][0] = nml['grid']['nx']
+    nx_d[d][1] = nml['grid']['ny']
+    nx_d[d][2] = nml['grid']['nz']
     dx_d[0] = nml['grid']['dx']
     dx_d[1] = nml['grid']['dy']
     dx_d[2] = nml['grid']['dz']
