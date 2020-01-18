@@ -144,7 +144,7 @@ def main():
     # lvls = np.linspace(-4, 4, 10)
     for d, dstar in enumerate(d_range):
         print('plotting: d='+str(dstar), d)
-        fig_name = 'collisions_subdomains_k'+str(k0)+'_d'+str(dstar)+ 'km_test.png'
+        fig_name = 'collisions_subdomains_k'+str(k0)+id_list_s[0] + '_d'+str(dstar)+ 'km.png'
         fig, axis = plt.subplots(3, 2, figsize=(11, 15))
         fullpath_in = os.path.join(path_single, id_list_s[0], 'fields', str(t_2CP[d])+'.nc')
         root = nc.Dataset(fullpath_in, 'r')
