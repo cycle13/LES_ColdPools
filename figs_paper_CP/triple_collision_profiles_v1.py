@@ -191,11 +191,10 @@ def main():
         jc = np.int(nx_d[d][1]*.5)
         # di = 20
         # dj = 5
-        # rect_double = mpatches.Rectangle((ic - di, jc - dj), 2 * di, 2 * dj, linewidth=1, edgecolor='grtey', facecolor='none')
+        rect_double = mpatches.Rectangle((jc - di, ic - dj), 2 * di, 2 * dj, linewidth=1, edgecolor='grtey', facecolor='none')
         print('DOUBLE: ', ic, jc, xd, yd)
-        axis[1,0].plot(ic, jc, 'o', color='r', markersize=20)
-        axis[1,0].plot(jc, ic, 'o', color='k', markersize=20)
-        axis[1,0].plot(xd,yd, 'o', markersize=20)
+        axis[1,0].plot(jc, ic, 'o', color='k', markersize=10)
+        axis[1,0].plot(yd, xd, 'kx', markersize=10)
         # print('HAAAAAAAAAAAAAAAAAA', xd, yd)
         # # ic = np.int(nx_t[d][0]*0.5)
         # # jc = np.int(nx_t[d][1]*0.5)
