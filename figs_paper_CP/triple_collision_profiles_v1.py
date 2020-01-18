@@ -140,8 +140,8 @@ def main():
         w_max = 3.
     elif k0 == 10:
         w_max = 1.
-    # lvls = np.arange(-w_max, w_max, .25)
-    lvls = np.linspace(-4, 4, 10)
+    lvls = np.arange(-w_max, w_max, .25)
+    # lvls = np.linspace(-4, 4, 10)
     for d, dstar in enumerate(d_range):
         print('plotting: d='+str(dstar), d)
         fig_name = 'collisions_subdomains_k'+str(k0)+'_d'+str(dstar)+ 'km_test.png'
@@ -203,8 +203,8 @@ def main():
         ic = np.int(nx_t[d][0]*0.5)
         jc = np.int(nx_t[d][1]*0.5)
         di = 20
-        rect_triple = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='grey', facecolor='none')
-        rect_triple2 = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='grey', facecolor='none')
+        rect_triple = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='k', facecolor='none')
+        rect_triple2 = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='k', facecolor='none')
         axis[2, 0].add_patch(rect_triple)
         axis[2, 1].add_patch(rect_triple2)
 
