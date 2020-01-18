@@ -193,8 +193,8 @@ def main():
             ic = np.int(nx_d[d][0] * .5) - 80
         di = 5
         dj = 20
-        rect_double = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='grey', facecolor='none')
-        rect_double2 = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='grey', facecolor='none')
+        rect_double = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='k', facecolor='none')
+        rect_double2 = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='k', facecolor='none')
         # print('DOUBLE: ', ic, jc, xd, yd)
         # axis[1,0].plot(jc, ic, 'o', color='k', markersize=10)
         # axis[1,0].plot(yd, xd, 'kx', markersize=10)
@@ -204,8 +204,9 @@ def main():
         jc = np.int(nx_t[d][1]*0.5)
         di = 20
         rect_triple = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='grey', facecolor='none')
+        rect_triple2 = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='grey', facecolor='none')
         axis[2, 0].add_patch(rect_triple)
-        axis[2, 1].add_patch(rect_triple)
+        axis[2, 1].add_patch(rect_triple2)
 
 
         axis[0,0].set_title('t='+str(t_2CP[d])+'s')
