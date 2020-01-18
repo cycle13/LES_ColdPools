@@ -140,8 +140,8 @@ def main():
         w_max = 3.
     elif k0 == 10:
         w_max = 1.
-    lvls = np.arange(-w_max, w_max, .25)
-    # lvls = np.linspace(-4, 4, 10)
+    # lvls = np.arange(-w_max, w_max, .25)
+    lvls = np.linspace(-4, 4, 10)
     for d, dstar in enumerate(d_range):
         print('plotting: d='+str(dstar), d)
         fig_name = 'collisions_subdomains_k'+str(k0)+'_d'+str(dstar)+ 'km_test.png'
@@ -183,8 +183,8 @@ def main():
         cf = axis[2,1].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
         plt.colorbar(cf, ax=axis[2, 1], shrink=0.8)
 
-        circle1 = plt.Circle((xs, ys), rad_2CP[d], fill=False, color='lime', linewidth=1)
-        circle2 = plt.Circle((xs, ys), rad_3CP[d], fill=False, color='lime', linewidth=1)
+        circle1 = plt.Circle((xs, ys), rad_2CP[d], fill=False, color='k', linewidth=1)
+        circle2 = plt.Circle((xs, ys), rad_3CP[d], fill=False, color='k', linewidth=1)
         axis[0,0].add_artist(circle1)
         axis[0,1].add_artist(circle2)
         ic = np.int(nx_d[d][0]*.5)
@@ -194,11 +194,12 @@ def main():
         di = 5
         dj = 20
         rect_double = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='grey', facecolor='none')
+        rect_double2 = mpatches.Rectangle((jc-dj, ic-di), 2*dj, 2*di, linewidth=1, edgecolor='grey', facecolor='none')
         # print('DOUBLE: ', ic, jc, xd, yd)
         # axis[1,0].plot(jc, ic, 'o', color='k', markersize=10)
         # axis[1,0].plot(yd, xd, 'kx', markersize=10)
         axis[1,0].add_patch(rect_double)
-        axis[1,1].add_patch(rect_double)
+        axis[1,1].add_patch(rect_double2)
         ic = np.int(nx_t[d][0]*0.5)
         jc = np.int(nx_t[d][1]*0.5)
         di = 20
