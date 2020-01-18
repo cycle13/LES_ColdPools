@@ -111,9 +111,9 @@ def main():
     r_av = dist_av * dx[0]
     rad_2CP = np.empty(3)
     rad_3CP = np.empty(3)
-    delta_s = 6.e2/dx[0]
+    delta_s = 6.e2#/dx[0]
     for d in range(len(d_range)):
-        rad_2CP[d] = r_av[np.int(t_2CP[d]/dt_fields)]+delta_s
+        rad_2CP[d] = (r_av[np.int(t_2CP[d]/dt_fields)]+delta_s)/dx[0]
         rad_3CP[d] = r_av[np.int(t_3CP[d]/dt_fields)]+delta_s
     [xs,ys] = nx_s[:2]*.5
 
