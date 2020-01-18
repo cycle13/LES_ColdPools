@@ -208,15 +208,17 @@ def main():
             ax.set_ylim(lim_single[0], nx_s[1]-lim_single[d])
         for ax in axis[1,:].flat:
             ax.set_xlim(lim_double[d][0],nx_d[d][1]-lim_double[d][0])
-            # if rstar == 1100 and d == 0:
-            ax.set_ylim(lim_double[d][1],nx_d[d][0]-lim_double[d][1])
+            if rstar == 1100 and d == 0:
+                ax.set_ylim(lim_double[d][1],nx_d[d][0]-lim_double[d][1]-80)
+            else:
+                ax.set_ylim(lim_double[d][1],nx_d[d][0]-lim_double[d][1])
         for ax in axis[2, :].flat:
             ax.set_xlim(lim_triple[d], nx_t[d][0]-lim_triple[d])
             ax.set_ylim(lim_triple[d], nx_t[d][1]-lim_triple[d])
         for ax in axis.flat:
             ax.set_aspect('equal')
         # plt.subplots_adjust(bottom=0.05, right=.95, left=0.05, top=0.95, hspace=0.05)
-        print('savig: ', fig_name)
+        print('saving: ', fig_name)
         plt.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
 
