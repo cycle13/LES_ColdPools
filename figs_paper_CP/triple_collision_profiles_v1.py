@@ -127,8 +127,8 @@ def main():
     rect_double2 = mpatches.Rectangle((xd, yd), delta_d[0], delta_d[1], linewidth=1, edgecolor='k', facecolor='none')
     delta_t = 6.e2/dx[0]
     [xt, yt] = nx_t[d][:2]*.5-delta_t*.5
-    rect_triple = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='grey',
-                                     facecolor='none')
+    rect_triple = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='k', facecolor='none')
+    rect_triple2 = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='k', facecolor='none')
 
     # plotting limits
     if rstar == 1100:
@@ -209,10 +209,12 @@ def main():
         ic = np.int(nx_t[d][0]*0.5)
         jc = np.int(nx_t[d][1]*0.5)
         di = 20
-        rect_triple = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='k', facecolor='none')
-        rect_triple2 = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='k', facecolor='none')
+        rect_triple_ = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='b', facecolor='none')
+        rect_triple2_ = mpatches.Rectangle((ic - di, jc - di), 2 * di, 2* di, linewidth=1, edgecolor='b', facecolor='none')
         axis[2, 0].add_patch(rect_triple)
         axis[2, 1].add_patch(rect_triple2)
+        axis[2, 0].add_patch(rect_triple_)
+        axis[2, 1].add_patch(rect_triple2_)
 
 
         axis[0,0].set_title('t='+str(t_2CP[d])+'s')
