@@ -187,13 +187,13 @@ def main():
         circle2 = plt.Circle((xs, ys), rad_3CP[d], fill=False, color='lime', linewidth=1)
         axis[0,0].add_artist(circle1)
         axis[0,1].add_artist(circle2)
-        # # ic = np.int(nx_d[d][0]*.5)
-        # # jc = np.int(nx_d[d][1]*.5)
-        # # di = 20
-        # # dj = 5
-        # # rect_double = mpatches.Rectangle((ic - di, jc - dj), 2 * di, 2 * dj, linewidth=1, edgecolor='grtey', facecolor='none')
-        # # axis[1,0].plot(ic, jc, 'o', markersize=20)
-        # axis[1,0].plot(xd,yd, 'o', markersize=20)
+        ic = np.int(nx_d[d][0]*.5)
+        jc = np.int(nx_d[d][1]*.5)
+        # di = 20
+        # dj = 5
+        # rect_double = mpatches.Rectangle((ic - di, jc - dj), 2 * di, 2 * dj, linewidth=1, edgecolor='grtey', facecolor='none')
+        axis[1,0].plot(ic, jc, 'o', markersize=20)
+        axis[1,0].plot(xd,yd, 'o', markersize=20)
         # print('HAAAAAAAAAAAAAAAAAA', xd, yd)
         # # ic = np.int(nx_t[d][0]*0.5)
         # # jc = np.int(nx_t[d][1]*0.5)
