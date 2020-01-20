@@ -146,69 +146,131 @@ def main():
     for d, dstar in enumerate(d_range):
         print('plotting: d='+str(dstar), d)
         fig_name = 'collisions_subdomains_k'+str(k0)+'_'+id_list_s[0] + '_d'+str(dstar)+ 'km.png'
-        fig, axis = plt.subplots(3, 2, figsize=(11, 15))
+        fig, axis = plt.subplots(3, 4, figsize=(20, 15))
+        fullpath_in = os.path.join(path_single, id_list_s[0], 'fields', str(t_ini[d]) + '.nc')
+        root = nc.Dataset(fullpath_in, 'r')
+        w = root.groups['fields'].variables['w'][:, :, k0]
+        root.close()
+        cf = axis[0, 0].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[0, 0], shrink=0.8)
         fullpath_in = os.path.join(path_single, id_list_s[0], 'fields', str(t_2CP[d])+'.nc')
         root = nc.Dataset(fullpath_in, 'r')
         w = root.groups['fields'].variables['w'][:,:,k0]
         root.close()
-        cf = axis[0,0].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
-        plt.colorbar(cf, ax=axis[0,0], shrink=0.8)
+        cf = axis[0,1].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[0,1], shrink=0.8)
         fullpath_in = os.path.join(path_single, id_list_s[0], 'fields', str(t_3CP[d]) + '.nc')
         root = nc.Dataset(fullpath_in, 'r')
         w = root.groups['fields'].variables['w'][:, :, k0]
         root.close()
-        cf = axis[0,1].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
-        plt.colorbar(cf, ax=axis[0, 1], shrink=0.8)
+        cf = axis[0,2].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[0, 2], shrink=0.8)
+        fullpath_in = os.path.join(path_single, id_list_s[0], 'fields', str(t_final[d]) + '.nc')
+        root = nc.Dataset(fullpath_in, 'r')
+        w = root.groups['fields'].variables['w'][:, :, k0]
+        root.close()
+        cf = axis[0, 3].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[0, 3], shrink=0.8)
+
+        fullpath_in = os.path.join(path_double, id_list_d[d], 'fields', str(t_ini[d]) + '.nc')
+        root = nc.Dataset(fullpath_in, 'r')
+        w = root.groups['fields'].variables['w'][:, :, k0]
+        root.close()
+        cf = axis[1, 0].contourf(w, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[1, 0], shrink=0.8)
         fullpath_in = os.path.join(path_double, id_list_d[d], 'fields', str(t_2CP[d]) + '.nc')
         root = nc.Dataset(fullpath_in, 'r')
         w = root.groups['fields'].variables['w'][:, :, k0]
         root.close()
-        cf = axis[1,0].contourf(w, levels=lvls, cmap=cm_bwr, extend='both')
-        plt.colorbar(cf, ax=axis[1, 0], shrink=0.8)
+        cf = axis[1, 1].contourf(w, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[1, 1], shrink=0.8)
         fullpath_in = os.path.join(path_double, id_list_d[d], 'fields', str(t_3CP[d]) + '.nc')
         root = nc.Dataset(fullpath_in, 'r')
         w = root.groups['fields'].variables['w'][:, :, k0]
         root.close()
-        cf = axis[1,1].contourf(w, levels=lvls, cmap=cm_bwr, extend='both')
-        plt.colorbar(cf, ax=axis[1, 1], shrink=0.8)
+        cf = axis[1, 2].contourf(w, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[1, 2], shrink=0.8)
+        fullpath_in = os.path.join(path_double, id_list_d[d], 'fields', str(t_final[d]) + '.nc')
+        root = nc.Dataset(fullpath_in, 'r')
+        w = root.groups['fields'].variables['w'][:, :, k0]
+        root.close()
+        cf = axis[1, 3].contourf(w, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[1, 3], shrink=0.8)
+
+        fullpath_in = os.path.join(path_triple, id_list_t[d], 'fields', str(t_ini[d]) + '.nc')
+        root = nc.Dataset(fullpath_in, 'r')
+        w = root.groups['fields'].variables['w'][:, :, k0]
+        root.close()
+        cf = axis[2, 0].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[2, 0], shrink=0.8)
         fullpath_in = os.path.join(path_triple, id_list_t[d], 'fields', str(t_2CP[d]) + '.nc')
         root = nc.Dataset(fullpath_in, 'r')
         w = root.groups['fields'].variables['w'][:, :, k0]
         root.close()
-        cf = axis[2,0].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
-        plt.colorbar(cf, ax=axis[2, 0], shrink=0.8)
+        cf = axis[2, 1].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[2, 1], shrink=0.8)
         fullpath_in = os.path.join(path_triple, id_list_t[d], 'fields', str(t_3CP[d]) + '.nc')
         root = nc.Dataset(fullpath_in, 'r')
         w = root.groups['fields'].variables['w'][:, :, k0]
         root.close()
-        cf = axis[2,1].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
-        plt.colorbar(cf, ax=axis[2, 1], shrink=0.8)
+        cf = axis[2, 2].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[2, 2], shrink=0.8)
+        fullpath_in = os.path.join(path_triple, id_list_t[d], 'fields', str(t_final[d]) + '.nc')
+        root = nc.Dataset(fullpath_in, 'r')
+        w = root.groups['fields'].variables['w'][:, :, k0]
+        root.close()
+        cf = axis[2, 3].contourf(w, levels=lvls, cmap=cm_bwr, extend='both')
+        plt.colorbar(cf, ax=axis[2, 3], shrink=0.8)
 
+        circle0 = plt.Circle((xs, ys), (rad_1CP_ini[d]+delta_s)/dx[0], fill=False, color='k', linewidth=1)
         circle1 = plt.Circle((xs, ys), (rad_2CP_ini[d]+delta_s)/dx[0], fill=False, color='k', linewidth=1)
         circle2 = plt.Circle((xs, ys), (rad_3CP_ini[d]+delta_s)/dx[0], fill=False, color='k', linewidth=1)
-        axis[0,0].add_artist(circle1)
-        axis[0,1].add_artist(circle2)
+        circle3 = plt.Circle((xs, ys), (rad_3CP_end[d]+delta_s)/dx[0], fill=False, color='k', linewidth=1)
+        axis[0,0].add_artist(circle0)
+        axis[0,1].add_artist(circle1)
+        axis[0,2].add_artist(circle2)
+        axis[0,3].add_artist(circle3)
         ic = np.int(nx_d[d][0]*.5)
         jc = np.int(nx_d[d][1]*.5)
         if rstar == 1100 and dstar == 10:
             ic = np.int(nx_d[d][0] * .5) - 80
-        delta_d[1] = 2*np.sqrt(rad_2CP_ini[d]**2 - dstar**2/4)
+        delta_d[1] = np.floor(1.e3/dx[0]) + 2./dx[0]*np.sqrt(rad_1CP_ini[d]**2 - (dstar*1.e3)**2/4)
         [xd, yd] = [ic,jc] - delta_d*.5
-        rect_double = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
-        delta_d[1] = 2*np.sqrt(rad_3CP_ini[d]**2 - dstar**2/4)
+        rect_double0 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
+        delta_d[1] = np.floor(1.e3/dx[0]) + 2./dx[0]*np.sqrt(rad_2CP_ini[d]**2 - (dstar*1.e3)**2/4)
+        [xd, yd] = [ic,jc] - delta_d*.5
+        rect_double1 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
+        delta_d[1] = np.floor(1.e3/dx[0]) + 2./dx[0]*np.sqrt(rad_3CP_ini[d]**2 - (dstar*1.e3/2)**2)
         [xd, yd] = [ic,jc] - delta_d*.5
         rect_double2 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
-        axis[1,0].add_patch(rect_double)
-        axis[1,1].add_patch(rect_double2)
+        delta_d[1] = np.floor(1.e3/dx[0]) + 2./dx[0] * np.sqrt(rad_3CP_end[d]**2 - (dstar*1.e3/2)**2)
+        [xd, yd] = [ic, jc] - delta_d * .5
+        rect_double3 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
+        axis[1,0].add_patch(rect_double0)
+        axis[1,1].add_patch(rect_double1)
+        axis[1,2].add_patch(rect_double2)
+        axis[1,3].add_patch(rect_double3)
+        # axis[1, 0].plot(jc, ic, 'ok', markersize=8)
+        # axis[1, 0].plot(jc,ic-dstar*1.e3/(2*dx[0]), 'bo', markersize=8)
+        # axis[1, 0].plot([jc,jc],[ic,ic-dstar*1.e3/(2*dx[0])],'k-')
+
         [xt, yt] = nx_t[d][:2] * .5 - delta_t * .5
-        rect_triple = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='k', facecolor='none')
+        rect_triple0 = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='k', facecolor='none')
+        rect_triple1 = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='k', facecolor='none')
         rect_triple2 = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='k', facecolor='none')
-        axis[2, 0].add_patch(rect_triple)
-        axis[2, 1].add_patch(rect_triple2)
+        rect_triple3 = mpatches.Rectangle((xt, yt), delta_t, delta_t, linewidth=1, edgecolor='k', facecolor='none')
+        axis[2, 0].add_patch(rect_triple0)
+        axis[2, 1].add_patch(rect_triple1)
+        axis[2, 2].add_patch(rect_triple2)
+        axis[2, 3].add_patch(rect_triple3)
 
 
-        axis[0,0].set_title('t='+str(t_2CP[d])+'s')
-        axis[0,1].set_title('t='+str(t_3CP[d])+'s')
+
+
+        axis[0,0].set_title('t='+str(t_ini[d])+'s')
+        axis[0,1].set_title('t='+str(t_2CP[d])+'s')
+        axis[0,2].set_title('t='+str(t_3CP[d])+'s')
+        axis[0,3].set_title('t='+str(t_final[d])+'s')
         for ax in axis[0,:].flat:
             ax.set_xlim(lim_single[d], nx_s[0]-lim_single[d])
             ax.set_ylim(lim_single[0], nx_s[1]-lim_single[d])
