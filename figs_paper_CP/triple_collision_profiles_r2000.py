@@ -198,84 +198,84 @@ def main():
     filename = 'minmax_domain_noaverage.nc'
 
     ''' compute domain min/max values '''
-    w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half \
-            = compute_domain_max(path_single, id_list_s[0], case_name_single, kmax, times, nt)
-    path_out = os.path.join(path_single, id_list_s[0], 'data_analysis')
-    dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half, kmax, times, filename, path_out)
-    # w_min_s, w_max_s, th_min_s, th_max_s, z, z_half \
-    #         = compute_domain_max(path_single_dx50, id_list_s[0], case_name_single, kmax, times, nt)
-    # path_out = os.path.join(path_single_dx50, id_list_s[0], 'data_analysis')
-    # dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, z, z_half, kmax, times, filename, path_out)
-    for d,dstar in enumerate(d_range):
-    # for d,dstar in enumerate([12]):
-        w_min_d, w_max_d, th_min_d, th_max_d, s_min_d, s_max_d, z, z_half \
-            = compute_domain_max(path_double, id_list_d[d], case_name_double, kmax, times, nt)
-        path_out = os.path.join(path_double, id_list_d[d], 'data_analysis')
-        if not os.path.exists(path_out):
-            os.mkdir(path_out)
-        dump_minmax_file(w_min_d, w_max_d, th_min_d, th_max_d, s_min_d, s_max_d, z, z_half, kmax, times, filename, path_out)
-        path_out = os.path.join(path_triple, id_list_t[d], 'data_analysis')
-        if not os.path.exists(path_out):
-            os.mkdir(path_out)
-        w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half \
-            = compute_domain_max(path_triple, id_list_t[d], case_name_triple, kmax, times, nt)
-        dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
-
-    # ''' read in min/max values '''
-    # fig_name = 'collisions_minmax_profiles_domain_unaveraged_rstar'+str(rstar)+'.png'
-    # zmax_plot = 3000.
-    # kmax_plot = np.int(zmax_plot/dx[2])
-    # fig, axis = plt.subplots(1, 3, figsize=(14, 10))
-    # ax0 = axis[0]
-    # ax1 = axis[1]
-    # ax2 = axis[2]
+    # w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half \
+    #         = compute_domain_max(path_single, id_list_s[0], case_name_single, kmax, times, nt)
+    # path_out = os.path.join(path_single, id_list_s[0], 'data_analysis')
+    # dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half, kmax, times, filename, path_out)
+    # # w_min_s, w_max_s, th_min_s, th_max_s, z, z_half \
+    # #         = compute_domain_max(path_single_dx50, id_list_s[0], case_name_single, kmax, times, nt)
+    # # path_out = os.path.join(path_single_dx50, id_list_s[0], 'data_analysis')
+    # # dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, z, z_half, kmax, times, filename, path_out)
     # for d,dstar in enumerate(d_range):
-    # # for d,dstar in enumerate([10, 15]):
-    #     print('.... d: '+str(dstar))
-    #     al = 1.-d*1./len(d_range)
-    #     path = os.path.join(path_single, id_list_s[0], 'data_analysis')
-    #     print(path)
-    #     w_max_s, th_min_s, z, z_half = read_in_minmax(kmax_plot, path, filename)
-    #     path = os.path.join(path_double, id_list_d[d], 'data_analysis')
-    #     print(path)
-    #     w_max_d, th_min_d, z, z_half = read_in_minmax(kmax_plot, path, filename)
-    #     path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
-    #     print(path)
-    #     w_max_t, th_min_t, z, z_half = read_in_minmax(kmax_plot, path, filename)
-    #     if d > 0:
-    #         lbl_s = ''
-    #         lbl_d = ''
-    #         lbl_t = ''
-    #     else:
-    #         lbl_s = 'single CP gust front'
-    #         lbl_d = 'double CP collision'
-    #         lbl_t = 'triple CP collision'
-    #     ax0.plot(np.amax(w_max_s[:it_2CP,:], axis=0), z, color=colorlist3[0], alpha=al, label=lbl_s)
-    #     ax0.plot(np.amax(w_max_d, axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
-    #     ax0.plot(np.amax(w_max_t, axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
-    #     ax1.plot(np.amin(th_min_s, axis=0), z_half, color=colorlist3[0], alpha=al, label=lbl_s)
-    #     ax1.plot(np.amin(th_min_d, axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
-    #     ax1.plot(np.amin(th_min_t, axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
-    #
-    # ax0.set_xlabel('max. w  [m/s]')
-    # ax0.set_ylabel('height z  [m]')
-    # ax1.set_xlabel(r'min. $\theta$ [K]')
-    # # # ax2.grid()
-    # # # ax2.set_xlim(0.9, 2.1)
-    # # # ax0.set_title('maxima')
-    # # # ax1.set_title('minima')
-    # ax0.legend(loc='upper left', bbox_to_anchor=(0.35, .95),
-    #            fancybox=False, shadow=False, ncol=1, fontsize=12)
-    # # # ax2.legend(loc='upper left', bbox_to_anchor=(0.1, -0.1),
-    # # #            fancybox=False, shadow=False, ncol=1, fontsize=9)
-    # # # plt.suptitle('min/max for ' + var_name, fontsize=21)
-    # plt.subplots_adjust(bottom=0.18, right=.95, left=0.1, top=0.9, hspace=0.4)
-    # plt.savefig(os.path.join(path_out_figs, fig_name))
-    # plt.close(fig)
-    #
-    #
-    #
-    #
+    # # for d,dstar in enumerate([12]):
+    #     w_min_d, w_max_d, th_min_d, th_max_d, s_min_d, s_max_d, z, z_half \
+    #         = compute_domain_max(path_double, id_list_d[d], case_name_double, kmax, times, nt)
+    #     path_out = os.path.join(path_double, id_list_d[d], 'data_analysis')
+    #     if not os.path.exists(path_out):
+    #         os.mkdir(path_out)
+    #     dump_minmax_file(w_min_d, w_max_d, th_min_d, th_max_d, s_min_d, s_max_d, z, z_half, kmax, times, filename, path_out)
+    #     path_out = os.path.join(path_triple, id_list_t[d], 'data_analysis')
+    #     if not os.path.exists(path_out):
+    #         os.mkdir(path_out)
+    #     w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half \
+    #         = compute_domain_max(path_triple, id_list_t[d], case_name_triple, kmax, times, nt)
+    #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
+
+    ''' read in min/max values '''
+    fig_name = 'collisions_minmax_profiles_domain_unaveraged_rstar'+str(rstar)+'.png'
+    zmax_plot = 3000.
+    kmax_plot = np.int(zmax_plot/dx[2])
+    fig, axis = plt.subplots(1, 3, figsize=(14, 10))
+    ax0 = axis[0]
+    ax1 = axis[1]
+    ax2 = axis[2]
+    for d,dstar in enumerate(d_range):
+    # for d,dstar in enumerate([10, 15]):
+        print('.... d: '+str(dstar))
+        al = 1.-d*1./len(d_range)
+        path = os.path.join(path_single, id_list_s[0], 'data_analysis')
+        print(path)
+        w_max_s, th_min_s, z, z_half = read_in_minmax(kmax_plot, path, filename)
+        path = os.path.join(path_double, id_list_d[d], 'data_analysis')
+        print(path)
+        w_max_d, th_min_d, z, z_half = read_in_minmax(kmax_plot, path, filename)
+        path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
+        print(path)
+        w_max_t, th_min_t, z, z_half = read_in_minmax(kmax_plot, path, filename)
+        if d > 0:
+            lbl_s = ''
+            lbl_d = ''
+            lbl_t = ''
+        else:
+            lbl_s = 'single CP gust front'
+            lbl_d = 'double CP collision'
+            lbl_t = 'triple CP collision'
+        ax0.plot(np.amax(w_max_s[:it_2CP,:], axis=0), z, color=colorlist3[0], alpha=al, label=lbl_s)
+        ax0.plot(np.amax(w_max_d, axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
+        ax0.plot(np.amax(w_max_t, axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
+        ax1.plot(np.amin(th_min_s, axis=0), z_half, color=colorlist3[0], alpha=al, label=lbl_s)
+        ax1.plot(np.amin(th_min_d, axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
+        ax1.plot(np.amin(th_min_t, axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
+
+    ax0.set_xlabel('max. w  [m/s]')
+    ax0.set_ylabel('height z  [m]')
+    ax1.set_xlabel(r'min. $\theta$ [K]')
+    # # ax2.grid()
+    # # ax2.set_xlim(0.9, 2.1)
+    # # ax0.set_title('maxima')
+    # # ax1.set_title('minima')
+    ax0.legend(loc='upper left', bbox_to_anchor=(0.35, .95),
+               fancybox=False, shadow=False, ncol=1, fontsize=12)
+    # # ax2.legend(loc='upper left', bbox_to_anchor=(0.1, -0.1),
+    # #            fancybox=False, shadow=False, ncol=1, fontsize=9)
+    # # plt.suptitle('min/max for ' + var_name, fontsize=21)
+    plt.subplots_adjust(bottom=0.18, right=.95, left=0.1, top=0.9, hspace=0.4)
+    plt.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+
+
+
+
     ''' (C) plot from averaged min / max'''
     # - single - azimuthal average
     # - double - average along collision line
