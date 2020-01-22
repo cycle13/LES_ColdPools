@@ -55,7 +55,10 @@ def main():
         t_final = [1800, 2500, 3500]
     elif rstar == 2000:
         d_range = [10, 15, 20]
-    # d_range = [15, 20]
+        t_ini = [400, 400, 400]
+        t_2CP = [600, 800, 2200]
+        t_3CP = [800, 1100, 3200]
+        t_final = [1800, 2500, 3500]
     id_list_s = ['dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)]
     id_list_d = []
     id_list_t = []
@@ -126,12 +129,16 @@ def main():
         lim_single = [0,0,0]
         lim_double = [[100, 200], [100, 250], [100, 220]]
         lim_triple = [120, 220, 300]
+    elif rstar == 2000:
+        lim_single = [0, 0, 0]
+        lim_double = [[100, 280], [80, 280], [80, 220]]
+        lim_triple = [200, 250, 250]
 
-    # plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_double, lim_triple,
-    #                   d_range, t_ini, t_2CP, t_3CP, t_final,
-    #                   rad_1CP_ini, rad_2CP_ini, rad_3CP_ini, rad_3CP_end,
-    #                   id_list_s, id_list_d, id_list_t,
-    #                   path_single, path_double, path_triple, path_out_figs)
+    plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_double, lim_triple,
+                      d_range, t_ini, t_2CP, t_3CP, t_final,
+                      rad_1CP_ini, rad_2CP_ini, rad_3CP_ini, rad_3CP_end,
+                      id_list_s, id_list_d, id_list_t,
+                      path_single, path_double, path_triple, path_out_figs)
     print('')
 
 
@@ -421,8 +428,6 @@ def compute_subdomains_max_double(path, ID, casename, d, dstar, rstar,
     it_fi = np.int(t_fi / dt_fields)
     ic = np.int(nx_d[d][0] * .5)
     jc = np.int(nx_d[d][1] * .5)
-    if rstar == 1100 and dstar == 10:
-        ic = np.int(nx_d[d][0] * .5) - 80
     for it_, t0 in enumerate(times[it_ini:it_fi+1]):
         it = it_+it_ini
         print('--- t: ', it_, it, t0)
@@ -901,7 +906,7 @@ def plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_
         root = nc.Dataset(fullpath_in, 'r')
         w = root.groups['fields'].variables['w'][:, :, k0]
         root.close()
-        cf = axis[2, 3].contourf(w, levels=lvls, cmap=cm_bwr, extend='both')
+        cf = axis[2, 3].contourf(w.T, levels=lvls, cmap=cm_bwr, extend='both')
         plt.colorbar(cf, ax=axis[2, 3], shrink=0.8)
 
         circle0 = plt.Circle((xs, ys), (rad_1CP_ini[d]+delta_s)/dx[0], fill=False, color='k', linewidth=1)
@@ -914,8 +919,6 @@ def plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_
         axis[0,3].add_artist(circle3)
         ic = np.int(nx_d[d][0]*.5)
         jc = np.int(nx_d[d][1]*.5)
-        if rstar == 1100 and dstar == 10:
-            ic = np.int(nx_d[d][0] * .5) - 80
         # delta_d[1] = np.floor(1.e3/dx[0]) + 2./dx[0]*np.sqrt(rad_1CP_ini[d]**2 - (dstar*1.e3)**2/4)
         # print('delta_d', rad_1CP_ini[d], (dstar*1.e3)/2, rad_1CP_ini[d]**2, (dstar*1.e3)**2/4, rad_1CP_ini[d]**2 - (dstar*1.e3)**2/4)
         # [xd, yd] = [ic,jc] - delta_d*.5
@@ -929,7 +932,6 @@ def plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_
         delta_d[1] = np.floor(1.e3/dx[0]) + 2./dx[0] * np.sqrt(rad_3CP_end[d]**2 - (dstar*1.e3/2)**2)
         [xd, yd] = [ic, jc] - delta_d * .5
         rect_double3 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
-        # axis[1,0].add_patch(rect_double0)
         axis[1,1].add_patch(rect_double1)
         axis[1,2].add_patch(rect_double2)
         axis[1,3].add_patch(rect_double3)
@@ -953,20 +955,18 @@ def plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_
             ax.set_ylim(lim_single[0], nx_s[1]-lim_single[d])
         for ax in axis[1,:].flat:
             ax.set_xlim(lim_double[d][0],nx_d[d][1]-lim_double[d][0])
-            if rstar == 1100 and d == 0:
-                ax.set_ylim(lim_double[d][1],nx_d[d][0]-lim_double[d][1]-2*80)
-            else:
-                ax.set_ylim(lim_double[d][1],nx_d[d][0]-lim_double[d][1])
+            ax.set_ylim(lim_double[d][1],nx_d[d][0]-lim_double[d][1])
         for ax in axis[2, :].flat:
             ax.set_xlim(lim_triple[d], nx_t[d][0]-lim_triple[d])
             ax.set_ylim(lim_triple[d], nx_t[d][1]-lim_triple[d])
         for ax in axis.flat:
             ax.set_aspect('equal')
-        # plt.subplots_adjust(bottom=0.05, right=.95, left=0.05, top=0.95, hspace=0.05)
+        plt.subplots_adjust(bottom=0.05, right=.95, left=0.05, top=0.95, hspace=0.1, wspace=0.1)
         print('saving: ', fig_name)
         plt.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
-        return
+
+    return
 
 # ----------------------------------------------------------------------
 def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
