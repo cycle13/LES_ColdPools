@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patch
 import netCDF4 as nc
@@ -70,29 +72,29 @@ def main():
     print('sminmax', smin, smax)
     print ''
 
-    # # ''' create output file '''
+    # ''' create output file '''
     filename = 'CP_height_' + ID + '_sth' + str(s_crit) + '.nc'
-    # create_output_file(filename, s_crit, nx, ny, times)
-    # ''' define CP height & maximal updraft velocity'''
-    # # Output:
-    # #       CP_top[it, x, y]: 2D-field with CP-height for each xy-value
-    # #       w_max[0,it,x,y]:  2D-field with maximum value of w for each column
-    # #       w_max[1,it,x,y]:  height where maximum value of w for each column
-    # w_max, w_max_height, w_max_2d = compute_w_max(kmax, times)
-    # dump_output_file('w_max', 'timeseries', w_max, filename)
-    # dump_output_file('w_max_2d', 'fields_2D', w_max_2d[0,:,:,:], filename)
-    # dump_output_file('w_max_height', 'timeseries', w_max_height, filename)
-    # dump_output_file('w_max_height_2d', 'fields_2D', w_max_2d[1,:,:,:], filename)
-    # CP_top, CP_top_max = compute_CP_height_threshold(s_bg, s_crit, kmax, times)
-    # dump_output_file('CP_height_max', 'timeseries', CP_top_max, filename)
-    # dump_output_file('CP_height_2d', 'fields_2D', CP_top[:,:,:], filename)
+    create_output_file(filename, s_crit, nx, ny, times)
+    ''' define CP height & maximal updraft velocity'''
+    # Output:
+    #       CP_top[it, x, y]: 2D-field with CP-height for each xy-value
+    #       w_max[0,it,x,y]:  2D-field with maximum value of w for each column
+    #       w_max[1,it,x,y]:  height where maximum value of w for each column
+    w_max, w_max_height, w_max_2d = compute_w_max(kmax, times)
+    dump_output_file('w_max', 'timeseries', w_max, filename)
+    dump_output_file('w_max_2d', 'fields_2D', w_max_2d[0,:,:,:], filename)
+    dump_output_file('w_max_height', 'timeseries', w_max_height, filename)
+    dump_output_file('w_max_height_2d', 'fields_2D', w_max_2d[1,:,:,:], filename)
+    CP_top, CP_top_max = compute_CP_height_threshold(s_bg, s_crit, kmax, times)
+    dump_output_file('CP_height_max', 'timeseries', CP_top_max, filename)
+    dump_output_file('CP_height_2d', 'fields_2D', CP_top[:,:,:], filename)
     CP_top_grad, CP_top_grad_max, CP_top_gradgrad = compute_CP_height_gradient(i0_coll, j0_coll, kmax, times)
-    # dump_output_file('CP_height_gradient_max', 'timeseries', CP_top_grad_max, filename)
-    # dump_output_file('CP_height_gradient_2d', 'fields_2D', CP_top_grad[:,:,:], filename)
-    # print('')
-    #
-    #
-    #
+    dump_output_file('CP_height_gradient_max', 'timeseries', CP_top_grad_max, filename)
+    dump_output_file('CP_height_gradient_2d', 'fields_2D', CP_top_grad[:,:,:], filename)
+    print('')
+
+
+
     '''plot contour-figure of CP_top, w_max, height of w_max (xy-plane)'''
     print('plotting')
     filename = 'CP_height_' + ID + '_sth' + str(s_crit) + '.nc'
@@ -679,6 +681,7 @@ def set_input_output_parameters(args):
     if os.path.exists(os.path.join(path, 'fields')):
         path_fields = os.path.join(path, 'fields')
     path_out = os.path.join(path, 'data_analysis')
+    print(path_out)
     path_out_figs = os.path.join(path, 'figs_CP_height')
     if not os.path.exists(path_out):
         os.mkdir(path_out)
@@ -830,10 +833,7 @@ def define_geometry(case_name, nml):
         jc3 = jc
         ic_arr = [ic1, ic2, ic3]
         jc_arr = [jc1, jc2, jc3]
-        i0_coll = ic
-        i0_center = ic_arr[0]
-        j0_coll = jc
-        j0_center = jc_arr[0]
+
 
 
 
@@ -861,6 +861,10 @@ def define_geometry(case_name, nml):
         ymin_plt = xmin_plt
         ymax_plt = xmax_plt
     elif case_name[:21] == 'ColdPoolDry_triple_3D':
+        i0_coll = ic
+        i0_center = ic_arr[0]
+        j0_coll = jc
+        j0_center = jc_arr[0]
         # domain boundaries for plotting
         xmin_plt = 0
         xmax_plt = nx
@@ -894,7 +898,7 @@ def create_output_file(filename, s_crit, nx, ny, times):
     # - CP height (field; max=timeseries)
     # - (ok) CP rim (field)
     nt = len(times)
-    print('create output file in: ', path_out)
+    print('create output file: ', os.path.join(path_out, filename))
     print('size: ', nz, nt)
 
     rootgrp = nc.Dataset(os.path.join(path_out, filename), 'w', format='NETCDF4')
@@ -913,9 +917,9 @@ def create_output_file(filename, s_crit, nx, ny, times):
     var.units = "m"
 
     var = ts_grp.createVariable('w_max', 'f8', ('nt'))
-    var.units = "m"
+    var.units = "m/s"
     var = ts_grp.createVariable('w_max_height', 'f8', ('nt'))
-    var.units = "m"
+    var.units = "m/s"
 
     field_grp = rootgrp.createGroup('fields_2D')
     field_grp.createDimension('nt', nt)
