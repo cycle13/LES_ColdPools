@@ -39,7 +39,7 @@ def main():
     itmin = np.int(tmin / dt)
     itmax = np.int(tmax / dt)
     nt = len(times)
-    ic_arr, jc_arr, ic, jc = define_geometry(nml)
+    ic_arr, jc_arr, ic, jc, ncp = define_geometry(nml)
     path_out_figs = os.path.join(path, 'figs_massflux')
     path_out_data = os.path.join(path, 'data_analysis')
     if not os.path.exists(path_out_figs):
@@ -117,9 +117,9 @@ def main():
 
     ''' output flux '''
     dump_output_file('mass_flux_2D', 'fields_2D', flux, filename_out, path_out_data)
+    dump_output_file('mass_flux_2D_positive', 'fields_2D', flux_pos, filename_out, path_out_data)
     # dump_output_file('mass_flux_accumulated', 'fields_2D', flux_acc, filename_out, path_out_data)
     # dump_output_file('mass_flux_mean', 'fields_2D', flux_mean, filename_out, path_out_data)
-    dump_output_file('mass_flux_2D_positive', 'fields_2D', flux_pos, filename_out, path_out_data)
     # dump_output_file('mass_flux_positive_accumulated', 'fields_2D', np.sum(flux_pos, axis=0), filename_out, path_out_data)
     # dump_output_file('mass_flux_positive_mean', 'fields_2D', flux_pos_mean, filename_out, path_out_data)
 
@@ -127,45 +127,59 @@ def main():
     ''' compute mean flux in box - single, double, triple '''
     dx_box = 20.
     dy_box = dx_box
-    d = jc_arr[1] - jc_arr[0]
-    # x_single = ic_arr[0] - (rstar + itmax*100) / dx[0]
-    # y_single = jc_arr[0] - (rstar + itmax*100) / dx[1]
-    x_single = ic_arr[0] - (3*rstar) / dx[0]
-    y_single = jc_arr[0] - (3*rstar) / dx[1]
-    x_double = ic_arr[0] - dx_box / 2
-    y_double = 0.5 * (jc_arr[0] + jc_arr[1]) - dy_box / 2
-    x_triple = ic - dx_box / 2
-    y_triple = jc - dy_box / 2
+    # d = jc_arr[1] - jc_arr[0]
     # mf_mean_single:       MF in box   x0=ic1-(r0 + itmax*v0)/dx, ..., x1=x0+20*dx; v0=1m/s
     #                                   y0=jc1-(r0 + itmax*v0)/dx,  ..., y1=y0+20*dx
     # mf_mean_double:       MF in box   x0=ic1-20*dx, ..., x1=ic1
     #                                   y0=jc1-20*dx, ..., y1=jc1
     # mf_mean_triple:       MF in box   x0=icoll-10*dx, ..., x1=icoll+10*dx
     #                                   y0=jcoll-10*dx, ..., y1=jcoll+10*dx
+    x_single = ic_arr[0] - (3*rstar) / dx[0]
+    y_single = jc_arr[0] - (3*rstar) / dx[1]
+    mf_mean_single = np.mean(np.mean(flux[:, x_single:x_single + dx_box, y_single:y_single + dy_box], axis=1), axis=1)
+    mf_mean_single_pos = np.mean(np.mean(flux_pos[:, x_single:x_single + dx_box, y_single:y_single + dy_box], axis=1),
+                                 axis=1)
+    mf_mean_single_pos_acc = [np.sum(mf_mean_single_pos[:it + 1]) for it in range(itmin, itmax + 1)]
+    if ncp > 1:
+        x_double = ic_arr[0] - dx_box / 2
+        y_double = 0.5 * (jc_arr[0] + jc_arr[1]) - dy_box / 2
+        x_triple = ic - dx_box / 2
+        y_triple = jc - dy_box / 2
 
-    mf_mean_single = np.mean(np.mean(flux[:,x_single:x_single+dx_box, y_single:y_single+dy_box], axis=1), axis=1)
-    mf_mean_double = np.mean(np.mean(flux[:,x_double:x_double+dx_box, y_double:y_double+dy_box], axis=1), axis=1)
-    mf_mean_triple = np.mean(np.mean(flux[:,x_triple:x_triple+dx_box, y_triple:y_triple+dy_box], axis=1), axis=1)
-    mf_mean_single_pos = np.mean(np.mean(flux_pos[:,x_single:x_single+dx_box, y_single:y_single+dy_box], axis=1), axis=1)
-    mf_mean_double_pos = np.mean(np.mean(flux_pos[:,x_double:x_double+dx_box, y_double:y_double+dy_box], axis=1), axis=1)
-    mf_mean_triple_pos = np.mean(np.mean(flux_pos[:,x_triple:x_triple+dx_box, y_triple:y_triple+dy_box], axis=1), axis=1)
+        mf_mean_double = np.mean(np.mean(flux[:,x_double:x_double+dx_box, y_double:y_double+dy_box], axis=1), axis=1)
+        mf_mean_triple = np.mean(np.mean(flux[:,x_triple:x_triple+dx_box, y_triple:y_triple+dy_box], axis=1), axis=1)
+        mf_mean_double_pos = np.mean(np.mean(flux_pos[:,x_double:x_double+dx_box, y_double:y_double+dy_box], axis=1), axis=1)
+        mf_mean_triple_pos = np.mean(np.mean(flux_pos[:,x_triple:x_triple+dx_box, y_triple:y_triple+dy_box], axis=1), axis=1)
+    else:
+        mf_mean_double = np.zeros(itmax)
+        mf_mean_triple = np.zeros(itmax)
+        mf_mean_double_pos = np.zeros(itmax)
+        mf_mean_triple_pos = np.zeros(itmax)
+
+
     # accumulated flux
     mf_mean_single_acc = [np.sum(mf_mean_single[:it+1]) for it in range(itmin,itmax+1)]
-    mf_mean_double_acc = [np.sum(mf_mean_double[:it+1]) for it in range(itmin,itmax+1)]
-    mf_mean_triple_acc = [np.sum(mf_mean_triple[:it+1]) for it in range(itmin,itmax+1)]
-    mf_mean_single_pos_acc = [np.sum(mf_mean_single_pos[:it+1]) for it in range(itmin,itmax+1)]
-    mf_mean_double_pos_acc = [np.sum(mf_mean_double_pos[:it+1]) for it in range(itmin,itmax+1)]
-    mf_mean_triple_pos_acc = [np.sum(mf_mean_triple_pos[:it+1]) for it in range(itmin,itmax+1)]
+    if ncp > 1:
+        mf_mean_double_acc = [np.sum(mf_mean_double[:it+1]) for it in range(itmin,itmax+1)]
+        mf_mean_triple_acc = [np.sum(mf_mean_triple[:it+1]) for it in range(itmin,itmax+1)]
+        mf_mean_double_pos_acc = [np.sum(mf_mean_double_pos[:it+1]) for it in range(itmin,itmax+1)]
+        mf_mean_triple_pos_acc = [np.sum(mf_mean_triple_pos[:it+1]) for it in range(itmin,itmax+1)]
+    else:
+        mf_mean_double_acc = 0
+        mf_mean_triple_acc = 0
+        mf_mean_double_pos_acc = 0
+        mf_mean_triple_pos_acc = 0
 
-    ''' output files '''
-    # create file
-
-
+    # ''' output files '''
+    # # create file
+    #
+    #
     ''' plotting '''
     # fig_name = 'massflux_k' + str(k0) + '_tmax' + str(tmax) + '.png'
     # plot_massflux_allversions(flux_mean, flux_pos_mean, mf_w, mf_w_pos, k0, path_out_figs, fig_name)
     fig_name = 'massflux_locations_k' + str(k0) + '_tmax' + str(tmax) + '.png'
-    plot_massflux_locations(flux_mean, flux_pos_mean,
+    if ncp == 3:
+        plot_massflux_locations(flux_mean, flux_pos_mean,
                             mf_mean_single, mf_mean_double, mf_mean_triple,
                             mf_mean_single_pos, mf_mean_double_pos, mf_mean_triple_pos,
                             mf_mean_single_acc, mf_mean_double_acc, mf_mean_triple_acc,
@@ -411,9 +425,7 @@ def set_input_output_parameters(args):
     files = [str(t) + '.nc' for t in times]
     # print(files)
     print('')
-    print(tmax)
 
-    print(tmin)
     return path, nml, times, files
 # _______________________________________________________
 
@@ -433,6 +445,7 @@ def define_geometry(nml):
             jc = np.int(ny / 2)
         ic_arr = [ic]
         jc_arr = [jc]
+        ncp = 1
     elif case_name == 'ColdPoolDry_double_3D':
         try:
             rstar = nml['init']['r']
@@ -443,12 +456,13 @@ def define_geometry(nml):
         jsep = 0
         ic = np.int(np.round(nx / 2))
         jc = np.int(np.round(ny / 2))
-        ic1 = ic - np.int(np.round(nx / 2))
+        ic1 = ic - np.int(np.round(isep / 2))
         jc1 = jc
         ic2 = ic1 + isep
         jc2 = jc1 + jsep
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
+        ncp = 2
     elif case_name == 'ColdPoolDry_triple_3D':
         print(case_name)
         try:
@@ -474,12 +488,13 @@ def define_geometry(nml):
         jc3 = jc
         ic_arr = np.asarray([ic1, ic2, ic3])
         jc_arr = np.asarray([jc1, jc2, jc3])
+        ncp = 3
         print(ic1, ic2, ic3)
         print(nx, ny, id, idhalf)
         print(rstar, r_int, ic)
         print('')
 
-    return ic_arr, jc_arr, ic, jc
+    return ic_arr, jc_arr, ic, jc, ncp
 
 # _______________________________________________________
 def convert_file_for_varlist_horsection(var_list, times, files, path_fields, path_out, level):
