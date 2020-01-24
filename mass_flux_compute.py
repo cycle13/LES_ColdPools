@@ -70,6 +70,9 @@ def main():
         os.remove(os.path.join(path, 'fields_merged', 'fields_allt_xy_k'+str(k0)+'.nc'))
         convert_file_for_varlist_horsection(['w'], times, files, os.path.join(path, 'fields'),
                                             os.path.join(path, 'fields_merged'), k0)
+    else:
+        print('merged file at z='+str(zlevel)+' already existing')
+        print(path_field_k0)
     print('')
 
 
@@ -446,7 +449,7 @@ def define_geometry(nml):
         ic_arr = [ic]
         jc_arr = [jc]
         ncp = 1
-    elif case_name == 'ColdPoolDry_double_3D':
+    elif case_name[:21] == 'ColdPoolDry_double_3D':
         try:
             rstar = nml['init']['r']
         except:
@@ -463,7 +466,7 @@ def define_geometry(nml):
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
         ncp = 2
-    elif case_name == 'ColdPoolDry_triple_3D':
+    elif case_name[:21] == 'ColdPoolDry_triple_3D':
         print(case_name)
         try:
             rstar = nml['init']['r']
@@ -489,9 +492,10 @@ def define_geometry(nml):
         ic_arr = np.asarray([ic1, ic2, ic3])
         jc_arr = np.asarray([jc1, jc2, jc3])
         ncp = 3
-        print(ic1, ic2, ic3)
-        print(nx, ny, id, idhalf)
-        print(rstar, r_int, ic)
+        print('ic, ic1, ic2, ic3: ', ic, ic1, ic2, ic3)
+        print('nx,ny: ', nx, ny)
+        print('distance btw. CPs: ', d, i_d, idhalf)
+        print('r*: ', rstar, r_int)
         print('')
 
     return ic_arr, jc_arr, ic, jc, ncp

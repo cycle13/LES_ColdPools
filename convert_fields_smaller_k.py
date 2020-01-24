@@ -641,7 +641,7 @@ def define_geometry(path_root, args):
         jc_arr = np.zeros(1)
         ic_arr[0] = ic
         jc_arr[0] = jc
-    elif case_name == 'ColdPoolDry_double_2D':
+    elif case_name[:21] == 'ColdPoolDry_double_2D':
         try:
             rstar = nml['init']['r']
         except:
@@ -656,7 +656,7 @@ def define_geometry(path_root, args):
         jc2 = jc1 + jsep
         ic_arr = [ic1, ic2]
         jc_arr = [jc1, jc2]
-    elif case_name == 'ColdPoolDry_double_3D':
+    elif case_name[:21] == 'ColdPoolDry_double_3D':
         try:
             rstar = nml['init']['r']
         except:
@@ -708,17 +708,19 @@ def define_geometry(path_root, args):
         j0_coll = jc_arr[0]
         i0_center = ic_arr[0]
         j0_center = jc_arr[0]
-    elif case_name == 'ColdPoolDry_double_3D':
+    elif case_name[:21] == 'ColdPoolDry_double_3D':
         i0_coll = 0.5 * (ic_arr[0] + ic_arr[1])
         i0_center = ic_arr[0]
         j0_coll = 0.5 * (jc_arr[0] + jc_arr[1])
         j0_center = jc_arr[0]
         # domain boundaries for plotting
     elif case_name[:21] == 'ColdPoolDry_triple_3D':
-        i0_coll = np.int(np.round(ic1 + np.sqrt(3.)/6*(ic3-ic1)))
-        j0_coll = jc3
-        i0_center = ic_arr[0]
-        j0_center = jc_arr[0]
+        # i0_coll = np.int(np.round(ic1 + np.sqrt(3.)/6*(ic3-ic1)))
+        # j0_coll = jc3
+        i0_coll = np.int(np.round(nx/2))
+        j0_coll = np.int(np.round(ny/2))
+        i0_center = ic_arr[2]
+        j0_center = jc_arr[2]
         # domain boundaries for plotting
 
     print''
@@ -727,6 +729,7 @@ def define_geometry(path_root, args):
     print''
 
     return i0_center, j0_center, i0_coll, j0_coll
+
 
 # _______________________________________________________
 
