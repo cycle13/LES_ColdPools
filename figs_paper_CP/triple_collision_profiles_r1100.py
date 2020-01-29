@@ -931,15 +931,18 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
                                       t_final,
                                       path_single, path_double, path_triple,
                                       filename, path_out_figs):
+    print('plot minmax timeseries alltimes domain')
+    zmax_plot = 3000.
+    kmax_plot = np.int(zmax_plot / dx[2])
+    path = os.path.join(path_single, id_list_s[0], 'data_analysis')
+    print(path)
+    w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
     for d, dstar in enumerate(d_range):
         fig_name = 'collisions_minmax_allltimes_domain_unaveraged_rstar' + str(rstar) + '_d'+str(dstar)+'km.png'
-        zmax_plot = 3000.
-        kmax_plot = np.int(zmax_plot / dx[2])
-        path = os.path.join(path_single, id_list_s[0], 'data_analysis')
-        w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
         #path = os.path.join(path_double, id_list_d[d], 'data_analysis')
         #w_max_d, th_min_d, s_min_d, z, z_half, t_d = read_in_minmax(kmax_plot, path, filename)
         path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
+        print(path)
         w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
 
         fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='none')
