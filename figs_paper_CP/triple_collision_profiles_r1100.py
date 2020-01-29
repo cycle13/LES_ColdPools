@@ -1005,7 +1005,7 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
 
             axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-k', label=lbl)
             axis[1, 0].plot(t_s, np.amin(s_min_s[:, :], axis=1), 'o-k', label=lbl)
-            
+
             axis[0, 1].plot(w_max_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
             #axis[0, 2].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
             #axis[0, 3].plot(w_max_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
@@ -1014,9 +1014,9 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
             #axis[1, 2].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
             #axis[1, 3].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
 
-        axis[0, 0].set_title('single CP')
-        axis[0, 1].set_title('double CP, collision line')
-        axis[0, 2].set_title('triple CP, collision point')
+        axis[0, 1].set_title('single CP')
+        axis[0, 2].set_title('double CP, collision line')
+        axis[0, 3].set_title('triple CP, collision point')
         for ax in axis[:,0].flat:
             ax.set_ylabel('height z  [m]')
         for ax in axis[0,:].flat:

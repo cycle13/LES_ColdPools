@@ -55,7 +55,6 @@ def main():
         t_3CP = [900, 1100, 3200]
         t_final = [1800, 2500, 3500]
     id_list_s = ['dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)]
-    print('')
     id_list_d = []
     id_list_t = []
     for dstar in d_range:
@@ -355,6 +354,7 @@ def compute_subdomains_max_triple(path, ID, casename,
                                   times, nt, t_ini, t_fi, delta_t,
                                   kmax, path_out_figs):
     print('triple: compute max in subdomain')
+    # times = [0, ..., t_final+2*dt_fields], len(times)=nt
     w_min = np.zeros((nt, kmax), dtype=np.double)
     w_max = np.zeros((nt, kmax), dtype=np.double)
     th_min = np.ones((nt, kmax), dtype=np.double)
@@ -416,7 +416,7 @@ def compute_subdomains_max_double(path, ID, casename, d, dstar, rstar,
         os.mkdir(os.path.join(path_out_figs, 'figs_collision_test'))
 
     it_ini = np.int(t_ini / dt_fields)
-    it_fi = np.int(t_fi / dt_fields)
+    it_fi = np.int(t_fi[d] / dt_fields)
     ic = np.int(nx_d[d][0] * .5)
     jc = np.int(nx_d[d][1] * .5)
     for it_, t0 in enumerate(times[it_ini:it_fi+1]):
@@ -487,7 +487,7 @@ def compute_subdomains_max_single(path, ID, casename,
     root.close()
 
     it_ini = np.int(t_ini/dt_fields)
-    for it, t0 in enumerate(times[it_ini:]):
+    for it, t0 in enumerate(times):
         print('--- t: ', it, t0)
         fullpath_in = os.path.join(path, ID, 'fields', str(t0) + '.nc')
         root = nc.Dataset(fullpath_in, 'r')
@@ -547,12 +547,12 @@ def compute_subdomains_max_single(path, ID, casename,
                 cf = ax2.imshow(r_mask_g.mask)
                 plt.colorbar(cf, ax=ax2, shrink=0.7)
                 ax3.set_title('s')
-                cf = ax3.imshow(s[:, :, k0], vmin=6864, vmax=np.amax(s))
+                cf = ax3.imshow(s[:, :, k0], vmin=np.amin(s[:,:,k0]), vmax=np.amax(s[:,:,k0]))
                 plt.colorbar(cf, ax=ax3, shrink=0.7)
                 ax3.plot(s_min_loc_all[0], s_min_loc_all[1], 'kx', markersize=10)
                 ax3.plot(s_min_loc[0], s_min_loc[1], 'ok', markersize=5)
                 ax4.set_title('s*mask')
-                cf = ax4.imshow(s_masked[:, :, k0], vmin=6864, vmax=np.amax(s))
+                cf = ax4.imshow(s_masked[:, :, k0], vmin=6864, vmax=np.amax(s[:,:,k0]))
                 plt.colorbar(cf, ax=ax4, shrink=0.7, extend='max')
 
                 for ax in axis.flat:
@@ -677,13 +677,14 @@ def dump_minmax_file(w_min, w_max, th_min, th_max, s_min, s_max,
 
 def read_in_minmax(kmax, path_out, filename):
     root = nc.Dataset(os.path.join(path_out, filename), 'r')
+    time = root.groups['timeseries'].variables['time'][:]
     z = root.groups['timeseries'].variables['z'][:kmax]
     z_half = root.groups['timeseries'].variables['z_half'][:kmax]
     w_max = root.groups['timeseries'].variables['w_max'][:,:kmax]
     th_min = root.groups['timeseries'].variables['th_min'][:,:kmax]
     s_min = root.groups['timeseries'].variables['s_min'][:,:kmax]
     root.close()
-    return w_max, th_min, s_min, z, z_half
+    return w_max, th_min, s_min, z, z_half, time
 
 # --------------------------------------------------------------------
 # ---------------------------- TRACER STATISTICS -----------------------
@@ -974,30 +975,33 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         zmax_plot = 3000.
         kmax_plot = np.int(zmax_plot / dx[2])
         path = os.path.join(path_single, id_list_s[0], 'data_analysis')
-        w_max_s, th_min_s, s_min_s, z, z_half = read_in_minmax(kmax_plot, path, filename)
-        path = os.path.join(path_double, id_list_d[d], 'data_analysis')
-        w_max_d, th_min_d, s_min_d, z, z_half = read_in_minmax(kmax_plot, path, filename)
-        path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
-        w_max_t, th_min_t, s_min_t, z, z_half = read_in_minmax(kmax_plot, path, filename)
+        w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
+        #path = os.path.join(path_double, id_list_d[d], 'data_analysis')
+        #w_max_d, th_min_d, s_min_d, z, z_half, t_d = read_in_minmax(kmax_plot, path, filename)
+        #path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
+        #w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
 
-        fig, axis = plt.subplots(2, 3, figsize=(14, 12), sharey='all')
-        maxw = np.maximum(np.amax(w_max_s), np.amax(w_max_d))+.1
-        # maxw = np.maximum(np.amax(w_max_s), np.amax(w_max_t))+.1
+        fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='all')
+        maxw = np.amax(w_max_s)+.1
+        #maxw = np.maximum(np.amax(w_max_s), np.amax(w_max_d))+.1
         for it,t0 in enumerate(range(0, t_final[d], dt_fields)):
             lbl = 't='+str(t0)+'s'
             cl = t0*1./t_final[d]
 
-            axis[0, 0].plot(w_max_s[it, :], z, color=cm(cl), label=lbl)
-            axis[0, 1].plot(w_max_d[it, :], z, color=cm(cl), label=lbl)
-            axis[0, 2].plot(w_max_t[it, :], z, color=cm(cl), label=lbl)
+            axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-k', label=lbl)
+            axis[1, 0].plot(t_s, np.amin(s_min_s[:, :], axis=1), 'o-k', label=lbl)
 
-            axis[1, 0].plot(th_min_s[it, :], z, color=cm(cl), label=lbl)
-            axis[1, 1].plot(th_min_d[it, :], z, color=cm(cl), label=lbl)
-            axis[1, 2].plot(th_min_t[it, :], z, color=cm(cl), label=lbl)
+            axis[0, 1].plot(w_max_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            #axis[0, 2].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            #axis[0, 3].plot(w_max_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
 
-        axis[0, 0].set_title('single CP')
-        axis[0, 1].set_title('double CP, collision line')
-        axis[0, 2].set_title('triple CP, collision point')
+            axis[1, 1].plot(th_min_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            #axis[1, 2].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            #axis[1, 3].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+
+        axis[0, 1].set_title('single CP')
+        axis[0, 2].set_title('double CP, collision line')
+        axis[0, 3].set_title('triple CP, collision point')
         for ax in axis[:,0].flat:
             ax.set_ylabel('height z  [m]')
         for ax in axis[0,:].flat:
@@ -1020,119 +1024,119 @@ def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
                                 t_ini, t_2CP, t_3CP, t_final,
                                 path_single, path_double, path_triple,
                                 filename, path_out_figs):
-    # ''' read in min/max values '''
-    # print('plotting min / max in subdomain')
-    # fig_name = 'collisions_minmax_profiles_subdomain_unaveraged_rstar'+str(rstar)+'.png'
-    # zmax_plot = 3000.
-    # kmax_plot = np.int(zmax_plot/dx[2])
-    # fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='all')
-    #
-    # path = os.path.join(path_single, id_list_s[0], 'data_analysis')
-    # w_max_s, th_min_s, s_min_s, z, z_half = read_in_minmax(kmax_plot, path, filename)
-    #
-    # for d,dstar in enumerate(d_range):
-    #     print('.... d: '+str(dstar))
-    #     path = os.path.join(path_double, id_list_d[d], 'data_analysis')
-    #     print(os.path.join(path, filename))
-    #     w_max_d, th_min_d, s_min_d, z, z_half = read_in_minmax(kmax_plot, path, filename)
-    #     path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
-    #     w_max_t, th_min_t, s_min_t, z, z_half = read_in_minmax(kmax_plot, path, filename)
-    #
-    #     al = 1.-d*1./(len(d_range)+1)
-    #     # w_max_ss, th_min_ss, z, z_half = read_in_minmax(kmax_plot, path, filename_ss)
-    #     # w_max_sd, th_min_sd, z, z_half = read_in_minmax(kmax_plot, path, filename_sd)
-    #     # w_max_st, th_min_st, z, z_half = read_in_minmax(kmax_plot, path, filename_st)
-    #     #     path = os.path.join(path_double, id_list_d[d], 'data_analysis')
-    #     #     w_max_d, th_min_d, z, z_half = read_in_minmax(kmax_plot, path, filename)
-    #     #     path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
-    #     #     w_max_t, th_min_t, z, z_half = read_in_minmax(kmax_plot, path, filename)
-    #     if d > 0:
-    #         lbl_s = ''
-    #         lbl_d = ''
-    #         lbl_t = ''
-    #     else:
-    #         lbl_s = 'single CP gust front'
-    #         lbl_d = 'double CP collision'
-    #         lbl_t = 'triple CP collision'
-    #
-    #     it_ini = np.int(t_ini[d]/dt_fields)
-    #     it_2CP = np.int(t_2CP[d]/dt_fields)
-    #     it_3CP = np.int(t_3CP[d]/dt_fields)
-    #     it_final = np.int(t_final[d]/dt_fields)
-    #
-    #     ax = axis[0,0]
-    #     ax.plot(np.amax(w_max_s[it_ini:,:], axis=0), z, color=colorlist3[0], alpha=al, label=lbl_s)
-    #     ax.plot(np.amax(w_max_d[it_ini:,:], axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
-    #     ax.plot(np.amax(w_max_t[it_ini:,:], axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
-    #     ax = axis[0,1]
-    #     ax.plot(np.amax(w_max_s[it_ini:it_2CP,:], axis=0), z, color=colorlist3[0], alpha=al, label=lbl_s)
-    #     ax.plot(np.amax(w_max_d[it_ini:it_2CP,:], axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
-    #     ax.plot(np.amax(w_max_t[it_ini:it_2CP,:], axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
-    #     ax = axis[0,2]
-    #     ax.plot(np.amax(w_max_s[it_2CP:it_3CP,:], axis=0), z, color=colorlist3[0], alpha=al, label=lbl_s)
-    #     ax.plot(np.amax(w_max_d[it_2CP:it_3CP,:], axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
-    #     ax.plot(np.amax(w_max_t[it_2CP:it_3CP,:], axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
-    #     ax = axis[0,3]
-    #     ax.plot(np.amax(w_max_s[it_3CP:it_final,:], axis=0), z, color=colorlist3[0], alpha=al, label=lbl_s)
-    #     ax.plot(np.amax(w_max_d[it_3CP:it_final,:], axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
-    #     ax.plot(np.amax(w_max_t[it_3CP:it_final,:], axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
-    #
-    #     ax = axis[1, 0]
-    #     ax.plot(np.amax(th_min_s[it_ini:, :], axis=0), z_half, color=colorlist3[0], alpha=al, label=lbl_s)
-    #     ax.plot(np.amax(th_min_d[it_ini:, :], axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
-    #     ax.plot(np.amax(th_min_t[it_ini:, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
-    #     ax = axis[1, 1]
-    #     ax.plot(np.amax(th_min_s[it_ini:it_2CP, :], axis=0), z_half, color=colorlist3[0], alpha=al, label=lbl_s)
-    #     ax.plot(np.amax(th_min_d[it_ini:it_2CP, :], axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
-    #     ax.plot(np.amax(th_min_t[it_ini:it_2CP, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
-    #     ax = axis[1, 2]
-    #     ax.plot(np.amax(th_min_s[it_2CP:it_3CP, :], axis=0), z_half, color=colorlist3[0], alpha=al, label=lbl_s)
-    #     ax.plot(np.amax(th_min_d[it_2CP:it_3CP, :], axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
-    #     ax.plot(np.amax(th_min_t[it_2CP:it_3CP, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
-    #     ax = axis[1, 3]
-    #     ax.plot(np.amax(th_min_s[it_3CP:it_final, :], axis=0), z_half, color=colorlist3[0], alpha=al, label=lbl_s)
-    #     ax.plot(np.amax(th_min_d[it_3CP:it_final, :], axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
-    #     ax.plot(np.amax(th_min_t[it_3CP:it_final, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
-    #
-    #
-    #
-    # # #     ax00.plot(np.amax(w_max_d, axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
-    # # #     ax00.plot(np.amax(w_max_t, axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
-    # # #     ax01.plot(np.amin(th_min_ss, axis=0), z_half, color=colorlist3[0], alpha=al, label=lbl_s)
-    # # #     ax01.plot(np.amin(th_min_d, axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
-    # # #     ax01.plot(np.amin(th_min_t, axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
-    # # #     ax10.plot(np.amax(w_max_sd[:itmax_s, :], axis=0), z, color=colorlist3[0], alpha=al, label=lbl_s)
-    # # #     ax10.plot(np.amax(w_max_d, axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
-    # # #     ax10.plot(np.amax(w_max_t, axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
-    # # #     ax11.plot(np.amin(th_min_s, axis=0), z_half, color=colorlist3[0], alpha=al, label=lbl_s)
-    # # #     ax11.plot(np.amin(th_min_d, axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
-    # # #     ax11.plot(np.amin(th_min_t, axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
-    #
-    # for ax in axis[0,:].flat:
-    #     ax.set_xlim(0,4)
-    #     ax.set_xlabel('max. w  [m/s]')
-    #     # ax.set_ylabel('height z  [m]')
-    # for ax in axis[1,:].flat:
-    #     ax.set_xlim(299.2,300.1)
-    #     ax.set_xlabel(r'min. $\theta$ [K]')
-    #     # ax.set_ylabel('height z  [m]')
-    # for ax in axis[:,0].flat:
-    #     ax.set_ylabel('height z  [m]')
-    # axis[0,0].set_title(r't $>$'+str(t_ini[d]))
-    # axis[0,1].set_title(str(t_ini[d])+r'$\leq$ t $<$'+str(t_2CP[d]))
-    # axis[0,2].set_title(str(t_2CP[d])+r'$\leq$ t $<$'+str(t_3CP[d]))
-    # axis[0,3].set_title(str(t_3CP[d])+r'$\leq$ t $<$'+str(t_final[d]))
-    #
-    #
-    # # # # # ax2.grid()
-    # axis[0,0].legend(loc='upper left', bbox_to_anchor=(0.12, .97),
-    #            fancybox=False, shadow=False, ncol=1, fontsize=12)
-    # # # # ax2.legend(loc='upper left', bbox_to_anchor=(0.1, -0.1),
-    # # # #            fancybox=False, shadow=False, ncol=1, fontsize=9)
-    # # # # plt.suptitle('min/max for ' + var_name, fontsize=21)
-    # plt.subplots_adjust(bottom=0.1, right=.95, left=0.1, top=0.95, hspace=0.2)
-    # plt.savefig(os.path.join(path_out_figs, fig_name))
-    # plt.close(fig)
+    ''' read in min/max values '''
+    print('plotting min / max in subdomain')
+    fig_name = 'collisions_minmax_profiles_subdomain_unaveraged_rstar'+str(rstar)+'.png'
+    zmax_plot = 3000.
+    kmax_plot = np.int(zmax_plot/dx[2])
+    fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='all')
+
+    path = os.path.join(path_single, id_list_s[0], 'data_analysis')
+    w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
+
+    for d,dstar in enumerate(d_range):
+        print('.... d: '+str(dstar))
+        path = os.path.join(path_double, id_list_d[d], 'data_analysis')
+        print(os.path.join(path, filename))
+        w_max_d, th_min_d, s_min_d, z, z_half, t_d = read_in_minmax(kmax_plot, path, filename)
+        path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
+        w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
+
+        al = 1.-d*1./(len(d_range)+1)
+        # w_max_ss, th_min_ss, z, z_half, t_ = read_in_minmax(kmax_plot, path, filename_ss)
+        # w_max_sd, th_min_sd, z, z_half, t_ = read_in_minmax(kmax_plot, path, filename_sd)
+        # w_max_st, th_min_st, z, z_half, t_ = read_in_minmax(kmax_plot, path, filename_st)
+        #     path = os.path.join(path_double, id_list_d[d], 'data_analysis')
+        #     w_max_d, th_min_d, z, z_half, t_ = read_in_minmax(kmax_plot, path, filename)
+        #     path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
+        #     w_max_t, th_min_t, z, z_half, t_ = read_in_minmax(kmax_plot, path, filename)
+        if d > 0:
+            lbl_s = ''
+            lbl_d = ''
+            lbl_t = ''
+        else:
+            lbl_s = 'single CP gust front'
+            lbl_d = 'double CP collision'
+            lbl_t = 'triple CP collision'
+
+        it_ini = np.int(t_ini[d]/dt_fields)
+        it_2CP = np.int(t_2CP[d]/dt_fields)
+        it_3CP = np.int(t_3CP[d]/dt_fields)
+        it_final = np.int(t_final[d]/dt_fields)
+
+        ax = axis[0,0]
+        ax.plot(np.amax(w_max_s[it_ini:,:], axis=0), z, color=colorlist3[0], alpha=al, label=lbl_s)
+        ax.plot(np.amax(w_max_d[it_ini:,:], axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
+        ax.plot(np.amax(w_max_t[it_ini:,:], axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
+        ax = axis[0,1]
+        ax.plot(np.amax(w_max_s[it_ini:it_2CP,:], axis=0), z, color=colorlist3[0], alpha=al, label=lbl_s)
+        ax.plot(np.amax(w_max_d[it_ini:it_2CP,:], axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
+        ax.plot(np.amax(w_max_t[it_ini:it_2CP,:], axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
+        ax = axis[0,2]
+        ax.plot(np.amax(w_max_s[it_2CP:it_3CP,:], axis=0), z, color=colorlist3[0], alpha=al, label=lbl_s)
+        ax.plot(np.amax(w_max_d[it_2CP:it_3CP,:], axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
+        ax.plot(np.amax(w_max_t[it_2CP:it_3CP,:], axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
+        ax = axis[0,3]
+        ax.plot(np.amax(w_max_s[it_3CP:it_final,:], axis=0), z, color=colorlist3[0], alpha=al, label=lbl_s)
+        ax.plot(np.amax(w_max_d[it_3CP:it_final,:], axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
+        ax.plot(np.amax(w_max_t[it_3CP:it_final,:], axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
+
+        ax = axis[1, 0]
+        ax.plot(np.amax(th_min_s[it_ini:, :], axis=0), z_half, color=colorlist3[0], alpha=al, label=lbl_s)
+        ax.plot(np.amax(th_min_d[it_ini:, :], axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
+        ax.plot(np.amax(th_min_t[it_ini:, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
+        ax = axis[1, 1]
+        ax.plot(np.amax(th_min_s[it_ini:it_2CP, :], axis=0), z_half, color=colorlist3[0], alpha=al, label=lbl_s)
+        ax.plot(np.amax(th_min_d[it_ini:it_2CP, :], axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
+        ax.plot(np.amax(th_min_t[it_ini:it_2CP, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
+        ax = axis[1, 2]
+        ax.plot(np.amax(th_min_s[it_2CP:it_3CP, :], axis=0), z_half, color=colorlist3[0], alpha=al, label=lbl_s)
+        ax.plot(np.amax(th_min_d[it_2CP:it_3CP, :], axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
+        ax.plot(np.amax(th_min_t[it_2CP:it_3CP, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
+        ax = axis[1, 3]
+        ax.plot(np.amax(th_min_s[it_3CP:it_final, :], axis=0), z_half, color=colorlist3[0], alpha=al, label=lbl_s)
+        ax.plot(np.amax(th_min_d[it_3CP:it_final, :], axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
+        ax.plot(np.amax(th_min_t[it_3CP:it_final, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
+
+
+
+    # #     ax00.plot(np.amax(w_max_d, axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
+    # #     ax00.plot(np.amax(w_max_t, axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
+    # #     ax01.plot(np.amin(th_min_ss, axis=0), z_half, color=colorlist3[0], alpha=al, label=lbl_s)
+    # #     ax01.plot(np.amin(th_min_d, axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
+    # #     ax01.plot(np.amin(th_min_t, axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
+    # #     ax10.plot(np.amax(w_max_sd[:itmax_s, :], axis=0), z, color=colorlist3[0], alpha=al, label=lbl_s)
+    # #     ax10.plot(np.amax(w_max_d, axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
+    # #     ax10.plot(np.amax(w_max_t, axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
+    # #     ax11.plot(np.amin(th_min_s, axis=0), z_half, color=colorlist3[0], alpha=al, label=lbl_s)
+    # #     ax11.plot(np.amin(th_min_d, axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
+    # #     ax11.plot(np.amin(th_min_t, axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
+
+    for ax in axis[0,:].flat:
+        ax.set_xlim(0,4)
+        ax.set_xlabel('max. w  [m/s]')
+        # ax.set_ylabel('height z  [m]')
+    for ax in axis[1,:].flat:
+        ax.set_xlim(299.2,300.1)
+        ax.set_xlabel(r'min. $\theta$ [K]')
+        # ax.set_ylabel('height z  [m]')
+    for ax in axis[:,0].flat:
+        ax.set_ylabel('height z  [m]')
+    axis[0,0].set_title(r't $>$'+str(t_ini[d]))
+    axis[0,1].set_title(str(t_ini[d])+r'$\leq$ t $<$'+str(t_2CP[d]))
+    axis[0,2].set_title(str(t_2CP[d])+r'$\leq$ t $<$'+str(t_3CP[d]))
+    axis[0,3].set_title(str(t_3CP[d])+r'$\leq$ t $<$'+str(t_final[d]))
+
+
+    # # # # ax2.grid()
+    axis[0,0].legend(loc='upper left', bbox_to_anchor=(0.12, .97),
+               fancybox=False, shadow=False, ncol=1, fontsize=12)
+    # # # ax2.legend(loc='upper left', bbox_to_anchor=(0.1, -0.1),
+    # # #            fancybox=False, shadow=False, ncol=1, fontsize=9)
+    # # # plt.suptitle('min/max for ' + var_name, fontsize=21)
+    plt.subplots_adjust(bottom=0.1, right=.95, left=0.1, top=0.95, hspace=0.2)
+    plt.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
     return
 # ----------------------------------------------------------------------
 def cpm_c(qt):
