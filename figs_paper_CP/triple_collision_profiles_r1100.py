@@ -996,7 +996,7 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         #path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
         #w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
 
-        fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='all')
+        fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='none')
         maxw = np.amax(w_max_s)+.1
         #maxw = np.maximum(np.amax(w_max_s), np.amax(w_max_d))+.1
         for it,t0 in enumerate(range(0, t_final[d], dt_fields)):
