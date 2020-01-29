@@ -1040,7 +1040,7 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         axis[0, 0].legend(loc=1, fontsize=12)
         axis[0, 3].legend(loc='upper left', bbox_to_anchor=(1, 1.),
                    fancybox=False, shadow=False, ncol=1, fontsize=12)
-        plt.subplots_adjust(bottom=0.1, right=.85, left=0.1, top=0.95, hspace=0.2, wspace=0.1)
+        plt.subplots_adjust(bottom=0.1, right=.87, left=0.1, top=0.95, hspace=0.2, wspace=0.1)
         plt.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
     return
