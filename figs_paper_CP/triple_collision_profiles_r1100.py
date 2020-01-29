@@ -209,19 +209,19 @@ def main():
     #         = compute_domain_max(path_single_dx50, id_list_s[0], case_name_single, kmax, times, nt)
     # path_out = os.path.join(path_single_dx50, id_list_s[0], 'data_analysis')
     # dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, z, z_half, kmax, times, filename, path_out)
-    for d,dstar in enumerate(d_range):
+    # for d,dstar in enumerate(d_range):
     # #     w_min_d, w_max_d, th_min_d, th_max_d, s_min_d, s_max_d, z, z_half \
     # #         = compute_domain_max(path_double, id_list_d[d], case_name_double, kmax, times, nt)
     # #     path_out = os.path.join(path_double, id_list_d[d], 'data_analysis')
     # #     if not os.path.exists(path_out):
     # #         os.mkdir(path_out)
     # #     dump_minmax_file(w_min_d, w_max_d, th_min_d, th_max_d, s_min_d, s_max_d, z, z_half, kmax, times, filename, path_out)
-    # #     path_out = os.path.join(path_triple, id_list_t[d], 'data_analysis')
-    # #     if not os.path.exists(path_out):
-    # #         os.mkdir(path_out)
-        w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half \
-            = compute_domain_max(path_triple, id_list_t[d], case_name_triple, kmax, times, nt)
-        dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
+    #     path_out = os.path.join(path_triple, id_list_t[d], 'data_analysis')
+    #     if not os.path.exists(path_out):
+    #         os.mkdir(path_out)
+    #     w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half \
+    #         = compute_domain_max(path_triple, id_list_t[d], case_name_triple, kmax, times, nt)
+    #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
 
     plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
                                   t_final,
@@ -945,7 +945,7 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
         w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
 
         fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='none')
-        # maxw = np.amax(w_max_s)+.1
+        maxw = np.amax(w_max_s)+.1
         # #maxw = np.maximum(np.amax(w_max_s), np.amax(w_max_d))+.1
         # print('time single: ', t_s, w_max_s.shape)
         axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-', color=colorlist3[0], label='single CP gust front')
