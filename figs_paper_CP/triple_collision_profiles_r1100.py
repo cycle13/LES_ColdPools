@@ -991,26 +991,28 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
         #path = os.path.join(path_double, id_list_d[d], 'data_analysis')
         #w_max_d, th_min_d, s_min_d, z, z_half, t_d = read_in_minmax(kmax_plot, path, filename)
-        #path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
-        #w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
+        path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
+        w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
 
         fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='none')
         maxw = np.amax(w_max_s)+.1
         #maxw = np.maximum(np.amax(w_max_s), np.amax(w_max_d))+.1
         print('time single: ', t_s, w_max_s.shape)
         axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-k', label='single CP')
+        axis[0, 0].plot(t_t, np.amax(w_max_t[:, :], axis=1), 'o-k', label='triple CP')
         axis[1, 0].plot(t_s, np.amin(s_min_s[:, :], axis=1), 'o-k', label='single CP')
+        axis[1, 0].plot(t_t, np.amin(s_min_t[:, :], axis=1), 'o-k', label='triple CP')
         for it,t0 in enumerate(range(0, t_final[d], dt_fields)):
             lbl = 't='+str(t0)+'s'
             cl = t0*1./t_final[d]
 
             axis[0, 1].plot(w_max_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
             #axis[0, 2].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
-            #axis[0, 3].plot(w_max_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[0, 3].plot(w_max_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
 
             axis[1, 1].plot(th_min_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
             #axis[1, 2].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
-            #axis[1, 3].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[1, 3].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
 
         axis[0, 1].set_title('single CP')
         axis[0, 2].set_title('double CP, collision line')
@@ -1042,7 +1044,7 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
 
 
 def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                t_ini, t_2CP, t_3CP, t_final, times,
+                                t_ini, t_2CP, t_3CP, t_final,
                                 path_single, path_double, path_triple,
                                 filename, path_out_figs):
     ''' read in min/max values '''
