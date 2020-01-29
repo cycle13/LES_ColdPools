@@ -104,7 +104,7 @@ def main():
     rad_2CP_ini = np.empty(3)
     rad_3CP_ini = np.empty(3)
     rad_3CP_end = np.empty(3)
-    delta_s = 6.e2#/dx[0]
+    delta_s = 6.e2
     for d in range(len(d_range)):
         rad_1CP_ini[d] = r_av[np.int(t_ini[d]/dt_fields)]
         rad_2CP_ini[d] = r_av[np.int(t_2CP[d]/dt_fields)]
@@ -126,11 +126,11 @@ def main():
         lim_double = [[100, 280], [80, 280], [80, 220]]
         lim_triple = [200, 250, 250]
 
-    plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_double, lim_triple,
-                      d_range, t_ini, t_2CP, t_3CP, t_final,
-                      rad_1CP_ini, rad_2CP_ini, rad_3CP_ini, rad_3CP_end,
-                      id_list_s, id_list_d, id_list_t,
-                      path_single, path_double, path_triple, path_out_figs)
+    # plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_double, lim_triple,
+    #                   d_range, t_ini, t_2CP, t_3CP, t_final,
+    #                   rad_1CP_ini, rad_2CP_ini, rad_3CP_ini, rad_3CP_end,
+    #                   id_list_s, id_list_d, id_list_t,
+    #                   path_single, path_double, path_triple, path_out_figs)
     print('')
 
 
@@ -142,18 +142,18 @@ def main():
 
 
 
-    #''' (A) plot from local (unaveraged) min / max in subdomains'''
-    #''' compute min/max values in subdomains (circle, rectangles) '''
-    #path_out = os.path.join(path_single, id_list_s[0], 'data_analysis')
-    #filename = 'minmax_subdomains_noaverage.nc'
+    ''' (A) plot from local (unaveraged) min / max in subdomains'''
+    ''' compute min/max values in subdomains (circle, rectangles) '''
+    path_out = os.path.join(path_single, id_list_s[0], 'data_analysis')
+    filename = 'minmax_subdomains_noaverage.nc'
 
-    #w_min, w_max, th_min, th_max, s_min, s_max, z, z_half = \
-    #    compute_subdomains_max_single(path_single, id_list_s[0], case_name_single,
-    #                                      delta_s,
-    #                                      kmax, times, nt,
-    #                                      t_ini[0], t_2CP, t_3CP, t_final, r_av, d_range, path_out_figs)
-    #dump_minmax_file(w_min, w_max, th_min, th_max, s_min, s_max,
-    #                 z, z_half, kmax, times, filename, path_out)
+    w_min, w_max, th_min, th_max, s_min, s_max, z, z_half = \
+       compute_subdomains_max_single(path_single, id_list_s[0], case_name_single,
+                                         delta_s,
+                                         kmax, times, nt,
+                                         t_ini[0], t_2CP, t_3CP, t_final, r_av, d_range, path_out_figs)
+    dump_minmax_file(w_min, w_max, th_min, th_max, s_min, s_max,
+                    z, z_half, kmax, times, filename, path_out)
 
 
     #for d,dstar in enumerate(d_range):
@@ -180,19 +180,19 @@ def main():
     #    dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
 
 
-    ## plot min/max in each subdomain for all times
-    #plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
-    #                                  t_final,
-    #                                  path_single, path_double, path_triple,
-    #                                  filename, path_out_figs)
+    # plot min/max in each subdomain for all times
+    plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
+                                     t_final,
+                                     path_single, path_double, path_triple,
+                                     filename, path_out_figs)
 
 
-    #print(path_double)
-    ## plot min/max in each subdomain for time windows
-    #plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
-    #                            t_ini, t_2CP, t_3CP, t_final,
-    #                            path_single, path_double, path_triple,
-    #                            filename, path_out_figs)
+    print(path_double)
+    # plot min/max in each subdomain for time windows
+    plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
+                               t_ini, t_2CP, t_3CP, t_final,
+                               path_single, path_double, path_triple,
+                               filename, path_out_figs)
 
 
 

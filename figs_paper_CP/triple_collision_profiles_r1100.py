@@ -40,9 +40,7 @@ def main():
 
     dTh = 5
     zstar = 1000
-    # rstar_range = [1100, 2000]
     rstar = 1100
-    # rstar = 2000
     print('zstar: '+str(zstar))
     print('rstar: '+str(rstar))
     print('')
@@ -130,11 +128,11 @@ def main():
         lim_double = [[100, 280], [80, 280], [80, 220]]
         lim_triple = [200, 250, 250]
 
-    #plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_double, lim_triple,
-    #                  d_range, t_ini, t_2CP, t_3CP, t_final,
-    #                  rad_1CP_ini, rad_2CP_ini, rad_3CP_ini, rad_3CP_end,
-    #                  id_list_s, id_list_d, id_list_t,
-    #                  path_single, path_double, path_triple, path_out_figs)
+    # plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_double, lim_triple,
+    #                   d_range, t_ini, t_2CP, t_3CP, t_final,
+    #                   rad_1CP_ini, rad_2CP_ini, rad_3CP_ini, rad_3CP_end,
+    #                   id_list_s, id_list_d, id_list_t,
+    #                   path_single, path_double, path_triple, path_out_figs)
     print('')
 
 
@@ -186,17 +184,17 @@ def main():
 
     # plot min/max in each subdomain for all times
     plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                      t_final, times,
-                                      path_single, path_double, path_triple,
-                                      filename, path_out_figs)
+                                     t_final,
+                                     path_single, path_double, path_triple,
+                                     filename, path_out_figs)
 
 
     print(path_double)
     # plot min/max in each subdomain for time windows
     plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                t_ini, t_2CP, t_3CP, t_final, times,
-                                path_single, path_double, path_triple,
-                                filename, path_out_figs)
+                               t_ini, t_2CP, t_3CP, t_final,
+                               path_single, path_double, path_triple,
+                               filename, path_out_figs)
 
 
 
@@ -982,7 +980,7 @@ def plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_
 
 # ----------------------------------------------------------------------
 def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                      t_final, times,
+                                      t_final,
                                       path_single, path_double, path_triple,
                                       filename, path_out_figs):
     for d, dstar in enumerate(d_range):
