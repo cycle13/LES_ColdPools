@@ -35,7 +35,6 @@ def main():
     path_out_figs = '/nbi/home/meyerbe/paper_CP/'
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
-
     print('path figs: ' + path_out_figs)
     print('')
 
@@ -52,7 +51,7 @@ def main():
         t_ini = [600, 600, 600]
         t_2CP = [1100, 1500, 2400]
         t_3CP = [1500, 2200, 3300]
-        t_final = [1800, 2500, 3500]
+        t_final = [2100, 2800, 3900]
     elif rstar == 2000:
         d_range = [10, 15, 20]
         t_ini = [400, 400, 400]
@@ -65,7 +64,6 @@ def main():
     for dstar in d_range:
         id_list_d.append('dTh'+str(dTh)+'_z'+str(zstar)+'_r'+str(rstar)+'_d'+str(dstar) + 'km')
         id_list_t.append('dTh'+str(dTh)+'_z'+str(zstar)+'_r'+str(rstar)+'_d'+str(dstar) + 'km')
-    ncases = len(id_list_t)
     print('ID-list: ', id_list_d)
     print('ID-list: ', id_list_t)
     print('')
@@ -84,7 +82,7 @@ def main():
     ''' determine time range '''
     global tmin, tmax
     tmin = np.int(0)
-    tmax = np.int(3500)  # bcs. of tracer statistics
+    tmax = np.int(np.amax(t_final)+2*dt_fields)  # bcs. of tracer statistics
     times = np.arange(tmin, tmax + dt_fields, dt_fields)
     nt = len(times)
     print('tmin: ' + str(tmin))
@@ -98,8 +96,6 @@ def main():
     # for single CP: search maximum within circle of radius CP has at 2-CP / 3-CP collision time
     # single: from tracer statistics
     k0 = 0
-    # times = np.arange(0, 3600, 100)
-    # nt = len(times)
     fullpath_in = os.path.join(path_single, id_list_s[0], 'tracer_k' + str(k0), 'output')
     n_tracers = get_number_tracers(fullpath_in)
     n_cps = get_number_cps(fullpath_in)
@@ -134,11 +130,11 @@ def main():
         lim_double = [[100, 280], [80, 280], [80, 220]]
         lim_triple = [200, 250, 250]
 
-    plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_double, lim_triple,
-                      d_range, t_ini, t_2CP, t_3CP, t_final,
-                      rad_1CP_ini, rad_2CP_ini, rad_3CP_ini, rad_3CP_end,
-                      id_list_s, id_list_d, id_list_t,
-                      path_single, path_double, path_triple, path_out_figs)
+    #plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_double, lim_triple,
+    #                  d_range, t_ini, t_2CP, t_3CP, t_final,
+    #                  rad_1CP_ini, rad_2CP_ini, rad_3CP_ini, rad_3CP_end,
+    #                  id_list_s, id_list_d, id_list_t,
+    #                  path_single, path_double, path_triple, path_out_figs)
     print('')
 
 
@@ -155,39 +151,48 @@ def main():
     path_out = os.path.join(path_single, id_list_s[0], 'data_analysis')
     filename = 'minmax_subdomains_noaverage.nc'
 
-    w_min, w_max, th_min, th_max, s_min, s_max, z, z_half = \
-        compute_subdomains_max_single(path_single, id_list_s[0], case_name_single,
-                                          delta_s,
-                                          kmax, times, nt,
-                                          t_ini[0], t_2CP, t_3CP, t_final, r_av, d_range, path_out_figs)
-    dump_minmax_file(w_min, w_max, th_min, th_max, s_min, s_max,
-                     z, z_half, kmax, times, filename, path_out)
+    #w_min, w_max, th_min, th_max, s_min, s_max, z, z_half = \
+    #    compute_subdomains_max_single(path_single, id_list_s[0], case_name_single,
+    #                                      delta_s,
+    #                                      kmax, times, nt,
+    #                                      t_ini[0], t_2CP, t_3CP, t_final, r_av, d_range, path_out_figs)
+    #dump_minmax_file(w_min, w_max, th_min, th_max, s_min, s_max,
+    #                 z, z_half, kmax, times, filename, path_out)
+    #
+    #
+    # for d,dstar in enumerate(d_range):
+    #     w_min_d, w_max_d, th_min_d, th_max_d, s_min_d, s_max_d, z, z_half \
+    #         = compute_subdomains_max_double(path_double, id_list_d[d], case_name_double,
+    #                                         d, dstar, rstar,
+    #                                         r_av, delta_d,
+    #                                         times, nt, t_2CP[d], t_3CP[d],
+    #                                         kmax, path_out_figs)
+    #     path_out = os.path.join(path_double, id_list_d[d], 'data_analysis')
+    #     if not os.path.exists(path_out):
+    #         os.mkdir(path_out)
+    #     dump_minmax_file(w_min_d, w_max_d, th_min_d, th_max_d, s_min_d, s_max_d,
+    #                      z, z_half, kmax, times, filename, path_out)
+    #
+    #     w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half \
+    #         = compute_subdomains_max_triple(path_triple, id_list_t[d], case_name_triple,
+    #                                         d, dstar,
+    #                                         times, nt, t_3CP[d], t_final[d], delta_t,
+    #                                         kmax, path_out_figs)
+    #     path_out = os.path.join(path_triple, id_list_t[d], 'data_analysis')
+    #     if not os.path.exists(path_out):
+    #         os.mkdir(path_out)
+    #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
 
 
-    for d,dstar in enumerate(d_range):
-        w_min_d, w_max_d, th_min_d, th_max_d, s_min_d, s_max_d, z, z_half \
-            = compute_subdomains_max_double(path_double, id_list_d[d], case_name_double,
-                                            d, dstar, rstar,
-                                            r_av, delta_d,
-                                            times, nt, t_2CP[d], t_3CP[d],
-                                            kmax, path_out_figs)
-        path_out = os.path.join(path_double, id_list_d[d], 'data_analysis')
-        if not os.path.exists(path_out):
-            os.mkdir(path_out)
-        dump_minmax_file(w_min_d, w_max_d, th_min_d, th_max_d, s_min_d, s_max_d,
-                         z, z_half, kmax, times, filename, path_out)
+    # plot min/max in each subdomain for all times
+    plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
+                                      t_final,
+                                      path_single, path_double, path_triple,
+                                      filename, path_out_figs)
 
-        w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half \
-            = compute_subdomains_max_triple(path_triple, id_list_t[d], case_name_triple,
-                                            d, dstar,
-                                            times, nt, t_3CP[d], t_final[d], delta_t,
-                                            kmax, path_out_figs)
-        path_out = os.path.join(path_triple, id_list_t[d], 'data_analysis')
-        if not os.path.exists(path_out):
-            os.mkdir(path_out)
-        dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
 
     print(path_double)
+    # plot min/max in each subdomain for time windows
     plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
                                 t_ini, t_2CP, t_3CP, t_final,
                                 path_single, path_double, path_triple,
@@ -196,32 +201,32 @@ def main():
 
 
     ''' (B) plot from local (unaveraged) min / max in total domain'''
-    # filename = 'minmax_domain_noaverage.nc'
-    #
-    # ''' compute domain min/max values '''
-    # # w_min_s, w_max_s, th_min_s, th_max_s, z, z_half \
-    # #         = compute_domain_max(path_single, id_list_s[0], case_name_single, kmax, times, nt)
-    # # path_out = os.path.join(path_single, id_list_s[0], 'data_analysis')
-    # # dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, z, z_half, kmax, times, filename, path_out)
+    filename = 'minmax_domain_noaverage.nc'
+
+    ''' compute domain min/max values '''
+    # w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half \
+    #         = compute_domain_max(path_single, id_list_s[0], case_name_single, kmax, times, nt)
+    # path_out = os.path.join(path_single, id_list_s[0], 'data_analysis')
+    # dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half, kmax, times, filename, path_out)
     # # w_min_s, w_max_s, th_min_s, th_max_s, z, z_half \
     # #         = compute_domain_max(path_single_dx50, id_list_s[0], case_name_single, kmax, times, nt)
     # # path_out = os.path.join(path_single_dx50, id_list_s[0], 'data_analysis')
     # # dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, z, z_half, kmax, times, filename, path_out)
     # for d,dstar in enumerate(d_range):
     # # for d,dstar in enumerate([12]):
-    #     w_min_d, w_max_d, th_min_d, th_max_d, z, z_half \
+    #     w_min_d, w_max_d, th_min_d, th_max_d, s_min_d, s_max_d, z, z_half \
     #         = compute_domain_max(path_double, id_list_d[d], case_name_double, kmax, times, nt)
     #     path_out = os.path.join(path_double, id_list_d[d], 'data_analysis')
     #     if not os.path.exists(path_out):
     #         os.mkdir(path_out)
-    #     dump_minmax_file(w_min_d, w_max_d, th_min_d, th_max_d, z, z_half, kmax, times, filename, path_out)
+    #     dump_minmax_file(w_min_d, w_max_d, th_min_d, th_max_d, s_min_d, s_max_d, z, z_half, kmax, times, filename, path_out)
     #     path_out = os.path.join(path_triple, id_list_t[d], 'data_analysis')
     #     if not os.path.exists(path_out):
     #         os.mkdir(path_out)
-    #     w_min_t, w_max_t, th_min_t, th_max_t, z, z_half \
+    #     w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half \
     #         = compute_domain_max(path_triple, id_list_t[d], case_name_triple, kmax, times, nt)
-    #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, z, z_half, kmax, times, filename, path_out)
-    #
+    #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
+
     # ''' read in min/max values '''
     # fig_name = 'collisions_minmax_profiles_domain_unaveraged_rstar'+str(rstar)+'.png'
     # zmax_plot = 3000.
@@ -236,13 +241,13 @@ def main():
     #     al = 1.-d*1./len(d_range)
     #     path = os.path.join(path_single, id_list_s[0], 'data_analysis')
     #     print(path)
-    #     w_max_s, th_min_s, z, z_half = read_in_minmax(kmax_plot, path, filename)
+    #     w_max_s, th_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
     #     path = os.path.join(path_double, id_list_d[d], 'data_analysis')
     #     print(path)
-    #     w_max_d, th_min_d, z, z_half = read_in_minmax(kmax_plot, path, filename)
+    #     w_max_d, th_min_d, z, z_half, t_d = read_in_minmax(kmax_plot, path, filename)
     #     path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
     #     print(path)
-    #     w_max_t, th_min_t, z, z_half = read_in_minmax(kmax_plot, path, filename)
+    #     w_max_t, th_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
     #     if d > 0:
     #         lbl_s = ''
     #         lbl_d = ''
@@ -363,7 +368,8 @@ def compute_subdomains_max_triple(path, ID, casename,
                                   d, dstar,
                                   times, nt, t_ini, t_fi, delta_t,
                                   kmax, path_out_figs):
-    print('double: compute max')
+    print('triple: compute max in subdomain')
+    # times = [0, ..., t_final+2*dt_fields], len(times)=nt
     w_min = np.zeros((nt, kmax), dtype=np.double)
     w_max = np.zeros((nt, kmax), dtype=np.double)
     th_min = np.ones((nt, kmax), dtype=np.double)
@@ -380,9 +386,9 @@ def compute_subdomains_max_triple(path, ID, casename,
         os.mkdir(os.path.join(path_out_figs, 'figs_collision_test'))
 
     it_ini = np.int(t_ini / dt_fields)
-    it_fi = np.int(t_fi / dt_fields)
-    ic = np.int(nx_d[d][0] * .5)
-    jc = np.int(nx_d[d][1] * .5)
+    it_fi = np.int(t_fi[d] / dt_fields)
+    ic = np.int(nx_t[d][0] * .5)
+    jc = np.int(nx_t[d][1] * .5)
     for it, t0 in enumerate(times[it_ini:t_fi+1]):
         print('--- t: ', it, t0)
         fullpath_in = os.path.join(path, ID, 'fields', str(t0) + '.nc')
@@ -393,7 +399,7 @@ def compute_subdomains_max_triple(path, ID, casename,
 
         xt = np.int(nx_t[d][0]*.5 - delta_t*.5)
         yt = np.int(nx_t[d][1]*.5 - delta_t*.5)
-        print('triple: ', xt, yt, delta_t)
+        #print('triple: ', xt, yt, delta_t)
         w_min[it, :] = np.amin(np.amin(w[xt:xt+delta_t,yt:yt+delta_t,:], axis=0), axis=0)
         w_max[it, :] = np.amax(np.amax(w[xt:xt+delta_t,yt:yt+delta_t,:], axis=0), axis=0)
         s_min[it,:] = np.amin(np.amin(s[xt:xt+delta_t,yt:yt+delta_t,:], axis=0), axis=0)
@@ -408,7 +414,7 @@ def compute_subdomains_max_double(path, ID, casename, d, dstar, rstar,
                                   r_av, delta_d,
                                   times, nt, t_ini, t_fi,
                                   kmax, path_out_figs):
-    print('double: compute max')
+    print('double: compute max in subdomain')
     w_min = np.zeros((nt, kmax), dtype=np.double)
     w_max = np.zeros((nt, kmax), dtype=np.double)
     th_min = np.zeros((nt, kmax), dtype=np.double)
@@ -425,7 +431,7 @@ def compute_subdomains_max_double(path, ID, casename, d, dstar, rstar,
         os.mkdir(os.path.join(path_out_figs, 'figs_collision_test'))
 
     it_ini = np.int(t_ini / dt_fields)
-    it_fi = np.int(t_fi / dt_fields)
+    it_fi = np.int(t_fi[d] / dt_fields)
     ic = np.int(nx_d[d][0] * .5)
     jc = np.int(nx_d[d][1] * .5)
     for it_, t0 in enumerate(times[it_ini:it_fi+1]):
@@ -442,9 +448,9 @@ def compute_subdomains_max_double(path, ID, casename, d, dstar, rstar,
         # s_masked = r_mask.mask[:, :, np.newaxis] * s
         rad2 = r_av[it]**2
         d2 = (dstar*1.e3/2)**2
-        print('double: ', rad2, d2)
+        #print('double: ', rad2, d2)
         if rad2 >= d2:
-            delta_d[1] = np.floor(1.e3/dx[0]) + 2./dx[0]*np.sqrt(rad2 - d2)
+            delta_d[1] = np.floor(2.e3/dx[0]) + 2./dx[0]*np.sqrt(rad2 - d2)
             [xd, yd] = [ic, jc] - delta_d * .5
             w_min[it, :] = np.amin(np.amin(w[xd:xd + delta_d[0], yd:yd + delta_d[1], :], axis=0), axis=0)
             w_max[it, :] = np.amax(np.amax(w[xd:xd + delta_d[0], yd:yd + delta_d[1], :], axis=0), axis=0)
@@ -461,8 +467,8 @@ def compute_subdomains_max_double(path, ID, casename, d, dstar, rstar,
             s_max[it, :] = np.amax(np.amax(s, axis=0), axis=0)
             th_min[it, :] = thetas_c(s_min[it, :], 0)
             th_max[it, :] = thetas_c(s_max[it, :], 0)
-        print('double: ', ic,jc, xd, yd, delta_d)
-        print('...', np.amax(w_max[it,:]), np.amin(s_min[it,:]), np.amin(th_min[it,:]))
+        #print('double: ', ic,jc, xd, yd, delta_d)
+        #print('...', np.amax(w_max[it,:]), np.amin(s_min[it,:]), np.amin(th_min[it,:]))
 
     return w_min, w_max, th_min, th_max, s_min, s_max, zrange, zrange_half
 
@@ -475,7 +481,7 @@ def compute_subdomains_max_single(path, ID, casename,
                            delta_s, kmax, times, nt,
                            t_ini, t_2CP, t_3CP, t_final,
                            r_av, d_range, path_out_figs):
-    print('single: compute max')
+    print('single: compute max in subdomain')
     w_min = np.zeros((nt, kmax), dtype=np.double)
     w_max = np.zeros((nt, kmax), dtype=np.double)
     th_min = np.zeros((nt, kmax), dtype=np.double)
@@ -496,7 +502,7 @@ def compute_subdomains_max_single(path, ID, casename,
     root.close()
 
     it_ini = np.int(t_ini/dt_fields)
-    for it, t0 in enumerate(times[it_ini:]):
+    for it, t0 in enumerate(times):
         print('--- t: ', it, t0)
         fullpath_in = os.path.join(path, ID, 'fields', str(t0) + '.nc')
         root = nc.Dataset(fullpath_in, 'r')
@@ -513,7 +519,7 @@ def compute_subdomains_max_single(path, ID, casename,
         s_min[it,:] = np.amin(np.amin(s_masked, axis=0), axis=0)
         s_max[it,:] = np.amax(np.amax(s_masked, axis=0), axis=0)
         th_min[it, :] = thetas_c(s_min[it,:], 0)
-        print('single: smin', s_min.shape, s_min[it,:], th_min[it,5])
+        #print('single: smin', s_min.shape, s_min[it,:], th_min[it,5])
         th_max[it, :] = thetas_c(s_max[it,:], 0)
 
 
@@ -556,12 +562,12 @@ def compute_subdomains_max_single(path, ID, casename,
                 cf = ax2.imshow(r_mask_g.mask)
                 plt.colorbar(cf, ax=ax2, shrink=0.7)
                 ax3.set_title('s')
-                cf = ax3.imshow(s[:, :, k0], vmin=6864, vmax=np.amax(s))
+                cf = ax3.imshow(s[:, :, k0], vmin=np.amin(s[:,:,k0]), vmax=np.amax(s[:,:,k0]))
                 plt.colorbar(cf, ax=ax3, shrink=0.7)
                 ax3.plot(s_min_loc_all[0], s_min_loc_all[1], 'kx', markersize=10)
                 ax3.plot(s_min_loc[0], s_min_loc[1], 'ok', markersize=5)
                 ax4.set_title('s*mask')
-                cf = ax4.imshow(s_masked[:, :, k0], vmin=6864, vmax=np.amax(s))
+                cf = ax4.imshow(s_masked[:, :, k0], vmin=6864, vmax=np.amax(s[:,:,k0]))
                 plt.colorbar(cf, ax=ax4, shrink=0.7, extend='max')
 
                 for ax in axis.flat:
@@ -599,6 +605,8 @@ def compute_domain_max(path, ID, casename, kmax, times, nt):
     w_max = np.ones((nt, kmax), dtype=np.double)
     th_min = np.ones((nt, kmax), dtype=np.double)
     th_max = np.ones((nt, kmax), dtype=np.double)
+    s_min = np.ones((nt, kmax), dtype=np.double)
+    s_max = np.ones((nt, kmax), dtype=np.double)
 
     root = nc.Dataset(os.path.join(path, ID, 'stats', 'Stats.'+casename+'.nc'))
     zrange = root.groups['profiles'].variables['z'][:kmax]
@@ -614,14 +622,14 @@ def compute_domain_max(path, ID, casename, kmax, times, nt):
         w_max[it,:] = np.amax(np.amax(w, axis=0), axis=0)
         del w
         s = root.groups['fields'].variables['s'][:, :, :kmax]
-        s_min = np.amin(np.amin(s, axis=0), axis=0)
-        s_max = np.amax(np.amax(s, axis=0), axis=0)
+        s_min[it,:] = np.amin(np.amin(s, axis=0), axis=0)
+        s_max[it,:] = np.amax(np.amax(s, axis=0), axis=0)
         del s
-        th_min[it,:] = thetas_c(s_min, 0)
-        th_max[it,:] = thetas_c(s_max, 0)
+        th_min[it,:] = thetas_c(s_min[it,:], 0)
+        th_max[it,:] = thetas_c(s_max[it,:], 0)
         root.close()
-        del s_min, s_max
-    return w_min, w_max, th_min, th_max, zrange, zrange_half
+        # del s_min, s_max
+    return w_min, w_max, th_min, th_max, s_min, s_max, zrange, zrange_half
 
 
 def dump_minmax_file(w_min, w_max, th_min, th_max, s_min, s_max,
@@ -633,7 +641,7 @@ def dump_minmax_file(w_min, w_max, th_min, th_max, s_min, s_max,
     # - (ok) CP rim (field)
     nt = len(times)
     print('create output file: ', os.path.join(path_out, filename))
-    print('size: ', nz, nt)
+    #print('size: ', nz, nt)
 
     rootgrp = nc.Dataset(os.path.join(path_out, filename), 'w', format='NETCDF4')
 
@@ -684,13 +692,14 @@ def dump_minmax_file(w_min, w_max, th_min, th_max, s_min, s_max,
 
 def read_in_minmax(kmax, path_out, filename):
     root = nc.Dataset(os.path.join(path_out, filename), 'r')
+    time = root.groups['timeseries'].variables['time'][:]
     z = root.groups['timeseries'].variables['z'][:kmax]
     z_half = root.groups['timeseries'].variables['z_half'][:kmax]
     w_max = root.groups['timeseries'].variables['w_max'][:,:kmax]
     th_min = root.groups['timeseries'].variables['th_min'][:,:kmax]
     s_min = root.groups['timeseries'].variables['s_min'][:,:kmax]
     root.close()
-    return w_max, th_min, s_min, z, z_half
+    return w_max, th_min, s_min, z, z_half, time
 
 # --------------------------------------------------------------------
 # ---------------------------- TRACER STATISTICS -----------------------
@@ -752,7 +761,6 @@ def define_geometry(case_name_single, case_name_double, case_name_triple,
                     path_single, path_double, path_triple, id_list_s, id_list_d, id_list_t):
     print 'define geometry'
 
-    nd = len(id_list_d)
     global nx_s, nx_d, nx_t
     nx_s = np.empty(3, dtype=np.int)
     nx_d = []
@@ -765,10 +773,10 @@ def define_geometry(case_name_single, case_name_double, case_name_triple,
     nx_s[0] = nml['grid']['nx']
     nx_s[1] = nml['grid']['ny']
     nx_s[2] = nml['grid']['nz']
-    # dx_s[0] = nml['grid']['dx']
-    # dx_s[1] = nml['grid']['dy']
-    # dx_s[2] = nml['grid']['dz']
-    # dt_fields_s = np.int(nml['fields_io']['frequency'])
+    dx_s[0] = nml['grid']['dx']
+    dx_s[1] = nml['grid']['dy']
+    dx_s[2] = nml['grid']['dz']
+    dt_fields_s = np.int(nml['fields_io']['frequency'])
     for d, ID in enumerate(id_list_d):
         nml = simplejson.loads(open(os.path.join(path_double, ID, case_name_double+ '.in')).read())
         nx_d.append(np.empty(3, dtype=np.int))
@@ -798,9 +806,9 @@ def define_geometry(case_name_single, case_name_double, case_name_triple,
     print('dx single: ' + str(dx_s))
     print('dx double: ' + str(dx_d))
     print('dx triple: ' + str(dx_t))
-    # print('dt fields single: ' + str(dt_fields_s))
+    print('dt fields single: ' + str(dt_fields_s))
     print('dt fields double: ' + str(dt_fields_d))
-    print('dt fields triple: ' +str(dt_fields_t))
+    print('dt fields triple: ' + str(dt_fields_t))
     print('')
 
     global nx, ny, nz, dx
@@ -831,7 +839,8 @@ def plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_
     lvls = np.arange(-w_max, w_max, .5)
     # lvls = np.linspace(-4, 4, 10)
     for d, dstar in enumerate(d_range):
-        print('plotting: d='+str(dstar), d)
+        print('plotting CPs: d='+str(dstar), d)
+        print('times: ', t_ini[d], t_2CP[d], t_3CP[d], t_final[d])
         fig_name = 'collisions_subdomains_k'+str(k0)+'_'+id_list_s[0] + '_d'+str(dstar)+ 'km.png'
         fig, axis = plt.subplots(3, 4, figsize=(20, 15))
         fullpath_in = os.path.join(path_single, id_list_s[0], 'fields', str(t_ini[d]) + '.nc')
@@ -923,16 +932,19 @@ def plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_
         # print('delta_d', rad_1CP_ini[d], (dstar*1.e3)/2, rad_1CP_ini[d]**2, (dstar*1.e3)**2/4, rad_1CP_ini[d]**2 - (dstar*1.e3)**2/4)
         # [xd, yd] = [ic,jc] - delta_d*.5
         # rect_double0 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
-        delta_d[1] = np.floor(1.e3/dx[0]) + 2./dx[0]*np.sqrt(rad_2CP_ini[d]**2 - (dstar*1.e3)**2/4)
-        [xd, yd] = [ic,jc] - delta_d*.5
-        rect_double1 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
-        delta_d[1] = np.floor(1.e3/dx[0]) + 2./dx[0]*np.sqrt(rad_3CP_ini[d]**2 - (dstar*1.e3/2)**2)
+        rad2 = rad_2CP_ini[d]**2
+        d2 = (dstar*1.e3/2)**2
+        if rad2 >= d2:
+            delta_d[1] = np.floor(2.e3/dx[0]) + 2./dx[0]*np.sqrt(rad_2CP_ini[d]**2 - (dstar*1.e3)**2/4)
+            [xd, yd] = [ic,jc] - delta_d*.5
+            rect_double1 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
+            axis[1,1].add_patch(rect_double1)
+        delta_d[1] = np.floor(2.e3/dx[0]) + 2./dx[0]*np.sqrt(rad_3CP_ini[d]**2 - (dstar*1.e3/2)**2)
         [xd, yd] = [ic,jc] - delta_d*.5
         rect_double2 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
-        delta_d[1] = np.floor(1.e3/dx[0]) + 2./dx[0] * np.sqrt(rad_3CP_end[d]**2 - (dstar*1.e3/2)**2)
+        delta_d[1] = np.floor(2.e3/dx[0]) + 2./dx[0] * np.sqrt(rad_3CP_end[d]**2 - (dstar*1.e3/2)**2)
         [xd, yd] = [ic, jc] - delta_d * .5
         rect_double3 = mpatches.Rectangle((yd, xd), delta_d[1], delta_d[0], linewidth=2, edgecolor='k', facecolor='none')
-        axis[1,1].add_patch(rect_double1)
         axis[1,2].add_patch(rect_double2)
         axis[1,3].add_patch(rect_double3)
 
@@ -969,6 +981,60 @@ def plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_
     return
 
 # ----------------------------------------------------------------------
+def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
+                                      t_final,
+                                      path_single, path_double, path_triple,
+                                      filename, path_out_figs):
+    for d, dstar in enumerate(d_range):
+        fig_name = 'collisions_minmax_alltimes_subdomain_unaveraged_rstar' + str(rstar) + '_d'+str(dstar)+'km.png'
+        zmax_plot = 3000.
+        kmax_plot = np.int(zmax_plot / dx[2])
+        path = os.path.join(path_single, id_list_s[0], 'data_analysis')
+        w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
+        #path = os.path.join(path_double, id_list_d[d], 'data_analysis')
+        #w_max_d, th_min_d, s_min_d, z, z_half, t_d = read_in_minmax(kmax_plot, path, filename)
+        #path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
+        #w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
+
+        fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='all')
+        maxw = np.amax(w_max_s)+.1
+        #maxw = np.maximum(np.amax(w_max_s), np.amax(w_max_d))+.1
+        for it,t0 in enumerate(range(0, t_final[d], dt_fields)):
+            lbl = 't='+str(t0)+'s'
+            cl = t0*1./t_final[d]
+
+            axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-k', label=lbl)
+            axis[1, 0].plot(t_s, np.amin(s_min_s[:, :], axis=1), 'o-k', label=lbl)
+            
+            axis[0, 1].plot(w_max_s[it, :], z, color=cm(cl), label=lbl)
+            #axis[0, 2].plot(w_max_d[it, :], z, color=cm(cl), label=lbl)
+            #axis[0, 3].plot(w_max_t[it, :], z, color=cm(cl), label=lbl)
+
+            axis[1, 1].plot(th_min_s[it, :], z, color=cm(cl), label=lbl)
+            #axis[1, 2].plot(th_min_d[it, :], z, color=cm(cl), label=lbl)
+            #axis[1, 3].plot(th_min_t[it, :], z, color=cm(cl), label=lbl)
+
+        axis[0, 0].set_title('single CP')
+        axis[0, 1].set_title('double CP, collision line')
+        axis[0, 2].set_title('triple CP, collision point')
+        for ax in axis[:,0].flat:
+            ax.set_ylabel('height z  [m]')
+        for ax in axis[0,:].flat:
+            ax.set_xlabel('max(w)')
+            ax.set_xlim(-0.1, maxw)
+        for ax in axis[1,:].flat:
+            ax.set_xlim(298,300.1)
+            ax.set_xlabel('min(theta)')
+
+        axis[0, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.),
+                   fancybox=False, shadow=False, ncol=1, fontsize=12)
+        plt.subplots_adjust(bottom=0.1, right=.85, left=0.1, top=0.95, hspace=0.2, wspace=0.1)
+        plt.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
+    return
+
+
+
 def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
                                 t_ini, t_2CP, t_3CP, t_final,
                                 path_single, path_double, path_triple,
@@ -978,27 +1044,27 @@ def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
     fig_name = 'collisions_minmax_profiles_subdomain_unaveraged_rstar'+str(rstar)+'.png'
     zmax_plot = 3000.
     kmax_plot = np.int(zmax_plot/dx[2])
-    fig, axis = plt.subplots(3, 4, figsize=(14, 15), sharey='all')
+    fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='all')
 
     path = os.path.join(path_single, id_list_s[0], 'data_analysis')
-    w_max_s, th_min_s, s_min_s, z, z_half = read_in_minmax(kmax_plot, path, filename)
+    w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
 
     for d,dstar in enumerate(d_range):
         print('.... d: '+str(dstar))
         path = os.path.join(path_double, id_list_d[d], 'data_analysis')
         print(os.path.join(path, filename))
-        w_max_d, th_min_d, s_min_d, z, z_half = read_in_minmax(kmax_plot, path, filename)
+        w_max_d, th_min_d, s_min_d, z, z_half, t_d = read_in_minmax(kmax_plot, path, filename)
         path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
-        w_max_t, th_min_t, s_min_t, z, z_half = read_in_minmax(kmax_plot, path, filename)
+        w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
 
         al = 1.-d*1./(len(d_range)+1)
-        # w_max_ss, th_min_ss, z, z_half = read_in_minmax(kmax_plot, path, filename_ss)
-        # w_max_sd, th_min_sd, z, z_half = read_in_minmax(kmax_plot, path, filename_sd)
-        # w_max_st, th_min_st, z, z_half = read_in_minmax(kmax_plot, path, filename_st)
+        # w_max_ss, th_min_ss, z, z_half, t_ = read_in_minmax(kmax_plot, path, filename_ss)
+        # w_max_sd, th_min_sd, z, z_half, t_ = read_in_minmax(kmax_plot, path, filename_sd)
+        # w_max_st, th_min_st, z, z_half, t_ = read_in_minmax(kmax_plot, path, filename_st)
         #     path = os.path.join(path_double, id_list_d[d], 'data_analysis')
-        #     w_max_d, th_min_d, z, z_half = read_in_minmax(kmax_plot, path, filename)
+        #     w_max_d, th_min_d, z, z_half, t_ = read_in_minmax(kmax_plot, path, filename)
         #     path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
-        #     w_max_t, th_min_t, z, z_half = read_in_minmax(kmax_plot, path, filename)
+        #     w_max_t, th_min_t, z, z_half, t_ = read_in_minmax(kmax_plot, path, filename)
         if d > 0:
             lbl_s = ''
             lbl_d = ''
@@ -1047,13 +1113,6 @@ def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
         ax.plot(np.amax(th_min_d[it_3CP:it_final, :], axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
         ax.plot(np.amax(th_min_t[it_3CP:it_final, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
 
-        ax = axis[2, 0]
-
-        ax = axis[2, 1]
-
-        ax = axis[2, 2]
-
-        ax = axis[2, 3]
 
 
     # #     ax00.plot(np.amax(w_max_d, axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
@@ -1076,10 +1135,6 @@ def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
         ax.set_xlim(299.2,300.1)
         ax.set_xlabel(r'min. $\theta$ [K]')
         # ax.set_ylabel('height z  [m]')
-    for ax in axis[2,:].flat:
-        ax.set_xlim(6868,6872)
-        ax.set_xlabel(r'min. s [J/K]')
-        # ax.set_ylabel('height z  [m]')
     for ax in axis[:,0].flat:
         ax.set_ylabel('height z  [m]')
     axis[0,0].set_title(r't $>$'+str(t_ini[d]))
@@ -1089,7 +1144,7 @@ def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
 
 
     # # # # ax2.grid()
-    axis[0,0].legend(loc='upper left', bbox_to_anchor=(0.35, .95),
+    axis[0,0].legend(loc='upper left', bbox_to_anchor=(0.12, .97),
                fancybox=False, shadow=False, ncol=1, fontsize=12)
     # # # ax2.legend(loc='upper left', bbox_to_anchor=(0.1, -0.1),
     # # #            fancybox=False, shadow=False, ncol=1, fontsize=9)
