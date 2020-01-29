@@ -209,7 +209,7 @@ def main():
     #         = compute_domain_max(path_single_dx50, id_list_s[0], case_name_single, kmax, times, nt)
     # path_out = os.path.join(path_single_dx50, id_list_s[0], 'data_analysis')
     # dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, z, z_half, kmax, times, filename, path_out)
-    # for d,dstar in enumerate(d_range):
+    for d,dstar in enumerate(d_range):
     # #     w_min_d, w_max_d, th_min_d, th_max_d, s_min_d, s_max_d, z, z_half \
     # #         = compute_domain_max(path_double, id_list_d[d], case_name_double, kmax, times, nt)
     # #     path_out = os.path.join(path_double, id_list_d[d], 'data_analysis')
@@ -219,9 +219,9 @@ def main():
     # #     path_out = os.path.join(path_triple, id_list_t[d], 'data_analysis')
     # #     if not os.path.exists(path_out):
     # #         os.mkdir(path_out)
-    #     w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half \
-    #         = compute_domain_max(path_triple, id_list_t[d], case_name_triple, kmax, times, nt)
-    #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
+        w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half \
+            = compute_domain_max(path_triple, id_list_t[d], case_name_triple, kmax, times, nt)
+        dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
 
     plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
                                   t_final,
@@ -587,7 +587,6 @@ def dump_minmax_file(w_min, w_max, th_min, th_max, s_min, s_max,
     # - (ok) CP rim (field)
     nt = len(times)
     print('create output file: ', os.path.join(path_out, filename))
-    #print('size: ', nz, nt)
 
     rootgrp = nc.Dataset(os.path.join(path_out, filename), 'w', format='NETCDF4')
 
