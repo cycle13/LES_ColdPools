@@ -383,11 +383,11 @@ def compute_subdomains_max_triple(path, ID, casename,
     if not os.path.exists(os.path.join(path_out_figs, 'figs_collision_test')):
         os.mkdir(os.path.join(path_out_figs, 'figs_collision_test'))
 
-    it_ini = np.int(t_ini / dt_fields)
-    it_fi = np.int(t_fi[d] / dt_fields)
-    ic = np.int(nx_t[d][0] * .5)
-    jc = np.int(nx_t[d][1] * .5)
-    for it, t0 in enumerate(times[it_ini:t_fi+1]):
+    # it_ini = np.int(t_ini / dt_fields)
+    # it_fi = np.int(t_fi / dt_fields)
+    # ic = np.int(nx_t[d][0] * .5)
+    # jc = np.int(nx_t[d][1] * .5)
+    for it, t0 in enumerate(times):
         print('--- t: ', it, t0)
         fullpath_in = os.path.join(path, ID, 'fields', str(t0) + '.nc')
         root = nc.Dataset(fullpath_in, 'r')
@@ -432,9 +432,9 @@ def compute_subdomains_max_double(path, ID, casename, d, dstar, rstar,
     it_fi = np.int(t_fi[d] / dt_fields)
     ic = np.int(nx_d[d][0] * .5)
     jc = np.int(nx_d[d][1] * .5)
-    for it_, t0 in enumerate(times[it_ini:it_fi+1]):
-        it = it_+it_ini
-        print('--- t: ', it_, it, t0)
+    for it, t0 in enumerate(times):
+        # it = it_+it_ini
+        print('--- t: ', it, t0)
         fullpath_in = os.path.join(path, ID, 'fields', str(t0) + '.nc')
         root = nc.Dataset(fullpath_in, 'r')
         w = root.groups['fields'].variables['w'][:, :, :kmax]
