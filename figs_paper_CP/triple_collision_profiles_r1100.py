@@ -1017,14 +1017,18 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         axis[0, 1].set_title('single CP')
         axis[0, 2].set_title('double CP, collision line')
         axis[0, 3].set_title('triple CP, collision point')
-        for ax in axis[:,0].flat:
+        for ax in axis[:,1:].flat:
             ax.set_ylabel('height z  [m]')
-        for ax in axis[0,:].flat:
+        for ax in axis[0,1:].flat:
             ax.set_xlabel('max(w)')
             ax.set_xlim(-0.1, maxw)
-        for ax in axis[1,:].flat:
+        for ax in axis[1,1:].flat:
             ax.set_xlim(298,300.1)
             ax.set_xlabel('min(theta)')
+        axis[0,0].set_xlabel('time [s]')
+        axis[1,0].set_xlabel('time [s]')
+        axis[0,0].set_ylabel('max(w)')
+        axis[1,0].set_ylabel('min(s)')
 
         axis[0, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.),
                    fancybox=False, shadow=False, ncol=1, fontsize=12)
