@@ -1000,8 +1000,8 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         maxw = np.amax(w_max_s)+.1
         #maxw = np.maximum(np.amax(w_max_s), np.amax(w_max_d))+.1
         print('time single: ', t_s, w_max_s.shape)
-        axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-k', label=lbl)
-        axis[1, 0].plot(t_s, np.amin(s_min_s[:, :], axis=1), 'o-k', label=lbl)
+        axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-k', label='single CP')
+        axis[1, 0].plot(t_s, np.amin(s_min_s[:, :], axis=1), 'o-k', label='single CP')
         for it,t0 in enumerate(range(0, t_final[d], dt_fields)):
             lbl = 't='+str(t0)+'s'
             cl = t0*1./t_final[d]
@@ -1030,7 +1030,8 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         axis[0,0].set_ylabel('max(w)')
         axis[1,0].set_ylabel('min(s)')
 
-        axis[0, 0].legend(loc='upper left', bbox_to_anchor=(1, 1.),
+        axis[0, 0].legend(loc=1, fontsize=12)
+        axis[0, 1].legend(loc='upper left', bbox_to_anchor=(1, 1.),
                    fancybox=False, shadow=False, ncol=1, fontsize=12)
         plt.subplots_adjust(bottom=0.1, right=.85, left=0.1, top=0.95, hspace=0.2, wspace=0.1)
         plt.savefig(os.path.join(path_out_figs, fig_name))
