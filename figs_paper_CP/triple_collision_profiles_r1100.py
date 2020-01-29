@@ -186,7 +186,7 @@ def main():
 
     # plot min/max in each subdomain for all times
     plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                      t_final,
+                                      t_final, times,
                                       path_single, path_double, path_triple,
                                       filename, path_out_figs)
 
@@ -194,7 +194,7 @@ def main():
     print(path_double)
     # plot min/max in each subdomain for time windows
     plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                t_ini, t_2CP, t_3CP, t_final,
+                                t_ini, t_2CP, t_3CP, t_final, times,
                                 path_single, path_double, path_triple,
                                 filename, path_out_figs)
 
@@ -982,7 +982,7 @@ def plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_
 
 # ----------------------------------------------------------------------
 def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                      t_final,
+                                      t_final, times,
                                       path_single, path_double, path_triple,
                                       filename, path_out_figs):
     for d, dstar in enumerate(d_range):
@@ -1002,7 +1002,7 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         print('time single: ', t_s, w_max_s.shape)
         axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-k', label='single CP')
         axis[1, 0].plot(t_s, np.amin(s_min_s[:, :], axis=1), 'o-k', label='single CP')
-        for it,t0 in enumerate(range(0, t_final[d], dt_fields)):
+        for it,t0 in enumerate(times):
             lbl = 't='+str(t0)+'s'
             cl = t0*1./t_final[d]
 
@@ -1030,7 +1030,7 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         axis[0,0].set_ylabel('max(w)')
         axis[1,0].set_ylabel('min(s)')
 
-        for ax in not axis[:, 2:].flat:
+        for ax in axis[:, 2:].flat:
             ax.axis('off')
 
         axis[0, 0].legend(loc=1, fontsize=12)
@@ -1044,7 +1044,7 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
 
 
 def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                t_ini, t_2CP, t_3CP, t_final,
+                                t_ini, t_2CP, t_3CP, t_final, times,
                                 path_single, path_double, path_triple,
                                 filename, path_out_figs):
     ''' read in min/max values '''
