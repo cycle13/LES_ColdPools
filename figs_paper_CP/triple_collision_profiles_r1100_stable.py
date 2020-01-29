@@ -981,15 +981,15 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         #path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
         #w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
 
-        fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='all')
+        fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='none')
         maxw = np.amax(w_max_s)+.1
         #maxw = np.maximum(np.amax(w_max_s), np.amax(w_max_d))+.1
+        print('time single: ', t_s, w_max_s.shape)
+        axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-k', label='single CP')
+        axis[1, 0].plot(t_s, np.amin(s_min_s[:, :], axis=1), 'o-k', label='single CP')
         for it,t0 in enumerate(range(0, t_final[d], dt_fields)):
             lbl = 't='+str(t0)+'s'
             cl = t0*1./t_final[d]
-
-            axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-k', label=lbl)
-            axis[1, 0].plot(t_s, np.amin(s_min_s[:, :], axis=1), 'o-k', label=lbl)
 
             axis[0, 1].plot(w_max_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
             #axis[0, 2].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
@@ -1002,16 +1002,24 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         axis[0, 1].set_title('single CP')
         axis[0, 2].set_title('double CP, collision line')
         axis[0, 3].set_title('triple CP, collision point')
-        for ax in axis[:,0].flat:
+        for ax in axis[:,1:].flat:
             ax.set_ylabel('height z  [m]')
-        for ax in axis[0,:].flat:
+        for ax in axis[0,1:].flat:
             ax.set_xlabel('max(w)')
             ax.set_xlim(-0.1, maxw)
-        for ax in axis[1,:].flat:
+        for ax in axis[1,1:].flat:
             ax.set_xlim(298,300.1)
             ax.set_xlabel('min(theta)')
+        axis[0,0].set_xlabel('time [s]')
+        axis[1,0].set_xlabel('time [s]')
+        axis[0,0].set_ylabel('max(w)')
+        axis[1,0].set_ylabel('min(s)')
 
-        axis[0, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.),
+        for ax in axis[:, 2:].flat:
+            ax.axis('off')
+
+        axis[0, 0].legend(loc=1, fontsize=12)
+        axis[0, 1].legend(loc='upper left', bbox_to_anchor=(1, 1.),
                    fancybox=False, shadow=False, ncol=1, fontsize=12)
         plt.subplots_adjust(bottom=0.1, right=.85, left=0.1, top=0.95, hspace=0.2, wspace=0.1)
         plt.savefig(os.path.join(path_out_figs, fig_name))
