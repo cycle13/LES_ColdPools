@@ -200,18 +200,16 @@ def main():
 
     ''' (B) plot from local (unaveraged) min / max in total domain'''
     filename = 'minmax_domain_noaverage.nc'
-
     ''' compute domain min/max values '''
-    # w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half \
-    #         = compute_domain_max(path_single, id_list_s[0], case_name_single, kmax, times, nt)
-    # path_out = os.path.join(path_single, id_list_s[0], 'data_analysis')
-    # dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half, kmax, times, filename, path_out)
-    # # w_min_s, w_max_s, th_min_s, th_max_s, z, z_half \
-    # #         = compute_domain_max(path_single_dx50, id_list_s[0], case_name_single, kmax, times, nt)
-    # # path_out = os.path.join(path_single_dx50, id_list_s[0], 'data_analysis')
-    # # dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, z, z_half, kmax, times, filename, path_out)
-    # for d,dstar in enumerate(d_range):
-    # # for d,dstar in enumerate([12]):
+    w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half \
+            = compute_domain_max(path_single, id_list_s[0], case_name_single, kmax, times, nt)
+    path_out = os.path.join(path_single, id_list_s[0], 'data_analysis')
+    dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half, kmax, times, filename, path_out)
+    # w_min_s, w_max_s, th_min_s, th_max_s, z, z_half \
+    #         = compute_domain_max(path_single_dx50, id_list_s[0], case_name_single, kmax, times, nt)
+    # path_out = os.path.join(path_single_dx50, id_list_s[0], 'data_analysis')
+    # dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, z, z_half, kmax, times, filename, path_out)
+    for d,dstar in enumerate(d_range):
     #     w_min_d, w_max_d, th_min_d, th_max_d, s_min_d, s_max_d, z, z_half \
     #         = compute_domain_max(path_double, id_list_d[d], case_name_double, kmax, times, nt)
     #     path_out = os.path.join(path_double, id_list_d[d], 'data_analysis')
@@ -221,65 +219,18 @@ def main():
     #     path_out = os.path.join(path_triple, id_list_t[d], 'data_analysis')
     #     if not os.path.exists(path_out):
     #         os.mkdir(path_out)
-    #     w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half \
-    #         = compute_domain_max(path_triple, id_list_t[d], case_name_triple, kmax, times, nt)
-    #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
+        w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half \
+            = compute_domain_max(path_triple, id_list_t[d], case_name_triple, kmax, times, nt)
+        dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
 
-    # ''' read in min/max values '''
-    # fig_name = 'collisions_minmax_profiles_domain_unaveraged_rstar'+str(rstar)+'.png'
-    # zmax_plot = 3000.
-    # kmax_plot = np.int(zmax_plot/dx[2])
-    # fig, axis = plt.subplots(1, 3, figsize=(14, 10))
-    # ax0 = axis[0]
-    # ax1 = axis[1]
-    # ax2 = axis[2]
-    # for d,dstar in enumerate(d_range):
-    # # for d,dstar in enumerate([10, 15]):
-    #     print('.... d: '+str(dstar))
-    #     al = 1.-d*1./len(d_range)
-    #     path = os.path.join(path_single, id_list_s[0], 'data_analysis')
-    #     print(path)
-    #     w_max_s, th_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
-    #     path = os.path.join(path_double, id_list_d[d], 'data_analysis')
-    #     print(path)
-    #     w_max_d, th_min_d, z, z_half, t_d = read_in_minmax(kmax_plot, path, filename)
-    #     path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
-    #     print(path)
-    #     w_max_t, th_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
-    #     if d > 0:
-    #         lbl_s = ''
-    #         lbl_d = ''
-    #         lbl_t = ''
-    #     else:
-    #         lbl_s = 'single CP gust front'
-    #         lbl_d = 'double CP collision'
-    #         lbl_t = 'triple CP collision'
-    #     ax0.plot(np.amax(w_max_s[:it_2CP,:], axis=0), z, color=colorlist3[0], alpha=al, label=lbl_s)
-    #     ax0.plot(np.amax(w_max_d, axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
-    #     ax0.plot(np.amax(w_max_t, axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
-    #     ax1.plot(np.amin(th_min_s, axis=0), z_half, color=colorlist3[0], alpha=al, label=lbl_s)
-    #     ax1.plot(np.amin(th_min_d, axis=0), z_half, color=colorlist3[1], alpha=al, label=lbl_d)
-    #     ax1.plot(np.amin(th_min_t, axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
-    #
-    # ax0.set_xlabel('max. w  [m/s]')
-    # ax0.set_ylabel('height z  [m]')
-    # ax1.set_xlabel(r'min. $\theta$ [K]')
-    # # # ax2.grid()
-    # # # ax2.set_xlim(0.9, 2.1)
-    # # # ax0.set_title('maxima')
-    # # # ax1.set_title('minima')
-    # ax0.legend(loc='upper left', bbox_to_anchor=(0.35, .95),
-    #            fancybox=False, shadow=False, ncol=1, fontsize=12)
-    # # # ax2.legend(loc='upper left', bbox_to_anchor=(0.1, -0.1),
-    # # #            fancybox=False, shadow=False, ncol=1, fontsize=9)
-    # # # plt.suptitle('min/max for ' + var_name, fontsize=21)
-    # plt.subplots_adjust(bottom=0.18, right=.95, left=0.1, top=0.9, hspace=0.4)
-    # plt.savefig(os.path.join(path_out_figs, fig_name))
-    # plt.close(fig)
-    #
-    #
-    #
-    #
+    plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
+                                  t_final,
+                                  path_single, path_double, path_triple,
+                                  filename, path_out_figs)
+
+
+
+
     ''' (C) plot from averaged min / max'''
     # - single - azimuthal average
     # - double - average along collision line
@@ -469,9 +420,6 @@ def compute_subdomains_max_double(path, ID, casename, d, dstar, rstar,
         #print('...', np.amax(w_max[it,:]), np.amin(s_min[it,:]), np.amin(th_min[it,:]))
 
     return w_min, w_max, th_min, th_max, s_min, s_max, zrange, zrange_half
-
-
-
 
 
 
@@ -979,6 +927,75 @@ def plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_
     return
 
 # ----------------------------------------------------------------------
+def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
+                                      t_final,
+                                      path_single, path_double, path_triple,
+                                      filename, path_out_figs):
+    for d, dstar in enumerate(d_range):
+        fig_name = 'collisions_minmax_allltimes_domain_unaveraged_rstar' + str(rstar) + '_d'+str(dstar)+'km.png'
+        zmax_plot = 3000.
+        kmax_plot = np.int(zmax_plot / dx[2])
+        path = os.path.join(path_single, id_list_s[0], 'data_analysis')
+        w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
+        #path = os.path.join(path_double, id_list_d[d], 'data_analysis')
+        #w_max_d, th_min_d, s_min_d, z, z_half, t_d = read_in_minmax(kmax_plot, path, filename)
+        path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
+        w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
+
+        fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='none')
+        # maxw = np.amax(w_max_s)+.1
+        # #maxw = np.maximum(np.amax(w_max_s), np.amax(w_max_d))+.1
+        # print('time single: ', t_s, w_max_s.shape)
+        axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-', color=colorlist3[0], label='single CP gust front')
+        axis[0, 0].plot(t_t, np.amax(w_max_t[:, :], axis=1), 'o-', color=colorlist3[2], label='triple CP collision')
+        axis[1, 0].plot(t_s, np.amin(s_min_s[:, :], axis=1), 'o-', color=colorlist3[0], label='single CP gust front')
+        axis[1, 0].plot(t_t, np.amin(s_min_t[:, :], axis=1), 'o-', color=colorlist3[2], label='triple CP collision')
+        for ax in axis[0, 1:].flat:
+            ax.plot([0., maxw], [1000, 1000], 'k-', linewidth=0.5)
+        for ax in axis[1, 1:].flat:
+            ax.plot([298, 300.1], [1000, 1000], 'k-', linewidth=0.5)
+        for it,t0 in enumerate(range(0, t_final[d], dt_fields)):
+            lbl = 't='+str(t0)+'s'
+            cl = t0*1./t_final[d]
+
+            axis[0, 1].plot(w_max_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            #axis[0, 2].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[0, 3].plot(w_max_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+
+            axis[1, 1].plot(th_min_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            #axis[1, 2].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[1, 3].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+
+        axis[0, 1].set_title('single CP')
+        axis[0, 2].set_title('double CP, collision line')
+        axis[0, 3].set_title('triple CP, collision point')
+        for ax in axis[:,1:].flat:
+            ax.set_ylabel('height z  [m]')
+        for ax in axis[0,1:].flat:
+            ax.set_xlabel('max(w)')
+            ax.set_xlim(-0.1, maxw)
+        for ax in axis[1,1:].flat:
+            ax.set_xlim(298,300.1)
+            ax.set_xlabel('min(theta)')
+        axis[0,0].set_xlabel('time [s]')
+        axis[1,0].set_xlabel('time [s]')
+        axis[0,0].set_ylabel('max(w)')
+        axis[1,0].set_ylabel('min(s)')
+
+        for ax in axis[:, 2].flat:
+            ax.axis('off')
+
+        axis[0, 0].legend(loc=1, fontsize=12)
+        axis[0, 3].legend(loc='upper left', bbox_to_anchor=(1, 1.),
+                   fancybox=False, shadow=False, ncol=1, fontsize=12)
+        plt.subplots_adjust(bottom=0.1, right=.9, left=0.05, top=0.95, hspace=0.2, wspace=0.1)
+        plt.savefig(os.path.join(path_out_figs, fig_name))
+        plt.close(fig)
+    return
+
+
+
+
 def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
                                       t_final,
                                       path_single, path_double, path_triple,
