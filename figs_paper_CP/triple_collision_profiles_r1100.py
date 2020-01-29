@@ -108,7 +108,7 @@ def main():
     rad_2CP_ini = np.empty(3)
     rad_3CP_ini = np.empty(3)
     rad_3CP_end = np.empty(3)
-    delta_s = 6.e2#/dx[0]
+    delta_s = 6.e2
     for d in range(len(d_range)):
         rad_1CP_ini[d] = r_av[np.int(t_ini[d]/dt_fields)]
         rad_2CP_ini[d] = r_av[np.int(t_2CP[d]/dt_fields)]
@@ -1002,7 +1002,7 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         print('time single: ', t_s, w_max_s.shape)
         axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-k', label='single CP')
         axis[1, 0].plot(t_s, np.amin(s_min_s[:, :], axis=1), 'o-k', label='single CP')
-        for it,t0 in enumerate(times):
+        for it,t0 in enumerate(range(0, t_final[d], dt_fields)):
             lbl = 't='+str(t0)+'s'
             cl = t0*1./t_final[d]
 
