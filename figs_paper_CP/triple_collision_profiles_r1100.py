@@ -1002,6 +1002,10 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         axis[0, 0].plot(t_t, np.amax(w_max_t[:, :], axis=1), 'o-k', label='triple CP')
         axis[1, 0].plot(t_s, np.amin(s_min_s[:, :], axis=1), 'o-k', label='single CP')
         axis[1, 0].plot(t_t, np.amin(s_min_t[:, :], axis=1), 'o-k', label='triple CP')
+        for ax in axis[0, 1:].flat:
+            ax.plot([0., maxw], [1000, 1000], 'k-', linewidth=0.5)
+        for ax in axis[1, 1:].flat:
+            ax.plot([298, 300.1], [1000, 1000], 'k-', linewidth=0.5)
         for it,t0 in enumerate(range(0, t_final[d], dt_fields)):
             lbl = 't='+str(t0)+'s'
             cl = t0*1./t_final[d]
