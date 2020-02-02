@@ -34,21 +34,21 @@ def main():
     args = parser.parse_args()
 
     global case_name_3CP
-    case_name_1CP = 'ColdPoolDry_single_3D'
-    case_name_2CP = 'ColdPoolDry_double_3D'
-    case_name_3CP = 'ColdPoolDry_triple_3D'
+    case_name_1CP = 'ColdPoolDry_single_3D_stable'
+    case_name_2CP = 'ColdPoolDry_double_3D_stable'
+    case_name_3CP = 'ColdPoolDry_triple_3D_stable'
 
     dTh = 5
     zstar = 1000
-    rstar = 2000
+    rstar = 1100
     sep = 12
     sep = 15
     case = 'dTh'+str(dTh)+'_z'+str(zstar)+'_r'+str(rstar)
     case_2CP = 'dTh'+str(dTh)+'_z'+str(zstar)+'_r'+str(rstar)+'_d'+str(sep)+'km'
 
-    path_1CP = '/nbi/ac/conv4/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/single_3D_noise/run5_PE_scaling_dx100m/'+case
-    path_2CP = '/nbi/ac/coag/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/double_3D/'+case_2CP
-    path_3CP = '/nbi/ac/cond2/meyerbe/ColdPools/3D_sfc_fluxes_off/triple_3D/'+case_2CP
+    path_1CP = '/nbi/ac/conv4/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/single_3D_noise/run8_stable/' + case
+    path_2CP = '/nbi/ac/coag/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/double_3D_stable/' + case_2CP
+    path_3CP = '/nbi/ac/coag/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/triple_3D_stable/' + case_2CP
     print('')
     print('path 1CP:   ' + path_1CP)
     print('path 2CP:   ' + path_2CP)
@@ -56,15 +56,18 @@ def main():
     path_data = os.path.join(path_3CP, 'data_analysis')
     # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
     path_out_figs = '/nbi/home/meyerbe/paper_CP'
-    nml_2CP, nml_3CP, times, files = set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3CP,
+    # nml_2CP, nml_3CP, times, files = set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3CP,
+    #                                                              path_1CP, path_2CP, path_3CP)
+    nml_3CP, times, files = set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3CP,
                                                                  path_1CP, path_2CP, path_3CP)
 
-    ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP, \
-            ic_2CP, jc_2CP, ic_3CP, jc_3CP = define_geometry(nml_2CP, nml_3CP)
-    # print('CP geometry:')
-    # print(ic_arr)
-    # print(jc_arr)
 
+    # ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP, \
+    #         ic_2CP, jc_2CP, ic_3CP, jc_3CP = define_geometry(nml_2CP, nml_3CP)
+    # # print('CP geometry:')
+    # # print(ic_arr)
+    # # print(jc_arr)
+    #
     if args.level:
         zlevel = np.int(args.level)
     else:
@@ -84,18 +87,18 @@ def main():
     ''' Mass Flux '''
     # read in flux (2D-field)
     filename_data_1CP = 'mass_flux_z'+str(zlevel)+'.nc'
-    filename_data_2CP = 'mass_flux_z'+str(zlevel)+'.nc'
+    # filename_data_2CP = 'mass_flux_z'+str(zlevel)+'.nc'
     filename_data_3CP = 'mass_flux_z'+str(zlevel)+'.nc'
     print(os.path.join(path_1CP, 'data_analysis', filename_data_1CP))
     root_in = nc.Dataset(os.path.join(path_1CP, 'data_analysis', filename_data_1CP), 'r')
     mass_flux_1CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
     root_in.close()
-    print(os.path.join(path_2CP, 'data_analysis', filename_data_2CP))
-    root_in = nc.Dataset(os.path.join(path_2CP, 'data_analysis', filename_data_2CP), 'r')
-    mass_flux_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
-    # mass_flux_pos_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
-    # time_data_2CP = root_in.groups['timeseries'].variables['time'][:]
-    root_in.close()
+    # print(os.path.join(path_2CP, 'data_analysis', filename_data_2CP))
+    # root_in = nc.Dataset(os.path.join(path_2CP, 'data_analysis', filename_data_2CP), 'r')
+    # mass_flux_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
+    # # mass_flux_pos_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
+    # # time_data_2CP = root_in.groups['timeseries'].variables['time'][:]
+    # root_in.close()
     print(os.path.join(path_3CP, 'data_analysis', filename_data_3CP))
     root_in = nc.Dataset(os.path.join(path_3CP, 'data_analysis', filename_data_3CP), 'r')
     mass_flux_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:,:,:]
@@ -103,55 +106,55 @@ def main():
     # time_data_3CP = root_in.groups['timeseries'].variables['time'][:]
     root_in.close()
     #
-    # # averaged mass_flux_3CP
-    # delta = 6
-    # itmax = 15
-    # MF_2CP = np.sum(mass_flux_2CP[:itmax, :, :], axis=0)
-    # MF_mean_2CP = np.mean(MF_2CP[ic_2CP - delta:ic_2CP + delta + 1, :], axis=0)
-    # MF_3CP = np.sum(mass_flux_3CP[:itmax, :, :], axis=0)
-    # MF_mean_3CP = np.mean(MF_3CP[:, jc_3CP - delta:jc_3CP + delta + 1], axis=1)
+    # # # averaged mass_flux_3CP
+    # # delta = 6
+    # # itmax = 15
+    # # MF_2CP = np.sum(mass_flux_2CP[:itmax, :, :], axis=0)
+    # # MF_mean_2CP = np.mean(MF_2CP[ic_2CP - delta:ic_2CP + delta + 1, :], axis=0)
+    # # MF_3CP = np.sum(mass_flux_3CP[:itmax, :, :], axis=0)
+    # # MF_mean_3CP = np.mean(MF_3CP[:, jc_3CP - delta:jc_3CP + delta + 1], axis=1)
+    # #
+    # #
+    # # ''' CP height '''
+    # # filename_CP_height = 'CP_height_' + case + '_sth0.5' + '.nc'
+    # # root_in = nc.Dataset(os.path.join(path_3CP, 'data_analysis', filename_CP_height), 'r')
+    # # time_CPheight_3CP = root_in.groups['timeseries'].variables['time'][:]
+    # # CP_height_3CP = root_in.groups['fields_2D'].variables['CP_height_2d'][:, :, :]
+    # # root_in.close()
+    # # root_in = nc.Dataset(os.path.join(path_2CP, 'data_analysis', filename_CP_height), 'r')
+    # # time_CPheight_2CP = root_in.groups['timeseries'].variables['time'][:]
+    # # CP_height_2CP = root_in.groups['fields_2D'].variables['CP_height_2d'][:, :, :]
+    # # root_in.close()
+    # # global dt_CP_height_2CP, dt_CP_height_3CP
+    # # dt_CP_height_2CP = time_CPheight_2CP[1] - time_CPheight_2CP[0]
+    # # dt_CP_height_3CP = time_CPheight_3CP[1] - time_CPheight_3CP[0]
+    # # # print(time_CPheight_2CP)
+    # # # print(time_CPheight_3CP)
     #
-    #
-    # ''' CP height '''
-    # filename_CP_height = 'CP_height_' + case + '_sth0.5' + '.nc'
-    # root_in = nc.Dataset(os.path.join(path_3CP, 'data_analysis', filename_CP_height), 'r')
-    # time_CPheight_3CP = root_in.groups['timeseries'].variables['time'][:]
-    # CP_height_3CP = root_in.groups['fields_2D'].variables['CP_height_2d'][:, :, :]
-    # root_in.close()
-    # root_in = nc.Dataset(os.path.join(path_2CP, 'data_analysis', filename_CP_height), 'r')
-    # time_CPheight_2CP = root_in.groups['timeseries'].variables['time'][:]
-    # CP_height_2CP = root_in.groups['fields_2D'].variables['CP_height_2d'][:, :, :]
-    # root_in.close()
-    # global dt_CP_height_2CP, dt_CP_height_3CP
-    # dt_CP_height_2CP = time_CPheight_2CP[1] - time_CPheight_2CP[0]
-    # dt_CP_height_3CP = time_CPheight_3CP[1] - time_CPheight_3CP[0]
-    # # print(time_CPheight_2CP)
-    # # print(time_CPheight_3CP)
-
-    # fig_name = 'collisions_massflux_CPheight_' + case + '.png'
-    # timerange = np.arange(tmin, tmax+100, 100)
-    # time_bins = time_windows[str(d)][:-1]
-    # time_bins.insert(0,tmin)
-    # time_bins.append(tmax)
-    # print('------', time_bins)
-    # plot_collision_massflux_CPheight(CP_height_2CP, CP_height_3CP, time_CPheight_2CP, time_CPheight_3CP,
-    #                                  MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
-    #                         delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
-    #                         ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
-    #                         case, timerange, time_bins, path_out_figs, fig_name)
-    #
-    # # fig_name = 'collisions_massflux_' + case + '.png'
-    # # plot_collision_massflux(MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
+    # # fig_name = 'collisions_massflux_CPheight_' + case + '.png'
+    # # timerange = np.arange(tmin, tmax+100, 100)
+    # # time_bins = time_windows[str(d)][:-1]
+    # # time_bins.insert(0,tmin)
+    # # time_bins.append(tmax)
+    # # print('------', time_bins)
+    # # plot_collision_massflux_CPheight(CP_height_2CP, CP_height_3CP, time_CPheight_2CP, time_CPheight_3CP,
+    # #                                  MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
     # #                         delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
     # #                         ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
-    # #                         case, path_out_figs, fig_name)
+    # #                         case, timerange, time_bins, path_out_figs, fig_name)
     # #
-    # #
-    # # # fig_name = 'collisions_massflux_2CP_3CP.png'
-    # # # plot_collision_massflux_testfigures(MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
-    # # #                                     delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
-    # # #                                     ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
-    # # #                                     case, time_windows, path_out_figs, fig_name):
+    # # # fig_name = 'collisions_massflux_' + case + '.png'
+    # # # plot_collision_massflux(MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
+    # # #                         delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
+    # # #                         ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
+    # # #                         case, path_out_figs, fig_name)
+    # # #
+    # # #
+    # # # # fig_name = 'collisions_massflux_2CP_3CP.png'
+    # # # # plot_collision_massflux_testfigures(MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
+    # # # #                                     delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
+    # # # #                                     ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
+    # # # #                                     case, time_windows, path_out_figs, fig_name):
     return
 
 
@@ -581,7 +584,7 @@ def set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3C
     # print(os.path.join(path_3CP, case_name_3CP + '.in'))
     # print('')
     nml_1CP = simplejson.loads(open(os.path.join(path_1CP, case_name_1CP + '.in')).read())
-    nml_2CP = simplejson.loads(open(os.path.join(path_2CP, case_name_2CP + '.in')).read())
+    # nml_2CP = simplejson.loads(open(os.path.join(path_2CP, case_name_2CP + '.in')).read())
     nml_3CP = simplejson.loads(open(os.path.join(path_3CP, case_name_3CP + '.in')).read())
     global nx_2CP, nx_3CP, dx, dV, gw
     nx_1CP = np.zeros(3, dtype=np.int)
@@ -590,9 +593,9 @@ def set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3C
     nx_1CP[0] = nml_1CP['grid']['nx']
     nx_1CP[1] = nml_1CP['grid']['ny']
     nx_1CP[2] = nml_1CP['grid']['nz']
-    nx_2CP[0] = nml_2CP['grid']['nx']
-    nx_2CP[1] = nml_2CP['grid']['ny']
-    nx_2CP[2] = nml_2CP['grid']['nz']
+    # nx_2CP[0] = nml_2CP['grid']['nx']
+    # nx_2CP[1] = nml_2CP['grid']['ny']
+    # nx_2CP[2] = nml_2CP['grid']['nz']
     nx_3CP[0] = nml_3CP['grid']['nx']
     nx_3CP[1] = nml_3CP['grid']['ny']
     nx_3CP[2] = nml_3CP['grid']['nz']
@@ -603,7 +606,7 @@ def set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3C
     gw = nml_3CP['grid']['gw']
     dV = dx[0] * dx[1] * dx[2]
     print('grid 1CP: ', nx_1CP)
-    print('grid 2CP: ', nx_2CP)
+    # print('grid 2CP: ', nx_2CP)
     print('grid 3CP: ', nx_3CP)
 
 
@@ -635,7 +638,8 @@ def set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3C
     files = [str(t) + '.nc' for t in times]
     print('')
 
-    return nml_2CP, nml_3CP, times, files
+    # return nml_2CP, nml_3CP, times, files
+    return nml_3CP, times, files
 
 # _______________________________________________________
 
