@@ -1061,8 +1061,8 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         th_max = np.maximum(np.amin(th_min_s), np.amin(th_min_t))
         axis[1, 0].set_ylim(th_min - .5, th_max+.5)
 
-        for ax in axis[:, 2].flat:
-            ax.axis('off')
+        # for ax in axis[:, 2].flat:
+        #     ax.axis('off')
 
         axis[0, 0].legend(loc=1, fontsize=12)
         axis[0, 3].legend(loc='upper left', bbox_to_anchor=(1, 1.),
