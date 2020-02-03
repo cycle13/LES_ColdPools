@@ -201,10 +201,10 @@ def main():
     ''' (B) plot from local (unaveraged) min / max in total domain'''
     filename = 'minmax_domain_noaverage.nc'
     ''' compute domain min/max values '''
-    # w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half \
-    #         = compute_domain_max(path_single, id_list_s[0], case_name_single, kmax, times, nt)
-    # path_out = os.path.join(path_single, id_list_s[0], 'data_analysis')
-    # dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half, kmax, times, filename, path_out)
+    w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half \
+            = compute_domain_max(path_single, id_list_s[0], case_name_single, kmax, times, nt)
+    path_out = os.path.join(path_single, id_list_s[0], 'data_analysis')
+    dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half, kmax, times, filename, path_out)
     # w_min_s, w_max_s, th_min_s, th_max_s, z, z_half \
     #         = compute_domain_max(path_single_dx50, id_list_s[0], case_name_single, kmax, times, nt)
     # path_out = os.path.join(path_single_dx50, id_list_s[0], 'data_analysis')
