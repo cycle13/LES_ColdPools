@@ -998,7 +998,7 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
         #     ax.axis('off')
 
         axis[0, 0].legend(loc=3, fontsize=12)
-        axis[0, 3].legend(loc='upper left', bbox_to_anchor=(1, 1.),
+        axis[0, 4].legend(loc='upper left', bbox_to_anchor=(1, 1.),
                           fancybox=False, shadow=False, ncol=1, fontsize=12)
         plt.subplots_adjust(bottom=0.1, right=.9, left=0.05, top=0.95, hspace=0.2, wspace=0.1)
         plt.savefig(os.path.join(path_out_figs, fig_name))
