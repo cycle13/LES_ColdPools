@@ -179,7 +179,7 @@ def main():
 
     # plot min/max in each subdomain for all times
     plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                      t_final,
+                                      t_2CP, t_3CP, t_final,
                                       path_single, path_double, path_triple,
                                       filename, path_out_figs)
 
@@ -1018,7 +1018,7 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
 
 
 def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                      t_final,
+                                      t_2CP, t_3CP, t_final,
                                       path_single, path_double, path_triple,
                                       filename, path_out_figs):
     for d, dstar in enumerate(d_range):
