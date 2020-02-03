@@ -1033,7 +1033,7 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
             ax.plot([0., maxw], [1000, 1000], 'k-', linewidth=0.5)
         for ax in axis[1, 1:].flat:
             ax.plot([298, 300.1], [1000, 1000], 'k-', linewidth=0.5)
-        for it,t0 in enumerate(range(0, t_final[d], dt_fields)):
+        for it,t0 in enumerate(range(0, t_final[d]+dt_fields, dt_fields)):
             lbl = 't='+str(t0)+'s'
             cl = t0*1./t_final[d]
 
