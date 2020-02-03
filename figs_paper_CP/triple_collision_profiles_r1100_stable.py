@@ -214,7 +214,7 @@ def main():
     #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
 
     plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                  t_final,
+                                  t_2CP, t_3CP, t_final,
                                   path_single, path_double, path_triple,
                                   filename, path_out_figs)
 
@@ -921,7 +921,7 @@ def plot_CPs_at_times(xs, ys, delta_s, delta_d, delta_t, lim_single, lim_double,
 
 # ----------------------------------------------------------------------
 def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                  t_final,
+                                  t_2CP, t_3CP, t_final,
                                   path_single, path_double, path_triple,
                                   filename, path_out_figs):
     print('plot minmax timeseries alltimes domain')
@@ -946,6 +946,13 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
         maxw = np.maximum(np.maximum(np.amax(w_max_s), np.amax(w_max_d)), np.amax(w_max_t)) + .1
         # print('time single: ', t_s, w_max_s.shape)
         k_BL = np.int(1000./dx[2])+1
+        for ax in axis[0,:2].flat:
+            ax.plot([t_2CP[d],t_2CP[d]],[0,maxw],'k', linewidth=1)
+            ax.plot([t_3CP[d],t_3CP[d]],[0,maxw],'k', linewidth=1)
+        for ax in axis[1,:2].flat:
+            ax.plot([t_2CP[d],t_2CP[d]],[295,300],'k', linewidth=1)
+            ax.plot([t_3CP[d],t_3CP[d]],[295,300],'k', linewidth=1)
+
         axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-', color=colorlist3[0], markersize=2, label='single CP gust front')
         axis[0, 0].plot(t_d, np.amax(w_max_d[:, :], axis=1), 'o-', color=colorlist3[1], markersize=2, label='double CP collision')
         axis[0, 0].plot(t_t, np.amax(w_max_t[:, :], axis=1), 'o-', color=colorlist3[2], label='triple CP collision')
