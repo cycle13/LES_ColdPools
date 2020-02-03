@@ -964,9 +964,9 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
             lbl = 't=' + str(t0) + 's'
             cl = t0 * 1. / t_final[d]
 
-            axis[0, 1].plot(w_max_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl, markersize=3)
-            axis[0, 2].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl, markersize=3)
-            axis[0, 3].plot(w_max_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl, markersize=3)
+            axis[0, 1].plot(w_max_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl, markersize=2)
+            axis[0, 2].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl, markersize=2)
+            axis[0, 3].plot(w_max_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl, markersize=2)
 
             axis[1, 1].plot(th_min_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
             axis[1, 2].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
