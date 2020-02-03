@@ -987,8 +987,8 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
         axis[0,0].set_ylabel('max(w)')
         axis[1,0].set_ylabel('min(s)')
 
-        for ax in axis[:, 2].flat:
-            ax.axis('off')
+        # for ax in axis[:, 2].flat:
+        #     ax.axis('off')
 
         axis[0, 0].legend(loc=1, fontsize=12)
         axis[0, 3].legend(loc='upper left', bbox_to_anchor=(1, 1.),
