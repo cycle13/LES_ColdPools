@@ -1091,9 +1091,13 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
             ax.set_xlabel('time [s]')
         axis[0,0].set_ylabel('max(w)')
         axis[1,0].set_ylabel('min(theta)')
+        for ax in axis[0,:2].flat:
+            ax.set_ylim(0,maxw)
         th_min = np.minimum(np.amin(th_min_s), np.amin(th_min_t))
         th_max = np.maximum(np.amin(th_min_s), np.amin(th_min_t))
-        axis[1, 0].set_ylim(th_min - .5, th_max)
+        # axis[1, 0].set_ylim(th_min - .5, th_max)
+        for ax in axis[1, :2].flat:
+            ax.set_ylim(295, 300.1)
 
         # for ax in axis[:, 2].flat:
         #     ax.axis('off')
