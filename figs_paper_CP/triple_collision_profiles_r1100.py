@@ -125,7 +125,10 @@ def main():
     # plotting limits
     if rstar == 1100:
         lim_single = [0,0,0]
-        lim_double = [[100, 200], [100, 250], [100, 220]]
+        # # for large domains
+        # lim_double = [[100, 200], [100, 250], [100, 220]]
+        # for small domains
+        lim_double = [[60, 120], [80, 90], [80, 60]]
         lim_triple = [120, 220, 300]
     elif rstar == 2000:
         lim_single = [0, 0, 0]
