@@ -954,7 +954,7 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
             ax.plot([t_3CP[d],t_3CP[d]],[295,300],'k', linewidth=1)
         for ax in axis[0, 2:].flat:
             ax.plot([0., maxw], [1000, 1000], 'k-', linewidth=0.5)
-        for ax in axis[1, 1:].flat:
+        for ax in axis[1, 2:].flat:
             ax.plot([290, 310], [1000, 1000], 'k-', linewidth=0.5)
             ax.plot([300, 300], [0, kmax_plot*dx[2]], 'k-', linewidth=0.5)
 
