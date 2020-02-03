@@ -83,6 +83,9 @@ def main():
     tmax = np.int(np.amax(t_final))  # bcs. of tracer statistics
     times = np.arange(tmin, tmax+dt_fields, dt_fields)
     nt = len(times)
+    print('d='+str(d_range[0])+': ' + str(t_ini[0]) + ', ' + str(t_2CP[0]) + ', ' + str(t_3CP[0]) + ', ' + str(t_final[0]))
+    print('d='+str(d_range[1])+': ' + str(t_ini[1]) + ', ' + str(t_2CP[1]) + ', ' + str(t_3CP[1]) + ', ' + str(t_final[1]))
+    print('d='+str(d_range[2])+': ' + str(t_ini[2]) + ', ' + str(t_2CP[2]) + ', ' + str(t_3CP[2]) + ', ' + str(t_final[2]))
     print('tmin: ' + str(tmin))
     print('tmax: ' + str(tmax))
     print('times: ' + str(times))
