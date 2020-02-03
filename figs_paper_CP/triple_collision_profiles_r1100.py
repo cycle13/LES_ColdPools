@@ -85,6 +85,7 @@ def main():
     nt = len(times)
     print('tmin: ' + str(tmin))
     print('tmax: ' + str(tmax))
+    print('times: ' + str(times))
     print('nt  : ' + str(nt))
     print('')
 
