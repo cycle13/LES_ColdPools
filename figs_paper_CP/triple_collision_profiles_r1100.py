@@ -952,9 +952,11 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
         maxw = np.maximum(np.amax(w_max_s), np.amax(w_max_d))+.1
         # print('time single: ', t_s, w_max_s.shape)
         axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-', color=colorlist3[0], label='single CP gust front')
+        axis[0, 0].plot(t_d, np.amax(w_max_d[:, :], axis=1), 'o-', color=colorlist3[2], label='double CP collision')
         axis[0, 0].plot(t_t, np.amax(w_max_t[:, :], axis=1), 'o-', color=colorlist3[2], label='triple CP collision')
-        axis[1, 0].plot(t_s, np.amin(s_min_s[:, :], axis=1), 'o-', color=colorlist3[0], label='single CP gust front')
-        axis[1, 0].plot(t_t, np.amin(s_min_t[:, :], axis=1), 'o-', color=colorlist3[2], label='triple CP collision')
+        axis[1, 0].plot(t_s, np.amin(th_min_s[:, :], axis=1), 'o-', color=colorlist3[0], label='single CP gust front')
+        axis[1, 0].plot(t_d, np.amax(th_min_d[:, :], axis=1), 'o-', color=colorlist3[2], label='double CP collision')
+        axis[1, 0].plot(t_t, np.amin(th_min_t[:, :], axis=1), 'o-', color=colorlist3[2], label='triple CP collision')
         for ax in axis[0, 1:].flat:
             ax.plot([0., maxw], [1000, 1000], 'k-', linewidth=0.5)
         for ax in axis[1, 1:].flat:
