@@ -1294,7 +1294,7 @@ def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
     axis[0, 3].set_title(str(t_3CP[d]) + r'$\leq$ t $<$' + str(t_final[d]))
 
 
-    axis[0, 0].legend(loc='upper right', bbox_to_anchor=(0.12, .97),
+    axis[0, 0].legend(loc='upper left', bbox_to_anchor=(0.12, .97),
                       fancybox=False, shadow=False, ncol=1, fontsize=12)
     # # # ax2.legend(loc='upper left', bbox_to_anchor=(0.1, -0.1),
     # # #            fancybox=False, shadow=False, ncol=1, fontsize=9)
