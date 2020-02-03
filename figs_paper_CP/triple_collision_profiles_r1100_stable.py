@@ -985,10 +985,10 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
 
         axis[0, 0].set_title('all levels')
         axis[0, 1].set_title(r'z$<$1000m')
-        axis[0, 2].set_title('single CP')
+        axis[0, 2].set_title('single CP, in circle')
         axis[0, 3].set_title('double CP, collision line')
         axis[0, 4].set_title('triple CP, collision point')
-        for ax in axis[:, 1].flat:
+        for ax in axis[:, 2].flat:
             ax.set_ylabel('height z  [m]')
         for ax in axis[0, 2:].flat:
             ax.set_xlabel('max(w)')
@@ -996,10 +996,10 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
         for ax in axis[1, 2:].flat:
             ax.set_xlim(294.9, 303)
             ax.set_xlabel('min(theta)')
-        for ax in axis[:,:2].flat:
+        for ax in axis[:2,:2].flat:
             ax.set_xlabel('time [s]')
-            ax.set_ylabel('max(w)')
-            ax.set_ylabel('min(theta)')
+        axis[0,0].set_ylabel('max(w)')
+        axis[1,0].set_ylabel('min(theta)')
         for ax in axis[1,:2].flat:
             ax.set_ylim(295, 300)
         for ax in axis[0,:2].flat:
@@ -1032,56 +1032,74 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
         w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
 
-        fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='none')
+        fig, axis = plt.subplots(2, 5, figsize=(18, 12), sharey='none')
         # maxw = np.amax(w_max_s) + .1
         maxw = np.maximum(np.maximum(np.amax(w_max_s), np.amax(w_max_d)), np.amax(w_max_t))+.1
-        print('time single: ', t_s, w_max_s.shape)
+        k_BL = np.int(1000. / dx[2]) + 1
+        for ax in axis[0,:2].flat:
+            ax.plot([t_2CP[d],t_2CP[d]],[0,maxw],'k', linewidth=1)
+            ax.plot([t_3CP[d],t_3CP[d]],[0,maxw],'k', linewidth=1)
+        for ax in axis[1,:2].flat:
+            ax.plot([t_2CP[d],t_2CP[d]],[295,300],'k', linewidth=1)
+            ax.plot([t_3CP[d],t_3CP[d]],[295,300],'k', linewidth=1)
+        for ax in axis[0, 2:].flat:
+            ax.plot([0., maxw], [1000, 1000], 'k-', linewidth=0.5)
+        for ax in axis[1, 2:].flat:
+            ax.plot([290, 310], [1000, 1000], 'k-', linewidth=0.5)
+            ax.plot([300, 300], [0, kmax_plot*dx[2]], 'k-', linewidth=0.5)
+
         axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-', color=colorlist3[0], label='single CP')
         axis[0, 0].plot(t_d, np.amax(w_max_d[:, :], axis=1), 'o-', color=colorlist3[1], label='double CP')
         axis[0, 0].plot(t_t, np.amax(w_max_t[:, :], axis=1), 'o-', color=colorlist3[2], label='triple CP')
         axis[1, 0].plot(t_s, np.amin(th_min_s[:, :], axis=1), 'o-', color=colorlist3[0], label='single CP')
         axis[1, 0].plot(t_d, np.amin(th_min_d[:, :], axis=1), 'o-', color=colorlist3[1], label='double CP')
         axis[1, 0].plot(t_t, np.amin(th_min_t[:, :], axis=1), 'o-', color=colorlist3[2], label='triple CP')
-        for ax in axis[0, 1:].flat:
-            ax.plot([0., maxw], [1000, 1000], 'k-', linewidth=0.5)
-        for ax in axis[1, 1:].flat:
-            ax.plot([298, 300.1], [1000, 1000], 'k-', linewidth=0.5)
+
+        axis[0, 1].plot(t_s, np.amax(w_max_s[:, :k_BL], axis=1), 'o-', color=colorlist3[0], label='single CP gust front')
+        axis[0, 1].plot(t_d, np.amax(w_max_d[:, :k_BL], axis=1), 'o-', color=colorlist3[1], label='double CP collision')
+        axis[0, 1].plot(t_t, np.amax(w_max_t[:, :k_BL], axis=1), 'o-', color=colorlist3[2], label='triple CP collision')
+        axis[1, 1].plot(t_s, np.amin(th_min_s[:, :k_BL], axis=1), 'o-', color=colorlist3[0], label='single CP gust front')
+        axis[1, 1].plot(t_d, np.amin(th_min_d[:, :k_BL], axis=1), 'o-', color=colorlist3[1], label='double CP collision')
+        axis[1, 1].plot(t_t, np.amin(th_min_t[:, :k_BL], axis=1), 'o-', color=colorlist3[2], label='triple CP collision')
+
         for it, t0 in enumerate(range(0, t_final[d] + dt_fields, dt_fields)):
             lbl = 't=' + str(t0) + 's'
             cl = t0 * 1. / t_final[d]
 
-            axis[0, 1].plot(w_max_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
-            axis[0, 2].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
-            axis[0, 3].plot(w_max_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[0, 2].plot(w_max_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[0, 3].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[0, 4].plot(w_max_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
 
-            axis[1, 1].plot(th_min_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
-            axis[1, 2].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
-            axis[1, 3].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[1, 2].plot(th_min_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[1, 3].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[1, 4].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
 
-        axis[0, 1].set_title('single CP')
-        axis[0, 2].set_title('double CP, collision line')
-        axis[0, 3].set_title('triple CP, collision point')
-        for ax in axis[:, 1].flat:
+        axis[0, 0].set_title('all levels')
+        axis[0, 1].set_title(r'z$<$1000m')
+        axis[0, 2].set_title('single CP, in circle')
+        axis[0, 3].set_title('double CP, collision line')
+        axis[0, 4].set_title('triple CP, collision point')
+        for ax in axis[:, 2].flat:
             ax.set_ylabel('height z  [m]')
-        for ax in axis[0, 1:].flat:
+        for ax in axis[0, 2:].flat:
             ax.set_xlabel('max(w)')
             ax.set_xlim(-0.1, maxw)
-        for ax in axis[1, 1:].flat:
+        for ax in axis[1, 2:].flat:
             ax.set_xlim(298, 300.1)
             ax.set_xlabel('min(theta)')
-        axis[0, 0].set_xlabel('time [s]')
-        axis[1, 0].set_xlabel('time [s]')
-        axis[0, 0].set_ylabel('max(w)')
-        axis[1, 0].set_ylabel('min(theta)')
+        for ax in axis[:2,:2].flat:
+            ax.set_xlabel('time [s]')
+        axis[0,0].set_ylabel('max(w)')
+        axis[1,0].set_ylabel('min(theta)')
         th_min = np.minimum(np.amin(th_min_s), np.amin(th_min_t))
         th_max = np.maximum(np.amin(th_min_s), np.amin(th_min_t))
         axis[1, 0].set_ylim(th_min - .5, th_max)
 
-        for ax in axis[:, 2].flat:
-            ax.axis('off')
+        # for ax in axis[:, 2].flat:
+        #     ax.axis('off')
 
         axis[0, 0].legend(loc=1, fontsize=12)
-        axis[0, 3].legend(loc='upper left', bbox_to_anchor=(1, 1.),
+        axis[0, 4].legend(loc='upper left', bbox_to_anchor=(1, 1.),
                           fancybox=False, shadow=False, ncol=1, fontsize=12)
         plt.subplots_adjust(bottom=0.1, right=.9, left=0.05, top=0.95, hspace=0.2, wspace=0.1)
         plt.savefig(os.path.join(path_out_figs, fig_name))
