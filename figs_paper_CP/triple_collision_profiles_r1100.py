@@ -1017,8 +1017,8 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
 
         fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='none')
-        maxw = np.amax(w_max_s) + .1
-        # maxw = np.maximum(np.amax(w_max_s), np.amax(w_max_d))+.1
+        # maxw = np.amax(w_max_s) + .1
+        maxw = np.maximum(np.maximum(np.amax(w_max_s), np.amax(w_max_d)), np.amax(w_max_t))+.1
         print('time single: ', t_s, w_max_s.shape)
         axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-', color=colorlist3[0], label='single CP')
         axis[0, 0].plot(t_d, np.amax(w_max_d[:, :], axis=1), 'o-', color=colorlist3[1], label='double CP')
@@ -1045,7 +1045,7 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         axis[0, 1].set_title('single CP')
         axis[0, 2].set_title('double CP, collision line')
         axis[0, 3].set_title('triple CP, collision point')
-        for ax in axis[:, 1:].flat:
+        for ax in axis[:, 1].flat:
             ax.set_ylabel('height z  [m]')
         for ax in axis[0, 1:].flat:
             ax.set_xlabel('max(w)')
