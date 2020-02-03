@@ -977,7 +977,7 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
             axis[1, 4].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
 
         axis[0, 0].set_title('all levels')
-        axis[0, 1].set_title('z<1000m')
+        axis[0, 1].set_title(r'z$<$1000m')
         axis[0, 2].set_title('single CP')
         axis[0, 3].set_title('double CP, collision line')
         axis[0, 4].set_title('triple CP, collision point')
