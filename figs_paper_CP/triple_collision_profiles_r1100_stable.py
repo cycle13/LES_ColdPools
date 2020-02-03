@@ -984,7 +984,7 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
             ax.set_xlabel('max(w)')
             ax.set_xlim(-0.1, maxw)
         for ax in axis[1, 1:].flat:
-            ax.set_xlim(298, 300.1)
+            # ax.set_xlim(298, 300.1)
             ax.set_xlabel('min(theta)')
         for ax in axis[:,:2].flat:
             ax.set_xlabel('time [s]')
