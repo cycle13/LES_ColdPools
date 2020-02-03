@@ -129,11 +129,11 @@ def main():
         lim_double = [[100, 280], [80, 280], [80, 220]]
         lim_triple = [200, 250, 250]
 
-    # plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_double, lim_triple,
-    #                   d_range, t_ini, t_2CP, t_3CP, t_final,
-    #                   rad_1CP_ini, rad_2CP_ini, rad_3CP_ini, rad_3CP_end,
-    #                   id_list_s, id_list_d, id_list_t,
-    #                   path_single, path_double, path_triple, path_out_figs)
+    plot_CPs_at_times(rstar, xs, ys, delta_s, delta_d, delta_t, lim_single, lim_double, lim_triple,
+                      d_range, t_ini, t_2CP, t_3CP, t_final,
+                      rad_1CP_ini, rad_2CP_ini, rad_3CP_ini, rad_3CP_end,
+                      id_list_s, id_list_d, id_list_t,
+                      path_single, path_double, path_triple, path_out_figs)
     print('')
 
 
