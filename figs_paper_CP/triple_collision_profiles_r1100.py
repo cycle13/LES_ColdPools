@@ -587,6 +587,7 @@ def dump_minmax_file(w_min, w_max, th_min, th_max, s_min, s_max,
     # - (ok) CP rim (field)
     nt = len(times)
     print('create output file: ', os.path.join(path_out, filename))
+    print('time output: ', times)
 
     rootgrp = nc.Dataset(os.path.join(path_out, filename), 'w', format='NETCDF4')
 
