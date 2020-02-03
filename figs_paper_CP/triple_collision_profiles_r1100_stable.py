@@ -12,6 +12,7 @@ plt.rcParams['ytick.labelsize'] = label_size
 plt.rcParams['lines.linewidth'] = 2
 plt.rcParams['legend.fontsize'] = 8
 plt.rcParams['axes.labelsize'] = 12
+plt.rcParams['lines.markersize'] = 2
 # plt.rcParams['xtick.direction']='out'
 # plt.rcParams['ytick.direction']='out'
 # plt.rcParams['figure.titlesize'] = 35
@@ -944,8 +945,8 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
         # maxw = np.amax(w_max_s)+.1
         maxw = np.maximum(np.maximum(np.amax(w_max_s), np.amax(w_max_d)), np.amax(w_max_t)) + .1
         # print('time single: ', t_s, w_max_s.shape)
-        axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-', color=colorlist3[0], label='single CP gust front')
-        axis[0, 0].plot(t_d, np.amax(w_max_d[:, :], axis=1), 'o-', color=colorlist3[1], label='double CP collision')
+        axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-', color=colorlist3[0], markersize=2, label='single CP gust front')
+        axis[0, 0].plot(t_d, np.amax(w_max_d[:, :], axis=1), 'o-', color=colorlist3[1], markersize=2, label='double CP collision')
         axis[0, 0].plot(t_t, np.amax(w_max_t[:, :], axis=1), 'o-', color=colorlist3[2], label='triple CP collision')
         axis[1, 0].plot(t_s, np.amin(th_min_s[:, :], axis=1), 'o-', color=colorlist3[0], label='single CP gust front')
         axis[1, 0].plot(t_d, np.amin(th_min_d[:, :], axis=1), 'o-', color=colorlist3[1], label='double CP collision')
