@@ -976,7 +976,7 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
         axis[0, 1].set_title('single CP')
         axis[0, 2].set_title('double CP, collision line')
         axis[0, 3].set_title('triple CP, collision point')
-        for ax in axis[:,1:].flat:
+        for ax in axis[:,1].flat:
             ax.set_ylabel('height z  [m]')
         for ax in axis[0,1:].flat:
             ax.set_xlabel('max(w)')
