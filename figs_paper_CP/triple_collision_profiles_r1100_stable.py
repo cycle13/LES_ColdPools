@@ -12,7 +12,7 @@ plt.rcParams['ytick.labelsize'] = label_size
 plt.rcParams['lines.linewidth'] = 2
 plt.rcParams['legend.fontsize'] = 8
 plt.rcParams['axes.labelsize'] = 12
-plt.rcParams['lines.markersize'] = 3
+plt.rcParams['lines.markersize'] = 2
 # plt.rcParams['xtick.direction']='out'
 # plt.rcParams['ytick.direction']='out'
 # plt.rcParams['figure.titlesize'] = 35
@@ -549,7 +549,7 @@ def compute_domain_max(path, ID, casename, kmax, times, nt):
 
     for it, t0 in enumerate(times):
         fullpath_in = os.path.join(path, ID, 'fields', str(t0) + '.nc')
-        print(fullpath_in)
+        # print(fullpath_in)
         root = nc.Dataset(fullpath_in, 'r')
         w = root.groups['fields'].variables['w'][:, :, :kmax]
         w_min[it, :] = np.amin(np.amin(w, axis=0), axis=0)
@@ -967,9 +967,9 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
             lbl = 't=' + str(t0) + 's'
             cl = t0 * 1. / t_final[d]
 
-            axis[0, 2].plot(w_max_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl, markersize=3)
-            axis[0, 3].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl, markersize=3)
-            axis[0, 4].plot(w_max_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl, markersize=3)
+            axis[0, 2].plot(w_max_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[0, 3].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[0, 4].plot(w_max_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
 
             axis[1, 2].plot(th_min_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
             axis[1, 3].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
@@ -1025,8 +1025,8 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
 
         fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='none')
-        maxw = np.amax(w_max_s) + .1
-        # maxw = np.maximum(np.amax(w_max_s), np.amax(w_max_d))+.1
+        # maxw = np.amax(w_max_s) + .1
+        maxw = np.maximum(np.maximum(np.amax(w_max_s), np.amax(w_max_d)), np.amax(w_max_t))+.1
         print('time single: ', t_s, w_max_s.shape)
         axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-', color=colorlist3[0], label='single CP')
         axis[0, 0].plot(t_d, np.amax(w_max_d[:, :], axis=1), 'o-', color=colorlist3[1], label='double CP')
@@ -1043,17 +1043,17 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
             cl = t0 * 1. / t_final[d]
 
             axis[0, 1].plot(w_max_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
-            #axis[0, 2].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[0, 2].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
             axis[0, 3].plot(w_max_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
 
             axis[1, 1].plot(th_min_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
-            #axis[1, 2].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[1, 2].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
             axis[1, 3].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
 
         axis[0, 1].set_title('single CP')
         axis[0, 2].set_title('double CP, collision line')
         axis[0, 3].set_title('triple CP, collision point')
-        for ax in axis[:, 1:].flat:
+        for ax in axis[:, 1].flat:
             ax.set_ylabel('height z  [m]')
         for ax in axis[0, 1:].flat:
             ax.set_xlabel('max(w)')
