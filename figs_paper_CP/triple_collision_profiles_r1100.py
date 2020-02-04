@@ -1463,6 +1463,8 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
             ax.set_ylabel('height z  [m]')
         for ax in axis[3,:].flat:
             ax.set_xlabel('min(theta) [K]')
+        for ax in axis.flat:
+            ax.set_xlim(298,300.1)
         # axis[0, 0].legend(loc=3, fontsize=12)
         # axis[0, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
         axis[1, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
