@@ -145,6 +145,9 @@ def main():
     print('')
 
 
+
+
+
     ''' (A) plot from local (unaveraged) min / max in subdomains'''
     ''' compute min/max values in subdomains (circle, rectangles) '''
     path_out = os.path.join(path_single, id_list_s[0], 'data_analysis')
@@ -185,12 +188,12 @@ def main():
     #                                   path_single, path_double, path_triple,
     #                                   filename, path_out_figs)
 
-    print(path_double)
-    # plot min/max in each subdomain for time windows
-    plot_minmax_timewindows_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                t_ini, t_2CP, t_3CP, t_final,
-                                path_single, path_double, path_triple,
-                                filename, path_out_figs)
+    # print(path_double)
+    # # plot min/max in each subdomain for time windows
+    # plot_minmax_timewindows_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
+    #                             t_ini, t_2CP, t_3CP, t_final,
+    #                             path_single, path_double, path_triple,
+    #                             filename, path_out_figs)
 
 
 
@@ -219,6 +222,14 @@ def main():
     #         = compute_domain_max(path_triple, id_list_t[d], case_name_triple, kmax, times, nt)
     #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
 
+    path = os.path.join(path_single, id_list_s[0])
+    compute_CP_height(zstar, path, filename)
+    for d, dstar in enumerate(d_range):
+        path = os.path.join(path_double, id_list_d[d])
+        compute_CP_height(zstar, path, filename)
+        path = os.path.join(path_triple, id_list_t[d])
+        compute_CP_height(zstar, path, filename)
+
     plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
                                   t_ini, t_2CP, t_3CP, t_final,
                                   path_single, path_double, path_triple,
@@ -234,6 +245,8 @@ def main():
                                   t_ini, t_2CP, t_3CP, t_final,
                                   path_single, path_double, path_triple,
                                   filename, path_out_figs)
+
+
 
 
 
@@ -654,6 +667,31 @@ def read_in_minmax(kmax, path_out, filename):
 
 
 # --------------------------------------------------------------------
+def compute_CP_height(zstar, path, filename):
+    threshold = 299.5
+    kmax = np.int((zstar + 500.) / dx[2])
+
+    fullpath = os.path.join(path, 'data_analysis')
+    w_max, th_min, s_min, z, z_half, time = read_in_minmax(kmax, fullpath, filename)
+    del w_max, s_min, time
+    nt = time.shape[0]
+    CP_height = np.zeros((nt), dtype=np.int)
+    for it,t0 in enumerate(time):
+        k = kmax
+        th = th_min[it,k]
+        while k>0 and th>threshold:
+            k = k-1
+        CP_height[it] = k*dx[2]
+    rootgrp = nc.Dataset(os.path.join(fullpath, filename), 'r+', format='NETCDF4')
+    ts_grp = rootgrp.groups['timeseries']
+    var = ts_grp.createVariable('CP_height', 'f8', ('nt'))
+    var.long_name = 'cold pool height (theta < 299.5K)'
+    var.units = "m"
+    var[:] = CP_height[:]
+    rootgrp.close()
+
+    return
+
 # ---------------------------- TRACER STATISTICS -----------------------
 
 def get_number_tracers(fullpath_in):
@@ -1028,12 +1066,13 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
                                       t_2CP, t_3CP, t_final,
                                       path_single, path_double, path_triple,
                                       filename, path_out_figs):
+    path = os.path.join(path_single, id_list_s[0], 'data_analysis')
+    w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
     for d, dstar in enumerate(d_range):
         fig_name = 'collisions_minmax_alltimes_subdomain_unaveraged_rstar' + str(rstar) + '_d' + str(dstar) + 'km.png'
         zmax_plot = 3000.
         kmax_plot = np.int(zmax_plot / dx[2])
-        path = os.path.join(path_single, id_list_s[0], 'data_analysis')
-        w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
+
         path = os.path.join(path_double, id_list_d[d], 'data_analysis')
         w_max_d, th_min_d, s_min_d, z, z_half, t_d = read_in_minmax(kmax_plot, path, filename)
         path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
