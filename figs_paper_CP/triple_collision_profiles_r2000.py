@@ -340,11 +340,11 @@ def compute_subdomains_max_triple(path, ID, casename,
     if not os.path.exists(os.path.join(path_out_figs, 'figs_collision_test')):
         os.mkdir(os.path.join(path_out_figs, 'figs_collision_test'))
 
-    it_ini = np.int(t_ini / dt_fields)
-    it_fi = np.int(t_fi[d] / dt_fields)
-    ic = np.int(nx_t[d][0] * .5)
-    jc = np.int(nx_t[d][1] * .5)
-    for it, t0 in enumerate(times[it_ini:t_fi+1]):
+    # it_ini = np.int(t_ini / dt_fields)
+    # it_fi = np.int(t_fi / dt_fields)
+    # ic = np.int(nx_t[d][0] * .5)
+    # jc = np.int(nx_t[d][1] * .5)
+    for it, t0 in enumerate(times):
         print('--- t: ', it, t0)
         fullpath_in = os.path.join(path, ID, 'fields', str(t0) + '.nc')
         root = nc.Dataset(fullpath_in, 'r')
@@ -352,15 +352,15 @@ def compute_subdomains_max_triple(path, ID, casename,
         s = root.groups['fields'].variables['s'][:, :, :kmax]
         root.close()
 
-        xt = np.int(nx_t[d][0]*.5 - delta_t*.5)
-        yt = np.int(nx_t[d][1]*.5 - delta_t*.5)
-        #print('triple: ', xt, yt, delta_t)
-        w_min[it, :] = np.amin(np.amin(w[xt:xt+delta_t,yt:yt+delta_t,:], axis=0), axis=0)
-        w_max[it, :] = np.amax(np.amax(w[xt:xt+delta_t,yt:yt+delta_t,:], axis=0), axis=0)
-        s_min[it,:] = np.amin(np.amin(s[xt:xt+delta_t,yt:yt+delta_t,:], axis=0), axis=0)
-        s_max[it,:] = np.amax(np.amax(s[xt:xt+delta_t,yt:yt+delta_t,:], axis=0), axis=0)
-        th_min[it, :] = thetas_c(s_min[it,:], 0)
-        th_max[it, :] = thetas_c(s_max[it,:], 0)
+        xt = np.int(nx_t[d][0] * .5 - delta_t * .5)
+        yt = np.int(nx_t[d][1] * .5 - delta_t * .5)
+        # print('triple: ', xt, yt, delta_t)
+        w_min[it, :] = np.amin(np.amin(w[xt:xt + delta_t, yt:yt + delta_t, :], axis=0), axis=0)
+        w_max[it, :] = np.amax(np.amax(w[xt:xt + delta_t, yt:yt + delta_t, :], axis=0), axis=0)
+        s_min[it, :] = np.amin(np.amin(s[xt:xt + delta_t, yt:yt + delta_t, :], axis=0), axis=0)
+        s_max[it, :] = np.amax(np.amax(s[xt:xt + delta_t, yt:yt + delta_t, :], axis=0), axis=0)
+        th_min[it, :] = thetas_c(s_min[it, :], 0)
+        th_max[it, :] = thetas_c(s_max[it, :], 0)
     return w_min, w_max, th_min, th_max, s_min, s_max, zrange, zrange_half
 
 
@@ -385,13 +385,13 @@ def compute_subdomains_max_double(path, ID, casename, d, dstar, rstar,
     if not os.path.exists(os.path.join(path_out_figs, 'figs_collision_test')):
         os.mkdir(os.path.join(path_out_figs, 'figs_collision_test'))
 
-    it_ini = np.int(t_ini / dt_fields)
-    it_fi = np.int(t_fi[d] / dt_fields)
+    # it_ini = np.int(t_ini / dt_fields)
+    # it_fi = np.int(t_fi / dt_fields)
     ic = np.int(nx_d[d][0] * .5)
     jc = np.int(nx_d[d][1] * .5)
-    for it_, t0 in enumerate(times[it_ini:it_fi+1]):
-        it = it_+it_ini
-        print('--- t: ', it_, it, t0)
+    for it, t0 in enumerate(times):
+        # it = it_+it_ini
+        print('--- t: ', it, t0)
         fullpath_in = os.path.join(path, ID, 'fields', str(t0) + '.nc')
         root = nc.Dataset(fullpath_in, 'r')
         w = root.groups['fields'].variables['w'][:, :, :kmax]
@@ -401,11 +401,11 @@ def compute_subdomains_max_double(path, ID, casename, d, dstar, rstar,
         # mask = np.ma.masked_less(r_field, rad)
         # w_masked = r_mask.mask[:, :, np.newaxis] * w
         # s_masked = r_mask.mask[:, :, np.newaxis] * s
-        rad2 = r_av[it]**2
-        d2 = (dstar*1.e3/2)**2
-        #print('double: ', rad2, d2)
+        rad2 = r_av[it] ** 2
+        d2 = (dstar * 1.e3 / 2) ** 2
+        # print('double: ', rad2, d2)
         if rad2 >= d2:
-            delta_d[1] = np.floor(2.e3/dx[0]) + 2./dx[0]*np.sqrt(rad2 - d2)
+            delta_d[1] = np.floor(2.e3 / dx[0]) + 2. / dx[0] * np.sqrt(rad2 - d2)
             [xd, yd] = [ic, jc] - delta_d * .5
             w_min[it, :] = np.amin(np.amin(w[xd:xd + delta_d[0], yd:yd + delta_d[1], :], axis=0), axis=0)
             w_max[it, :] = np.amax(np.amax(w[xd:xd + delta_d[0], yd:yd + delta_d[1], :], axis=0), axis=0)
@@ -414,7 +414,7 @@ def compute_subdomains_max_double(path, ID, casename, d, dstar, rstar,
             th_min[it, :] = thetas_c(s_min[it, :], 0)
             th_max[it, :] = thetas_c(s_max[it, :], 0)
         else:
-            [xd,yd] = [ic,jc]
+            [xd, yd] = [ic, jc]
             delta_d[1] = 1
             w_min[it, :] = 0
             w_max[it, :] = 0
@@ -422,14 +422,10 @@ def compute_subdomains_max_double(path, ID, casename, d, dstar, rstar,
             s_max[it, :] = np.amax(np.amax(s, axis=0), axis=0)
             th_min[it, :] = thetas_c(s_min[it, :], 0)
             th_max[it, :] = thetas_c(s_max[it, :], 0)
-        #print('double: ', ic,jc, xd, yd, delta_d)
-        #print('...', np.amax(w_max[it,:]), np.amin(s_min[it,:]), np.amin(th_min[it,:]))
+        # print('double: ', ic,jc, xd, yd, delta_d)
+        # print('...', np.amax(w_max[it,:]), np.amin(s_min[it,:]), np.amin(th_min[it,:]))
 
     return w_min, w_max, th_min, th_max, s_min, s_max, zrange, zrange_half
-
-
-
-
 
 
 def compute_subdomains_max_single(path, ID, casename,
@@ -444,19 +440,19 @@ def compute_subdomains_max_single(path, ID, casename,
     s_min = np.zeros((nt, kmax), dtype=np.double)
     s_max = np.zeros((nt, kmax), dtype=np.double)
 
-    root = nc.Dataset(os.path.join(path, ID, 'stats', 'Stats.'+casename+'.nc'))
+    root = nc.Dataset(os.path.join(path, ID, 'stats', 'Stats.' + casename + '.nc'))
     zrange = root.groups['profiles'].variables['z'][:kmax]
     zrange_half = root.groups['profiles'].variables['z_half'][:kmax]
     root.close()
 
     if not os.path.exists(os.path.join(path_out_figs, 'figs_collision_test')):
         os.mkdir(os.path.join(path_out_figs, 'figs_collision_test'))
-    print(os.path.join(path, ID, 'fields_v_rad', 'v_rad.nc'))
+    # print(os.path.join(path, ID, 'fields_v_rad', 'v_rad.nc'))
     root = nc.Dataset(os.path.join(path, ID, 'fields_v_rad', 'v_rad.nc'), 'r')
-    r_field = root.variables['r_field'][:,:]
+    r_field = root.variables['r_field'][:, :]
     root.close()
 
-    it_ini = np.int(t_ini/dt_fields)
+    # it_ini = np.int(t_ini/dt_fields)
     for it, t0 in enumerate(times):
         print('--- t: ', it, t0)
         fullpath_in = os.path.join(path, ID, 'fields', str(t0) + '.nc')
@@ -467,31 +463,30 @@ def compute_subdomains_max_single(path, ID, casename,
         rad = (delta_s + r_av[np.int(t0 / dt_fields)]) / dx[0]
         r_mask_l = np.ma.masked_less(r_field, rad)
         r_mask_g = np.ma.masked_greater_equal(r_field, rad)
-        w_masked = r_mask_l.mask[:,:,np.newaxis]*w
-        s_masked = (1+9*r_mask_g.mask[:,:,np.newaxis])*s
-        w_min[it,:] = np.amin(np.amin(w_masked, axis=0), axis=0)
-        w_max[it,:] = np.amax(np.amax(w_masked, axis=0), axis=0)
-        s_min[it,:] = np.amin(np.amin(s_masked, axis=0), axis=0)
-        s_max[it,:] = np.amax(np.amax(s_masked, axis=0), axis=0)
-        th_min[it, :] = thetas_c(s_min[it,:], 0)
-        #print('single: smin', s_min.shape, s_min[it,:], th_min[it,5])
-        th_max[it, :] = thetas_c(s_max[it,:], 0)
-
+        w_masked = r_mask_l.mask[:, :, np.newaxis] * w
+        s_masked = (1 + 9 * r_mask_g.mask[:, :, np.newaxis]) * s
+        w_min[it, :] = np.amin(np.amin(w_masked, axis=0), axis=0)
+        w_max[it, :] = np.amax(np.amax(w_masked, axis=0), axis=0)
+        s_min[it, :] = np.amin(np.amin(s_masked, axis=0), axis=0)
+        s_max[it, :] = np.amax(np.amax(s_masked, axis=0), axis=0)
+        th_min[it, :] = thetas_c(s_min[it, :], 0)
+        # print('single: smin', s_min.shape, s_min[it,:], th_min[it,5])
+        th_max[it, :] = thetas_c(s_max[it, :], 0)
 
         if it < 100:
-            for k0 in [0,5,10,15,20]:
+            for k0 in [0, 5, 10, 15, 20]:
                 w_max_loc_all = np.unravel_index(np.argmax(w[:, :, k0], axis=None), nx_s[:2])
                 w_max_loc = np.unravel_index(np.argmax(w_masked[:, :, k0], axis=None), nx_s[:2])
                 s_min_loc_all = np.unravel_index(np.argmin(s[:, :, k0], axis=None), nx_s[:2])
                 s_min_loc = np.unravel_index(np.argmin(s_masked[:, :, k0], axis=None), nx_s[:2])
                 # print('loc: ', w_max_loc, w_max_loc_all, s_min_loc, s_min_loc_all)
-                fig_name = 'w_masked_single_t'+str(t0)+'_k'+str(k0)+'.png'
-                fig, axis = plt.subplots(2,5, figsize=(16,7))
-                ax0 = axis[0,0]
-                ax1 = axis[0,1]
-                ax2 = axis[0,2]
-                ax3 = axis[0,3]
-                ax4 = axis[0,4]
+                fig_name = 'w_masked_single_t' + str(t0) + '_k' + str(k0) + '.png'
+                fig, axis = plt.subplots(2, 5, figsize=(16, 7))
+                ax0 = axis[0, 0]
+                ax1 = axis[0, 1]
+                ax2 = axis[0, 2]
+                ax3 = axis[0, 3]
+                ax4 = axis[0, 4]
                 ax0.set_title('radius')
                 cf = ax0.imshow(r_field)
                 plt.colorbar(cf, ax=ax0, shrink=0.7)
@@ -502,12 +497,12 @@ def compute_subdomains_max_single(path, ID, casename,
                 cf = ax2.imshow(r_mask_l.mask)
                 plt.colorbar(cf, ax=ax2, shrink=0.7)
                 ax3.set_title('w')
-                cf = ax3.imshow(w[:,:,k0])
+                cf = ax3.imshow(w[:, :, k0])
                 plt.colorbar(cf, ax=ax3, shrink=0.7)
-                ax3.plot(w_max_loc_all[0], w_max_loc_all[1],'x', color='k', markersize=10)
-                ax3.plot(w_max_loc[0], w_max_loc[1],'ok', markersize=5)
+                ax3.plot(w_max_loc_all[0], w_max_loc_all[1], 'x', color='k', markersize=10)
+                ax3.plot(w_max_loc[0], w_max_loc[1], 'ok', markersize=5)
                 ax4.set_title('w*mask')
-                cf = ax4.imshow(w_masked[:,:,k0])
+                cf = ax4.imshow(w_masked[:, :, k0])
                 plt.colorbar(cf, ax=ax4, shrink=0.7)
 
                 ax2 = axis[1, 2]
@@ -517,17 +512,17 @@ def compute_subdomains_max_single(path, ID, casename,
                 cf = ax2.imshow(r_mask_g.mask)
                 plt.colorbar(cf, ax=ax2, shrink=0.7)
                 ax3.set_title('s')
-                cf = ax3.imshow(s[:, :, k0], vmin=np.amin(s[:,:,k0]), vmax=np.amax(s[:,:,k0]))
+                cf = ax3.imshow(s[:, :, k0], vmin=np.amin(s[:, :, k0]), vmax=np.amax(s[:, :, k0]))
                 plt.colorbar(cf, ax=ax3, shrink=0.7)
                 ax3.plot(s_min_loc_all[0], s_min_loc_all[1], 'kx', markersize=10)
                 ax3.plot(s_min_loc[0], s_min_loc[1], 'ok', markersize=5)
                 ax4.set_title('s*mask')
-                cf = ax4.imshow(s_masked[:, :, k0], vmin=6864, vmax=np.amax(s[:,:,k0]))
+                cf = ax4.imshow(s_masked[:, :, k0], vmin=6864, vmax=np.amax(s[:, :, k0]))
                 plt.colorbar(cf, ax=ax4, shrink=0.7, extend='max')
 
                 for ax in axis.flat:
-                    ax.set_xlim(nx_s[0]*.5-rad-10,nx_s[0]*.5+rad+10)
-                    ax.set_ylim(nx_s[0]*.5-rad-10,nx_s[0]*.5+rad+10)
+                    ax.set_xlim(nx_s[0] * .5 - rad - 10, nx_s[0] * .5 + rad + 10)
+                    ax.set_ylim(nx_s[0] * .5 - rad - 10, nx_s[0] * .5 + rad + 10)
                 plt.subplots_adjust(bottom=0.1, right=.95, left=0.05, top=0.9, hspace=0.4, wspace=0.2)
                 plt.savefig(os.path.join(path_out_figs, 'figs_collision_test', fig_name))
                 plt.close()
@@ -536,24 +531,25 @@ def compute_subdomains_max_single(path, ID, casename,
         del w, s
         # del s_min, s_max
 
-
-    fig,axis = plt.subplots(1,3)
+    fig, axis = plt.subplots(1, 3)
     for it, t0 in enumerate(times):
-        if t0>t_ini:
-            if t0<=t_2CP[0]:
+        if t0 > t_ini:
+            if t0 <= t_2CP[0]:
                 axis[0].plot(w_max[it, :], zrange)
-                axis[0].set_title('t='+str(t_ini) + '-'+str(t_2CP[0]))
-            if t0<=t_2CP[1]:
-                axis[1].plot(w_max[it,:],zrange)
-                axis[1].set_title('t='+str(t_ini) + '-'+str(t_2CP[1]))
-            if t0<=t_2CP[2]:
-                axis[2].plot(w_max[it,:],zrange)
-                axis[2].set_title('t='+str(t_ini) + '-'+str(t_2CP[2]))
+                axis[0].set_title('t=' + str(t_ini) + '-' + str(t_2CP[0]))
+            if t0 <= t_2CP[1]:
+                axis[1].plot(w_max[it, :], zrange)
+                axis[1].set_title('t=' + str(t_ini) + '-' + str(t_2CP[1]))
+            if t0 <= t_2CP[2]:
+                axis[2].plot(w_max[it, :], zrange)
+                axis[2].set_title('t=' + str(t_ini) + '-' + str(t_2CP[2]))
     for ax in axis:
-        ax.set_xlim(0,4)
+        ax.set_xlim(0, 4)
     plt.savefig(os.path.join(path_out_figs, 'figs_collision_test', 'w_max_test.png'))
 
     return w_min, w_max, th_min, th_max, s_min, s_max, zrange, zrange_half
+
+
 # --------------------------------------------------------------------
 def compute_domain_max(path, ID, casename, kmax, times, nt):
     w_min = np.ones((nt, kmax), dtype=np.double)
