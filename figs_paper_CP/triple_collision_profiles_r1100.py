@@ -1112,9 +1112,9 @@ def plot_minmax_local_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
         #     path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
         #     w_max_t, th_min_t, z, z_half, t_ = read_in_minmax(kmax_plot, path, filename)
         if d > 0:
-            lbl_s = ''
-            lbl_d = ''
-            lbl_t = ''
+            lbl_s = '                    , d=' + str(dstar) + 'km'
+            lbl_d = '                   ,  d=' + str(dstar) + 'km'
+            lbl_t = '                   ,  d=' + str(dstar) + 'km'
         else:
             lbl_s = 'single CP gust front'
             lbl_d = 'double CP collision'
@@ -1240,9 +1240,10 @@ def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
         w_max_d, th_min_d, s_min_d, z, z_half, t_d = read_in_minmax(kmax_plot, path, filename)
         al = 1. - d * 1. / (len(d_range) + 1)
         if d > 0:
-            lbl_d = '                   ,  d='+str(d)+'km'
+            # lbl_d = '                   ,  d='+str(dstar)+'km'
+            lbl_d = 'd='+str(dstar)+'km'
         else:
-            lbl_d = 'double CP collision,  d='+str(d)+'km'
+            lbl_d = 'double CP collision,  d='+str(dstar)+'km'
         it_ini = np.int(t_ini[d] / dt_fields)
         it_2CP = np.int(t_2CP[d] / dt_fields)
         it_3CP = np.int(t_3CP[d] / dt_fields)
@@ -1267,9 +1268,10 @@ def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
 
         al = 1. - d * 1. / (len(d_range) + 1)
         if d > 0:
-            lbl_t = '                   ,  d='+str(d)+'km'
+            # lbl_t = '                   ,  d='+str(dstar)+'km'
+            lbl_t = 'd='+str(dstar)+'km'
         else:
-            lbl_t = 'triple CP collision,  d='+str(d)+'km'
+            lbl_t = 'triple CP collision,  d='+str(dstar)+'km'
 
         it_ini = np.int(t_ini[d] / dt_fields)
         it_2CP = np.int(t_2CP[d] / dt_fields)
