@@ -185,7 +185,7 @@ def main():
 
     print(path_double)
     # plot min/max in each subdomain for time windows
-    plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
+    plot_minmax_timewindows_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
                                 t_ini, t_2CP, t_3CP, t_final,
                                 path_single, path_double, path_triple,
                                 filename, path_out_figs)
