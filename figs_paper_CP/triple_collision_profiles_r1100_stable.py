@@ -1127,7 +1127,15 @@ def plot_minmax_local_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
     fig_name = 'collisions_minmax_profiles_domain_unaveraged_rstar' + str(rstar) + '.png'
     zmax_plot = 3000.
     kmax_plot = np.int(zmax_plot / dx[2])
+
     fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='all')
+
+    maxw = 4.
+    for ax in axis[0, 2:].flat:
+        ax.plot([0., maxw], [1000, 1000], 'k-', linewidth=0.5)
+    for ax in axis[1, 2:].flat:
+        ax.plot([290, 310], [1000, 1000], 'k-', linewidth=0.5)
+        ax.plot([300, 300], [0, kmax_plot * dx[2]], 'k-', linewidth=0.5)
 
     path = os.path.join(path_single, id_list_s[0], 'data_analysis')
     w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
@@ -1206,12 +1214,10 @@ def plot_minmax_local_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
         axis[1, 0].plot(np.amax(th_min_t[it_ini:, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
         axis[1, 1].plot(np.amax(th_min_t[it_ini:it_2CP, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
         axis[1, 2].plot(np.amax(th_min_t[it_2CP:it_3CP, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
-        axis[1, 3].plot(np.amax(th_min_t[it_3CP:it_final, :], axis=0), z_half, color=colorlist3[2], alpha=al,
-                        label=lbl_t)
-
+        axis[1, 3].plot(np.amax(th_min_t[it_3CP:it_final, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
 
     for ax in axis[0, :].flat:
-        ax.set_xlim(0, 4)
+        ax.set_xlim(0, maxw)
         ax.set_xlabel('max. w  [m/s]')
         # ax.set_ylabel('height z  [m]')
     for ax in axis[1, :].flat:
@@ -1248,6 +1254,13 @@ def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
     zmax_plot = 3000.
     kmax_plot = np.int(zmax_plot / dx[2])
     fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='all')
+    maxw = 4.
+    for ax in axis[0, 2:].flat:
+        ax.plot([0., maxw], [1000, 1000], 'k-', linewidth=0.5)
+    for ax in axis[1, 2:].flat:
+        ax.plot([290, 310], [1000, 1000], 'k-', linewidth=0.5)
+        ax.plot([300, 300], [0, kmax_plot * dx[2]], 'k-', linewidth=0.5)
+
 
     path = os.path.join(path_single, id_list_s[0], 'data_analysis')
     w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
