@@ -1439,6 +1439,7 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
             it = it_ + it0
             lbl = 't=' + str(t0_) + 's'
             cl = it_ * 1. / (it_final - it0)
+            print('color: ', it_, it_final, it0, it_final-it0, cl)
             # cl = t0 * 1. / (t_final[d] - t0)
             # cl2 = t0 * 1. / (t_2CP[d]-t0)
 
