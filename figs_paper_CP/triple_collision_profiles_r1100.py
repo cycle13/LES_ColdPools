@@ -1456,7 +1456,7 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
                 axis[2, 2].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
             else:
                 axis[3, 0].plot(th_min_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
-                axis[3, 1.plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+                axis[3, 1].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
                 axis[3, 2].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
         for ax in axis[:,0].flat:
             ax.set_ylabel('height z  [m]')
@@ -1467,7 +1467,7 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
         axis[1, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
         axis[2, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
         axis[3, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
-        plt.subplots_adjust(bottom=0.1, right=.85, left=0.075, top=0.95, hspace=0.2, wspace=0.1)
+        plt.subplots_adjust(bottom=0.1, right=.8, left=0.075, top=0.95, hspace=0.2, wspace=0.1)
         plt.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
 
