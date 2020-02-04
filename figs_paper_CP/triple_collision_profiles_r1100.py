@@ -1382,6 +1382,7 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
     for d, dstar in enumerate(d_range):
         t0 = t_ini[d]
         it0 = np.int(t0 / dt_fields)
+        it_final = t_final[d]
 
         path = os.path.join(path_double, id_list_d[d], 'data_analysis')
         w_max_d, th_min_d, s_min_d, z, z_half, t_d = read_in_minmax(kmax_plot, path, filename)
@@ -1395,7 +1396,7 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
         for it_, t0_ in enumerate(range(t0, t_final[d] + dt_fields, dt_fields)):
             it = it_ + it0
             lbl = 't=' + str(t0_) + 's'
-            cl = t0_ * 1. / (t_final[d]-t0)
+            cl = it_ * 1. / (it_final-it0)
             # cl2 = t0_ * 1. / (t_2CP[d]-t0)
 
             axis[0, 0].plot(w_max_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
@@ -1437,8 +1438,9 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
         for it_, t0_ in enumerate(range(t0, t_final[d] + dt_fields, dt_fields)):
             it = it_ + it0
             lbl = 't=' + str(t0_) + 's'
-            cl = t0_ * 1. / (t_final[d] - t0)
-            # cl2 = t0_ * 1. / (t_2CP[d]-t0)
+            cl = it_ * 1. / (it_final - it0)
+            # cl = t0 * 1. / (t_final[d] - t0)
+            # cl2 = t0 * 1. / (t_2CP[d]-t0)
 
             axis[0, 0].plot(th_min_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
             axis[0, 1].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
