@@ -1362,7 +1362,7 @@ def plot_minmax_timewindows_subdomain(rstar, d_range, id_list_s, id_list_d, id_l
     axis[0, 2].set_title(r't(2CP) $\leq$ t $<$ t(3CP)')
     axis[0, 3].set_title(r't(3CP) $\leq$ t $<$ t(3CP)+15min')
 
-    axis[0, 0].legend(loc='upper left', bbox_to_anchor=(0.12, .97),
+    axis[0, 0].legend(loc='upper left', bbox_to_anchor=(0.13, .99),
                       fancybox=False, shadow=False, ncol=1, fontsize=12)
     # # # ax2.legend(loc='upper left', bbox_to_anchor=(0.1, -0.1),
     # # #            fancybox=False, shadow=False, ncol=1, fontsize=9)
