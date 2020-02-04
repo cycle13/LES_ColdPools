@@ -1382,7 +1382,7 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
     for d, dstar in enumerate(d_range):
         t0 = t_ini[d]
         it0 = np.int(t0 / dt_fields)
-        it_final = t_final[d]
+        it_final = np.int(t_final[d] / dt_fields)
 
         path = os.path.join(path_double, id_list_d[d], 'data_analysis')
         w_max_d, th_min_d, s_min_d, z, z_half, t_d = read_in_minmax(kmax_plot, path, filename)
