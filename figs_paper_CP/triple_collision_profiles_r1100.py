@@ -1390,7 +1390,7 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
 
         fig_name = 'collisions_minmax_timewindows_domain_unaveraged_rstar' + str(rstar) + '_d' + str(dstar) + 'km_w.png'
         print(fig_name)
-        fig, axis = plt.subplots(4, 3, figsize=(12, 14), sharey='none')
+        fig, axis = plt.subplots(4, 3, figsize=(12, 14), sharey='row')
 
         for it_, t0_ in enumerate(range(t0, t_final[d] + dt_fields, dt_fields)):
             it = it_ + it0
@@ -1415,11 +1415,15 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
                 axis[3, 1].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
                 axis[3, 2].plot(w_max_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
 
-
+        for ax in axis[:,0].flat:
+            ax.set_ylabel('height z  [m]')
+        for ax in axis[3,:].flat:
+            ax.set_xlabel('max(w) [m/s]')
         # axis[0, 0].legend(loc=3, fontsize=12)
-        axis[0, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
+        # axis[0, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
         axis[1, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
         axis[2, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
+        axis[3, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
         plt.subplots_adjust(bottom=0.1, right=.9, left=0.05, top=0.95, hspace=0.2, wspace=0.1)
         plt.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
@@ -1428,7 +1432,7 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
 
         fig_name = 'collisions_minmax_timewindows_domain_unaveraged_rstar' + str(rstar) + '_d' + str(dstar) + 'km_theta.png'
         print(fig_name)
-        fig, axis = plt.subplots(4, 4, figsize=(14, 12), sharey='none')
+        fig, axis = plt.subplots(4, 3, figsize=(12, 14), sharey='row')
 
         for it_, t0_ in enumerate(range(t0, t_final[d] + dt_fields, dt_fields)):
             it = it_ + it0
@@ -1440,11 +1444,11 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
             axis[0, 2].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
             axis[0, 3].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
 
-            if t0 < t_2CP[d]:
+            if t0_ < t_2CP[d]:
                 axis[1, 1].plot(th_min_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
                 axis[1, 2].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
                 axis[1, 3].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
-            elif t0 < t_3CP[d]:
+            elif t0_ < t_3CP[d]:
                 axis[2, 1].plot(th_min_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
                 axis[2, 2].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
                 axis[2, 3].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
@@ -1452,12 +1456,16 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
                 axis[3, 1].plot(th_min_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
                 axis[4, 2].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
                 axis[4, 3].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
-
+        for ax in axis[:,0].flat:
+            ax.set_ylabel('height z  [m]')
+        for ax in axis[3,:].flat:
+            ax.set_xlabel('min(theta) [K]')
         # axis[0, 0].legend(loc=3, fontsize=12)
-        axis[0, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
+        # axis[0, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
         axis[1, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
         axis[2, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
-        plt.subplots_adjust(bottom=0.1, right=.9, left=0.05, top=0.95, hspace=0.2, wspace=0.1)
+        axis[3, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
+        plt.subplots_adjust(bottom=0.1, right=.85, left=0.075, top=0.95, hspace=0.2, wspace=0.1)
         plt.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
 
