@@ -1151,6 +1151,7 @@ def plot_minmax_timewindows_domain(rstar, d_range, id_list_s, id_list_d, id_list
         path = os.path.join(path_double, id_list_d[d], 'data_analysis')
         w_max_d, th_min_d, s_min_d, z, z_half, t_d = read_in_minmax(kmax_plot, path, filename)
         al = 1. - d * 1. / (len(d_range) + 1)
+        al = alpha_list[d]
         if d > 0:
             # lbl_d = '                   ,  d='+str(dstar)+'km'
             lbl_d = 'd='+str(dstar)+'km'
@@ -1179,6 +1180,7 @@ def plot_minmax_timewindows_domain(rstar, d_range, id_list_s, id_list_d, id_list
         w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
 
         al = 1. - d * 1. / (len(d_range) + 1)
+        al = alpha_list[d]
         if d > 0:
             # lbl_t = '                   ,  d='+str(dstar)+'km'
             lbl_t = 'd=' + str(dstar) + 'km'
