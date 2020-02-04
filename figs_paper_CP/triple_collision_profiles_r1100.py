@@ -1343,7 +1343,7 @@ def plot_minmax_timewindows_subdomain(rstar, d_range, id_list_s, id_list_d, id_l
         ax.set_xlabel('max. w  [m/s]')
         # ax.set_ylabel('height z  [m]')
     for ax in axis[1, :].flat:
-        ax.set_xlim(299.2, 300.1)
+        ax.set_xlim(298., 300.1)
         ax.set_xlabel(r'min. $\theta$ [K]')
         # ax.set_ylabel('height z  [m]')
     for ax in axis[:, 0].flat:
