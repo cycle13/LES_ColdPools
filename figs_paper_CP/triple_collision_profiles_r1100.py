@@ -1124,7 +1124,7 @@ def plot_minmax_timewindows_domain(rstar, d_range, id_list_s, id_list_d, id_list
     ax.plot(np.amax(w_max_s[it_ini:, :], axis=0), z, color=colorlist3[0], label=lbl_s)
 
     for d, dstar in enumerate(d_range):
-        al = 1. - d * 1. / (len(d_range) + 1)
+        al = 1. - d * 1. / (len(d_range))
         if d > 0:
             lbl_s = ''
         else:
