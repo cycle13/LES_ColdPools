@@ -1227,10 +1227,10 @@ def plot_minmax_timewindows_domain(rstar, d_range, id_list_s, id_list_d, id_list
         axis[0, 2].plot(np.amax(w_max_t[it_2CP:it_3CP, :], axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
         axis[0, 3].plot(np.amax(w_max_t[it_3CP:it_final, :], axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
 
-        axis[1, 0].plot(np.amax(th_min_t[it_ini:, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
-        axis[1, 1].plot(np.amax(th_min_t[it_ini:it_2CP, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
-        axis[1, 2].plot(np.amax(th_min_t[it_2CP:it_3CP, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
-        axis[1, 3].plot(np.amax(th_min_t[it_3CP:it_final, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
+        axis[1, 0].plot(np.amin(th_min_t[it_ini:, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
+        axis[1, 1].plot(np.amin(th_min_t[it_ini:it_2CP, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
+        axis[1, 2].plot(np.amin(th_min_t[it_2CP:it_3CP, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
+        axis[1, 3].plot(np.amin(th_min_t[it_3CP:it_final, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
 
     for ax in axis[0, :].flat:
         ax.set_xlim(0, maxw)
