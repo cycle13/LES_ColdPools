@@ -1117,6 +1117,7 @@ def plot_minmax_local_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
         it_2CP = np.int(t_2CP[d] / dt_fields)
         it_3CP = np.int(t_3CP[d] / dt_fields)
         print('single: d='+str(d), t_ini[d], t_2CP[d], t_3CP[d], t_final[d])
+        print(it_ini, it_2CP, it_3CP, it_final)
         it_final = np.int(t_final[d] / dt_fields)
         axis[0, 1].plot(np.amax(w_max_s[it_ini:it_2CP, :], axis=0), z, color=colorlist3[0], alpha=al, label=lbl_s)
         axis[0, 2].plot(np.amax(w_max_s[it_2CP:it_3CP, :], axis=0), z, color=colorlist3[0], alpha=al, label=lbl_s)
@@ -1142,6 +1143,7 @@ def plot_minmax_local_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
         it_3CP = np.int(t_3CP[d] / dt_fields)
         it_final = np.int(t_final[d] / dt_fields)
         print('double: d=' + str(d), t_ini[d], t_2CP[d], t_3CP[d], t_final[d])
+        print(it_ini, it_2CP, it_3CP, it_final)
 
         axis[0, 0].plot(np.amax(w_max_d[it_ini:, :], axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
         axis[0, 1].plot(np.amax(w_max_d[it_ini:it_2CP, :], axis=0), z, color=colorlist3[1], alpha=al, label=lbl_d)
@@ -1155,7 +1157,6 @@ def plot_minmax_local_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
 
     # triple
     for d, dstar in enumerate(d_range):
-        print('.... d: ' + str(dstar))
         path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
         w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
 
@@ -1171,6 +1172,7 @@ def plot_minmax_local_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
         it_3CP = np.int(t_3CP[d] / dt_fields)
         it_final = np.int(t_final[d] / dt_fields)
         print('triple: d=' + str(d), t_ini[d], t_2CP[d], t_3CP[d], t_final[d])
+        print(it_ini, it_2CP, it_3CP, it_final)
 
         axis[0, 0].plot(np.amax(w_max_t[it_ini:, :], axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
         axis[0, 1].plot(np.amax(w_max_t[it_ini:it_2CP, :], axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
