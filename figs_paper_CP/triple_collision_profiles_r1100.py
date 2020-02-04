@@ -179,11 +179,11 @@ def main():
     #         os.mkdir(path_out)
     #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
 
-    # plot min/max in each subdomain for all times
-    plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                      t_2CP, t_3CP, t_final,
-                                      path_single, path_double, path_triple,
-                                      filename, path_out_figs)
+    # # plot min/max in each subdomain for all times
+    # plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
+    #                                   t_2CP, t_3CP, t_final,
+    #                                   path_single, path_double, path_triple,
+    #                                   filename, path_out_figs)
 
     print(path_double)
     # plot min/max in each subdomain for time windows
@@ -219,10 +219,10 @@ def main():
     #         = compute_domain_max(path_triple, id_list_t[d], case_name_triple, kmax, times, nt)
     #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
 
-    plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                  t_2CP, t_3CP, t_final,
-                                  path_single, path_double, path_triple,
-                                  filename, path_out_figs)
+    # plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
+    #                               t_2CP, t_3CP, t_final,
+    #                               path_single, path_double, path_triple,
+    #                               filename, path_out_figs)
 
     # plot min/max in each domain for time windows
     plot_minmax_local_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
@@ -1090,7 +1090,15 @@ def plot_minmax_local_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
     fig_name = 'collisions_minmax_profiles_domain_unaveraged_rstar' + str(rstar) + '.png'
     zmax_plot = 3000.
     kmax_plot = np.int(zmax_plot / dx[2])
+
     fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='all')
+
+    maxw = 4.
+    for ax in axis[0, :].flat:
+        ax.plot([0., maxw], [1000, 1000], 'k-', linewidth=0.5)
+    for ax in axis[1, :].flat:
+        ax.plot([290, 310], [1000, 1000], 'k-', linewidth=0.5)
+        ax.plot([300, 300], [0, kmax_plot * dx[2]], 'k-', linewidth=0.5)
 
     path = os.path.join(path_single, id_list_s[0], 'data_analysis')
     w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
@@ -1169,12 +1177,10 @@ def plot_minmax_local_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
         axis[1, 0].plot(np.amax(th_min_t[it_ini:, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
         axis[1, 1].plot(np.amax(th_min_t[it_ini:it_2CP, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
         axis[1, 2].plot(np.amax(th_min_t[it_2CP:it_3CP, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
-        axis[1, 3].plot(np.amax(th_min_t[it_3CP:it_final, :], axis=0), z_half, color=colorlist3[2], alpha=al,
-                        label=lbl_t)
-
+        axis[1, 3].plot(np.amax(th_min_t[it_3CP:it_final, :], axis=0), z_half, color=colorlist3[2], alpha=al, label=lbl_t)
 
     for ax in axis[0, :].flat:
-        ax.set_xlim(0, 4)
+        ax.set_xlim(0, maxw)
         ax.set_xlabel('max. w  [m/s]')
         # ax.set_ylabel('height z  [m]')
     for ax in axis[1, :].flat:
@@ -1183,10 +1189,14 @@ def plot_minmax_local_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
         # ax.set_ylabel('height z  [m]')
     for ax in axis[:, 0].flat:
         ax.set_ylabel('height z  [m]')
-    axis[0, 0].set_title(r't $>$' + str(t_ini[d]))
-    axis[0, 1].set_title(str(t_ini[d]) + r'$\leq$ t $<$' + str(t_2CP[d]))
-    axis[0, 2].set_title(str(t_2CP[d]) + r'$\leq$ t $<$' + str(t_3CP[d]))
-    axis[0, 3].set_title(str(t_3CP[d]) + r'$\leq$ t $<$' + str(t_final[d]))
+    # axis[0, 0].set_title(r't $>$' + str(t_ini[d]))
+    # axis[0, 1].set_title(str(t_ini[d]) + r'$\leq$ t $<$' + str(t_2CP[d]))
+    # axis[0, 2].set_title(str(t_2CP[d]) + r'$\leq$ t $<$' + str(t_3CP[d]))
+    # axis[0, 3].set_title(str(t_3CP[d]) + r'$\leq$ t $<$' + str(t_final[d]))
+    axis[0, 0].set_title(r't $>$' + str(np.int(t_ini[0] / 60)) + 'min')
+    axis[0, 1].set_title(str(t_ini[d]) + r'$\leq$ t $<$ t(2CP)')
+    axis[0, 2].set_title(r't(2CP) $\leq$ t $<$ t(3CP)')
+    axis[0, 3].set_title(r't(3CP) $\leq$ t $<$ t(3CP)+15min')
 
     # # # # ax2.grid()
     axis[0, 0].legend(loc='upper left', bbox_to_anchor=(0.12, .97),
@@ -1211,6 +1221,13 @@ def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
     zmax_plot = 3000.
     kmax_plot = np.int(zmax_plot / dx[2])
     fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='all')
+    maxw = 4.
+    for ax in axis[0, :].flat:
+        ax.plot([0., maxw], [1000, 1000], 'k-', linewidth=0.5)
+    for ax in axis[1, :].flat:
+        ax.plot([290, 310], [1000, 1000], 'k-', linewidth=0.5)
+        ax.plot([300, 300], [0, kmax_plot * dx[2]], 'k-', linewidth=0.5)
+
 
     path = os.path.join(path_single, id_list_s[0], 'data_analysis')
     w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
@@ -1306,10 +1323,14 @@ def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
         # ax.set_ylabel('height z  [m]')
     for ax in axis[:, 0].flat:
         ax.set_ylabel('height z  [m]')
-    axis[0, 0].set_title(r't $>$' + str(t_ini[d]))
-    axis[0, 1].set_title(str(t_ini[d]) + r'$\leq$ t $<$' + str(t_2CP[d]))
-    axis[0, 2].set_title(str(t_2CP[d]) + r'$\leq$ t $<$' + str(t_3CP[d]))
-    axis[0, 3].set_title(str(t_3CP[d]) + r'$\leq$ t $<$' + str(t_final[d]))
+    # axis[0, 0].set_title(r't $>$' + str(t_ini[d]))
+    # axis[0, 1].set_title(str(t_ini[d]) + r'$\leq$ t $<$' + str(t_2CP[d]))
+    # axis[0, 2].set_title(str(t_2CP[d]) + r'$\leq$ t $<$' + str(t_3CP[d]))
+    # axis[0, 3].set_title(str(t_3CP[d]) + r'$\leq$ t $<$' + str(t_final[d]))
+    axis[0, 0].set_title(r't $>$' + str(np.int(t_ini[0]/60))+'min')
+    axis[0, 1].set_title(str(t_ini[d]) + r'$\leq$ t $<$ t(2CP)')
+    axis[0, 2].set_title(r't(2CP) $\leq$ t $<$ t(3CP)')
+    axis[0, 3].set_title(r't(3CP) $\leq$ t $<$ t(3CP)+15min')
 
     axis[0, 0].legend(loc='upper left', bbox_to_anchor=(0.12, .97),
                       fancybox=False, shadow=False, ncol=1, fontsize=12)

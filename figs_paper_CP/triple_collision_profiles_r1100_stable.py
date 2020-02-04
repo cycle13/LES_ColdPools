@@ -1226,10 +1226,14 @@ def plot_minmax_local_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
         # ax.set_ylabel('height z  [m]')
     for ax in axis[:, 0].flat:
         ax.set_ylabel('height z  [m]')
-    axis[0, 0].set_title(r't $>$' + str(t_ini[d]))
-    axis[0, 1].set_title(str(t_ini[d]) + r'$\leq$ t $<$' + str(t_2CP[d]))
-    axis[0, 2].set_title(str(t_2CP[d]) + r'$\leq$ t $<$' + str(t_3CP[d]))
-    axis[0, 3].set_title(str(t_3CP[d]) + r'$\leq$ t $<$' + str(t_final[d]))
+    # axis[0, 0].set_title(r't $>$' + str(t_ini[d]))
+    # axis[0, 1].set_title(str(t_ini[d]) + r'$\leq$ t $<$' + str(t_2CP[d]))
+    # axis[0, 2].set_title(str(t_2CP[d]) + r'$\leq$ t $<$' + str(t_3CP[d]))
+    # axis[0, 3].set_title(str(t_3CP[d]) + r'$\leq$ t $<$' + str(t_final[d]))
+    axis[0, 0].set_title(r't $>$' + str(np.int(t_ini[0] / 60)) + 'min')
+    axis[0, 1].set_title(str(t_ini[d]) + r'$\leq$ t $<$ t(2CP)')
+    axis[0, 2].set_title(r't(2CP) $\leq$ t $<$ t(3CP)')
+    axis[0, 3].set_title(r't(3CP) $\leq$ t $<$ t(3CP)+15min')
 
     # # # # ax2.grid()
     axis[0, 0].legend(loc='upper left', bbox_to_anchor=(0.12, .97),
@@ -1356,10 +1360,11 @@ def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
         # ax.set_ylabel('height z  [m]')
     for ax in axis[:, 0].flat:
         ax.set_ylabel('height z  [m]')
-    axis[0, 0].set_title(r't $>$' + str(t_ini[d]))
+    # axis[0, 0].set_title(r't $>$' + str(t_ini[d]))
     # axis[0, 1].set_title(str(t_ini[d]) + r'$\leq$ t $<$' + str(t_2CP[d]))
     # axis[0, 2].set_title(str(t_2CP[d]) + r'$\leq$ t $<$' + str(t_3CP[d]))
     # axis[0, 3].set_title(str(t_3CP[d]) + r'$\leq$ t $<$' + str(t_final[d]))
+    axis[0, 0].set_title(r't $>$' + str(np.int(t_ini[0]/60))+'min')
     axis[0, 1].set_title(str(t_ini[d]) + r'$\leq$ t $<$ t(2CP)')
     axis[0, 2].set_title(r't(2CP) $\leq$ t $<$ t(3CP)')
     axis[0, 3].set_title(r't(3CP) $\leq$ t $<$ t(3CP)+15min')
