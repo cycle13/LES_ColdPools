@@ -219,10 +219,10 @@ def main():
     #         = compute_domain_max(path_triple, id_list_t[d], case_name_triple, kmax, times, nt)
     #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
 
-    # plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
-    #                               t_2CP, t_3CP, t_final,
-    #                               path_single, path_double, path_triple,
-    #                               filename, path_out_figs)
+    plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
+                                  t_ini, t_2CP, t_3CP, t_final,
+                                  path_single, path_double, path_triple,
+                                  filename, path_out_figs)
 
     # plot min/max in each domain for time windows
     plot_minmax_local_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
@@ -933,7 +933,7 @@ def plot_CPs_at_times(xs, ys, delta_s, delta_d, delta_t, lim_single, lim_double,
 
 # ----------------------------------------------------------------------
 def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                  t_2CP, t_3CP, t_final,
+                                  t_ini, t_2CP, t_3CP, t_final,
                                   path_single, path_double, path_triple,
                                   filename, path_out_figs):
     print('plot minmax timeseries alltimes domain')
@@ -943,6 +943,11 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
     print(path)
     w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
     for d, dstar in enumerate(d_range):
+        # t_ini_ = 0
+        # it_ini = 0
+        t_ini_ = t_ini[d]
+        it_ini = np.int(t_ini_ / dt_fields)
+
         fig_name = 'collisions_minmax_alltimes_domain_unaveraged_rstar' + str(rstar) + '_d' + str(dstar) + 'km.png'
         print(fig_name)
         print(path_out_figs)
@@ -957,17 +962,17 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
         # maxw = np.amax(w_max_s)+.1
         maxw = np.maximum(np.maximum(np.amax(w_max_s), np.amax(w_max_d)), np.amax(w_max_t)) + .1
         # print('time single: ', t_s, w_max_s.shape)
-        axis[0, 0].plot(t_s, np.amax(w_max_s[:, :], axis=1), 'o-', color=colorlist3[0], label='single CP gust front')
-        axis[0, 0].plot(t_d, np.amax(w_max_d[:, :], axis=1), 'o-', color=colorlist3[1], label='double CP collision')
-        axis[0, 0].plot(t_t, np.amax(w_max_t[:, :], axis=1), 'o-', color=colorlist3[2], label='triple CP collision')
-        axis[1, 0].plot(t_s, np.amin(th_min_s[:, :], axis=1), 'o-', color=colorlist3[0], label='single CP gust front')
-        axis[1, 0].plot(t_d, np.amin(th_min_d[:, :], axis=1), 'o-', color=colorlist3[1], label='double CP collision')
-        axis[1, 0].plot(t_t, np.amin(th_min_t[:, :], axis=1), 'o-', color=colorlist3[2], label='triple CP collision')
+        axis[0, 0].plot(t_s[it_ini:], np.amax(w_max_s[it_ini:, :], axis=1), 'o-', color=colorlist3[0], label='single CP gust front')
+        axis[0, 0].plot(t_d[it_ini:], np.amax(w_max_d[it_ini:, :], axis=1), 'o-', color=colorlist3[1], label='double CP collision')
+        axis[0, 0].plot(t_t[it_ini:], np.amax(w_max_t[it_ini:, :], axis=1), 'o-', color=colorlist3[2], label='triple CP collision')
+        axis[1, 0].plot(t_s[it_ini:], np.amin(th_min_s[it_ini:, :], axis=1), 'o-', color=colorlist3[0], label='single CP gust front')
+        axis[1, 0].plot(t_d[it_ini:], np.amin(th_min_d[it_ini:, :], axis=1), 'o-', color=colorlist3[1], label='double CP collision')
+        axis[1, 0].plot(t_t[it_ini:], np.amin(th_min_t[it_ini:, :], axis=1), 'o-', color=colorlist3[2], label='triple CP collision')
         for ax in axis[0, 1:].flat:
             ax.plot([0., maxw], [1000, 1000], 'k-', linewidth=0.5)
         for ax in axis[1, 1:].flat:
             ax.plot([298, 300.1], [1000, 1000], 'k-', linewidth=0.5)
-        for it, t0 in enumerate(range(0, t_final[d] + dt_fields, dt_fields)):
+        for it, t0 in enumerate(range(t_ini_, t_final[d] + dt_fields, dt_fields)):
             lbl = 't=' + str(t0) + 's'
             cl = t0 * 1. / t_final[d]
 
