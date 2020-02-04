@@ -177,11 +177,11 @@ def main():
     #         os.mkdir(path_out)
     #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
 
-    # plot min/max in each subdomain for all times
-    plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                      t_2CP, t_3CP, t_final,
-                                      path_single, path_double, path_triple,
-                                      filename, path_out_figs)
+    # # plot min/max in each subdomain for all times
+    # plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
+    #                                   t_2CP, t_3CP, t_final,
+    #                                   path_single, path_double, path_triple,
+    #                                   filename, path_out_figs)
 
     print(path_double)
     # plot min/max in each subdomain for time windows
@@ -213,10 +213,10 @@ def main():
     #         = compute_domain_max(path_triple, id_list_t[d], case_name_triple, kmax, times, nt)
     #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
 
-    plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                  t_2CP, t_3CP, t_final,
-                                  path_single, path_double, path_triple,
-                                  filename, path_out_figs)
+    # plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
+    #                               t_2CP, t_3CP, t_final,
+    #                               path_single, path_double, path_triple,
+    #                               filename, path_out_figs)
 
     # plot min/max in each domain for time windows
     plot_minmax_local_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
@@ -1131,9 +1131,9 @@ def plot_minmax_local_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
     fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='all')
 
     maxw = 4.
-    for ax in axis[0, 2:].flat:
+    for ax in axis[0, :].flat:
         ax.plot([0., maxw], [1000, 1000], 'k-', linewidth=0.5)
-    for ax in axis[1, 2:].flat:
+    for ax in axis[1, :].flat:
         ax.plot([290, 310], [1000, 1000], 'k-', linewidth=0.5)
         ax.plot([300, 300], [0, kmax_plot * dx[2]], 'k-', linewidth=0.5)
 
@@ -1255,9 +1255,9 @@ def plot_minmax_local_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
     kmax_plot = np.int(zmax_plot / dx[2])
     fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='all')
     maxw = 4.
-    for ax in axis[0, 2:].flat:
+    for ax in axis[0, :].flat:
         ax.plot([0., maxw], [1000, 1000], 'k-', linewidth=0.5)
-    for ax in axis[1, 2:].flat:
+    for ax in axis[1, :].flat:
         ax.plot([290, 310], [1000, 1000], 'k-', linewidth=0.5)
         ax.plot([300, 300], [0, kmax_plot * dx[2]], 'k-', linewidth=0.5)
 
