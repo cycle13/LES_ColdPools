@@ -230,7 +230,7 @@ def main():
                                 path_single, path_double, path_triple,
                                 filename, path_out_figs)
 
-    plot_minmax_alltimes_separate(d_range, id_list_s, id_list_d, id_list_t,
+    plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_t,
                                   t_ini, t_2CP, t_3CP, t_final,
                                   path_single, path_double, path_triple,
                                   filename, path_out_figs)
@@ -1365,7 +1365,7 @@ def plot_minmax_timewindows_subdomain(rstar, d_range, id_list_s, id_list_d, id_l
 
 # ----------------------------------------------------------------------
 
-def plot_minmax_alltimes_separate(d_range, id_list_s, id_list_d, id_list_t,
+def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_t,
                                   t_ini, t_2CP, t_3CP, t_final,
                                   path_single, path_double, path_triple,
                                   filename, path_out_figs):
