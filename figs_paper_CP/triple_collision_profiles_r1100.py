@@ -1421,6 +1421,9 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
         for ax in axis[3,:].flat:
             ax.set_xlabel('max(w) [m/s]')
         plt.suptitle('rstar=' + str(rstar) + ', d=' + str(dstar) + 'km')
+        axis[0,0].set_title('single CP')
+        axis[0,1].set_title('double CP')
+        axis[0,2].set_title('triple CP')
         # axis[0, 0].legend(loc=3, fontsize=12)
         # axis[0, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
         axis[1, 2].legend(loc='upper left', bbox_to_anchor=(1, 0.), fancybox=False, shadow=False, ncol=1, fontsize=12)
@@ -1440,7 +1443,6 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
             it = it_ + it0
             lbl = 't=' + str(t0_) + 's'
             cl = it_ * 1. / (it_final - it0)
-            print('color: ', it_, it_final, it0, it_final-it0, cl)
             # cl = t0 * 1. / (t_final[d] - t0)
             # cl2 = t0 * 1. / (t_2CP[d]-t0)
 
@@ -1467,7 +1469,9 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
         for ax in axis.flat:
             ax.set_xlim(298,300.1)
         plt.suptitle('rstar='+str(rstar)+', d='+str(dstar)+'km')
-        # axis[0, 0].legend(loc=3, fontsize=12)
+        axis[0, 0].set_title('single CP')
+        axis[0, 1].set_title('double CP')
+        axis[0, 2].set_title('triple CP')
         # axis[0, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
         axis[1, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
         axis[2, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
