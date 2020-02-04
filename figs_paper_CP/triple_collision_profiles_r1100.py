@@ -1391,7 +1391,7 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
 
         fig_name = 'collisions_minmax_timewindows_domain_unaveraged_rstar' + str(rstar) + '_d' + str(dstar) + 'km_w.png'
         print(fig_name)
-        fig, axis = plt.subplots(4, 3, figsize=(12, 14), sharey='row')
+        fig, axis = plt.subplots(4, 3, figsize=(11, 14), sharey='row')
 
         for it_, t0_ in enumerate(range(t0, t_final[d] + dt_fields, dt_fields)):
             it = it_ + it0
@@ -1423,7 +1423,7 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
         plt.suptitle('rstar=' + str(rstar) + ', d=' + str(dstar) + 'km')
         # axis[0, 0].legend(loc=3, fontsize=12)
         # axis[0, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
-        axis[1, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
+        axis[1, 2].legend(loc='upper left', bbox_to_anchor=(1, 0.), fancybox=False, shadow=False, ncol=1, fontsize=12)
         axis[2, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
         axis[3, 2].legend(loc='upper left', bbox_to_anchor=(1, 1.), fancybox=False, shadow=False, ncol=1, fontsize=12)
         plt.subplots_adjust(bottom=0.1, right=.85, left=0.06, top=0.95, hspace=0.2, wspace=0.1)
@@ -1434,7 +1434,7 @@ def plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_
 
         fig_name = 'collisions_minmax_timewindows_domain_unaveraged_rstar' + str(rstar) + '_d' + str(dstar) + 'km_theta.png'
         print(fig_name)
-        fig, axis = plt.subplots(4, 3, figsize=(12, 14), sharey='row')
+        fig, axis = plt.subplots(4, 3, figsize=(11, 14), sharey='row')
 
         for it_, t0_ in enumerate(range(t0, t_final[d] + dt_fields, dt_fields)):
             it = it_ + it0
