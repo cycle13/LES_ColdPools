@@ -117,8 +117,8 @@ def main():
     fig, axes = plt.subplots(nrow, ncol, figsize=(5 * ncol, 5 * nrow), sharex='all', sharey='all')
 
     lvls_th = np.linspace(297, 300, nlev)
-    lvls_w = np.linspace(-4, 4, nlev)
-    lvls_vrad = np.linspace(-1, 2, nlev)
+    lvls_w = np.linspace(-3, 3, nlev)
+    lvls_vrad = np.linspace(-3, 3, nlev)
 
     for i, t0 in enumerate(time_range):
         it = np.int(t0/dt_fields)
@@ -134,25 +134,30 @@ def main():
         root_field.close()
         theta = thetas_c(s, 0.0)#[ic - nx / 2:ic + nx / 2, :]
         # # vorticity = vorticity_[it, :, :]
-        # vrad_2D = vrad_2D_[it, :, :]
+        vrad_2D = vrad_2D_[it, :, :]
 
         ax = axes[0, :]
         cf = ax[i].contourf(theta[:, :].T, levels=lvls_th, cmap=cm_bw_r, extend='both')
+        if t0 == time_range[-1]:
+            plt.colorbar(cf, ax=ax[i])
 
         ax = axes[1, :]
         cf = ax[i].contourf(w[:, :].T, levels=lvls_w, cmap=cm_bwr, extend='both')
+        if t0 == time_range[-1]:
+            plt.colorbar(cf, ax=ax[i])
 
         ax = axes[2, :]
         cf = ax[i].contourf(vrad_2D[:, :].T, levels=lvls_vrad, cmap=cm_bwr, extend='max')
+        if t0 == time_range[-1]:
+            plt.colorbar(cf, ax=ax[i])
 
     for ax in axes.flat:
         ax.set_xlim(imin, nx-imin)
         ax.set_ylim(imin, ny-imin)
         ax.set_aspect('equal')
-        x_ticks = [np.int(n) for n in ax.get_xticks()]
+        x_ticks = [np.int(n*dx[0]*1e-3) for n in ax.get_xticks()]
         ax.set_xticklabels(x_ticks)
-        y_ticks = [np.int(n) for n in ax.get_yticks()]
-        # print(y_ticks)
+        y_ticks = [np.int(n*dx[0]*1e-3) for n in ax.get_yticks()]
         ax.set_yticklabels(y_ticks)
     for ax in axes[2,:].flat:
         ax.set_xlabel('x  [km]')
@@ -161,7 +166,7 @@ def main():
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
     title_pos_x = imin + 50
-    title_pos_y = ny - imin + 75
+    title_pos_y = ny - imin + 50
     txt = 'a) potential temperature'
     axes[0,0].text(title_pos_x, title_pos_y, txt, fontsize=15, horizontalalignment='left', bbox=textprops)
     txt = 'b) vertical velocity'
