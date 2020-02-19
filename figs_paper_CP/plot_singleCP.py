@@ -102,7 +102,8 @@ def main():
     # zoom in to see clefts
 
     fig_name = 'CP_crosssection_dx' + str(res) + '_' + case + '.png'
-    nlev = 2e2
+    # nlev = 2e2
+    nlev = 2e1
     ncol = 3
     nrow = 4
     # # title_pos_x = 850
@@ -111,30 +112,32 @@ def main():
 
 
 
-    fig, axes = plt.subplots(nrow, ncol, sharex='col', figsize=(5 * ncol, 2 * nrow))
+    fig, axes = plt.subplots(nrow, ncol, sharex='col', figsize=(5 * ncol, 5 * nrow))
+
+    lvls_th = np.linspace(298, 300, nlev)
 
     for i, t0 in enumerate(time_range):
         it = np.int(t0/dt_fields)
         print('time: ', t0)
 
-        # fullpath_in = os.path.join(path_fields, str(t0) + '.nc')
-        # root_field = nc.Dataset(fullpath_in)
-        # grp = root_field.groups['fields']
-        # s = grp.variables['s'][:, :, k0]
+        fullpath_in = os.path.join(path_fields, str(t0) + '.nc')
+        root_field = nc.Dataset(fullpath_in)
+        grp = root_field.groups['fields']
+        s = grp.variables['s'][:, :, k0]
         # w = grp.variables['w'][:, :, k0]
         # # v = grp.variables['v'][:,:,k0]
         # # u = grp.variables['u'][:, :, k0]
-        # root_field.close()
-        # theta = thetas_c(s, 0.0)#[ic - nx / 2:ic + nx / 2, :]
+        root_field.close()
+        theta = thetas_c(s, 0.0)#[ic - nx / 2:ic + nx / 2, :]
         # # vorticity = vorticity_[it, :, :]
         # vrad_2D = vrad_2D_[it, :, :]
-        #
-        # ax = axes[0, :]
-        # # min = 298
-        # min = np.round(np.amin(theta[:, :]))
-        # max = 300
-        # cf = ax[i].contourf(theta[:, :].T, levels=np.linspace(min, max, nlev), cmap=cm_bw_r, extend='max')
-        #
+
+        ax = axes[0, :]
+        # min = 298
+        min = np.round(np.amin(theta[:, :]))
+        max = 300
+        cf = ax[i].contourf(theta[:, :].T, levels=lvls_th, cmap=cm_bw_r, extend='max')
+
         # ax = axes[1, :]
         # min = np.round(np.amin(w[:, :]))
         # max = np.round(np.amax(w[:, :]))
@@ -151,8 +154,8 @@ def main():
         ax.set_aspect('equal')
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    title_pos_x = 10
-    title_pos_y = 0
+    title_pos_x = 100
+    title_pos_y = ny - imin - 100
     txt = 'a) potential temperature'
     axes[0,0].text(title_pos_x, title_pos_y, txt, fontsize=15, horizontalalignment='left', bbox=textprops)
     txt = 'b) vertical velocity'
