@@ -54,7 +54,8 @@ def main():
     # case_name = args.casename
     case_name = 'ColdPoolDry_single_3D'
 
-    time_range = [900, 1200, 1500]
+    time_range = [600, 900, 1200, 1500]
+    nt = len(time_range)
     imin = 100
     k0 = 0
 
@@ -104,15 +105,15 @@ def main():
     fig_name = 'CP_crosssection_dx' + str(res) + '_' + case + '.png'
     # nlev = 2e2
     nlev = 2e1
-    ncol = 3
-    nrow = 4
+    ncol = len(time_range)
+    nrow = 3
     # # title_pos_x = 850
 
 
 
 
 
-    fig, axes = plt.subplots(nrow, ncol, sharex='col', figsize=(5 * ncol, 5 * nrow))
+    fig, axes = plt.subplots(nrow, ncol, figsize=(5 * ncol, 5 * nrow), sharex='all', sharey='all')
 
     lvls_th = np.linspace(298, 300, nlev)
 
@@ -154,8 +155,8 @@ def main():
         ax.set_aspect('equal')
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    title_pos_x = 100
-    title_pos_y = ny - imin - 100
+    title_pos_x = 150
+    title_pos_y = ny - imin + 50
     txt = 'a) potential temperature'
     axes[0,0].text(title_pos_x, title_pos_y, txt, fontsize=15, horizontalalignment='left', bbox=textprops)
     txt = 'b) vertical velocity'
@@ -167,7 +168,7 @@ def main():
 
     # axes[-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
     #                 fancybox=True, shadow=True, ncol=1, fontsize=10)
-    plt.subplots_adjust(bottom=0.06, right=.95, left=0.1, top=0.95, wspace=0.25, hspace=0.45)
+    plt.subplots_adjust(bottom=0.06, right=.95, left=0.1, top=0.95, wspace=0.1, hspace=0.1)
     print('saving: ', os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
