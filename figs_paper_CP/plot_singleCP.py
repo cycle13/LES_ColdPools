@@ -124,8 +124,8 @@ def main():
     lvls_vrad = np.linspace(-3, 3, nlev)
 
     for i, t0 in enumerate(time_range):
-        if i < 2:
-            continue
+        #if i < 2:
+        #    continue
         it = np.int(t0/dt_fields)
         print('time: ', t0)
 
@@ -143,53 +143,56 @@ def main():
 
         axs = axes[0, :]
         cf = axs[i].contourf(theta[:, :].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
-        if t0 == time_range[-1]:
+        if t0 == time_range[-2]:
             # plt.colorbar(cf, ax=axs[i], shrink=0.8)
             axins = plt.axes([axins_x, 0.815, axins_width, axins_width])
-            axins.contourf(theta[ic+40:, jc+40:].T, levels=lvls_th, cmap=cm_bw_r)
+            axins.contourf(theta[ic+48:, jc+48:].T, levels=lvls_th, cmap=cm_bw_r)
             axins.set_aspect('equal')
-            axins.set_xlim(0, 300)
-            axins.set_ylim(0, 300)
+            axins.set_xlim(0, 280)
+            axins.set_ylim(0, 280)
             axins.set_xticklabels('')
             axins.set_yticklabels('')
             #axins = ax[i].inset_axes([0.5, 0.5, 0.47, 0.47])
             ## axins.imshow(theta[ic:,jc:], extent=extent, interpolation="nearest", origin="lower")
             #axins.contourf(theta[ic:,jc:].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
+        if t0 == time_range[-1]:
+            cax = plt.axes([0.95, 0.7, 0.012, 0.22])
+            plt.colorbar(cf, cax=cax, ticks=np.arange(298,300.1,1))
 
         axs = axes[1, :]
         cf = axs[i].contourf(w[:, :].T, levels=lvls_w, cmap=cm_bwr, extend='both')
-        if t0 == time_range[-1]:
-            cbar = plt.colorbar(cf, ax=axs[i], shrink=0.8, aspect=12)#, ticks=np.arange(min, max+0.02, 0.05))
+        if t0 == time_range[-2]:
             axins = plt.axes([axins_x, 0.495,axins_width, axins_width])
-            axins.contourf(w[ic+40:, jc+40:].T, levels=lvls_w, cmap=cm_bwr)
+            axins.contourf(w[ic+48:, jc+48:].T, levels=lvls_w, cmap=cm_bwr)
             axins.set_aspect('equal')
-            axins.set_xlim(0,300)
-            axins.set_ylim(0,300)
+            axins.set_xlim(0,280)
+            axins.set_ylim(0,280)
             axins.set_xticklabels('')
             axins.set_yticklabels('')
+        if t0 == time_range[-1]:
+            cax = plt.axes([0.95, 0.38, 0.012, 0.22])
+            cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(-3, 3+0.02, 1.))
 
 
         axs = axes[2, :]
         cf = axs[i].contourf(vrad_2D[:, :].T, levels=lvls_vrad, cmap=cm_bwr, extend='max')
-        if t0 == time_range[-1]:
-            cbar = plt.colorbar(cf, cax=axs[i])#, ticks=np.arange(min, max+0.02, 0.05))
-            #fig.colorbar(cf, ax=axs[i], location='right', shrink=0.6)
-            #fig.colorbar(pcm, ax=axs[1:, :], location='right', shrink=0.6)
-            #fig.colorbar(cf, ax=axes[2,:], shrink=0.8)
-            #fig.colorbar(pcm, ax=axs[:, col], shrink=0.6)
+        if t0 == time_range[-2]:
             axins = plt.axes([axins_x, 0.175, axins_width, axins_width])
-            axins.contourf(vrad_2D[ic+40:, jc+40:].T, levels=lvls_vrad, cmap=cm_bwr)
+            axins.contourf(vrad_2D[ic+48:, jc+48:].T, levels=lvls_vrad, cmap=cm_bwr)
             axins.set_aspect('equal')
-            axins.set_xlim(0, 300)
-            axins.set_ylim(0, 300)
+            axins.set_xlim(0, 280)
+            axins.set_ylim(0, 280)
             axins.set_xticklabels('')
             axins.set_yticklabels('')
+        if t0 == time_range[-1]:
+            cax = plt.axes([0.95, 0.06, 0.012, 0.22])
+            cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 3.1, 1))
 
         for ax in axes[:,i].flat:
             ax.text(t_pos_x, t_pos_y, 't='+str(np.int(t0/60))+'min', fontsize=16, horizontalalignment='left', bbox=textprops)
 
-    for ax in axes[:,2].flat:
-        ax.plot(ic,jc, 'ko', markersize=10)
+    #for ax in axes_[:,2].flat:
+    #    ax.plot(ic,jc, 'ko', markersize=10)
 
 
     for ax in axes.flat:

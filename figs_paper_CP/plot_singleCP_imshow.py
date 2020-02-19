@@ -146,7 +146,6 @@ def main():
         # vorticity = vorticity_[it, :, :]
         vrad_2D = vrad_2D_[it, :, :]
 
-
         axs = axes_[0, :]
         cf = axs[i].imshow(theta[:, :].T, cmap=cm_bw_r, norm=norm_th)
         if t0 == time_range[-2]:
@@ -157,9 +156,6 @@ def main():
             axins.set_ylim(0, 280)
             axins.set_xticklabels('')
             axins.set_yticklabels('')
-            #axins = ax[i].inset_axes([0.5, 0.5, 0.47, 0.47])
-            ## axins.imshow(theta[ic:,jc:], extent=extent, interpolation="nearest", origin="lower")
-            #axins.imshow(theta[ic:,jc:].T, cmap=cm_bw_r)
         if t0 == time_range[-1]:
             cax = plt.axes([0.95, 0.7, 0.012, 0.22])
             plt.colorbar(cf, cax=cax, ticks=np.arange(298,300.1,1))
