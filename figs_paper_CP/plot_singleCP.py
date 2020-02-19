@@ -84,7 +84,7 @@ def main():
 
     ''' radial velocity '''
     root_vrad_2D = nc.Dataset(os.path.join(path, 'fields_v_rad/v_rad.nc'))
-    time_rad = root_vrad_2D.variables['time'][:]
+    # time_rad = root_vrad_2D.variables['time'][:]
     vrad_2D_ = root_vrad_2D.variables['v_rad'][:, :, :, k0]  # v_rad[nt,nx,ny,nz]
     root_vrad_2D.close()
     # root_vrad = nc.Dataset(os.path.join(path, 'data_analysis/stats_radial_averaged.nc'))
@@ -92,11 +92,11 @@ def main():
     # vrad = root_vrad.groups['stats'].variables['v_rad'][:, :, k0]         # v_rad[nt,nr,nz]
     # root_vrad.close()
 
-    ''' vorticity '''
-    root_vort = nc.Dataset(os.path.join(path, 'fields_vorticity/field_vort_yz.nc'))
-    time_vort = root_vort.groups['fields'].variables['time'][:]
-    vorticity_ = root_vort.groups['fields'].variables['vort_yz'][:, :, :kmax]
-    root_vort.close()
+    # ''' vorticity '''
+    # root_vort = nc.Dataset(os.path.join(path, 'fields_vorticity/field_vort_yz.nc'))
+    # time_vort = root_vort.groups['fields'].variables['time'][:]
+    # vorticity_ = root_vort.groups['fields'].variables['vort_yz'][:, :, :kmax]     # vort_yz[t,y,z]
+    # root_vort.close()
 
 
     # Figure with potential temperature, vertical velocity, radial velocity ?
@@ -128,7 +128,7 @@ def main():
         # u = grp.variables['u'][:, :, k0]
         root_field.close()
         theta = thetas_c(s, 0.0)#[ic - nx / 2:ic + nx / 2, :]
-        vorticity = vorticity_[it, :, :]
+        # vorticity = vorticity_[it, :, :]
         vrad_2D = vrad_2D_[it, :, :]
 
         ax = axes[0, :]
