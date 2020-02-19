@@ -54,7 +54,8 @@ def main():
     # case_name = args.casename
     case_name = 'ColdPoolDry_single_3D'
 
-    time_range = [600, 900, 1200, 1500]
+    # time_range = [600, 900, 1200, 1500]
+    time_range = [600, 1200, 1800, 2400]
     nt = len(time_range)
     imin = 100
     k0 = 0
@@ -156,7 +157,7 @@ def main():
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
     title_pos_x = 150
-    title_pos_y = ny - imin + 50
+    title_pos_y = ny - imin + 100
     txt = 'a) potential temperature'
     axes[0,0].text(title_pos_x, title_pos_y, txt, fontsize=15, horizontalalignment='left', bbox=textprops)
     txt = 'b) vertical velocity'
@@ -168,7 +169,7 @@ def main():
 
     # axes[-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
     #                 fancybox=True, shadow=True, ncol=1, fontsize=10)
-    plt.subplots_adjust(bottom=0.06, right=.95, left=0.1, top=0.95, wspace=0.1, hspace=0.1)
+    plt.subplots_adjust(bottom=0.06, right=.95, left=0.1, top=0.95, wspace=0.1, hspace=0.2)
     print('saving: ', os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
