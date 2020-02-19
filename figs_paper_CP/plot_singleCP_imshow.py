@@ -142,7 +142,7 @@ def main():
         vrad_2D = vrad_2D_[it, :, :]
 
         axs = axes[0, :]
-        cf = axs[i].imshow(theta[:, :].T, cmap=cm_bw_r, extend='min')
+        cf = axs[i].imshow(theta[:, :].T, cmap=cm_bw_r)
         if t0 == time_range[-1]:
             # plt.colorbar(cf, ax=axs[i], shrink=0.8)
             axins = plt.axes([axins_x, 0.815, axins_width, axins_width])
@@ -154,10 +154,10 @@ def main():
             axins.set_yticklabels('')
             #axins = ax[i].inset_axes([0.5, 0.5, 0.47, 0.47])
             ## axins.imshow(theta[ic:,jc:], extent=extent, interpolation="nearest", origin="lower")
-            #axins.imshow(theta[ic:,jc:].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
+            #axins.imshow(theta[ic:,jc:].T, levels=lvls_th, cmap=cm_bw_r)
 
         axs = axes[1, :]
-        cf = axs[i].imshow(w[:, :].T, cmap=cm_bwr, extend='both')
+        cf = axs[i].imshow(w[:, :].T, cmap=cm_bwr)
         if t0 == time_range[-1]:
             cbar = plt.colorbar(cf, ax=axs[i], shrink=0.8, aspect=12)#, ticks=np.arange(min, max+0.02, 0.05))
             axins = plt.axes([axins_x, 0.495,axins_width, axins_width])
@@ -170,7 +170,7 @@ def main():
 
 
         axs = axes[2, :]
-        cf = axs[i].imshow(vrad_2D[:, :].T, cmap=cm_bwr, extend='max')
+        cf = axs[i].imshow(vrad_2D[:, :].T, cmap=cm_bwr)
         if t0 == time_range[-1]:
             cbar = plt.colorbar(cf, cax=axs[i])#, ticks=np.arange(min, max+0.02, 0.05))
             #fig.colorbar(cf, ax=axs[i], location='right', shrink=0.6)
