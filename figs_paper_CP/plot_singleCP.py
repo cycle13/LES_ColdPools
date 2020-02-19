@@ -121,6 +121,8 @@ def main():
     lvls_vrad = np.linspace(-3, 3, nlev)
 
     for i, t0 in enumerate(time_range):
+        if i < 2:
+            continue
         it = np.int(t0/dt_fields)
         print('time: ', t0)
 
@@ -129,11 +131,11 @@ def main():
         grp = root_field.groups['fields']
         s = grp.variables['s'][:, :, k0]
         w = grp.variables['w'][:, :, k0]
-        # # v = grp.variables['v'][:,:,k0]
-        # # u = grp.variables['u'][:, :, k0]
+        # v = grp.variables['v'][:,:,k0]
+        # u = grp.variables['u'][:, :, k0]
         root_field.close()
         theta = thetas_c(s, 0.0)#[ic - nx / 2:ic + nx / 2, :]
-        # # vorticity = vorticity_[it, :, :]
+        # vorticity = vorticity_[it, :, :]
         vrad_2D = vrad_2D_[it, :, :]
 
         ax = axes[0, :]
@@ -146,8 +148,11 @@ def main():
 
         ax = axes[1, :]
         cf = ax[i].contourf(w[:, :].T, levels=lvls_w, cmap=cm_bwr, extend='both')
-        # if t0 == time_range[-1]:
+        if t0 == time_range[-1]:
         #     plt.colorbar(cf, ax=ax[i], shrink=0.8)
+            axins = plt.axes([1.,1.,.5,.5])
+            axins.contourf(w[ic:, jc:].T, levels=lvls_w, cmap=cm_bwr)
+
 
         ax = axes[2, :]
         cf = ax[i].contourf(vrad_2D[:, :].T, levels=lvls_vrad, cmap=cm_bwr, extend='max')
