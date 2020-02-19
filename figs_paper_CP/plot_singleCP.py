@@ -99,7 +99,7 @@ def main():
     # root_vort.close()
 
 
-    # Figure with potential temperature, vertical velocity, radial velocity ?
+    ''' Figure with potential temperature, vertical velocity, radial velocity ? '''
     # zoom in to see clefts
 
     fig_name = 'CP_crosssection_dx' + str(res) + '_' + case + '.png'
@@ -114,39 +114,42 @@ def main():
 
     fig, axes = plt.subplots(nrow, ncol, sharex='col', figsize=(5 * ncol, 2 * nrow))
 
-    # jmin_range = [150, 100, 100]
     for i, t0 in enumerate(time_range):
         it = np.int(t0/dt_fields)
         print('time: ', t0)
 
-        fullpath_in = os.path.join(path_fields, str(t0) + '.nc')
-        root_field = nc.Dataset(fullpath_in)
-        grp = root_field.groups['fields']
-        s = grp.variables['s'][:, :, k0]
-        w = grp.variables['w'][:, :, k0]
-        # v = grp.variables['v'][:,:,k0]
-        # u = grp.variables['u'][:, :, k0]
-        root_field.close()
-        theta = thetas_c(s, 0.0)#[ic - nx / 2:ic + nx / 2, :]
-        # vorticity = vorticity_[it, :, :]
-        vrad_2D = vrad_2D_[it, :, :]
+        # fullpath_in = os.path.join(path_fields, str(t0) + '.nc')
+        # root_field = nc.Dataset(fullpath_in)
+        # grp = root_field.groups['fields']
+        # s = grp.variables['s'][:, :, k0]
+        # w = grp.variables['w'][:, :, k0]
+        # # v = grp.variables['v'][:,:,k0]
+        # # u = grp.variables['u'][:, :, k0]
+        # root_field.close()
+        # theta = thetas_c(s, 0.0)#[ic - nx / 2:ic + nx / 2, :]
+        # # vorticity = vorticity_[it, :, :]
+        # vrad_2D = vrad_2D_[it, :, :]
+        #
+        # ax = axes[0, :]
+        # # min = 298
+        # min = np.round(np.amin(theta[:, :]))
+        # max = 300
+        # cf = ax[i].contourf(theta[:, :].T, levels=np.linspace(min, max, nlev), cmap=cm_bw_r, extend='max')
+        #
+        # ax = axes[1, :]
+        # min = np.round(np.amin(w[:, :]))
+        # max = np.round(np.amax(w[:, :]))
+        # cf = ax[i].contourf(w[:, :].T, levels=np.linspace(min, max, nlev), cmap=cm_bw_r, extend='max')
+        #
+        # ax = axes[2, :]
+        # min = np.round(np.amin(vrad_2D[:, :]))
+        # max = np.round(np.amax(vrad_2D[:, :]))
+        # max = 300
+        # cf = ax[i].contourf(vrad_2D[:, :].T, levels=np.linspace(min, max, nlev), cmap=cm_bw_r, extend='max')
 
-        ax = axes[0, :]
-        # min = 298
-        min = np.round(np.amin(theta[:, :]))
-        max = 300
-        cf = ax[i].contourf(theta[:, :].T, levels=np.linspace(min, max, nlev), cmap=cm_bw_r, extend='max')
-
-        ax = axes[1, :]
-        min = np.round(np.amin(w[:, :]))
-        max = np.round(np.amax(w[:, :]))
-        cf = ax[i].contourf(w[:, :].T, levels=np.linspace(min, max, nlev), cmap=cm_bw_r, extend='max')
-
-        ax = axes[2, :]
-        min = np.round(np.amin(vrad_2D[:, :]))
-        max = np.round(np.amax(vrad_2D[:, :]))
-        max = 300
-        cf = ax[i].contourf(vrad_2D[:, :].T, levels=np.linspace(min, max, nlev), cmap=cm_bw_r, extend='max')
+    for ax in axes.flat:
+        ax.set_xlim(imin, nx-imin)
+        ax.set_aspect('equal')
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
     title_pos_x = 10
@@ -163,6 +166,7 @@ def main():
     # axes[-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
     #                 fancybox=True, shadow=True, ncol=1, fontsize=10)
     plt.subplots_adjust(bottom=0.06, right=.95, left=0.1, top=0.95, wspace=0.25, hspace=0.45)
+    print('saving: ', os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 
