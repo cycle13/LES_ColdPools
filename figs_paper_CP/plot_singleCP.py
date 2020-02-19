@@ -116,7 +116,8 @@ def main():
 
     fig, axes = plt.subplots(nrow, ncol, figsize=(5 * ncol, 5 * nrow), sharex='all', sharey='all')
 
-    lvls_th = np.linspace(298, 300, nlev)
+    lvls_th = np.linspace(297, 300, nlev)
+    lvls_w = np.linspace(-4, 4, nlev)
 
     for i, t0 in enumerate(time_range):
         it = np.int(t0/dt_fields)
@@ -126,7 +127,7 @@ def main():
         root_field = nc.Dataset(fullpath_in)
         grp = root_field.groups['fields']
         s = grp.variables['s'][:, :, k0]
-        # w = grp.variables['w'][:, :, k0]
+        w = grp.variables['w'][:, :, k0]
         # # v = grp.variables['v'][:,:,k0]
         # # u = grp.variables['u'][:, :, k0]
         root_field.close()
@@ -136,15 +137,15 @@ def main():
 
         ax = axes[0, :]
         # min = 298
-        min = np.round(np.amin(theta[:, :]))
-        max = 300
-        cf = ax[i].contourf(theta[:, :].T, levels=lvls_th, cmap=cm_bw_r, extend='max')
+        # min = np.round(np.amin(theta[:, :]))
+        # max = 300
+        cf = ax[i].contourf(theta[:, :].T, levels=lvls_th, cmap=cm_bw_r, extend='both')
 
-        # ax = axes[1, :]
+        ax = axes[1, :]
         # min = np.round(np.amin(w[:, :]))
         # max = np.round(np.amax(w[:, :]))
-        # cf = ax[i].contourf(w[:, :].T, levels=np.linspace(min, max, nlev), cmap=cm_bw_r, extend='max')
-        #
+        cf = ax[i].contourf(w[:, :].T, levels=lvls_w, cmap=cm_bwr, extend='both')
+
         # ax = axes[2, :]
         # min = np.round(np.amin(vrad_2D[:, :]))
         # max = np.round(np.amax(vrad_2D[:, :]))
@@ -156,8 +157,8 @@ def main():
         ax.set_aspect('equal')
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    title_pos_x = 150
-    title_pos_y = ny - imin + 100
+    title_pos_x = imin + 50
+    title_pos_y = ny - imin + 150
     txt = 'a) potential temperature'
     axes[0,0].text(title_pos_x, title_pos_y, txt, fontsize=15, horizontalalignment='left', bbox=textprops)
     txt = 'b) vertical velocity'
