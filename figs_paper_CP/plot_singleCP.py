@@ -56,6 +56,7 @@ def main():
 
     time_range = [900, 1200, 1500]
     imin = 100
+    k0 = 0
 
     path_root = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/'
     path = os.path.join(path_root, run + '_dx' + str(res) + 'm', case)
@@ -75,20 +76,21 @@ def main():
     dx[0] = nml['grid']['dx']
     dx[1] = nml['grid']['dy']
     dx[2] = nml['grid']['dz']
-    kmax = np.int(1.0e3 / dx[2])
+    # kmax = np.int(1.0e3 / dx[2])
+    dt_fields = nml['fields_io']['frequency']
     print('res: ' + str(dx))
     print('CP centre: ' + str(ic) + ', ' + str(jc))
     print('')
 
     ''' radial velocity '''
     root_vrad_2D = nc.Dataset(os.path.join(path, 'fields_v_rad/v_rad.nc'))
-    # time_rad = root_vrad_2D.variables['time'][:]
-    vrad_2D = root_vrad_2D.variables['v_rad'][:, :, jc, :kmax]
+    time_rad = root_vrad_2D.variables['time'][:]
+    vrad_2D_ = root_vrad_2D.variables['v_rad'][:, :, :, k0]  # v_rad[nt,nx,ny,nz]
     root_vrad_2D.close()
-    root_vrad = nc.Dataset(os.path.join(path, 'data_analysis/stats_radial_averaged.nc'))
-    time_rad = root_vrad.groups['timeseries'].variables['time'][:]
-    vrad = root_vrad.groups['stats'].variables['v_rad'][:, :, :kmax]
-    root_vrad.close()
+    # root_vrad = nc.Dataset(os.path.join(path, 'data_analysis/stats_radial_averaged.nc'))
+    # time_rad = root_vrad.groups['timeseries'].variables['time'][:]
+    # vrad = root_vrad.groups['stats'].variables['v_rad'][:, :, k0]         # v_rad[nt,nr,nz]
+    # root_vrad.close()
 
     ''' vorticity '''
     root_vort = nc.Dataset(os.path.join(path, 'fields_vorticity/field_vort_yz.nc'))
@@ -112,35 +114,37 @@ def main():
 
     fig, axes = plt.subplots(nrow, ncol, sharex='col', figsize=(5 * ncol, 2 * nrow))
 
-    jmin_range = [150, 100, 100]
+    # jmin_range = [150, 100, 100]
     for i, t0 in enumerate(time_range):
+        it = np.int(t0/dt_fields)
         print('time: ', t0)
 
         fullpath_in = os.path.join(path_fields, str(t0) + '.nc')
         root_field = nc.Dataset(fullpath_in)
         grp = root_field.groups['fields']
-        s = grp.variables['s'][ic, :, :kmax]
-        w = grp.variables['w'][ic, :, :kmax]
-        # v = grp.variables['v'][ic,:,:kmax]
-        # u = grp.variables['u'][ic, :, :kmax]
+        s = grp.variables['s'][:, :, k0]
+        w = grp.variables['w'][:, :, k0]
+        # v = grp.variables['v'][:,:,k0]
+        # u = grp.variables['u'][:, :, k0]
         root_field.close()
-        theta = thetas_c(s, 0.0)[ic - nx / 2:ic + nx / 2, :]
-        vorticity = vorticity_[np.int(t0 / 100), :, :]
+        theta = thetas_c(s, 0.0)#[ic - nx / 2:ic + nx / 2, :]
+        vorticity = vorticity_[it, :, :]
+        vrad_2D = vrad_2D_[it, :, :]
 
         ax = axes[0, :]
         # min = 298
-        min = np.round(np.amin(theta[:, :]), 1)
+        min = np.round(np.amin(theta[:, :]))
         max = 300
         cf = ax[i].contourf(theta[:, :].T, levels=np.linspace(min, max, nlev), cmap=cm_bw_r, extend='max')
 
         ax = axes[1, :]
-        min = np.round(np.amin(w[:, :]), 1)
-        max = np.round(np.amax(w[:, :]), 1)
+        min = np.round(np.amin(w[:, :]))
+        max = np.round(np.amax(w[:, :]))
         cf = ax[i].contourf(w[:, :].T, levels=np.linspace(min, max, nlev), cmap=cm_bw_r, extend='max')
 
         ax = axes[2, :]
-        min = np.round(np.amin(vrad_2D[:, :]), 1)
-        max = np.round(np.amax(vrad_2D[:, :]), 1)
+        min = np.round(np.amin(vrad_2D[:, :]))
+        max = np.round(np.amax(vrad_2D[:, :]))
         max = 300
         cf = ax[i].contourf(vrad_2D[:, :].T, levels=np.linspace(min, max, nlev), cmap=cm_bw_r, extend='max')
 
