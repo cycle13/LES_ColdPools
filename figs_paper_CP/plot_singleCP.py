@@ -108,16 +108,16 @@ def main():
     nlev = 2e1
     ncol = len(time_range)
     nrow = 3
-    axins_x = .61
+    axins_x = .594
     axins_width = .13
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    t_pos_x = 0.
-    t_pos_y = 0.
+    t_pos_x = 85.
+    t_pos_y = 85.
 
 
 
 
-    fig, axes = plt.subplots(nrow, ncol, figsize=(5 * ncol, 5 * nrow), sharex='all', sharey='all')
+    fig, axes = plt.subplots(nrow, ncol, figsize=(4.9 * ncol, 5 * nrow), sharex='all', sharey='all')
 
     lvls_th = np.linspace(298, 300, nlev)
     lvls_w = np.linspace(-3, 3, nlev)
@@ -141,48 +141,56 @@ def main():
         # vorticity = vorticity_[it, :, :]
         vrad_2D = vrad_2D_[it, :, :]
 
-        ax = axes[0, :]
-        cf = ax[i].contourf(theta[:, :].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
+        axs = axes[0, :]
+        cf = axs[i].contourf(theta[:, :].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
         if t0 == time_range[-1]:
-            # plt.colorbar(cf, ax=ax[i], shrink=0.8)
-            axins = plt.axes([axins_x, 0.8, axins_width, axins_width])
-            axins.contourf(theta[ic:, jc:].T, levels=lvls_th, cmap=cm_bw_r)
+            # plt.colorbar(cf, ax=axs[i], shrink=0.8)
+            axins = plt.axes([axins_x, 0.815, axins_width, axins_width])
+            axins.contourf(theta[ic+40:, jc+40:].T, levels=lvls_th, cmap=cm_bw_r)
             axins.set_aspect('equal')
-            axins.set_xlim(0, 320)
-            axins.set_ylim(0, 320)
+            axins.set_xlim(0, 300)
+            axins.set_ylim(0, 300)
             axins.set_xticklabels('')
             axins.set_yticklabels('')
             #axins = ax[i].inset_axes([0.5, 0.5, 0.47, 0.47])
             ## axins.imshow(theta[ic:,jc:], extent=extent, interpolation="nearest", origin="lower")
             #axins.contourf(theta[ic:,jc:].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
 
-        ax = axes[1, :]
-        cf = ax[i].contourf(w[:, :].T, levels=lvls_w, cmap=cm_bwr, extend='both')
+        axs = axes[1, :]
+        cf = axs[i].contourf(w[:, :].T, levels=lvls_w, cmap=cm_bwr, extend='both')
         if t0 == time_range[-1]:
-        #     plt.colorbar(cf, ax=ax[i], shrink=0.8)
-            axins = plt.axes([axins_x, 0.49,axins_width, axins_width])
-            axins.contourf(w[ic:, jc:].T, levels=lvls_w, cmap=cm_bwr)
+            cbar = plt.colorbar(cf, ax=axs[i], shrink=0.8, aspect=12)#, ticks=np.arange(min, max+0.02, 0.05))
+            axins = plt.axes([axins_x, 0.495,axins_width, axins_width])
+            axins.contourf(w[ic+40:, jc+40:].T, levels=lvls_w, cmap=cm_bwr)
             axins.set_aspect('equal')
-            axins.set_xlim(0,320)
-            axins.set_ylim(0,320)
+            axins.set_xlim(0,300)
+            axins.set_ylim(0,300)
             axins.set_xticklabels('')
             axins.set_yticklabels('')
 
 
-        ax = axes[2, :]
-        cf = ax[i].contourf(vrad_2D[:, :].T, levels=lvls_vrad, cmap=cm_bwr, extend='max')
+        axs = axes[2, :]
+        cf = axs[i].contourf(vrad_2D[:, :].T, levels=lvls_vrad, cmap=cm_bwr, extend='max')
         if t0 == time_range[-1]:
-            # plt.colorbar(cf, ax=ax[i], shrink=0.8)
-            axins = plt.axes([axins_x, 0.1, axins_width, axins_width])
-            axins.contourf(vrad_2D[ic:, jc:].T, levels=lvls_vrad, cmap=cm_bwr)
+            cbar = plt.colorbar(cf, cax=axs[i])#, ticks=np.arange(min, max+0.02, 0.05))
+            #fig.colorbar(cf, ax=axs[i], location='right', shrink=0.6)
+            #fig.colorbar(pcm, ax=axs[1:, :], location='right', shrink=0.6)
+            #fig.colorbar(cf, ax=axes[2,:], shrink=0.8)
+            #fig.colorbar(pcm, ax=axs[:, col], shrink=0.6)
+            axins = plt.axes([axins_x, 0.175, axins_width, axins_width])
+            axins.contourf(vrad_2D[ic+40:, jc+40:].T, levels=lvls_vrad, cmap=cm_bwr)
             axins.set_aspect('equal')
-            axins.set_xlim(0, 320)
-            axins.set_ylim(0, 320)
+            axins.set_xlim(0, 300)
+            axins.set_ylim(0, 300)
             axins.set_xticklabels('')
             axins.set_yticklabels('')
 
         for ax in axes[:,i].flat:
-            ax.text(t_pos_x, t_pos_y, 't='+str(t0)+'s', fontsize=16, horizontalalignment='left', bbox=textprops)
+            ax.text(t_pos_x, t_pos_y, 't='+str(np.int(t0/60))+'min', fontsize=16, horizontalalignment='left', bbox=textprops)
+
+    for ax in axes[:,2].flat:
+        ax.plot(ic,jc, 'ko', markersize=10)
+
 
     for ax in axes.flat:
         ax.set_xlim(imin, nx-imin)
@@ -212,7 +220,7 @@ def main():
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
     title_pos_x = imin + - 120
-    title_pos_y = ny - imin + 10
+    title_pos_y = ny - imin + 25
     title_font = 21
     txt = 'a) potential temperature'
     axes[0,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
@@ -225,7 +233,7 @@ def main():
 
     # axes[-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
     #                 fancybox=True, shadow=True, ncol=1, fontsize=10)
-    plt.subplots_adjust(bottom=0.04, right=.97, left=0.05, top=0.95, wspace=0.08, hspace=0.2)
+    plt.subplots_adjust(bottom=0.04, right=.94, left=0.05, top=0.95, wspace=0.08, hspace=0.18)
     print('saving: ', os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
