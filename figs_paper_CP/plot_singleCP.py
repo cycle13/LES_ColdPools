@@ -138,8 +138,11 @@ def main():
 
         ax = axes[0, :]
         cf = ax[i].contourf(theta[:, :].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
-        # if t0 == time_range[-1]:
+        if t0 == time_range[-1]:
         #     plt.colorbar(cf, ax=ax[i], shrink=0.8)
+            axins = ax[i].inset_axes([0.5, 0.5, 0.47, 0.47])
+            # axins.imshow(theta[ic:,jc:], extent=extent, interpolation="nearest", origin="lower")
+            axins.contourf(theta[ic:,jc:].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
 
         ax = axes[1, :]
         cf = ax[i].contourf(w[:, :].T, levels=lvls_w, cmap=cm_bwr, extend='both')
@@ -157,14 +160,16 @@ def main():
         ax.set_aspect('equal')
         x_ticks = [np.int(n*dx[0]*1e-3) for n in ax.get_xticks()]
         x_ticks = [np.int((n-imin)*dx[0]*1e-3) for n in ax.get_xticks()]
-        x_ticks = [np.int((n-imin)) for n in ax.get_xticks()]
+        # x_ticks = [np.int((n-imin)) for n in ax.get_xticks()]
         #x_ticks = [np.int(n) for n in ax.get_xticks()]
         ax.set_xticklabels(x_ticks)
         y_ticks = [np.int(n*dx[1]*1e-3) for n in ax.get_yticks()]
-        y_ticks = [np.int((n)) for n in ax.get_yticks()]
+        y_ticks = [np.int((n-imin)*dx[0]*1e-3) for n in ax.get_yticks()]
+        # y_ticks = [np.int((n)) for n in ax.get_yticks()]
         #y_ticks = [np.int(n) for n in ax.get_yticks()]
+
         #ax.set_xticks(np.arange(0, (nx-2*imin)*dx[0], step=1.e3))
-        ax.set_xticks(np.arange(0, (nx-2*imin)))
+        # ax.set_xticks(np.arange(0, (nx-2*imin)))
         for label in ax.xaxis.get_ticklabels()[0::2]:
             label.set_visible(False)
         for label in ax.yaxis.get_ticklabels()[0::2]:
