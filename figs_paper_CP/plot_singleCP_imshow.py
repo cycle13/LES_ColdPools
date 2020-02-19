@@ -142,7 +142,7 @@ def main():
         vrad_2D = vrad_2D_[it, :, :]
 
         axs = axes[0, :]
-        cf = axs[i].imshow(theta[:, :].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
+        cf = axs[i].imshow(theta[:, :].T, cmap=cm_bw_r, extend='min')
         if t0 == time_range[-1]:
             # plt.colorbar(cf, ax=axs[i], shrink=0.8)
             axins = plt.axes([axins_x, 0.815, axins_width, axins_width])
@@ -157,11 +157,11 @@ def main():
             #axins.imshow(theta[ic:,jc:].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
 
         axs = axes[1, :]
-        cf = axs[i].imshow(w[:, :].T, levels=lvls_w, cmap=cm_bwr, extend='both')
+        cf = axs[i].imshow(w[:, :].T, cmap=cm_bwr, extend='both')
         if t0 == time_range[-1]:
             cbar = plt.colorbar(cf, ax=axs[i], shrink=0.8, aspect=12)#, ticks=np.arange(min, max+0.02, 0.05))
             axins = plt.axes([axins_x, 0.495,axins_width, axins_width])
-            axins.imshow(w[ic+40:, jc+40:].T, levels=lvls_w, cmap=cm_bwr)
+            axins.imshow(w[ic+40:, jc+40:].T, cmap=cm_bwr)
             axins.set_aspect('equal')
             axins.set_xlim(0,300)
             axins.set_ylim(0,300)
@@ -170,7 +170,7 @@ def main():
 
 
         axs = axes[2, :]
-        cf = axs[i].imshow(vrad_2D[:, :].T, levels=lvls_vrad, cmap=cm_bwr, extend='max')
+        cf = axs[i].imshow(vrad_2D[:, :].T, cmap=cm_bwr, extend='max')
         if t0 == time_range[-1]:
             cbar = plt.colorbar(cf, cax=axs[i])#, ticks=np.arange(min, max+0.02, 0.05))
             #fig.colorbar(cf, ax=axs[i], location='right', shrink=0.6)
@@ -178,7 +178,7 @@ def main():
             #fig.colorbar(cf, ax=axes[2,:], shrink=0.8)
             #fig.colorbar(pcm, ax=axs[:, col], shrink=0.6)
             axins = plt.axes([axins_x, 0.175, axins_width, axins_width])
-            axins.imshow(vrad_2D[ic+40:, jc+40:].T, levels=lvls_vrad, cmap=cm_bwr)
+            axins.imshow(vrad_2D[ic+40:, jc+40:].T, cmap=cm_bwr)
             axins.set_aspect('equal')
             axins.set_xlim(0, 300)
             axins.set_ylim(0, 300)
