@@ -103,7 +103,7 @@ def main():
     ''' Figure with potential temperature, vertical velocity, radial velocity ? '''
     # zoom in to see clefts
 
-    fig_name = 'CP_crosssection_dx' + str(res) + '_' + case + '.png'
+    fig_name = 'CP_crosssection_dx' + str(res) + '_' + case + '_imshow.png'
     # nlev = 2e2
     nlev = 2e1
     ncol = len(time_range)
