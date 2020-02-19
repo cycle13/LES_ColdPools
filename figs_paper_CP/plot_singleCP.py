@@ -57,7 +57,7 @@ def main():
     # time_range = [600, 900, 1200, 1500]
     time_range = [600, 1200, 1800, 2400]
     nt = len(time_range)
-    imin = 50
+    imin = 40
     k0 = 0
 
     path_root = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/'
@@ -156,10 +156,19 @@ def main():
         ax.set_ylim(imin, ny-imin)
         ax.set_aspect('equal')
         x_ticks = [np.int(n*dx[0]*1e-3) for n in ax.get_xticks()]
-        x_ticks = [np.int(n) for n in ax.get_xticks()]
+        x_ticks = [np.int((n-imin)*dx[0]*1e-3) for n in ax.get_xticks()]
+        x_ticks = [np.int((n-imin)) for n in ax.get_xticks()]
+        #x_ticks = [np.int(n) for n in ax.get_xticks()]
         ax.set_xticklabels(x_ticks)
         y_ticks = [np.int(n*dx[1]*1e-3) for n in ax.get_yticks()]
-        y_ticks = [np.int(n) for n in ax.get_yticks()]
+        y_ticks = [np.int((n)) for n in ax.get_yticks()]
+        #y_ticks = [np.int(n) for n in ax.get_yticks()]
+        #ax.set_xticks(np.arange(0, (nx-2*imin)*dx[0], step=1.e3))
+        ax.set_xticks(np.arange(0, (nx-2*imin)))
+        for label in ax.xaxis.get_ticklabels()[0::2]:
+            label.set_visible(False)
+        for label in ax.yaxis.get_ticklabels()[0::2]:
+            label.set_visible(False)
         ax.set_yticklabels(y_ticks)
     for ax in axes[2,:].flat:
         ax.set_xlabel('x  [km]')
@@ -167,18 +176,19 @@ def main():
         ax.set_ylabel('y  [km]')
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    title_pos_x = imin + 50
-    title_pos_y = ny - imin + 50
+    title_pos_x = imin + - 120
+    title_pos_y = ny - imin + 40
+    title_font = 21
     txt = 'a) potential temperature'
-    axes[0,0].text(title_pos_x, title_pos_y, txt, fontsize=15, horizontalalignment='left', bbox=textprops)
+    axes[0,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
     txt = 'b) vertical velocity'
-    axes[1,0].text(title_pos_x, title_pos_y, txt, fontsize=15, horizontalalignment='left', bbox=textprops)
+    axes[1,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
     txt = 'c) radial velocity'
-    axes[2,0].text(title_pos_x, title_pos_y, txt, fontsize=15, horizontalalignment='left', bbox=textprops)
+    axes[2,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
 
     # axes[-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
     #                 fancybox=True, shadow=True, ncol=1, fontsize=10)
-    plt.subplots_adjust(bottom=0.06, right=.95, left=0.05, top=0.95, wspace=0.08, hspace=0.2)
+    plt.subplots_adjust(bottom=0.04, right=.97, left=0.05, top=0.95, wspace=0.08, hspace=0.2)
     print('saving: ', os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
