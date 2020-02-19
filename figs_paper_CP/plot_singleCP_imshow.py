@@ -1,7 +1,9 @@
 import os
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+#from matplotlib import cm
 # from matplotlib.widgets import TextBox
 import netCDF4 as nc
 import argparse
@@ -122,10 +124,13 @@ def main():
     lvls_th = np.linspace(298, 300, nlev)
     lvls_w = np.linspace(-3, 3, nlev)
     lvls_vrad = np.linspace(-3, 3, nlev)
+    norm_th = matplotlib.cm.colors.Normalize(vmax=300, vmin=298)
+    norm_w = matplotlib.cm.colors.Normalize(vmax=3, vmin=-3)
+    norm_vrad = matplotlib.cm.colors.Normalize(vmax=3, vmin=-3)
 
     for i, t0 in enumerate(time_range):
-        if i < 2:
-            continue
+        #if i < 2:
+        #    continue
         it = np.int(t0/dt_fields)
         print('time: ', t0)
 
@@ -141,12 +146,13 @@ def main():
         # vorticity = vorticity_[it, :, :]
         vrad_2D = vrad_2D_[it, :, :]
 
+
         axs = axes[0, :]
-        cf = axs[i].imshow(theta[:, :].T, cmap=cm_bw_r)
+        cf = axs[i].imshow(theta[:, :].T, cmap=cm_bw_r, norm=norm_th)
         if t0 == time_range[-1]:
             # plt.colorbar(cf, ax=axs[i], shrink=0.8)
             axins = plt.axes([axins_x, 0.815, axins_width, axins_width])
-            axins.imshow(theta[ic+40:, jc+40:].T, levels=lvls_th, cmap=cm_bw_r)
+            axins.imshow(theta[ic+40:, jc+40:].T, cmap=cm_bw_r, norm=norm_th)
             axins.set_aspect('equal')
             axins.set_xlim(0, 300)
             axins.set_ylim(0, 300)
@@ -154,14 +160,14 @@ def main():
             axins.set_yticklabels('')
             #axins = ax[i].inset_axes([0.5, 0.5, 0.47, 0.47])
             ## axins.imshow(theta[ic:,jc:], extent=extent, interpolation="nearest", origin="lower")
-            #axins.imshow(theta[ic:,jc:].T, levels=lvls_th, cmap=cm_bw_r)
+            #axins.imshow(theta[ic:,jc:].T, cmap=cm_bw_r)
 
         axs = axes[1, :]
-        cf = axs[i].imshow(w[:, :].T, cmap=cm_bwr)
+        cf = axs[i].imshow(w[:, :].T, cmap=cm_bwr, norm=norm_w)
         if t0 == time_range[-1]:
             cbar = plt.colorbar(cf, ax=axs[i], shrink=0.8, aspect=12)#, ticks=np.arange(min, max+0.02, 0.05))
             axins = plt.axes([axins_x, 0.495,axins_width, axins_width])
-            axins.imshow(w[ic+40:, jc+40:].T, cmap=cm_bwr)
+            axins.imshow(w[ic+40:, jc+40:].T, cmap=cm_bwr, norm=norm_w)
             axins.set_aspect('equal')
             axins.set_xlim(0,300)
             axins.set_ylim(0,300)
@@ -170,7 +176,7 @@ def main():
 
 
         axs = axes[2, :]
-        cf = axs[i].imshow(vrad_2D[:, :].T, cmap=cm_bwr)
+        cf = axs[i].imshow(vrad_2D[:, :].T, cmap=cm_bwr, norm=norm_vrad)
         if t0 == time_range[-1]:
             cbar = plt.colorbar(cf, cax=axs[i])#, ticks=np.arange(min, max+0.02, 0.05))
             #fig.colorbar(cf, ax=axs[i], location='right', shrink=0.6)
@@ -178,7 +184,7 @@ def main():
             #fig.colorbar(cf, ax=axes[2,:], shrink=0.8)
             #fig.colorbar(pcm, ax=axs[:, col], shrink=0.6)
             axins = plt.axes([axins_x, 0.175, axins_width, axins_width])
-            axins.imshow(vrad_2D[ic+40:, jc+40:].T, cmap=cm_bwr)
+            axins.imshow(vrad_2D[ic+40:, jc+40:].T, cmap=cm_bwr, norm=norm_vrad)
             axins.set_aspect('equal')
             axins.set_xlim(0, 300)
             axins.set_ylim(0, 300)
