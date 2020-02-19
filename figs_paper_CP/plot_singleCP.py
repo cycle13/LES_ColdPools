@@ -116,7 +116,7 @@ def main():
 
     fig, axes = plt.subplots(nrow, ncol, figsize=(5 * ncol, 5 * nrow), sharex='all', sharey='all')
 
-    lvls_th = np.linspace(297, 300, nlev)
+    lvls_th = np.linspace(298, 300, nlev)
     lvls_w = np.linspace(-3, 3, nlev)
     lvls_vrad = np.linspace(-3, 3, nlev)
 
@@ -137,27 +137,29 @@ def main():
         vrad_2D = vrad_2D_[it, :, :]
 
         ax = axes[0, :]
-        cf = ax[i].contourf(theta[:, :].T, levels=lvls_th, cmap=cm_bw_r, extend='both')
-        if t0 == time_range[-1]:
-            plt.colorbar(cf, ax=ax[i])
+        cf = ax[i].contourf(theta[:, :].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
+        # if t0 == time_range[-1]:
+        #     plt.colorbar(cf, ax=ax[i], shrink=0.8)
 
         ax = axes[1, :]
         cf = ax[i].contourf(w[:, :].T, levels=lvls_w, cmap=cm_bwr, extend='both')
-        if t0 == time_range[-1]:
-            plt.colorbar(cf, ax=ax[i])
+        # if t0 == time_range[-1]:
+        #     plt.colorbar(cf, ax=ax[i], shrink=0.8)
 
         ax = axes[2, :]
         cf = ax[i].contourf(vrad_2D[:, :].T, levels=lvls_vrad, cmap=cm_bwr, extend='max')
-        if t0 == time_range[-1]:
-            plt.colorbar(cf, ax=ax[i])
+        # if t0 == time_range[-1]:
+        #     plt.colorbar(cf, ax=ax[i], shrink=0.8)
 
     for ax in axes.flat:
         ax.set_xlim(imin, nx-imin)
         ax.set_ylim(imin, ny-imin)
         ax.set_aspect('equal')
         x_ticks = [np.int(n*dx[0]*1e-3) for n in ax.get_xticks()]
+        x_ticks = [np.int(n) for n in ax.get_xticks()]
         ax.set_xticklabels(x_ticks)
-        y_ticks = [np.int(n*dx[0]*1e-3) for n in ax.get_yticks()]
+        y_ticks = [np.int(n*dx[1]*1e-3) for n in ax.get_yticks()]
+        y_ticks = [np.int(n) for n in ax.get_yticks()]
         ax.set_yticklabels(y_ticks)
     for ax in axes[2,:].flat:
         ax.set_xlabel('x  [km]')
@@ -176,7 +178,7 @@ def main():
 
     # axes[-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
     #                 fancybox=True, shadow=True, ncol=1, fontsize=10)
-    plt.subplots_adjust(bottom=0.06, right=.95, left=0.05, top=0.95, wspace=0.1, hspace=0.2)
+    plt.subplots_adjust(bottom=0.06, right=.95, left=0.05, top=0.95, wspace=0.08, hspace=0.2)
     print('saving: ', os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
