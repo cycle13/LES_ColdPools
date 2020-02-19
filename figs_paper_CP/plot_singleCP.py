@@ -8,6 +8,7 @@ import argparse
 import json as simplejson
 import os
 
+execfile('settings.py')
 label_size = 13
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
