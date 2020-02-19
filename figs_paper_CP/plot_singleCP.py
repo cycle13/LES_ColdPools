@@ -154,6 +154,7 @@ def main():
 
     for ax in axes.flat:
         ax.set_xlim(imin, nx-imin)
+        ax.set_ylim(imin, ny-imin)
         ax.set_aspect('equal')
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
@@ -162,10 +163,8 @@ def main():
     txt = 'a) potential temperature'
     axes[0,0].text(title_pos_x, title_pos_y, txt, fontsize=15, horizontalalignment='left', bbox=textprops)
     txt = 'b) vertical velocity'
-    # title_pos_y = 0
     axes[1,0].text(title_pos_x, title_pos_y, txt, fontsize=15, horizontalalignment='left', bbox=textprops)
     txt = 'c) radial velocity'
-    # title_pos_y = 0
     axes[2,0].text(title_pos_x, title_pos_y, txt, fontsize=15, horizontalalignment='left', bbox=textprops)
 
     # axes[-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
