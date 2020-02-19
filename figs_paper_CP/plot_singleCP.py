@@ -141,17 +141,23 @@ def main():
         ax = axes[0, :]
         cf = ax[i].contourf(theta[:, :].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
         if t0 == time_range[-1]:
+            pass
         #     plt.colorbar(cf, ax=ax[i], shrink=0.8)
-            axins = ax[i].inset_axes([0.5, 0.5, 0.47, 0.47])
-            # axins.imshow(theta[ic:,jc:], extent=extent, interpolation="nearest", origin="lower")
-            axins.contourf(theta[ic:,jc:].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
+            #axins = ax[i].inset_axes([0.5, 0.5, 0.47, 0.47])
+            ## axins.imshow(theta[ic:,jc:], extent=extent, interpolation="nearest", origin="lower")
+            #axins.contourf(theta[ic:,jc:].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
 
         ax = axes[1, :]
         cf = ax[i].contourf(w[:, :].T, levels=lvls_w, cmap=cm_bwr, extend='both')
         if t0 == time_range[-1]:
         #     plt.colorbar(cf, ax=ax[i], shrink=0.8)
-            axins = plt.axes([1.,1.,.5,.5])
+            axins = plt.axes([0.61,0.49,.12,.12])
             axins.contourf(w[ic:, jc:].T, levels=lvls_w, cmap=cm_bwr)
+            axins.set_aspect('equal')
+            axins.set_xlim(0,320)
+            axins.set_ylim(0,320)
+            axins.set_xticklabels('')
+            axins.set_yticklabels('')
 
 
         ax = axes[2, :]
@@ -187,7 +193,7 @@ def main():
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
     title_pos_x = imin + - 120
-    title_pos_y = ny - imin + 40
+    title_pos_y = ny - imin + 10
     title_font = 21
     txt = 'a) potential temperature'
     axes[0,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
