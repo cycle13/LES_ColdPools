@@ -108,8 +108,11 @@ def main():
     nlev = 2e1
     ncol = len(time_range)
     nrow = 3
-    # # title_pos_x = 850
-
+    axins_x = .61
+    axins_width = .13
+    textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
+    t_pos_x = 0.
+    t_pos_y = 0.
 
 
 
@@ -141,8 +144,14 @@ def main():
         ax = axes[0, :]
         cf = ax[i].contourf(theta[:, :].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
         if t0 == time_range[-1]:
-            pass
-        #     plt.colorbar(cf, ax=ax[i], shrink=0.8)
+            # plt.colorbar(cf, ax=ax[i], shrink=0.8)
+            axins = plt.axes([axins_x, 0.8, axins_width, axins_width])
+            axins.contourf(theta[ic:, jc:].T, levels=lvls_th, cmap=cm_bw_r)
+            axins.set_aspect('equal')
+            axins.set_xlim(0, 320)
+            axins.set_ylim(0, 320)
+            axins.set_xticklabels('')
+            axins.set_yticklabels('')
             #axins = ax[i].inset_axes([0.5, 0.5, 0.47, 0.47])
             ## axins.imshow(theta[ic:,jc:], extent=extent, interpolation="nearest", origin="lower")
             #axins.contourf(theta[ic:,jc:].T, levels=lvls_th, cmap=cm_bw_r, extend='min')
@@ -151,7 +160,7 @@ def main():
         cf = ax[i].contourf(w[:, :].T, levels=lvls_w, cmap=cm_bwr, extend='both')
         if t0 == time_range[-1]:
         #     plt.colorbar(cf, ax=ax[i], shrink=0.8)
-            axins = plt.axes([0.61,0.49,.12,.12])
+            axins = plt.axes([axins_x, 0.49,axins_width, axins_width])
             axins.contourf(w[ic:, jc:].T, levels=lvls_w, cmap=cm_bwr)
             axins.set_aspect('equal')
             axins.set_xlim(0,320)
@@ -162,8 +171,18 @@ def main():
 
         ax = axes[2, :]
         cf = ax[i].contourf(vrad_2D[:, :].T, levels=lvls_vrad, cmap=cm_bwr, extend='max')
-        # if t0 == time_range[-1]:
-        #     plt.colorbar(cf, ax=ax[i], shrink=0.8)
+        if t0 == time_range[-1]:
+            # plt.colorbar(cf, ax=ax[i], shrink=0.8)
+            axins = plt.axes([axins_x, 0.1, axins_width, axins_width])
+            axins.contourf(vrad_2D[ic:, jc:].T, levels=lvls_vrad, cmap=cm_bwr)
+            axins.set_aspect('equal')
+            axins.set_xlim(0, 320)
+            axins.set_ylim(0, 320)
+            axins.set_xticklabels('')
+            axins.set_yticklabels('')
+
+        for ax in axes[:,i].flat:
+            ax.text(t_pos_x, t_pos_y, 't='+str(t0)+'s', fontsize=16, horizontalalignment='left', bbox=textprops)
 
     for ax in axes.flat:
         ax.set_xlim(imin, nx-imin)
@@ -201,6 +220,8 @@ def main():
     axes[1,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
     txt = 'c) radial velocity'
     axes[2,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
+
+
 
     # axes[-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
     #                 fancybox=True, shadow=True, ncol=1, fontsize=10)
