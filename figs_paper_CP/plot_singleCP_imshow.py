@@ -119,7 +119,7 @@ def main():
 
 
 
-    fig, axes = plt.subplots(nrow, ncol, figsize=(4.9 * ncol, 5 * nrow), sharex='all', sharey='all')
+    fig, axes_ = plt.subplots(nrow, ncol, figsize=(4.9 * ncol, 5 * nrow), sharex='all', sharey='all')
 
     lvls_th = np.linspace(298, 300, nlev)
     lvls_w = np.linspace(-3, 3, nlev)
@@ -147,58 +147,64 @@ def main():
         vrad_2D = vrad_2D_[it, :, :]
 
 
-        axs = axes[0, :]
+        axs = axes_[0, :]
         cf = axs[i].imshow(theta[:, :].T, cmap=cm_bw_r, norm=norm_th)
         if t0 == time_range[-1]:
-            # plt.colorbar(cf, ax=axs[i], shrink=0.8)
+            cax = plt.axes([0.95, 0.7, 0.012, 0.22])
+            plt.colorbar(cf, cax=cax, ticks=np.arange(298,300.1,1))
+        if 1 == 1: 
             axins = plt.axes([axins_x, 0.815, axins_width, axins_width])
-            axins.imshow(theta[ic+40:, jc+40:].T, cmap=cm_bw_r, norm=norm_th)
+            axins.imshow(theta[ic+48:, jc+48:].T, cmap=cm_bw_r, norm=norm_th)
             axins.set_aspect('equal')
-            axins.set_xlim(0, 300)
-            axins.set_ylim(0, 300)
+            axins.set_xlim(0, 280)
+            axins.set_ylim(0, 280)
             axins.set_xticklabels('')
             axins.set_yticklabels('')
             #axins = ax[i].inset_axes([0.5, 0.5, 0.47, 0.47])
             ## axins.imshow(theta[ic:,jc:], extent=extent, interpolation="nearest", origin="lower")
             #axins.imshow(theta[ic:,jc:].T, cmap=cm_bw_r)
 
-        axs = axes[1, :]
+        axs = axes_[1, :]
         cf = axs[i].imshow(w[:, :].T, cmap=cm_bwr, norm=norm_w)
         if t0 == time_range[-1]:
-            cbar = plt.colorbar(cf, ax=axs[i], shrink=0.8, aspect=12)#, ticks=np.arange(min, max+0.02, 0.05))
+            cax = plt.axes([0.95, 0.38, 0.012, 0.22])
+            cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(-3, 3+0.02, 1.))
+            
             axins = plt.axes([axins_x, 0.495,axins_width, axins_width])
-            axins.imshow(w[ic+40:, jc+40:].T, cmap=cm_bwr, norm=norm_w)
+            axins.imshow(w[ic+48:, jc+48:].T, cmap=cm_bwr, norm=norm_w)
             axins.set_aspect('equal')
-            axins.set_xlim(0,300)
-            axins.set_ylim(0,300)
+            axins.set_xlim(0,280)
+            axins.set_ylim(0,280)
             axins.set_xticklabels('')
             axins.set_yticklabels('')
 
 
-        axs = axes[2, :]
+        axs = axes_[2, :]
         cf = axs[i].imshow(vrad_2D[:, :].T, cmap=cm_bwr, norm=norm_vrad)
         if t0 == time_range[-1]:
-            cbar = plt.colorbar(cf, cax=axs[i])#, ticks=np.arange(min, max+0.02, 0.05))
+            cax = plt.axes([0.95, 0.06, 0.012, 0.22])
+            cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 3.1, 1))
             #fig.colorbar(cf, ax=axs[i], location='right', shrink=0.6)
             #fig.colorbar(pcm, ax=axs[1:, :], location='right', shrink=0.6)
             #fig.colorbar(cf, ax=axes[2,:], shrink=0.8)
             #fig.colorbar(pcm, ax=axs[:, col], shrink=0.6)
+
             axins = plt.axes([axins_x, 0.175, axins_width, axins_width])
-            axins.imshow(vrad_2D[ic+40:, jc+40:].T, cmap=cm_bwr, norm=norm_vrad)
+            axins.imshow(vrad_2D[ic+48:, jc+48:].T, cmap=cm_bwr, norm=norm_vrad)
             axins.set_aspect('equal')
-            axins.set_xlim(0, 300)
-            axins.set_ylim(0, 300)
+            axins.set_xlim(0, 280)
+            axins.set_ylim(0, 280)
             axins.set_xticklabels('')
             axins.set_yticklabels('')
 
-        for ax in axes[:,i].flat:
+        for ax in axes_[:,i].flat:
             ax.text(t_pos_x, t_pos_y, 't='+str(np.int(t0/60))+'min', fontsize=16, horizontalalignment='left', bbox=textprops)
 
-    for ax in axes[:,2].flat:
-        ax.plot(ic,jc, 'ko', markersize=10)
+    #for ax in axes_[:,2].flat:
+    #    ax.plot(ic,jc, 'ko', markersize=10)
 
 
-    for ax in axes.flat:
+    for ax in axes_.flat:
         ax.set_xlim(imin, nx-imin)
         ax.set_ylim(imin, ny-imin)
         ax.set_aspect('equal')
@@ -219,9 +225,9 @@ def main():
         for label in ax.yaxis.get_ticklabels()[0::2]:
             label.set_visible(False)
         ax.set_yticklabels(y_ticks)
-    for ax in axes[2,:].flat:
+    for ax in axes_[2,:].flat:
         ax.set_xlabel('x  [km]')
-    for ax in axes[:,0].flat:
+    for ax in axes_[:,0].flat:
         ax.set_ylabel('y  [km]')
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
@@ -229,17 +235,18 @@ def main():
     title_pos_y = ny - imin + 25
     title_font = 21
     txt = 'a) potential temperature'
-    axes[0,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
+    axes_[0,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
     txt = 'b) vertical velocity'
-    axes[1,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
+    axes_[1,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
     txt = 'c) radial velocity'
-    axes[2,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
+    axes_[2,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
 
 
 
-    # axes[-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
+    # axes_[-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
     #                 fancybox=True, shadow=True, ncol=1, fontsize=10)
     plt.subplots_adjust(bottom=0.04, right=.94, left=0.05, top=0.95, wspace=0.08, hspace=0.18)
+    #fig.tight_layout()
     print('saving: ', os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
