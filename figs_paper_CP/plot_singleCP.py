@@ -57,7 +57,7 @@ def main():
     # time_range = [600, 900, 1200, 1500]
     time_range = [600, 1200, 1800, 2400]
     nt = len(time_range)
-    imin = 100
+    imin = 50
     k0 = 0
 
     path_root = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/'
@@ -118,6 +118,7 @@ def main():
 
     lvls_th = np.linspace(297, 300, nlev)
     lvls_w = np.linspace(-4, 4, nlev)
+    lvls_vrad = np.linspace(-1, 2, nlev)
 
     for i, t0 in enumerate(time_range):
         it = np.int(t0/dt_fields)
@@ -136,30 +137,31 @@ def main():
         # vrad_2D = vrad_2D_[it, :, :]
 
         ax = axes[0, :]
-        # min = 298
-        # min = np.round(np.amin(theta[:, :]))
-        # max = 300
         cf = ax[i].contourf(theta[:, :].T, levels=lvls_th, cmap=cm_bw_r, extend='both')
 
         ax = axes[1, :]
-        # min = np.round(np.amin(w[:, :]))
-        # max = np.round(np.amax(w[:, :]))
         cf = ax[i].contourf(w[:, :].T, levels=lvls_w, cmap=cm_bwr, extend='both')
 
-        # ax = axes[2, :]
-        # min = np.round(np.amin(vrad_2D[:, :]))
-        # max = np.round(np.amax(vrad_2D[:, :]))
-        # max = 300
-        # cf = ax[i].contourf(vrad_2D[:, :].T, levels=np.linspace(min, max, nlev), cmap=cm_bw_r, extend='max')
+        ax = axes[2, :]
+        cf = ax[i].contourf(vrad_2D[:, :].T, levels=lvls_vrad, cmap=cm_bwr, extend='max')
 
     for ax in axes.flat:
         ax.set_xlim(imin, nx-imin)
         ax.set_ylim(imin, ny-imin)
         ax.set_aspect('equal')
+        x_ticks = [np.int(n) for n in ax.get_xticks()]
+        ax.set_xticklabels(x_ticks)
+        y_ticks = [np.int(n) for n in ax.get_yticks()]
+        # print(y_ticks)
+        ax.set_yticklabels(y_ticks)
+    for ax in axes[2,:].flat:
+        ax.set_xlabel('x  [km]')
+    for ax in axes[:,0].flat:
+        ax.set_ylabel('y  [km]')
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
     title_pos_x = imin + 50
-    title_pos_y = ny - imin + 150
+    title_pos_y = ny - imin + 75
     txt = 'a) potential temperature'
     axes[0,0].text(title_pos_x, title_pos_y, txt, fontsize=15, horizontalalignment='left', bbox=textprops)
     txt = 'b) vertical velocity'
@@ -169,7 +171,7 @@ def main():
 
     # axes[-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
     #                 fancybox=True, shadow=True, ncol=1, fontsize=10)
-    plt.subplots_adjust(bottom=0.06, right=.95, left=0.1, top=0.95, wspace=0.1, hspace=0.2)
+    plt.subplots_adjust(bottom=0.06, right=.95, left=0.05, top=0.95, wspace=0.1, hspace=0.2)
     print('saving: ', os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
