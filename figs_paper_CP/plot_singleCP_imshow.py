@@ -149,10 +149,7 @@ def main():
 
         axs = axes_[0, :]
         cf = axs[i].imshow(theta[:, :].T, cmap=cm_bw_r, norm=norm_th)
-        if t0 == time_range[-1]:
-            cax = plt.axes([0.95, 0.7, 0.012, 0.22])
-            plt.colorbar(cf, cax=cax, ticks=np.arange(298,300.1,1))
-        if 1 == 1: 
+        if t0 == time_range[-2]:
             axins = plt.axes([axins_x, 0.815, axins_width, axins_width])
             axins.imshow(theta[ic+48:, jc+48:].T, cmap=cm_bw_r, norm=norm_th)
             axins.set_aspect('equal')
@@ -163,13 +160,13 @@ def main():
             #axins = ax[i].inset_axes([0.5, 0.5, 0.47, 0.47])
             ## axins.imshow(theta[ic:,jc:], extent=extent, interpolation="nearest", origin="lower")
             #axins.imshow(theta[ic:,jc:].T, cmap=cm_bw_r)
+        if t0 == time_range[-1]:
+            cax = plt.axes([0.95, 0.7, 0.012, 0.22])
+            plt.colorbar(cf, cax=cax, ticks=np.arange(298,300.1,1))
 
         axs = axes_[1, :]
         cf = axs[i].imshow(w[:, :].T, cmap=cm_bwr, norm=norm_w)
-        if t0 == time_range[-1]:
-            cax = plt.axes([0.95, 0.38, 0.012, 0.22])
-            cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(-3, 3+0.02, 1.))
-            
+        if t0 == time_range[-2]:
             axins = plt.axes([axins_x, 0.495,axins_width, axins_width])
             axins.imshow(w[ic+48:, jc+48:].T, cmap=cm_bwr, norm=norm_w)
             axins.set_aspect('equal')
@@ -177,18 +174,13 @@ def main():
             axins.set_ylim(0,280)
             axins.set_xticklabels('')
             axins.set_yticklabels('')
-
+        if t0 == time_range[-1]:
+            cax = plt.axes([0.95, 0.38, 0.012, 0.22])
+            cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(-3, 3+0.02, 1.))
 
         axs = axes_[2, :]
         cf = axs[i].imshow(vrad_2D[:, :].T, cmap=cm_bwr, norm=norm_vrad)
-        if t0 == time_range[-1]:
-            cax = plt.axes([0.95, 0.06, 0.012, 0.22])
-            cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 3.1, 1))
-            #fig.colorbar(cf, ax=axs[i], location='right', shrink=0.6)
-            #fig.colorbar(pcm, ax=axs[1:, :], location='right', shrink=0.6)
-            #fig.colorbar(cf, ax=axes[2,:], shrink=0.8)
-            #fig.colorbar(pcm, ax=axs[:, col], shrink=0.6)
-
+        if t0 == time_range[-2]:
             axins = plt.axes([axins_x, 0.175, axins_width, axins_width])
             axins.imshow(vrad_2D[ic+48:, jc+48:].T, cmap=cm_bwr, norm=norm_vrad)
             axins.set_aspect('equal')
@@ -196,6 +188,9 @@ def main():
             axins.set_ylim(0, 280)
             axins.set_xticklabels('')
             axins.set_yticklabels('')
+        if t0 == time_range[-1]:
+            cax = plt.axes([0.95, 0.06, 0.012, 0.22])
+            cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 3.1, 1))
 
         for ax in axes_[:,i].flat:
             ax.text(t_pos_x, t_pos_y, 't='+str(np.int(t0/60))+'min', fontsize=16, horizontalalignment='left', bbox=textprops)
