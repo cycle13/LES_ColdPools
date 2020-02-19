@@ -29,7 +29,7 @@ def main():
     case_name = 'ColdPoolDry_single_3D'
     path_root = '/nbi/ac/conv4/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/single_3D_noise/run5_PE_scaling_dx100m/'
     # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
-    path_out_figs = '/nbi/home/meyerbe/paper_CP_single'
+    path_out_figs = '/nbi/home/meyerbe/paper_CP'
     print('path figures: '  + path_out_figs)
     dTh, z_params, r_params = set_input_parameters(args, path_root, case_name)
 

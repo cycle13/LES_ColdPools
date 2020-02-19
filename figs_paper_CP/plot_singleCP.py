@@ -62,8 +62,7 @@ def main():
     path = os.path.join(path_root, run + '_dx' + str(res) + 'm', case)
     print(path)
     path_fields = os.path.join(path, 'fields')
-    # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
-    path_out_figs = '/nbi/home/meyerbe/paper_CP_single/figs_run4'
+    path_out_figs = '/nbi/home/meyerbe/paper_CP/figs_run4'
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
 

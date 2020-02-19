@@ -25,11 +25,11 @@ def main():
     if dx == 100:
         path_root = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2_dx100m/'
         # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single/figs_run2_dx100m/'
-        path_out_figs = '/nbi/home/meyerbe/paper_CP_single/figs_run2_dx100m/'
+        path_out_figs = '/nbi/home/meyerbe/paper_CP/figs_run2_dx100m/'
     elif dx == 50:
         path_root = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run3_dx50m/'
         # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single/figs_run3_dx50m/'
-        path_out_figs = '/nbi/home/meyerbe/paper_CP_single/figs_run3_dx50m/'
+        path_out_figs = '/nbi/home/meyerbe/paper_CP/figs_run3_dx50m/'
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
     print('path in: '+ path_root)

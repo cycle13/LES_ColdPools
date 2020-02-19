@@ -33,8 +33,6 @@ def main():
     # parser.add_argument("--nsub")
     args = parser.parse_args()
 
-    # res = 50
-    # run = 'run3'
     res = 25
     run = 'run4'
     dTh = 3
@@ -49,7 +47,7 @@ def main():
     print(path)
     path_fields = os.path.join(path, 'fields')
     # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
-    path_out_figs = '/nbi/home/meyerbe/paper_CP_single'
+    path_out_figs = '/nbi/home/meyerbe/paper_CP'
 
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
     ic = nml['init']['ic']
@@ -98,7 +96,7 @@ def main():
         s = grp.variables['s'][ic,:,:kmax]
         w = grp.variables['w'][ic,:,:kmax]
         # v = grp.variables['v'][ic,:,:kmax]
-        u = grp.variables['v'][ic,:,:kmax]
+        u = grp.variables['u'][ic,:,:kmax]
         root_field.close()
         theta = thetas_c(s, 0.0)[ic-nx/2:ic+nx/2, :]
         vorticity = vorticity_[np.int(t0/100),:,:]

@@ -22,7 +22,8 @@ execfile('settings.py')
 
 def main():
     path_root = '/nbi/ac/cond2/meyerbe/ColdPools/3D_sfc_fluxes_off/triple_3D/'
-    path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
+    # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
+    path_out_figs = '/nbi/home/meyerbe/paper_CP'
     case_name = 'ColdPoolDry_triple_3D'
 
     dTh = 5
