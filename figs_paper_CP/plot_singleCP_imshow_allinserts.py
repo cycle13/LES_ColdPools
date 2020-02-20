@@ -11,13 +11,13 @@ import json as simplejson
 import os
 
 execfile('settings.py')
-label_size = 13
+label_size = 15
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
 plt.rcParams['lines.linewidth'] = 2
 plt.rcParams['lines.markersize'] = 6
 plt.rcParams['legend.fontsize'] = 12
-plt.rcParams['axes.labelsize'] = 16
+plt.rcParams['axes.labelsize'] = 18
 plt.rcParams['font.sans-serif'] = 'Helvetica'
 plt.rcParams['text.usetex'] = 'true'
 plt.rcParams['legend.numpoints'] = 1
@@ -211,7 +211,7 @@ def main():
             cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 5.1, 1), extend='max')
 
         for ax in axes_[:,i].flat:
-            ax.text(t_pos_x, t_pos_y, 't='+str(np.int(t0/60))+'min', fontsize=16, horizontalalignment='left', bbox=textprops)
+            ax.text(t_pos_x, t_pos_y, 't='+str(np.int(t0/60))+'min', fontsize=18, horizontalalignment='left', bbox=textprops)
 
     #for ax in axes_[:,2].flat:
     #    ax.plot(ic,jc, 'ko', markersize=10)
@@ -233,9 +233,9 @@ def main():
 
         #ax.set_xticks(np.arange(0, (nx-2*imin)*dx[0], step=1.e3))
         # ax.set_xticks(np.arange(0, (nx-2*imin)))
-        for label in ax.xaxis.get_ticklabels()[0::2]:
+        for label in ax.xaxis.get_ticklabels()[1::2]:
             label.set_visible(False)
-        for label in ax.yaxis.get_ticklabels()[0::2]:
+        for label in ax.yaxis.get_ticklabels()[1::2]:
             label.set_visible(False)
         ax.set_yticklabels(y_ticks)
     for ax in axes_[2,:].flat:
