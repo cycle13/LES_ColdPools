@@ -150,7 +150,7 @@ def main():
         vrad_2D = vrad_2D_[it, :, :]
 
         axs = axes_[0, :]
-        cf = axs[i].imshow(theta[imin:imax, imin:imax].T, cmap=cm_bw_r, norm=norm_th)
+        cf = axs[i].imshow(theta[imin:imax, imin:imax].T, cmap=cm_bw_r, norm=norm_th, origin='lower')
         axins = plt.axes([axins_x[i], axins_y[0], axins_width, axins_width])
         axins.imshow(theta[ic+48:, jc+48:].T, cmap=cm_bw_r, norm=norm_th)
         axins.set_aspect('equal')
@@ -170,7 +170,7 @@ def main():
             cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(298,300.1,1))
 
         axs = axes_[1, :]
-        cf = axs[i].imshow(w[imin:imax, imin:imax].T, cmap=cm_bwr, norm=norm_w)
+        cf = axs[i].imshow(w[imin:imax, imin:imax].T, cmap=cm_bwr, norm=norm_w, origin='lower')
         axins = plt.axes([axins_x[i], axins_y[1], axins_width, axins_width])
         axins.imshow(w[ic+48:, jc+48:].T, cmap=cm_bwr, norm=norm_w)
         axins.set_aspect('equal')
@@ -190,7 +190,7 @@ def main():
             cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(-3, 3+0.02, 1.))
 
         axs = axes_[2, :]
-        cf = axs[i].imshow(vrad_2D[imin:imax, imin:imax].T, cmap=cm_bw, norm=norm_vrad)
+        cf = axs[i].imshow(vrad_2D[imin:imax, imin:imax].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
         axins = plt.axes([axins_x[i], axins_y[2], axins_width, axins_width])
         axins.imshow(vrad_2D[ic+48:, jc+48:].T, cmap=cm_bw, norm=norm_vrad)
         axins.set_aspect('equal')
@@ -220,23 +220,22 @@ def main():
         # ax.set_xlim(imin, nx-imin)
         # ax.set_ylim(imin, ny-imin)
         ax.set_aspect('equal')
-        # x_ticks = [np.int(n*dx[0]*1e-3) for n in ax.get_xticks()]
+        x_ticks = [np.int(n*dx[0]*1e-3) for n in ax.get_xticks()]
         # x_ticks = [np.int((n-imin)*dx[0]*1e-3) for n in ax.get_xticks()]
         # # x_ticks = [np.int((n-imin)) for n in ax.get_xticks()]
         # #x_ticks = [np.int(n) for n in ax.get_xticks()]
-        # ax.set_xticklabels(x_ticks)
-        # y_ticks = [np.int(n*dx[1]*1e-3) for n in ax.get_yticks()]
+        ax.set_xticklabels(x_ticks)
+        y_ticks = [np.int(n*dx[1]*1e-3) for n in ax.get_yticks()]
         # y_ticks = [np.int((n-imin)*dx[0]*1e-3) for n in ax.get_yticks()]
         # # y_ticks = [np.int((n)) for n in ax.get_yticks()]
         # #y_ticks = [np.int(n) for n in ax.get_yticks()]
-
+        ax.set_yticklabels(y_ticks)
         #ax.set_xticks(np.arange(0, (nx-2*imin)*dx[0], step=1.e3))
         # ax.set_xticks(np.arange(0, (nx-2*imin)))
-        for label in ax.xaxis.get_ticklabels()[1::2]:
+        for label in ax.xaxis.get_ticklabels()[0::2]:
             label.set_visible(False)
-        for label in ax.yaxis.get_ticklabels()[1::2]:
+        for label in ax.yaxis.get_ticklabels()[0::2]:
             label.set_visible(False)
-        ax.set_yticklabels(y_ticks)
     for ax in axes_[2,:].flat:
         ax.set_xlabel('x  [km]')
     for ax in axes_[:,0].flat:
@@ -246,7 +245,7 @@ def main():
     # title_pos_x = imin + - 120
     # title_pos_y = ny - imin + 25
     title_pos_x = - 120
-    title_pos_y = imax + 25
+    title_pos_y = imax
     title_font = 21
     txt = 'a) potential temperature'
     axes_[0,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
