@@ -114,9 +114,11 @@ def main():
         #       it, jmin, jmax, rmax, kmax, dx, nx, ny,
         #       fig_name, path_out_figs)
         fig_name = 'CP_structure_rad_dx' + str(res) + '_' + case + '_t' + str(t0) + '.png'
+        print(fig_name)
         plot_figure_rad(theta, theta_rad, u, v_rad, w, w_rad, vorticity, vort_rad,
               it, jmin, jmax, rmax, kmax, dx, nx, ny,
               fig_name, path_out_figs)
+
 
 
     return
@@ -171,22 +173,6 @@ def plot_figure_rad(theta, theta_rad, u, v_rad, w, w_rad, vorticity, vort_rad,
                bbox=textprops)
 
     ax = axes[1, :]
-    min = -6.
-    max = -min
-    cf = ax[0].contourf(v_rad[it, :, :kmax].T, levels=np.linspace(min, max, nlev), cmap=cm_bwr, extend='both')
-    cbar = plt.colorbar(cf, ax=ax[0], shrink=0.75, aspect=12, ticks=np.arange(min, max + 0.5, 2))
-    # cbar.set_label(cont_var_name, rotation=90)
-    for k in range(0, 500/dx[2]+1, 4):
-        ax[1].plot(v_rad[it, :, k], str((1.7*np.double(k)/kmax)), label='z='+str(k*dx[2])+'m')
-    ax[1].set_ylabel(r'$v_r$ [m/s]')
-    # ax[1].set_ylim(-7,max)
-    y_ticks = [ti for ti in ax[1].get_yticks()]
-    ax[1].set_yticklabels(y_ticks)
-    # for label in ax[1].yaxis.get_ticklabels()[1::2]:
-    #     label.set_visible(False)
-    ax[0].text(title_pos_x, title_pos_y, 'b) radial velocity', fontsize=15, horizontalalignment='left', bbox=textprops)
-
-    ax = axes[2, :]
     min = -2.
     max = -min
     cf = ax[0].contourf(w_rad[it, :, :kmax].T, levels=np.linspace(min, max, nlev), cmap=cm_bwr, extend='both')
@@ -200,6 +186,22 @@ def plot_figure_rad(theta, theta_rad, u, v_rad, w, w_rad, vorticity, vort_rad,
         label.set_visible(False)
     ax[0].text(title_pos_x, title_pos_y, 'c) vertical velocity', fontsize=15, horizontalalignment='left',
                bbox=textprops)
+
+    ax = axes[2, :]
+    min = -6.
+    max = -min
+    cf = ax[0].contourf(v_rad[it, :, :kmax].T, levels=np.linspace(min, max, nlev), cmap=cm_bwr, extend='both')
+    cbar = plt.colorbar(cf, ax=ax[0], shrink=0.75, aspect=12, ticks=np.arange(min, max + 0.5, 2))
+    # cbar.set_label(cont_var_name, rotation=90)
+    for k in range(0, 500 / dx[2] + 1, 4):
+        ax[1].plot(v_rad[it, :, k], str((1.7 * np.double(k) / kmax)), label='z=' + str(k * dx[2]) + 'm')
+    ax[1].set_ylabel(r'$v_r$ [m/s]')
+    # ax[1].set_ylim(-7,max)
+    y_ticks = [ti for ti in ax[1].get_yticks()]
+    ax[1].set_yticklabels(y_ticks)
+    # for label in ax[1].yaxis.get_ticklabels()[1::2]:
+    #     label.set_visible(False)
+    ax[0].text(title_pos_x, title_pos_y, 'b) radial velocity', fontsize=15, horizontalalignment='left', bbox=textprops)
 
     ax = axes[3, :]
     min = -0.15
