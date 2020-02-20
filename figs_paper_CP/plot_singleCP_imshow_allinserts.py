@@ -105,15 +105,17 @@ def main():
     ''' Figure with potential temperature, vertical velocity, radial velocity ? '''
     # zoom in to see clefts
 
-    fig_name = 'CP_crosssection_dx' + str(res) + '_' + case + '_imshow.png'
+    fig_name = 'CP_crosssection_dx' + str(res) + '_' + case + '_imshow_inserts.png'
     # nlev = 2e2
     nlev = 2e1
     ncol = len(time_range)
     nrow = 3
     # axins_x = .594
-    axins_x = [0,0,.594,.8]
+    axins_x = [0.14,0.3655,.594,.82]
     axins_y = [.815, .495, .175]
     axins_width = .13
+    axins_xlim = [100,180,240,280]
+    #axins_ticks = [[0,40,80],[],[]]
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
     t_pos_x = 85.
     t_pos_y = 85.
@@ -121,14 +123,14 @@ def main():
 
 
 
-    fig, axes_ = plt.subplots(nrow, ncol, figsize=(4.9 * ncol, 5 * nrow), sharex='all', sharey='all')
+    fig, axes_ = plt.subplots(nrow, ncol, figsize=(4.9 * ncol, 5 * nrow), sharex='col', sharey='row')
 
     lvls_th = np.linspace(298, 300, nlev)
     lvls_w = np.linspace(-3, 3, nlev)
     lvls_vrad = np.linspace(-3, 3, nlev)
     norm_th = matplotlib.cm.colors.Normalize(vmax=300, vmin=298)
-    norm_w = matplotlib.cm.colors.Normalize(vmax=3, vmin=-3)
-    norm_vrad = matplotlib.cm.colors.Normalize(vmax=3, vmin=-3)
+    norm_w = matplotlib.cm.colors.Normalize(vmax=2.5, vmin=-2.5)
+    norm_vrad = matplotlib.cm.colors.Normalize(vmax=5, vmin=0)
 
     for i, t0 in enumerate(time_range):
         #if i < 2:
@@ -150,43 +152,63 @@ def main():
 
         axs = axes_[0, :]
         cf = axs[i].imshow(theta[:, :].T, cmap=cm_bw_r, norm=norm_th)
-        if t0 == time_range[-2]:
         axins = plt.axes([axins_x[i], axins_y[0], axins_width, axins_width])
         axins.imshow(theta[ic+48:, jc+48:].T, cmap=cm_bw_r, norm=norm_th)
         axins.set_aspect('equal')
-        axins.set_xlim(0, 280)
-        axins.set_ylim(0, 280)
-        axins.set_xticklabels('')
-        axins.set_yticklabels('')
+        axins.set_xlim(0, axins_xlim[i])
+        axins.set_ylim(0, axins_xlim[i])
+        #axins.set_xticklabels('')
+        #axins.set_yticklabels('')
+        x_ticks = [np.int(n*dx[1]*1e-3) for n in axins.get_xticks()]
+        axins.set_xticklabels(x_ticks)
+        axins.set_yticklabels(x_ticks)
+        for label in axins.xaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
+        for label in axins.yaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
         if t0 == time_range[-1]:
             cax = plt.axes([0.95, 0.7, 0.012, 0.22])
             cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(298,300.1,1))
 
         axs = axes_[1, :]
         cf = axs[i].imshow(w[:, :].T, cmap=cm_bwr, norm=norm_w)
-        axins = plt.axes([axins_x[i], axins_y[0], axins_width, axins_width])
+        axins = plt.axes([axins_x[i], axins_y[1], axins_width, axins_width])
         axins.imshow(w[ic+48:, jc+48:].T, cmap=cm_bwr, norm=norm_w)
         axins.set_aspect('equal')
-        axins.set_xlim(0,280)
-        axins.set_ylim(0,280)
-        axins.set_xticklabels('')
-        axins.set_yticklabels('')
+        axins.set_xlim(0,axins_xlim[i])
+        axins.set_ylim(0,axins_xlim[i])
+        #axins.set_xticklabels('')
+        #axins.set_yticklabels('')
+        x_ticks = [np.int(n*dx[1]*1e-3) for n in axins.get_xticks()]
+        axins.set_xticklabels(x_ticks)
+        axins.set_yticklabels(x_ticks)
+        for label in axins.xaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
+        for label in axins.yaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
         if t0 == time_range[-1]:
             cax = plt.axes([0.95, 0.38, 0.012, 0.22])
             cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(-3, 3+0.02, 1.))
 
         axs = axes_[2, :]
-        cf = axs[i].imshow(vrad_2D[:, :].T, cmap=cm_bwr, norm=norm_vrad)
-        axins = plt.axes([axins_x[i], axins_y[0], axins_width, axins_width])
-        axins.imshow(vrad_2D[ic+48:, jc+48:].T, cmap=cm_bwr, norm=norm_vrad)
+        cf = axs[i].imshow(vrad_2D[:, :].T, cmap=cm_bw, norm=norm_vrad)
+        axins = plt.axes([axins_x[i], axins_y[2], axins_width, axins_width])
+        axins.imshow(vrad_2D[ic+48:, jc+48:].T, cmap=cm_bw, norm=norm_vrad)
         axins.set_aspect('equal')
-        axins.set_xlim(0, 280)
-        axins.set_ylim(0, 280)
-        axins.set_xticklabels('')
-        axins.set_yticklabels('')
+        axins.set_xlim(0, axins_xlim[i])
+        axins.set_ylim(0, axins_xlim[i])
+        #axins.set_xticklabels('')
+        #axins.set_yticklabels('')
+        x_ticks = [np.int(n*dx[1]*1e-3) for n in axins.get_xticks()]
+        axins.set_xticklabels(x_ticks)
+        axins.set_yticklabels(x_ticks)
+        for label in axins.xaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
+        for label in axins.yaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
         if t0 == time_range[-1]:
             cax = plt.axes([0.95, 0.06, 0.012, 0.22])
-            cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 3.1, 1))
+            cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 5.1, 1), extend='max')
 
         for ax in axes_[:,i].flat:
             ax.text(t_pos_x, t_pos_y, 't='+str(np.int(t0/60))+'min', fontsize=16, horizontalalignment='left', bbox=textprops)
