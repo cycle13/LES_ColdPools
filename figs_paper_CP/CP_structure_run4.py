@@ -25,12 +25,6 @@ from thermodynamic_functions import thetas_c
 
 def main():
     parser = argparse.ArgumentParser(prog='LES_CP')
-    # parser.add_argument("--tmin")
-    # parser.add_argument("--tmax")
-    # parser.add_argument("--dx")
-    # parser.add_argument("--shift")
-    # parser.add_argument("--irmax")
-    # parser.add_argument("--nsub")
     args = parser.parse_args()
 
     res = 25
@@ -44,7 +38,6 @@ def main():
 
     path_root = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/'
     path = os.path.join(path_root, run + '_dx'+str(res)+'m', case)
-    print(path)
     path_fields = os.path.join(path, 'fields')
     # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
     path_out_figs = '/nbi/home/meyerbe/paper_CP'
@@ -84,8 +77,6 @@ def main():
 
     jmin_range = [150, 100, 100]
     for i,t0 in enumerate([900, 1200, 1500]):
-    # for it,t0 in enumerate([900]):
-        # print('')
         print('time: ', t0)
         # print('')
         jmin = jmin_range[i]
@@ -102,11 +93,11 @@ def main():
         vorticity = vorticity_[np.int(t0/100),:,:]
 
 
+
         fig_name = 'CP_structure_dx' + str(res) + '_' + case + '_t'+str(t0)+'.png'
         nlev = 2e2
         ncol = 2
         nrow = 4
-        # title_pos_x = 850
         title_pos_x = jmin
         title_pos_y = 43
         textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
@@ -120,7 +111,6 @@ def main():
         min = np.round(np.amin(theta[:,:kmax]),1)
         max = 300
         cf = ax[0].contourf(theta[:,:kmax].T, levels=np.linspace(min, max,nlev), cmap=cm_bw_r, extend='max')
-        # cbar = plt.colorbar(cf, ax=ax[0], shrink=.75, aspect=12, ticks=np.arange(min, max+0.5, 1.))
         cbar = plt.colorbar(cf, ax=ax[0], shrink=.75, aspect=12, ticks=np.arange(np.ceil(min), max+0.5, 1.))
         ax[1].plot(theta[:,0], 'k')
         ax[1].set_ylabel(r'$\theta$ [K]')
@@ -172,7 +162,6 @@ def main():
             label.set_visible(False)
         ax[0].text(title_pos_x, title_pos_y, 'd) vorticity', fontsize=15, horizontalalignment='left', bbox=textprops)
 
-        # speed = np.sqrt(v**2 + w**2)
         speed = np.sqrt(u**2 + w**2)
         if speed[:, :kmax].max() > 0.:
             lw = 5 * speed[:, :kmax] / speed[:, :kmax].max()

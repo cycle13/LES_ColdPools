@@ -38,7 +38,6 @@ def main():
 
     path_root = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/'
     path = os.path.join(path_root, run + '_dx'+str(res)+'m', case)
-    print(path)
     path_fields = os.path.join(path, 'fields')
     # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
     path_out_figs = '/nbi/home/meyerbe/paper_CP'
@@ -215,7 +214,7 @@ def plot_figure_rad(theta, theta_rad, u, v_rad, w, w_rad, vorticity, vort_rad,
     for label in ax[1].yaxis.get_ticklabels()[1::2]:
         label.set_visible(False)
     ax[1].set_ylim(0,max)
-    ax[0].text(title_pos_x, title_pos_y, 'd) vorticity', fontsize=15, horizontalalignment='left', bbox=textprops)
+    ax[0].text(title_pos_x, title_pos_y, 'd) horizontal vorticity', fontsize=15, horizontalalignment='left', bbox=textprops)
 
     speed_rad = np.sqrt(v_rad[it, :rmax, :] ** 2 + w_rad[it, :rmax, :] ** 2)
     if speed_rad.max() > 0.:

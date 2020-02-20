@@ -79,7 +79,6 @@ def main():
 
     imin_range = [150, 100, 100]
     for it,t0 in enumerate([900, 1200, 1500]):
-    # for t0 in [1200]:
         print('time: ', t0)
         # print('')
         imin = imin_range[it]
@@ -91,16 +90,14 @@ def main():
         w = grp.variables['w'][:,jc,:kmax]
         v = grp.variables['v'][:,jc,:kmax]
         root_field.close()
-
         theta = thetas_c(s, 0.0)[ic-nx/2:ic+nx/2, :]
-
         vorticity = vorticity_[np.int(t0/100),:,:]
 
 
 
         fig_name = 'CP_structure_dx' + str(res) + '_' + case + '_t'+str(t0)+'.png'
-        cm = plt.cm.get_cmap('rainbow')
-        cm_bwr = plt.cm.get_cmap('bwr')
+        # cm = plt.cm.get_cmap('rainbow')
+        # cm_bwr = plt.cm.get_cmap('bwr')
         nlev = 2e2
         ncol = 2
         nrow = 4
@@ -116,7 +113,7 @@ def main():
         # min = 298
         min = np.round(np.amin(theta[:,:kmax]),1)
         max = 300
-        cf = ax[0].contourf(theta[:,:kmax].T, levels=np.linspace(min, max,nlev), cmap=cm_bw_r extend='max')
+        cf = ax[0].contourf(theta[:,:kmax].T, levels=np.linspace(min, max,nlev), cmap=cm_bw_r, extend='max')
         cbar = plt.colorbar(cf, ax=ax[0], shrink=.75, aspect=12, ticks=np.arange(np.ceil(min), max+0.5, 1.))
         ax[1].plot(theta[:,0], 'k')
         ax[1].set_ylabel(r'$\theta$ [K]')
@@ -131,7 +128,7 @@ def main():
         min = -0.25
         max = -min
         cf = ax[0].contourf(v[:, :kmax].T, levels=np.linspace(min,max,nlev), cmap=cm_bwr, extend='both')
-        cbar = plt.colorbar(cf, ax=ax[0], shrink=0.75, aspect=12, ticks=np.arange(min,max+0.1, 0.5))
+        cbar = plt.colorbar(cf, ax=ax[0], shrink=0.75, aspect=12, ticks=np.arange(min, max+0.1, 0.5))
         # cbar.set_label(cont_var_name, rotation=90)
         ax[1].plot(v[:, 1], 'k')
         ax[1].set_ylabel(r'$v_r$ [m/s]')
