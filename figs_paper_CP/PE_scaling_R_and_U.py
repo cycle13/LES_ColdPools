@@ -192,7 +192,7 @@ def test_R_figure(r_av, tmin_r, r_params, dt_fields, path_out_figs, fig_name):
     # R0 = r_av[0, tmin]
     # dR_log = np.log(r_av[:, tmin, k0]) - np.log(R0)
     # dR = R0 / r_av[:, tmin, k0]
-    r_av_ens_mean = np.average(r_av[:, :, k0], axis=0)
+    r_av_ens_mean = np.average(r_av[:, :], axis=0)
     # dR_ens_mean = R0 / r_av_ens_mean[tmin]
     t0 = np.double(tmin * dt_fields)
 
@@ -202,9 +202,9 @@ def test_R_figure(r_av, tmin_r, r_params, dt_fields, path_out_figs, fig_name):
         lbl = 'r*=' + str(r_params[istar]) + 'm'
         ax0.plot([t0, t0], [0, np.amax(r_av)], 'k', linewidth=1)
         ax2.plot([np.log(times[1]), np.log(times[1])], [np.log(np.amin(r_av)), np.log(np.amax(r_av))], 'k', linewidth=1)
-        ax0.plot(times[1:-1], r_av[istar, 1:-1, k0], 'o-', color=colorlist5[istar], label=lbl)
-        ax1.loglog(times[1:-1], r_av[istar, 1:-1, k0], 'o-', color=colorlist5[istar], label=lbl)
-        ax2.plot(np.log(times[1:-1]), np.log(r_av[istar, 1:-1, k0]), 'o-', color=colorlist5[istar], label=lbl)
+        ax0.plot(times[1:-1], r_av[istar, 1:-1], 'o-', color=colorlist5[istar], label=lbl)
+        ax1.loglog(times[1:-1], r_av[istar, 1:-1], 'o-', color=colorlist5[istar], label=lbl)
+        ax2.plot(np.log(times[1:-1]), np.log(r_av[istar, 1:-1]), 'o-', color=colorlist5[istar], label=lbl)
     # ax3.plot(np.arange(-1, 4), 1. / dR[:], '-ok', markersize=4)
     ax0.plot(times[1:-1], r_av_ens_mean[1:-1], 'b')
     ax0.set_xlabel('time')
@@ -221,9 +221,9 @@ def test_R_figure(r_av, tmin_r, r_params, dt_fields, path_out_figs, fig_name):
     # for istar in range(n_params):
     #     lbl = 'r*=' + str(r_params[istar])
     #     ax0.plot([0, 0], [0, np.amax(r_av)], 'k', linewidth=1)
-    #     ax0.plot(times[4:-1] - t0, r_av[istar, 4:-1, k0], 'o-', color=colorlist5[istar], label=lbl)
-    #     ax1.loglog(times[4:-1] - t0, r_av[istar, 4:-1, k0], 'o-', color=colorlist5[istar], label=lbl)
-    #     ax2.plot(np.log(times[4:-1] - t0), np.log(r_av[istar, 4:-1, k0]), 'o-',
+    #     ax0.plot(times[4:-1] - t0, r_av[istar, 4:-1], 'o-', color=colorlist5[istar], label=lbl)
+    #     ax1.loglog(times[4:-1] - t0, r_av[istar, 4:-1], 'o-', color=colorlist5[istar], label=lbl)
+    #     ax2.plot(np.log(times[4:-1] - t0), np.log(r_av[istar, 4:-1]), 'o-',
     #              color=colorlist5[istar], label=lbl)
     # ax0.plot(times[4:-1] - t0, r_av_ens_mean[4:-1], 'b')
     # ax0.set_xlabel('t-t0')
@@ -238,11 +238,11 @@ def test_R_figure(r_av, tmin_r, r_params, dt_fields, path_out_figs, fig_name):
     # for istar in range(n_params):
     #     lbl = 'r*=' + str(r_params[istar])
     #     ax0.plot([0, 0], [0, np.amax(r_av)], 'k', linewidth=1)
-    #     ax0.plot(times[4:-1] / t0, r_av[istar, 4:-1, k0], 'o-', color=colorlist5[istar], label=lbl)
-    #     ax1.loglog(times[4:-1] / t0, r_av[istar, 4:-1, k0], 'o-', color=colorlist5[istar], label=lbl)
-    #     ax2.plot(np.log(times[4:-1]) - np.log(t0), np.log(r_av[istar, 4:-1, k0]), 'o-',
+    #     ax0.plot(times[4:-1] / t0, r_av[istar, 4:-1], 'o-', color=colorlist5[istar], label=lbl)
+    #     ax1.loglog(times[4:-1] / t0, r_av[istar, 4:-1], 'o-', color=colorlist5[istar], label=lbl)
+    #     ax2.plot(np.log(times[4:-1]) - np.log(t0), np.log(r_av[istar, 4:-1]), 'o-',
     #              color=colorlist5[istar], label=lbl)
-    #     ax3.plot(np.log(times[4:-1] / t0), np.log(r_av[istar, 4:-1, k0]), 'o-',
+    #     ax3.plot(np.log(times[4:-1] / t0), np.log(r_av[istar, 4:-1]), 'o-',
     #              color=colorlist5[istar], label=lbl)
     # ax0.plot(times[4:-1] / t0, r_av_ens_mean[4:-1], 'b')
     # ax0.set_xlabel('t/t0')
@@ -259,20 +259,20 @@ def test_R_figure(r_av, tmin_r, r_params, dt_fields, path_out_figs, fig_name):
     # for istar in range(n_params):
     #     lbl = 'r*=' + str(r_params[istar])
     #     ax0.plot([0, 0], [0, np.amax(r_av)], 'k', linewidth=1)
-    #     ax0.plot(times[4:-1] - t0, r_av[istar, 4:-1, k0] * dR[istar], 'o-',
+    #     ax0.plot(times[4:-1] - t0, r_av[istar, 4:-1] * dR[istar], 'o-',
     #              color=colorlist5[istar], label=lbl)
-    #     ax1.loglog(times[4:-1] - t0, r_av[istar, 4:-1, k0] * dR[istar], 'o-', color=colorlist5[istar], label=lbl)
-    #     ax2.plot(np.log(times[4:-1] - t0), np.log(r_av[istar, 4:-1, k0]) - dR_log[istar], 'o-',
+    #     ax1.loglog(times[4:-1] - t0, r_av[istar, 4:-1] * dR[istar], 'o-', color=colorlist5[istar], label=lbl)
+    #     ax2.plot(np.log(times[4:-1] - t0), np.log(r_av[istar, 4:-1]) - dR_log[istar], 'o-',
     #              color=colorlist5[istar], label=lbl)
-    #     ax3.plot(np.log(times[4:-1] - t0), m * (np.log(r_av[istar, 4:-1, k0]) - dR_log[istar]), 'o-',
+    #     ax3.plot(np.log(times[4:-1] - t0), m * (np.log(r_av[istar, 4:-1]) - dR_log[istar]), 'o-',
     #              color=colorlist5[istar], label=lbl)
     #
     #     ax2.plot(np.log(times[4:-1] - t0),
     #              np.log(R0) + m * (np.log(times[4:-1]) - np.log(t0)), '-r', label='m=0.54')
     #
-    #     ax0.plot(times[4:tmin] - tmin * dt_fields, r_av[istar, 4:tmin, k0] - dR_log[istar], 'ow')
-    #     ax1.loglog(times[4:tmin] - tmin * dt_fields, r_av[istar, 4:tmin, k0], 'ow')
-    #     ax2.plot(np.log(times[4:tmin]) - np.log(tmin * dt_fields), np.log(r_av[istar, 4:tmin, k0]) - dR_log[istar],
+    #     ax0.plot(times[4:tmin] - tmin * dt_fields, r_av[istar, 4:tmin] - dR_log[istar], 'ow')
+    #     ax1.loglog(times[4:tmin] - tmin * dt_fields, r_av[istar, 4:tmin], 'ow')
+    #     ax2.plot(np.log(times[4:tmin]) - np.log(tmin * dt_fields), np.log(r_av[istar, 4:tmin]) - dR_log[istar],
     #              'ow')
     # ax0.plot(times[4:-1] - t0, r_av_ens_mean[4:-1] * dR_ens_mean, 'b')
     # ax0.set_xlabel('t-t0')
@@ -293,19 +293,19 @@ def test_R_figure(r_av, tmin_r, r_params, dt_fields, path_out_figs, fig_name):
     # for istar in range(n_params):
     #     lbl = 'r*=' + str(r_params[istar])
     #     ax0.plot([0, 0], [0, np.amax(r_av)], 'k', linewidth=1)
-    #     ax0.plot(times[4:-1] / t0, r_av[istar, 4:-1, k0] * dR[istar], 'o-',
+    #     ax0.plot(times[4:-1] / t0, r_av[istar, 4:-1] * dR[istar], 'o-',
     #              color=colorlist5[istar], label=lbl)
     #     ax1.loglog(times[4:-1] / t0, r_av[istar, 4:-1, k0] * dR[istar], 'o-', color=colorlist5[istar], label=lbl)
-    #     ax2.plot(np.log(times[4:-1]) - np.log(t0), np.log(r_av[istar, 4:-1, k0]) - dR_log[istar], 'o-',
+    #     ax2.plot(np.log(times[4:-1]) - np.log(t0), np.log(r_av[istar, 4:-1]) - dR_log[istar], 'o-',
     #              color=colorlist5[istar], label=lbl)
-    #     ax3.plot(np.log(times[4:-1]) - np.log(t0), m * (np.log(r_av[istar, 4:-1, k0]) - dR_log[istar]), 'o-',
+    #     ax3.plot(np.log(times[4:-1]) - np.log(t0), m * (np.log(r_av[istar, 4:-1]) - dR_log[istar]), 'o-',
     #              color=colorlist5[istar], label=lbl)
     #     ax2.plot(np.log(times[4:-1]) - np.log(t0),
     #              np.log(R0) + m * (np.log(times[4:-1]) - np.log(t0)), '-r', label='m=0.54')
     #
-    #     ax0.plot(times[4:tmin] - t0, r_av[istar, 4:tmin, k0] - dR_log[istar], 'ow')
-    #     ax1.loglog(times[4:tmin] - t0, r_av[istar, 4:tmin, k0], 'ow')
-    #     ax2.plot(np.log(times[4:tmin] - t0), np.log(r_av[istar, 4:tmin, k0]) - dR_log[istar],
+    #     ax0.plot(times[4:tmin] - t0, r_av[istar, 4:tmin] - dR_log[istar], 'ow')
+    #     ax1.loglog(times[4:tmin] - t0, r_av[istar, 4:tmin], 'ow')
+    #     ax2.plot(np.log(times[4:tmin] - t0), np.log(r_av[istar, 4:tmin]) - dR_log[istar],
     #              'ow')
     # ax0.plot(times[4:-1] / t0, r_av_ens_mean[4:-1] * dR_ens_mean, 'b')
     # ax0.set_xlabel('t/t0')
@@ -324,9 +324,9 @@ def test_R_figure(r_av, tmin_r, r_params, dt_fields, path_out_figs, fig_name):
     # [ax0, ax1, ax2, ax3] = [axes[5, i] for i in range(4)]
     # fit_r = np.log(R0) + m * (np.log(times / t0))
     # for istar in range(n_params):
-    #     ax0.plot(times[1:-1] / t0, r_av[istar, 1:-1, k0] * dR[istar], '-', color='0.5')
-    #     ax1.loglog(times[1:-1] / t0, r_av[istar, 1:-1, k0] * dR[istar], '-', color='0.5')
-    #     ax2.plot(np.log(times[1:-1] / t0), np.log(r_av[istar, 1:-1, k0]) - dR_log[istar], '-', color='0.5')
+    #     ax0.plot(times[1:-1] / t0, r_av[istar, 1:-1] * dR[istar], '-', color='0.5')
+    #     ax1.loglog(times[1:-1] / t0, r_av[istar, 1:-1] * dR[istar], '-', color='0.5')
+    #     ax2.plot(np.log(times[1:-1] / t0), np.log(r_av[istar, 1:-1]) - dR_log[istar], '-', color='0.5')
     # lbl = 'mean(r_av)'
     # ax0.plot(times[1:-1] / t0, r_av_ens_mean[1:-1] * dR_ens_mean, '-', color='b', linewidth=2, label=lbl)
     # ax1.loglog(times[1:-1] / t0, r_av_ens_mean[1:-1] * dR_ens_mean, '-', color='b', linewidth=2, label=lbl)
