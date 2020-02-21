@@ -254,14 +254,14 @@ def test_R_figure(r_av, tmin_r, r_params, dt_fields, path_out_figs, fig_name):
     ax2.set_ylabel('log(R)')
     ax3.set_ylabel('log(R)')
 
-    # [ax0, ax1, ax2, ax3] = [axes[3, i] for i in range(4)]
+    [ax0, ax1, ax2, ax3] = [axes[3, i] for i in range(4)]
     m = 0.55
     for istar in range(n_params):
         lbl = 'r*=' + str(r_params[istar])
         ax0.plot([0, 0], [0, np.amax(r_av)], 'k', linewidth=1)
         ax0.plot(times[4:-1] / t0, r_av[istar, 4:-1] / r_av[istar, tmin], 'o-',
                  color=colorlist5[istar], label=lbl)
-        ax1.loglog(times[4:-1] / t0, r_av[istar, 4:-1, k0] / r_av[istar, tmin], 'o-', color=colorlist5[istar], label=lbl)
+        ax1.loglog(times[4:-1] / t0, r_av[istar, 4:-1] / r_av[istar, tmin], 'o-', color=colorlist5[istar], label=lbl)
         ax2.plot(np.log(times[4:-1]) - np.log(t0), np.log(r_av[istar, 4:-1]) - np.log(r_av[istar, tmin]), 'o-',
                  color=colorlist5[istar], label=lbl)
     #     ax3.plot(np.log(times[4:-1]) - np.log(t0), m * (np.log(r_av[istar, 4:-1]) - dR_log[istar]), 'o-',
@@ -294,7 +294,7 @@ def test_R_figure(r_av, tmin_r, r_params, dt_fields, path_out_figs, fig_name):
         ax0.plot([0, 0], [0, np.amax(r_av)], 'k', linewidth=1)
         ax0.plot(times[4:-1] / t0, r_av[istar, 4:-1] * dR[istar], 'o-',
                  color=colorlist5[istar], label=lbl)
-    #     ax1.loglog(times[4:-1] / t0, r_av[istar, 4:-1, k0] * dR[istar], 'o-', color=colorlist5[istar], label=lbl)
+    #     ax1.loglog(times[4:-1] / t0, r_av[istar, 4:-1] * dR[istar], 'o-', color=colorlist5[istar], label=lbl)
     #     ax2.plot(np.log(times[4:-1]) - np.log(t0), np.log(r_av[istar, 4:-1]) - dR_log[istar], 'o-',
     #              color=colorlist5[istar], label=lbl)
     #     ax3.plot(np.log(times[4:-1]) - np.log(t0), m * (np.log(r_av[istar, 4:-1]) - dR_log[istar]), 'o-',
