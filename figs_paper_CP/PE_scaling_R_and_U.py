@@ -94,10 +94,10 @@ def main():
 
     R0 = r_av[0, tmin_r]
     #dR_log = np.log(r_av[:, tmin_r]) - np.log(R0)
-    dR_log = np.log(r_av[:, tmin_r])
+    dR_log = np.log(r_av[:, tmin_r])                 # log(R[t0])
     #dR = R0 / r_av[:, tmin_r]
     dR = 1. / r_av[:, tmin_r]
-    r_av_ens_mean = np.average(r_av[:, :], axis=0)
+    r_av_ens_mean = np.average(r_av[:, :], axis=0)   # ensemble mean
     #dR_ens_mean = R0 / r_av_ens_mean[tmin_r]
     dR_ens_mean = 1. / r_av_ens_mean[tmin_r]
     def fit_r(R0, m, times, t0):
@@ -122,15 +122,11 @@ def main():
         lbl = 'r*=' + str(r_params[istar])
         ax0.plot(times[1:-1], r_av[istar, 1:-1], 'o-', color=colorlist5[istar], label=lbl)
         ax2.plot(np.log(times[1:-1] / t0_r), np.log(r_av[istar, 1:-1]) - dR_log[istar], '-', color='0.5')
-    #ax2.plot(np.log(times[3:-1]/t0_r), np.log(r_av_ens_mean[3:-1] * dR_ens_mean), '-', color='k', linewidth=3, label=lbl)
-    #ax2.plot(np.log(times[3:-1]/t0_r), np.log(r_av_ens_mean[3:-1] * dR_ens_mean), '-', color='k', linewidth=3,
-    #         label=lbl)
-    ax2.plot(np.log(times[3:-1]/t0_r), np.log(r_av_ens_mean[3:-1]) - np.log(dR_ens_mean), '-', color='k', linewidth=3,
-             label=lbl)
+    ax2.plot(np.log(times[3:-1]/t0_r), np.log(r_av_ens_mean[3:-1] * dR_ens_mean), '-', color='k', linewidth=3, label=lbl)
     m = 0.6
     ax2.plot(np.log(times[3:-1]/t0_r), m * (np.log(times[3:-1] / t0_r)), '-r', label='m='+str(m))
-    ax0.set_xlabel('t  [s]')
-    ax0.set_ylabel('R  [m]')
+    ax0.set_xlabel('t  [min]')
+    ax0.set_ylabel('R  [km]')
     ax2.set_xlabel('log(t/t0)  [-]')
     ax2.set_ylabel('log(R/R0)  [-]')
     ax0.legend(loc=4)
@@ -149,20 +145,30 @@ def main():
     for m in np.arange(0.5,1,0.1):
         #ax2.plot(np.log(times_[7:] / t0_u), (np.log(U0)) - m*(np.log((times_[7:])/t0_u)-0.5), '-r', linewidth=1, label='m=-'+str(m))
         ax2.plot(np.log(times[3:-1] / t0_r), -m*(np.log((times[3:-1])/t0_r)), '-r', linewidth=1, label='m=-'+str(m))
-    ax0.set_xlabel('t  [s]')
-    ax0.set_ylabel('U  [m]')
+    ax0.set_xlabel('t  [min]')
+    ax0.set_ylabel('U  [m/s]')
     ax2.set_xlabel('log(t/t0)  [-]')
     ax2.set_ylabel('log(U/U0)  [-]')
     ax2.set_xlim(-1., 1.5)
     #ax2.set_ylim(-.7, 1.3)
     # ax0.plot([t0_u, t0_u], [0,6], 'k')
 
-    for ax in axes.flat():
-        # x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
-        x_ticks = [n for n in ax.get_xticks()]
+    for ax in axes[:,0].flat:
+        ax.set_xticks(np.arange(0, 3600, step=600))
+        x_ticks = [np.int(n/60) for n in ax.get_xticks()]
         ax.set_xticklabels(x_ticks)
-    x_ticks = [np.int(n * dx[0] * 1e-3) for n in axes[0,0].get_xticks()]
-    axes[0,0].set_xticklabels(x_ticks)
+    #for ax in axes.flat:
+    #    # x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
+    #    x_ticks = [n for n in ax.get_xticks()]
+    #    ax.set_xticklabels(x_ticks)
+    #    y_ticks = [n for n in ax.get_yticks()]
+    #    ax.set_yticklabels(y_ticks)
+    y_ticks = [np.int(n * 1e-3) for n in axes[0,0].get_yticks()]
+    axes[0,0].set_yticklabels(y_ticks)
+    y_ticks = [np.int(n) for n in axes[1,0].get_yticks()]
+    axes[1,0].set_yticklabels(y_ticks)
+    for ax in axes[:,1].flat:
+        ax.set_yticklabels([n for n in ax.get_yticks()])
     # axes[1,0].set_xticklabels(axes[1,0])
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
