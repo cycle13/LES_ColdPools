@@ -217,23 +217,23 @@ def test_R_figure(r_av, tmin_r, r_params, dt_fields, path_out_figs, fig_name):
     ax3.set_xlabel('log2(PE/PE_ref)')
     ax3.set_ylabel('R0')
 
-    # [ax0, ax1, ax2, ax3] = [axes[1, i] for i in range(4)]
-    # for istar in range(n_params):
-    #     lbl = 'r*=' + str(r_params[istar])
-    #     ax0.plot([0, 0], [0, np.amax(r_av)], 'k', linewidth=1)
-    #     ax0.plot(times[4:-1] - t0, r_av[istar, 4:-1], 'o-', color=colorlist5[istar], label=lbl)
-    #     ax1.loglog(times[4:-1] - t0, r_av[istar, 4:-1], 'o-', color=colorlist5[istar], label=lbl)
-    #     ax2.plot(np.log(times[4:-1] - t0), np.log(r_av[istar, 4:-1]), 'o-',
-    #              color=colorlist5[istar], label=lbl)
-    # ax0.plot(times[4:-1] - t0, r_av_ens_mean[4:-1], 'b')
-    # ax0.set_xlabel('t-t0')
-    # ax1.set_xlabel('t-t0')
-    # ax2.set_xlabel('log(t-t0)')
-    # ax0.set_ylabel('R')
-    # ax1.set_ylabel('R')
-    # ax2.set_ylabel('log(R)')
-    # ax3.set_ylabel('log(R)')
-    #
+    [ax0, ax1, ax2, ax3] = [axes[1, i] for i in range(4)]
+    for istar in range(n_params):
+        lbl = 'r*=' + str(r_params[istar])
+        ax0.plot([0, 0], [0, np.amax(r_av)], 'k', linewidth=1)
+        ax0.plot(times[4:-1] - t0, r_av[istar, 4:-1], 'o-', color=colorlist5[istar], label=lbl)
+        ax1.loglog(times[4:-1] - t0, r_av[istar, 4:-1], 'o-', color=colorlist5[istar], label=lbl)
+        ax2.plot(np.log(times[4:-1] - t0), np.log(r_av[istar, 4:-1]), 'o-',
+                 color=colorlist5[istar], label=lbl)
+    ax0.plot(times[4:-1] - t0, r_av_ens_mean[4:-1], 'b')
+    ax0.set_xlabel('t-t0')
+    ax1.set_xlabel('t-t0')
+    ax2.set_xlabel('log(t-t0)')
+    ax0.set_ylabel('R')
+    ax1.set_ylabel('R')
+    ax2.set_ylabel('log(R)')
+    ax3.set_ylabel('log(R)')
+
     # [ax0, ax1, ax2, ax3] = [axes[2, i] for i in range(4)]
     # for istar in range(n_params):
     #     lbl = 'r*=' + str(r_params[istar])
