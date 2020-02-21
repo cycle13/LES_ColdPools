@@ -266,8 +266,7 @@ def test_R_figure(r_av, tmin_r, r_params, dt_fields, path_out_figs, fig_name):
                  color=colorlist5[istar], label=lbl)
     #     ax3.plot(np.log(times[4:-1]) - np.log(t0), m * (np.log(r_av[istar, 4:-1]) - dR_log[istar]), 'o-',
     #              color=colorlist5[istar], label=lbl)
-        ax2.plot(np.log(times[4:-1]) - np.log(t0),
-                 np.log(R0) + m * (np.log(times[4:-1]) - np.log(t0)), '-r', label='m=0.54')
+        ax2.plot(np.log(times[4:-1]) - np.log(t0), m * (np.log(times[4:-1]) - np.log(t0)), '-r', label='m=0.54')
     #
     #     ax0.plot(times[4:tmin] - t0, r_av[istar, 4:tmin] - dR_log[istar], 'ow')
     #     ax1.loglog(times[4:tmin] - t0, r_av[istar, 4:tmin], 'ow')
