@@ -136,6 +136,8 @@ def main():
     ax0.legend(loc=4)
     ax2.set_xlim(-1., 1.5)
 
+
+
     ax0 = axes[1, 0]
     ax2 = axes[1, 1]
     for istar in range(n_params):
@@ -154,6 +156,14 @@ def main():
     ax2.set_xlim(-1., 1.5)
     #ax2.set_ylim(-.7, 1.3)
     # ax0.plot([t0_u, t0_u], [0,6], 'k')
+
+    for ax in axes.flat():
+        # x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
+        x_ticks = [n for n in ax.get_xticks()]
+        ax.set_xticklabels(x_ticks)
+    x_ticks = [np.int(n * dx[0] * 1e-3) for n in axes[0,0].get_xticks()]
+    axes[0,0].set_xticklabels(x_ticks)
+    # axes[1,0].set_xticklabels(axes[1,0])
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
     t_pos_x = [80, -.9, 80, -.9]
