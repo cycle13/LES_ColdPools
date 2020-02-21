@@ -133,7 +133,7 @@ def main():
     ax0.set_ylabel('R  [m]')
     ax2.set_xlabel('log(t/t0)  [-]')
     ax2.set_ylabel('log(R/R0)  [-]')
-    ax0.legend(loc='best')
+    ax0.legend(loc=4)
     ax2.set_xlim(-1., 1.5)
 
     ax0 = axes[1, 0]
@@ -156,20 +156,11 @@ def main():
     # ax0.plot([t0_u, t0_u], [0,6], 'k')
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    t_pos_x = .1
-    t_pos_y = [13e3, 5.5, .8, .8]
-    # title_pos_x = - 120
-    # title_pos_y = imax
-    # title_font = 21
-    # txt = 'a) potential temperature'
-    # axes_[0, 0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
-    # txt = 'b) vertical velocity'
-    # axes_[1, 0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
-    # txt = 'c) radial velocity'
-    # axes_[2, 0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
+    t_pos_x = [80, -.9, 80, -.9]
+    t_pos_y = [13e3, .8, 5.5, .8]
     labels = ['a)', 'b)', 'c)', 'd)']
     for i,ax in enumerate(axes.flat):
-        ax.text(t_pos_x, t_pos_y[i], labels[i], fontsize=18, horizontalalignment='left', bbox=textprops)
+        ax.text(t_pos_x[i], t_pos_y[i], labels[i], fontsize=18, horizontalalignment='left', bbox=textprops)
 
     plt.subplots_adjust(bottom=0.05, right=.95, left=0.06, top=0.95, wspace=0.25, hspace=0.2)
     fig.savefig(os.path.join(path_out_figs, fig_name))
