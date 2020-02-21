@@ -193,7 +193,7 @@ def test_R_figure(r_av, tmin_r, r_params, dt_fields, path_out_figs, fig_name):
     dR_log = np.log(r_av[:, tmin]) - np.log(R0)
     dR = R0 / r_av[:, tmin]
     r_av_ens_mean = np.average(r_av[:, :], axis=0)
-    # dR_ens_mean = R0 / r_av_ens_mean[tmin]
+    dR_ens_mean = R0 / r_av_ens_mean[tmin]
     t0 = np.double(tmin * dt_fields)
 
     fig, axes = plt.subplots(6, 4, sharex='none', figsize=(18, 20))
