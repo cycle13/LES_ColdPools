@@ -155,6 +155,22 @@ def main():
     #ax2.set_ylim(-.7, 1.3)
     # ax0.plot([t0_u, t0_u], [0,6], 'k')
 
+    textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
+    t_pos_x = .1
+    t_pos_y = [13e3, 5.5, .8, .8]
+    # title_pos_x = - 120
+    # title_pos_y = imax
+    # title_font = 21
+    # txt = 'a) potential temperature'
+    # axes_[0, 0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
+    # txt = 'b) vertical velocity'
+    # axes_[1, 0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
+    # txt = 'c) radial velocity'
+    # axes_[2, 0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
+    labels = ['a)', 'b)', 'c)', 'd)']
+    for i,ax in enumerate(axes.flat):
+        ax.text(t_pos_x, t_pos_y[i], labels[i], fontsize=18, horizontalalignment='left', bbox=textprops)
+
     plt.subplots_adjust(bottom=0.05, right=.95, left=0.06, top=0.95, wspace=0.25, hspace=0.2)
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
