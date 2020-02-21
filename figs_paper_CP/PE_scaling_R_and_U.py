@@ -12,12 +12,12 @@ from scipy import optimize
 execfile('settings.py')
 
 
-label_size = 10
+label_size = 15
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
 plt.rcParams['lines.linewidth'] = 2
-plt.rcParams['legend.fontsize'] = 10
-plt.rcParams['axes.labelsize'] = 15
+plt.rcParams['legend.fontsize'] = 15
+plt.rcParams['axes.labelsize'] = 18
 # plt.rcParams['text.usetex'] = 'true'
 
 def main():
@@ -39,7 +39,7 @@ def main():
     id_ref = 'dTh3_z' + str(zstar_ref) + '_r' + str(rstar_ref)
     path_ref = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2_dx100m/' + id_ref
     dt_fields = 100
-    cp_id = 2  # circle ID that is used for statistics
+    cp_id = 1  # circle ID that is used for statistics
 
     id0 = 'dTh' + str(dTh) + '_z' + str(z_params[0]) + '_r' + str(r_params[0])
     fullpath_in = os.path.join(path_root, id0, 'tracer_k' + str(k0), 'output')
@@ -87,96 +87,86 @@ def main():
     # --------------------------------------
     fig_name = 'R_U_scaling.png'
 
-    tmin_r = 8
-    tmin_u = 6
+    tmin_r = 7
+    tmin_u = 7
     t0_r = np.double(tmin_r * dt_fields)
     t0_u = np.double(tmin_u * dt_fields)
 
-    R0 = r_av[0, tmin_r]
-    #dR_log = np.log(r_av[:, tmin_r]) - np.log(R0)
-    dR_log = np.log(r_av[:, tmin_r])                 # log(R[t0])
-    #dR = R0 / r_av[:, tmin_r]
+    R00 = r_av[0, tmin_r]
+    R0_log = np.log(r_av[:, tmin_r])                 # log(R[t0])
     dR = 1. / r_av[:, tmin_r]
     r_av_ens_mean = np.average(r_av[:, :], axis=0)   # ensemble mean
-    #dR_ens_mean = R0 / r_av_ens_mean[tmin_r]
     dR_ens_mean = 1. / r_av_ens_mean[tmin_r]
     def fit_r(R0, m, times, t0):
         #return np.log(R0) + m * (np.log(times / t0))
         return m * (np.log(times / t0))
 
-    U0 = drdt_av[0,tmin_r]
-    #dU_log = np.log(drdt_av[:, tmin_u]) - np.log(U0)
+    U00 = drdt_av[0,tmin_r]
     dU_log = np.log(drdt_av[:, tmin_r])
-    #dU = U0 / drdt_av[:, tmin_u]
     dU = 1. / drdt_av[:, tmin_r]
     U_ens_mean = np.average(drdt_av[:, :], axis=0)
-    #dU_ens_mean = U0 / U_ens_mean[tmin_u]
     dU_ens_mean = 1. / U_ens_mean[tmin_r]
 
 
-    fig, axes = plt.subplots(2, 2, sharex='none', figsize=(18, 12))
+    fig, axes = plt.subplots(2, 2, sharex='none', figsize=(15, 10))
 
     ax0 = axes[0,0]
     ax2 = axes[0,1]
     for istar in range(n_params):
-        lbl = 'r*=' + str(r_params[istar])
+        lbl = 'r*=' + str(r_params[istar]) + 'm'
         ax0.plot(times[1:-1], r_av[istar, 1:-1], 'o-', color=colorlist5[istar], label=lbl)
-        ax2.plot(np.log(times[1:-1] / t0_r), np.log(r_av[istar, 1:-1]) - dR_log[istar], '-', color='0.5')
-    ax2.plot(np.log(times[3:-1]/t0_r), np.log(r_av_ens_mean[3:-1] * dR_ens_mean), '-', color='k', linewidth=3, label=lbl)
+        ax2.plot(np.log(times[1:-1] / t0_r), np.log(r_av[istar, 1:-1]) - R0_log[istar], '-', color='0.5')
+    ax2.plot(np.log(times[3:-1]/t0_r), np.log(r_av_ens_mean[3:-1] * dR_ens_mean), '-', color='k', linewidth=3, label='ensemble mean')
     m = 0.6
-    ax2.plot(np.log(times[3:-1]/t0_r), m * (np.log(times[3:-1] / t0_r)), '-r', label='m='+str(m))
+    ax2.plot(np.log(times[3:-1]/t0_r), m * (np.log(times[3:-1] / t0_r)), '-r', label='y=a*x, a='+str(m))
+    ax2.plot(np.log(times[3:-1]/(t0_r-3)), m * (np.log(times[3:-1] / (t0_r-3))), '-b', label='m='+str(m))
+    #ax2.plot(np.log(times[3:-1]/(t0_r-3)), m * (np.log(times[3:-1] / (t0_r-3))), '-b', label='m='+str(m))
     ax0.set_xlabel('t  [min]')
     ax0.set_ylabel('R  [km]')
     ax2.set_xlabel('log(t/t0)  [-]')
     ax2.set_ylabel('log(R/R0)  [-]')
     ax0.legend(loc=4)
-    ax2.set_xlim(-1., 1.5)
-
+    ax2.legend(loc=4)
 
 
     ax0 = axes[1, 0]
     ax2 = axes[1, 1]
     for istar in range(n_params):
-        lbl = 'r*=' + str(r_params[istar])
+        lbl = 'r*=' + str(r_params[istar]) + 'm'
         ax0.plot(times[1:-1], drdt_av[istar, 1:-1], 'o-', color=colorlist5[istar], label=lbl)
         ax2.plot(np.log(times[3:-1] / t0_r), np.log(drdt_av[istar, 3:-1]) - dU_log[istar], '-', color='0.5')
     ax2.plot(np.log(times[3:-1] / t0_r), np.log(U_ens_mean[3:-1] * dU_ens_mean), '-', color='k', linewidth=3, label=lbl)
     times_ = np.append(times, np.arange(times[-1]+dt_fields, times[-1]+20*dt_fields, dt_fields))
     for m in np.arange(0.5,1,0.1):
-        #ax2.plot(np.log(times_[7:] / t0_u), (np.log(U0)) - m*(np.log((times_[7:])/t0_u)-0.5), '-r', linewidth=1, label='m=-'+str(m))
+        #ax2.plot(np.log(times_[7:] / t0_u), (np.log(U00)) - m*(np.log((times_[7:])/t0_u)-0.5), '-r', linewidth=1, label='m=-'+str(m))
         ax2.plot(np.log(times[3:-1] / t0_r), -m*(np.log((times[3:-1])/t0_r)), '-r', linewidth=1, label='m=-'+str(m))
     ax0.set_xlabel('t  [min]')
     ax0.set_ylabel('U  [m/s]')
     ax2.set_xlabel('log(t/t0)  [-]')
     ax2.set_ylabel('log(U/U0)  [-]')
-    ax2.set_xlim(-1., 1.5)
-    #ax2.set_ylim(-.7, 1.3)
     # ax0.plot([t0_u, t0_u], [0,6], 'k')
+
+    for ax in axes[:,1].flat:
+        ax.set_xlim(-.5, 1.6)
 
     for ax in axes[:,0].flat:
         ax.set_xticks(np.arange(0, 3600, step=600))
         x_ticks = [np.int(n/60) for n in ax.get_xticks()]
         ax.set_xticklabels(x_ticks)
-    #for ax in axes.flat:
-    #    # x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
-    #    x_ticks = [n for n in ax.get_xticks()]
-    #    ax.set_xticklabels(x_ticks)
-    #    y_ticks = [n for n in ax.get_yticks()]
-    #    ax.set_yticklabels(y_ticks)
     y_ticks = [np.int(n * 1e-3) for n in axes[0,0].get_yticks()]
     axes[0,0].set_yticklabels(y_ticks)
     y_ticks = [np.int(n) for n in axes[1,0].get_yticks()]
     axes[1,0].set_yticklabels(y_ticks)
     for ax in axes[:,1].flat:
+        ax.set_xticklabels([n for n in ax.get_xticks()])
         ax.set_yticklabels([n for n in ax.get_yticks()])
-    # axes[1,0].set_xticklabels(axes[1,0])
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    t_pos_x = [80, -.9, 80, -.9]
-    t_pos_y = [13e3, .8, 5.5, .8]
+    t_pos_x = [120, -.43, 120, -.43]
+    t_pos_y = [12.5e3, .85, 5.3, .67]
     labels = ['a)', 'b)', 'c)', 'd)']
     for i,ax in enumerate(axes.flat):
-        ax.text(t_pos_x[i], t_pos_y[i], labels[i], fontsize=18, horizontalalignment='left', bbox=textprops)
+        ax.text(t_pos_x[i], t_pos_y[i], labels[i], fontsize=21, horizontalalignment='left', bbox=textprops)
 
     plt.subplots_adjust(bottom=0.05, right=.95, left=0.06, top=0.95, wspace=0.25, hspace=0.2)
     fig.savefig(os.path.join(path_out_figs, fig_name))
