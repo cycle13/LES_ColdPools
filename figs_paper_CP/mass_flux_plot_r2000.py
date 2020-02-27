@@ -163,7 +163,7 @@ def main():
 
 
         fig_name = 'collisions_massflux_pos_CPheight_' + case_xCP + '_123.png'
-        plot_collision_massflux_CPheight(MF_pos_1CP, MF_pos_2CP, MF_pos_3CP, MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
+        plot_collision_massflux_CPheight(MF_pos_1CP, MF_pos_2CP, MF_pos_3CP, MF_pos_mean_1CP, MF_pos_mean_2CP, MF_pos_mean_3CP,
                                          time_mf_1CP, time_mf_2CP, time_mf_3CP,
                                          t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
                                          delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
@@ -197,7 +197,7 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
     vmax = 6.5
     vmax = np.amax(MF_3CP)
     lvls = np.linspace(vmin, vmax, 10)
-    fig, axis_ = plt.subplots(1, ncol, figsize=(ncol * 5, nrow*5))
+    fig, axis_ = plt.subplots(nrow, ncol, figsize=(ncol * 5, nrow*5))
     axis = axis_[0,:]
     axis2 = axis_[1,:]
 
