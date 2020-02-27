@@ -79,7 +79,7 @@ def main():
         ymin_3CP[2] = 0
 
 
-    for i, sep in enumerate(d_range[rst][:]):
+    for i, sep in enumerate(d_range[rst][:2]):
         print('--- d=' + str(sep) + 'km ---')
         case_xCP = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar) + '_d' + str(sep) + 'km'
 
@@ -91,6 +91,10 @@ def main():
                 ic_arr_3CP, jc_arr_3CP, \
                 ic_2CP, jc_2CP, ic_3CP, jc_3CP = define_geometry(nx_1CP, nx_2CP, nx_3CP, sep)
 
+        times = np.arange(t_ini[rst][i], t_final[rst][i], 100)
+        print('times: ', times)
+        print('')
+
 
         ''' Mass Flux '''
         filename_data = 'mass_flux_z' + str(zlevel) + '.nc'
@@ -100,20 +104,36 @@ def main():
         mass_flux_1CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
         mass_flux_pos_1CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
         root_in.close()
-        # path_in = os.path.join(path_2CP, case_xCP, 'data_analysis', filename_data)
-        # print(path_in)
-        # root_in = nc.Dataset(path_in, 'r')
-        # mass_flux_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
-        # mass_flux_pos_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
-        # time_data_2CP = root_in.groups['timeseries'].variables['time'][:]
-        # root_in.close()
-        # path_in = os.path.join(path_3CP, case_xCP, 'data_analysis', filename_data)
-        # print(path_in)
-        # root_in = nc.Dataset(path_in, 'r')
-        # mass_flux_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
-        # mass_flux_pos_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
-        # time_data_3CP = root_in.groups['timeseries'].variables['time'][:]
-        # root_in.close()
+        path_in = os.path.join(path_2CP, case_xCP, 'data_analysis', filename_data)
+        print(path_in)
+        root_in = nc.Dataset(path_in, 'r')
+        mass_flux_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
+        mass_flux_pos_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
+        time_data_2CP = root_in.groups['timeseries'].variables['time'][:]
+        root_in.close()
+        path_in = os.path.join(path_3CP, case_xCP, 'data_analysis', filename_data)
+        print(path_in)
+        root_in = nc.Dataset(path_in, 'r')
+        mass_flux_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
+        mass_flux_pos_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
+        time_data_3CP = root_in.groups['timeseries'].variables['time'][:]
+        root_in.close()
+        ''' averaged mass flux '''
+        tmin = t_ini[rst][i]
+        tmax = t_final[rst][i]
+        print('Mass flux: averaging from tmin='+str(tmin)+' to tmax='+str(tmax))
+        it0 = np.int(tmin / dt_fields_1CP)
+        it1 = np.int(tmax / dt_fields_1CP)
+        print('MF times 1CP: ', it0, it1)
+        MF_1CP = np.sum(mass_flux_1CP[it0:it1,:,:], axis=0)     # accumulate over time
+        it0 = np.int(tmin / dt_fields_2CP)
+        it1 = np.int(tmax / dt_fields_2CP)
+        print('MF times 2CP: ', it0, it1)
+        MF_1CP = np.sum(mass_flux_2CP[it0:it1, :, :], axis=0)  # accumulate over time
+        it0 = np.int(tmin / dt_fields_3CP)
+        it1 = np.int(tmax / dt_fields_3CP)
+        print('MF times 3CP: ', it0, it1)
+        MF_1CP = np.sum(mass_flux_3CP[it0:it1, :, :], axis=0)  # accumulate over time
     return
 
 
