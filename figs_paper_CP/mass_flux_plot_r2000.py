@@ -178,6 +178,7 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
 
     ncol = 5
     vmin = 1e-2
+    vmin = np.amin(MF_3CP)
     vmax = 6.5
     vmax = np.amax(MF_3CP)
     lvls = np.linspace(vmin, vmax, 10)
