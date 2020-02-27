@@ -103,41 +103,43 @@ def main():
         root_in = nc.Dataset(path_in, 'r')
         mass_flux_1CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
         mass_flux_pos_1CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
+        time_mf_1CP = root_in.groups['timeseries'].variables['time'][:]
         root_in.close()
         path_in = os.path.join(path_2CP, case_xCP, 'data_analysis', filename_data)
         print(path_in)
         root_in = nc.Dataset(path_in, 'r')
         mass_flux_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
         mass_flux_pos_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
-        time_data_2CP = root_in.groups['timeseries'].variables['time'][:]
+        time_mf_2CP = root_in.groups['timeseries'].variables['time'][:]
         root_in.close()
         path_in = os.path.join(path_3CP, case_xCP, 'data_analysis', filename_data)
         print(path_in)
         root_in = nc.Dataset(path_in, 'r')
         mass_flux_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
         mass_flux_pos_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
-        time_data_3CP = root_in.groups['timeseries'].variables['time'][:]
+        time_mf_3CP = root_in.groups['timeseries'].variables['time'][:]
         root_in.close()
         ''' averaged mass flux '''
         tmin = t_ini[rst][i]
         tmax = t_final[rst][i]
         delta = 5       # averaging over band of withd delta_y=2*delta*dy=600m
         print('Mass flux: averaging from tmin='+str(tmin)+' to tmax='+str(tmax))
-        it0 = np.int(tmin / dt_fields_1CP)
-        it1 = np.int(tmax / dt_fields_1CP)
+        it0 = np.where(time_mf_1CP == tmin)[0][0]#np.int(tmin / dt_fields_1CP)
+        it1 = np.where(time_mf_1CP == tmax)[0][0]#np.int(tmax / dt_fields_1CP)
         print('MF times 1CP: ', it0, it1)
         MF_1CP = np.sum(mass_flux_1CP[it0:it1,:,:], axis=0)     # accumulate over time
-        it0 = np.int(tmin / dt_fields_2CP)
-        it1 = np.int(tmax / dt_fields_2CP)
+        it0 = np.where(time_mf_2CP == tmin)[0][0]  # np.int(tmin / dt_fields_2CP)
+        it1 = np.where(time_mf_2CP == tmax)[0][0]  # np.int(tmax / dt_fields_2CP)
         print('MF times 2CP: ', it0, it1)
         MF_2CP = np.sum(mass_flux_2CP[it0:it1, :, :], axis=0)  # accumulate over time
-        it0 = np.int(tmin / dt_fields_3CP)
-        it1 = np.int(tmax / dt_fields_3CP)
+        it0 = np.where(time_mf_3CP == tmin)[0][0]  # np.int(tmin / dt_fields_3CP)
+        it1 = np.where(time_mf_3CP == tmax)[0][0]  # np.int(tmax / dt_fields_3CP)
         print('MF times 3CP: ', it0, it1)
         MF_3CP = np.sum(mass_flux_3CP[it0:it1, :, :], axis=0)  # accumulate over time
 
         fig_name = 'collisions_massflux_CPheight_' + case_xCP + '_123.png'
         plot_collision_massflux_CPheight(MF_1CP, MF_2CP, MF_3CP, #MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
+                                         time_mf_1CP, time_mf_2CP, time_mf_3CP,
                                          t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
                                          delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
                                          ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
@@ -153,6 +155,7 @@ def main():
 def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3CP,
                                      #time_CPheight_1CP, time_CPheight_2CP, time_CPheight_3CP,
                                      MF_1CP, MF_2CP, MF_3CP, #MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
+                                     time_mf_1CP, time_mf_2CP, time_mf_3CP,
                                      t_ini, t_2CP, t_3CP, t_final,
                                      delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
                                      ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
@@ -227,6 +230,9 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
     plt.subplots_adjust(bottom=0.1, right=.99, left=0.03, top=0.95, hspace=0.2, wspace=0.25)
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
+
+    print('')
+    print('')
 
     return
 # _______________________________________________________
