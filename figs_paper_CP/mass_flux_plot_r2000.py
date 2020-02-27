@@ -181,7 +181,7 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
     ''' Mass Flux 2D '''
     ax = axis[2]
     b = ic_arr_3CP[2]-ic_arr_3CP[0]
-    pcm = ax.pcolormesh(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP,
+    pcm = ax.pcolormesh(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP.T,
                         norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
     rect1 = mpatches.Rectangle((-ic_arr_1CP[0], -delta), nx_1CP[0], 2*delta, fill=True,
                                linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
@@ -199,15 +199,16 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
     ax.set_xlim(xmin-ic_3CP, ic_3CP-xmin)
     ax.set_ylim(ymin-ic_3CP, ic_3CP-ymin)
     ax = axis[4]
-    pcm = ax.pcolormesh(np.arange(nx_3CP[0])-ic_arr_3CP[0], np.arange(nx_3CP[1])-jc_3CP, MF_3CP.T,
-                        norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
+    pcm = ax.contourf(MF_3CP.T, cmap=cm_bw)  # cmap='RdBu_r')
+    # pcm = ax.pcolormesh(np.arange(nx_3CP[0])-ic_arr_3CP[0], np.arange(nx_3CP[1])-jc_3CP, MF_3CP.T,
+    #                     norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
     plt.colorbar(pcm, ax=ax, extend='both')
     # rect2 = mpatches.Rectangle((-100, jc_arr_3CP[2] - delta), 300, 2*delta, fill=True,
     rect2 = mpatches.Rectangle((-100, -delta), 300, 2*delta, fill=True,
                                linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
     ax.add_patch(rect2)
-    ax.set_xlim(xmin-ic_3CP, xmax-ic_3CP)
-    ax.set_ylim(ymin-ic_3CP, ic_3CP-ymin)
+    # ax.set_xlim(xmin-ic_3CP, xmax-ic_3CP)
+    # ax.set_ylim(ymin-ic_3CP, ic_3CP-ymin)
     for ax in axis[2:].flat:
         ax.set_aspect('equal')
     axis[2].set_ylabel('y [km]')
