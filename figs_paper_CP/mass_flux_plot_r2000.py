@@ -128,23 +128,37 @@ def main():
         it1 = np.where(time_mf_1CP == tmax)[0][0]#np.int(tmax / dt_fields_1CP)
         print('MF times 1CP: ', it0, it1)
         MF_1CP = np.sum(mass_flux_1CP[it0:it1,:,:], axis=0)     # accumulate over time
+        MF_1CP_pos = np.sum(mass_flux_pos_1CP[it0:it1,:,:], axis=0)     # accumulate over time
         it0 = np.where(time_mf_2CP == tmin)[0][0]  # np.int(tmin / dt_fields_2CP)
         it1 = np.where(time_mf_2CP == tmax)[0][0]  # np.int(tmax / dt_fields_2CP)
         print('MF times 2CP: ', it0, it1)
         MF_2CP = np.sum(mass_flux_2CP[it0:it1, :, :], axis=0)  # accumulate over time
+        MF_2CP_pos = np.sum(mass_flux_pos_2CP[it0:it1, :, :], axis=0)  # accumulate over time
         it0 = np.where(time_mf_3CP == tmin)[0][0]  # np.int(tmin / dt_fields_3CP)
         it1 = np.where(time_mf_3CP == tmax)[0][0]  # np.int(tmax / dt_fields_3CP)
         print('MF times 3CP: ', it0, it1)
         MF_3CP = np.sum(mass_flux_3CP[it0:it1, :, :], axis=0)  # accumulate over time
+        MF_3CP_pos = np.sum(mass_flux_pos_3CP[it0:it1, :, :], axis=0)  # accumulate over time
 
         fig_name = 'collisions_massflux_CPheight_' + case_xCP + '_123.png'
-        plot_collision_massflux_CPheight(MF_1CP, MF_2CP, MF_3CP, #MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
+        plot_collision_massflux_CPheight(MF_1CP_pos, MF_2CP_pos, MF_3CP_pos, #MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
                                          time_mf_1CP, time_mf_2CP, time_mf_3CP,
                                          t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
                                          delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
                                          ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
                                          xmin_3CP[i], xmax_3CP[i], ymin_3CP[i],
                                          times, nx_1CP, nx_2CP, nx_3CP, path_out_figs, fig_name)
+
+        fig_name = 'collisions_massflux_pos_CPheight_' + case_xCP + '_123.png'
+        plot_collision_massflux_CPheight(MF_1CP, MF_2CP, MF_3CP,  # MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
+                                         time_mf_1CP, time_mf_2CP, time_mf_3CP,
+                                         t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
+                                         delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
+                                         ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
+                                         xmin_3CP[i], xmax_3CP[i], ymin_3CP[i],
+                                         times, nx_1CP, nx_2CP, nx_3CP, path_out_figs, fig_name)
+
+
 
     return
 
