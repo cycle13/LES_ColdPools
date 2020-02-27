@@ -17,9 +17,6 @@ import time
 # from convert_fields_smaller_k import convert_file_for_varlist_horsection
 
 
-
-
-
 execfile('settings.py')
 
 

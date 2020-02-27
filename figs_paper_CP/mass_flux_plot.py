@@ -17,9 +17,6 @@ import time
 # from convert_fields_smaller_k import convert_file_for_varlist_horsection
 
 
-
-
-
 execfile('settings.py')
 
 
@@ -74,6 +71,7 @@ def main():
     # print('d='+d)
     # print('')
 
+
     time_windows = {}
     if rstar == 2000:
         time_windows['10'] = [600, 750, 3600]
@@ -98,35 +96,35 @@ def main():
     root_in.close()
     print(os.path.join(path_3CP, 'data_analysis', filename_data_3CP))
     root_in = nc.Dataset(os.path.join(path_3CP, 'data_analysis', filename_data_3CP), 'r')
-    mass_flux_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:,:,:]
+    mass_flux_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
     # mass_flux_pos_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:,:,:]
     # time_data_3CP = root_in.groups['timeseries'].variables['time'][:]
     root_in.close()
-    #
-    # # averaged mass_flux_3CP
-    # delta = 6
-    # itmax = 15
-    # MF_2CP = np.sum(mass_flux_2CP[:itmax, :, :], axis=0)
-    # MF_mean_2CP = np.mean(MF_2CP[ic_2CP - delta:ic_2CP + delta + 1, :], axis=0)
-    # MF_3CP = np.sum(mass_flux_3CP[:itmax, :, :], axis=0)
-    # MF_mean_3CP = np.mean(MF_3CP[:, jc_3CP - delta:jc_3CP + delta + 1], axis=1)
-    #
-    #
-    # ''' CP height '''
-    # filename_CP_height = 'CP_height_' + case + '_sth0.5' + '.nc'
-    # root_in = nc.Dataset(os.path.join(path_3CP, 'data_analysis', filename_CP_height), 'r')
-    # time_CPheight_3CP = root_in.groups['timeseries'].variables['time'][:]
-    # CP_height_3CP = root_in.groups['fields_2D'].variables['CP_height_2d'][:, :, :]
-    # root_in.close()
-    # root_in = nc.Dataset(os.path.join(path_2CP, 'data_analysis', filename_CP_height), 'r')
-    # time_CPheight_2CP = root_in.groups['timeseries'].variables['time'][:]
-    # CP_height_2CP = root_in.groups['fields_2D'].variables['CP_height_2d'][:, :, :]
-    # root_in.close()
-    # global dt_CP_height_2CP, dt_CP_height_3CP
-    # dt_CP_height_2CP = time_CPheight_2CP[1] - time_CPheight_2CP[0]
-    # dt_CP_height_3CP = time_CPheight_3CP[1] - time_CPheight_3CP[0]
-    # # print(time_CPheight_2CP)
-    # # print(time_CPheight_3CP)
+
+    # averaged mass_flux_3CP
+    delta = 6
+    itmax = 15
+    MF_2CP = np.sum(mass_flux_2CP[:itmax, :, :], axis=0)
+    MF_mean_2CP = np.mean(MF_2CP[ic_2CP - delta:ic_2CP + delta + 1, :], axis=0)
+    MF_3CP = np.sum(mass_flux_3CP[:itmax, :, :], axis=0)
+    MF_mean_3CP = np.mean(MF_3CP[:, jc_3CP - delta:jc_3CP + delta + 1], axis=1)
+
+
+    ''' CP height '''
+    filename_CP_height = 'CP_height_' + case + '_sth0.5' + '.nc'
+    root_in = nc.Dataset(os.path.join(path_3CP, 'data_analysis', filename_CP_height), 'r')
+    time_CPheight_3CP = root_in.groups['timeseries'].variables['time'][:]
+    CP_height_3CP = root_in.groups['fields_2D'].variables['CP_height_2d'][:, :, :]
+    root_in.close()
+    root_in = nc.Dataset(os.path.join(path_2CP, 'data_analysis', filename_CP_height), 'r')
+    time_CPheight_2CP = root_in.groups['timeseries'].variables['time'][:]
+    CP_height_2CP = root_in.groups['fields_2D'].variables['CP_height_2d'][:, :, :]
+    root_in.close()
+    global dt_CP_height_2CP, dt_CP_height_3CP
+    dt_CP_height_2CP = time_CPheight_2CP[1] - time_CPheight_2CP[0]
+    dt_CP_height_3CP = time_CPheight_3CP[1] - time_CPheight_3CP[0]
+    # print(time_CPheight_2CP)
+    # print(time_CPheight_3CP)
 
     # fig_name = 'collisions_massflux_CPheight_' + case + '.png'
     # timerange = np.arange(tmin, tmax+100, 100)
@@ -164,7 +162,7 @@ def plot_collision_massflux_CPheight(CP_height_2CP, CP_height_3CP, time_CPheight
 
 
     ncol = 4
-    fig, axis = plt.subplots(4, ncol, figsize=(ncol * 5, 4*5))
+    fig, axis = plt.subplots(4, ncol, figsize=(ncol*5, 4*5))
     ax = axis[0,0]
     # for it_CP,t0 in enumerate(time_CPheight_2CP):
     #     ax.plot(CP_height_2CP[it_CP, ic_arr_2CP, :], color=cm_bwr(count_color), label='t=' + str(t0))
@@ -191,7 +189,6 @@ def plot_collision_massflux_CPheight(CP_height_2CP, CP_height_3CP, time_CPheight
 
     for ax in axis[1:3,:].flatten():
         ax.set_aspect('equal')
-
 
     for it, t0 in enumerate(times):
         it_2CP = np.where(time_CPheight_2CP == t0)[0][0]
