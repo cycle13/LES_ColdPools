@@ -50,3 +50,36 @@ colorlist3 = ['indianred', 'darkcyan', 'navy']
 colorlist2 = ['maroon', 'tomato']
 
 colorlist2_bw = [cm_bw(0.5), cm_bw(1.)]
+
+# ----------------------------------------------------------------------
+
+'''time windows for collisions (dTh=5K, z*=1000m)'''
+# rstar = 1100m
+d_range_r1100 = [10, 12, 15]
+t_ini_r1100 = [600, 600, 600]
+t_2CP_r1100 = [1100, 1500, 2400]
+t_3CP_r1100 = [1500, 2200, 3300]
+t_final_r1100 = [2400, 3100, 4200]
+
+# rstar = 2000m
+d_range_r2000 = [10, 15, 20]
+t_ini_r2000 = [400, 400, 400]
+t_2CP_r2000 = [600, 800, 2200]
+t_3CP_r2000 = [800, 1100, 3200]
+t_final_r2000 = [1800, 2500, 3500]
+
+d_range = {}
+d_range['1100'] = d_range_r1100
+d_range['2000'] = d_range_r2000
+t_ini = {}
+t_ini['1100'] = t_ini_r1100
+t_ini['2000'] = t_ini_r2000
+t_2CP = {}
+t_2CP['1100'] = t_2CP_r1100
+t_2CP['2000'] = t_2CP_r2000
+t_3CP = {}
+t_3CP['1100'] = t_3CP_r1100
+t_3CP['2000'] = t_3CP_r2000
+t_final = {}
+t_final['1100'] = t_final_r1100
+t_final['2000'] = t_final_r2000
