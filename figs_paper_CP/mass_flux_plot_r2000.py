@@ -89,7 +89,31 @@ def main():
 
         ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, \
                 ic_arr_3CP, jc_arr_3CP, \
-                ic_2CP, jc_2CP, ic_3CP, jc_3CP = define_geometry(nx_1CP, nx_2CP, nx_3CP)
+                ic_2CP, jc_2CP, ic_3CP, jc_3CP = define_geometry(nx_1CP, nx_2CP, nx_3CP, sep)
+
+
+        ''' Mass Flux '''
+        filename_data = 'mass_flux_z' + str(zlevel) + '.nc'
+        path_in = os.path.join(path_1CP, case, 'data_analysis', filename_data)
+        print(path_in)
+        root_in = nc.Dataset(path_in, 'r')
+        mass_flux_1CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
+        mass_flux_pos_1CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
+        root_in.close()
+        # path_in = os.path.join(path_2CP, case_xCP, 'data_analysis', filename_data)
+        # print(path_in)
+        # root_in = nc.Dataset(path_in, 'r')
+        # mass_flux_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
+        # mass_flux_pos_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
+        # time_data_2CP = root_in.groups['timeseries'].variables['time'][:]
+        # root_in.close()
+        # path_in = os.path.join(path_3CP, case_xCP, 'data_analysis', filename_data)
+        # print(path_in)
+        # root_in = nc.Dataset(path_in, 'r')
+        # mass_flux_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
+        # mass_flux_pos_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
+        # time_data_3CP = root_in.groups['timeseries'].variables['time'][:]
+        # root_in.close()
     return
 
 
@@ -133,7 +157,6 @@ def set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3C
 
 
 def define_geometry(nx_1CP, nx_2CP, nx_3CP, sep):
-    print('')
     # 1-CP simulation
     ic_arr_1CP = [np.int(nx_1CP[0]/2)]
     jc_arr_1CP = [np.int(nx_1CP[1]/2)]
