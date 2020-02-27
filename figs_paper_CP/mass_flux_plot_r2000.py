@@ -182,7 +182,7 @@ def main():
 # _______________________________________________________
 def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3CP,
                                      #time_CPheight_1CP, time_CPheight_2CP, time_CPheight_3CP,
-                                     MF_1CP, MF_2CP, MF_3CP, #MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
+                                     MF_1CP, MF_2CP, MF_3CP, MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
                                      time_mf_1CP, time_mf_2CP, time_mf_3CP,
                                      t_ini, t_2CP, t_3CP, t_final,
                                      delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
@@ -191,21 +191,33 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
                                      times, nx_1CP, nx_2CP, nx_3CP, path_out_figs, fig_name):
 
     ncol = 5
+    nrow = 2
     vmin = 1e-2
     vmin = np.amin(MF_3CP)
     vmax = 6.5
     vmax = np.amax(MF_3CP)
     lvls = np.linspace(vmin, vmax, 10)
-    fig, axis = plt.subplots(1, ncol, figsize=(ncol * 5, 5))
+    fig, axis_ = plt.subplots(1, ncol, figsize=(ncol * 5, nrow*5))
+    axis = axis_[0,:]
+    axis2 = axis_[1,:]
 
     ''' Mass Flux '''
     ax = axis[1]
-    # ax.plot(np.arange(nx_1CP[1]) - jc_1CP, MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
+    # ax.plot(np.arange(nx_1CP[1]) - jc_arr_1CP[0], MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
+    ax.plot(MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
     # ax.plot(np.arange(nx_2CP[1]) - jc_2CP, MF_mean_2CP, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
+    ax.plot(MF_mean_2CP, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
     # ax.plot(np.arange(nx_3CP[0]) - ic_arr_3CP[0], MF_mean_3CP, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
-    # ax.legend(loc=4)
+    ax.plot(MF_mean_3CP, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
+    ax.legend(loc=4)
     # ax.set_xlim(xmin - ic_3CP, xmax - ic_3CP)
     # ax.set_ylim(-2, np.ceil(np.amax(MF_mean_3CP)))
+    # axis[1].set_ylabel(r'Integrated Mass Flux  [kg/m$^2$]')
+    # ax = axis2[1]
+    # ax.plot(MF_mean_1CP_, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
+    # ax.plot(MF_mean_2CP_, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
+    # ax.plot(MF_mean_3CP_, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
+    # ax.legend(loc=4)
     # axis[1].set_ylabel(r'Integrated Mass Flux  [kg/m$^2$]')
 
 
