@@ -180,7 +180,7 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
     b = ic_arr_3CP[2]-ic_arr_3CP[0]
     pcm = ax.pcolormesh(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP,
                         norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
-    rect1 = mpatches.Rectangle((-ic_1CP, -delta), nx_1CP[0], 2*delta, fill=True,
+    rect1 = mpatches.Rectangle((-ic_arr_1CP[0], -delta), nx_1CP[0], 2*delta, fill=True,
                                linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
     ax.add_patch(rect1)
     # ax.set_xlim(xmin-ic_3CP, ic_3CP-xmin)
@@ -263,6 +263,10 @@ def set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3C
     dt_fields_1CP = np.int(nml_1CP['fields_io']['frequency'])
     dt_fields_2CP = np.int(nml_2CP['fields_io']['frequency'])
     dt_fields_3CP = np.int(nml_3CP['fields_io']['frequency'])
+    print('Output timestep:')
+    print('1CP: ', dt_fields_1CP)
+    print('2CP: ', dt_fields_2CP)
+    print('3CP: ', dt_fields_3CP)
 
     return nx_1CP, nx_2CP, nx_3CP, dt_fields_1CP, dt_fields_2CP, dt_fields_3CP
 
