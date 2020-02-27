@@ -203,9 +203,9 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
 
     ''' Mass Flux '''
     ax = axis[1]
-    ax.plot(np.arange(nx_1CP[1]) - jc_arr_1CP[0], MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
+    ax.plot(np.arange(nx_1CP[0]) - jc_arr_1CP[0], MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
     # ax.plot(MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
-    ax.plot(np.arange(nx_2CP[1]) - jc_2CP, MF_mean_2CP, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
+    ax.plot(np.arange(nx_2CP[1]) - jc_arr_2CP[0], MF_mean_2CP, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
     # ax.plot(MF_mean_2CP, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
     ax.plot(np.arange(nx_3CP[0]) - ic_arr_3CP[0], MF_mean_3CP, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
     # ax.plot(MF_mean_3CP, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
@@ -214,9 +214,9 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
     # ax.set_ylim(-2, np.ceil(np.amax(MF_mean_3CP)))
     ax.set_ylabel(r'Integrated Mass Flux  [kg/m$^2$]')
     ax = axis2[1]
-    ax.plot(MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
-    ax.plot(MF_mean_2CP, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
-    ax.plot(MF_mean_3CP, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
+    ax.plot(np.arange(nx_1CP[0]) - jc_arr_1CP[0], MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
+    ax.plot(np.arange(nx_2CP[1]) - ic_arr_2CP[0], MF_mean_2CP, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
+    ax.plot(np.arange(nx_3CP[0]) - ic_arr_3CP[0], MF_mean_3CP, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
     ax.legend(loc=4)
     ax.set_ylabel(r'Integrated Mass Flux  [kg/m$^2$]')
 
