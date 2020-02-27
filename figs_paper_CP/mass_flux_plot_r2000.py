@@ -140,7 +140,7 @@ def main():
         plot_collision_massflux_CPheight(MF_1CP, MF_2CP, MF_3CP, #MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
                                          t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
                                          delta, ic_1CP, jc_1CP, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
-                                         ic_arr_1CP, jc_arr_2CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
+                                         ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
                                          xmin_3CP[i], xmax_3CP[i], ymin_3CP[i],
                                          times, path_out_figs, fig_name)
 
