@@ -166,6 +166,7 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
     vmin = 1e-2
     vmax = 6.5
     vmax = np.amax(MF_3CP)
+    lvls = np.linspace(vmin, vmax, 10)
     fig, axis = plt.subplots(1, ncol, figsize=(ncol * 5, 5))
 
     ''' Mass Flux '''
@@ -184,25 +185,25 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
     b = ic_arr_3CP[2]-ic_arr_3CP[0]
     # pcm = ax.pcolormesh(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP.T,
     #                     norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
-    pcm = ax.contourf(MF_1CP.T,
-                        norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
+    pcm = ax.contourf(MF_1CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
     rect1 = mpatches.Rectangle((-ic_arr_1CP[0], -delta), nx_1CP[0], 2*delta, fill=True,
                                linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
     ax.add_patch(rect1)
     # ax.set_xlim(xmin-ic_3CP, ic_3CP-xmin)
     # ax.set_ylim(ymin-ic_3CP, ic_3CP-ymin)
     ax = axis[3]
-    pcm = ax.pcolormesh(np.arange(nx_2CP[1])-jc_2CP, np.arange(nx_2CP[0])-ic_2CP, MF_2CP,
-                        # norm = colors.SymLogNorm(linthresh=0.03,linscale=0.03,vmin=-max,vmax=max),
-                        # norm = colors.PowerNorm(),
-                        norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
+    pcm = ax.contourf(MF_2CP, levels=lvls, cmap=cm_bw)
+    #pcm = ax.pcolormesh(np.arange(nx_2CP[1])-jc_2CP, np.arange(nx_2CP[0])-ic_2CP, MF_2CP,
+    #                    # norm = colors.SymLogNorm(linthresh=0.03,linscale=0.03,vmin=-max,vmax=max),
+    #                    # norm = colors.PowerNorm(),
+    #                    norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
     rect = mpatches.Rectangle((-jc_2CP, -delta), nx_2CP[1], 2*delta, fill=True,
                               linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
     ax.add_patch(rect)
-    ax.set_xlim(xmin-ic_3CP, ic_3CP-xmin)
-    ax.set_ylim(ymin-ic_3CP, ic_3CP-ymin)
+    #ax.set_xlim(xmin-ic_3CP, ic_3CP-xmin)
+    #ax.set_ylim(ymin-ic_3CP, ic_3CP-ymin)
     ax = axis[4]
-    pcm = ax.contourf(np.arange(nx_3CP[0])-ic_arr_3CP[0], np.arange(nx_3CP[1])-jc_3CP, MF_3CP.T, cmap=cm_bw)  # cmap='RdBu_r')
+    pcm = ax.contourf(MF_3CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
     # pcm = ax.pcolormesh(np.arange(nx_3CP[0])-ic_arr_3CP[0], np.arange(nx_3CP[1])-jc_3CP, MF_3CP.T,
     #                     norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
     plt.colorbar(pcm, ax=ax, extend='both')
