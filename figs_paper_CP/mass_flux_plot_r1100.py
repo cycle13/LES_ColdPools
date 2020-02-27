@@ -97,7 +97,7 @@ def main():
         print('times: ', times)
 
         ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP, \
-        ic_2CP, jc_2CP, ic_3CP, jc_3CP = define_geometry(nml_2CP, nml_3CP)
+                ic_2CP, jc_2CP, ic_3CP, jc_3CP = define_geometry(nml_2CP, nml_3CP)
         # print('CP geometry:')
         # print(ic_arr)
         # print(jc_arr)
