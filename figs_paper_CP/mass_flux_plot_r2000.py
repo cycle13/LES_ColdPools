@@ -184,7 +184,7 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
     b = ic_arr_3CP[2]-ic_arr_3CP[0]
     # pcm = ax.pcolormesh(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP.T,
     #                     norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
-    pcm = ax.contourf(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP.T,
+    pcm = ax.contourf(MF_1CP.T,
                         norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
     rect1 = mpatches.Rectangle((-ic_arr_1CP[0], -delta), nx_1CP[0], 2*delta, fill=True,
                                linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
