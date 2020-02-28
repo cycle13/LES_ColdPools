@@ -79,8 +79,8 @@ def main():
         ymin_3CP[2] = 0
 
 
-    for i, sep in enumerate(d_range[rst][:2]):
-        print('--- d=' + str(sep) + 'km ---')
+    for i,sep in enumerate(d_range[rst][:]):
+        print('--- d='+str(sep)+'km ---')
         case_xCP = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar) + '_d' + str(sep) + 'km'
 
         nx_1CP, nx_2CP, nx_3CP, dt_fields_1CP, dt_fields_2CP, dt_fields_3CP = set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3CP,
@@ -153,8 +153,9 @@ def main():
         MF_pos_mean_3CP_ = np.mean(MF_pos_3CP[ic_3CP-delta:ic_3CP+delta,:], axis=0)
 
         fig_name = 'collisions_massflux_CPheight_' + case_xCP + '_123.png'
-        plot_collision_massflux_CPheight(MF_1CP, MF_2CP, MF_3CP, MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
-                                         time_mf_1CP, time_mf_2CP, time_mf_3CP,
+        plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3CP,
+                                         #time_CPheight_1CP, time_CPheight_2CP, time_CPheight_3CP,
+                                         MF_1CP, MF_2CP, MF_3CP, MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
                                          t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
                                          delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
                                          ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
@@ -164,7 +165,6 @@ def main():
 
         fig_name = 'collisions_massflux_pos_CPheight_' + case_xCP + '_123.png'
         plot_collision_massflux_CPheight(MF_pos_1CP, MF_pos_2CP, MF_pos_3CP, MF_pos_mean_1CP, MF_pos_mean_2CP, MF_pos_mean_3CP,
-                                         time_mf_1CP, time_mf_2CP, time_mf_3CP,
                                          t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
                                          delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
                                          ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
@@ -183,7 +183,6 @@ def main():
 def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3CP,
                                      #time_CPheight_1CP, time_CPheight_2CP, time_CPheight_3CP,
                                      MF_1CP, MF_2CP, MF_3CP, MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
-                                     time_mf_1CP, time_mf_2CP, time_mf_3CP,
                                      t_ini, t_2CP, t_3CP, t_final,
                                      delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
                                      ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
@@ -204,19 +203,16 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
     ''' Mass Flux '''
     ax = axis[1]
     ax.plot(np.arange(nx_1CP[0]) - jc_arr_1CP[0], MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
-    # ax.plot(MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
     ax.plot(np.arange(nx_2CP[1]) - jc_arr_2CP[0], MF_mean_2CP, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
-    # ax.plot(MF_mean_2CP, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
     ax.plot(np.arange(nx_3CP[0]) - ic_arr_3CP[0], MF_mean_3CP, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
-    # ax.plot(MF_mean_3CP, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
     ax.legend(loc=4)
     # ax.set_xlim(xmin - ic_3CP, xmax - ic_3CP)
     # ax.set_ylim(-2, np.ceil(np.amax(MF_mean_3CP)))
     ax.set_ylabel(r'Integrated Mass Flux  [kg/m$^2$]')
     ax = axis2[1]
-    ax.plot(np.arange(nx_1CP[0]) - jc_arr_1CP[0], MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
-    ax.plot(np.arange(nx_2CP[1]) - ic_arr_2CP[0], MF_mean_2CP, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
-    ax.plot(np.arange(nx_3CP[0]) - ic_arr_3CP[0], MF_mean_3CP, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
+    # ax.plot(np.arange(nx_1CP[0]) - jc_arr_1CP[0], MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
+    # ax.plot(np.arange(nx_2CP[1]) - ic_arr_2CP[0], MF_mean_2CP, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
+    # ax.plot(np.arange(nx_3CP[0]) - ic_arr_3CP[0], MF_mean_3CP, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
     ax.legend(loc=4)
     ax.set_ylabel(r'Integrated Mass Flux  [kg/m$^2$]')
 
@@ -224,9 +220,9 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
     ''' Mass Flux 2D '''
     ax = axis[2]
     b = ic_arr_3CP[2]-ic_arr_3CP[0]
+    pcm = ax.contourf(MF_1CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
     # pcm = ax.pcolormesh(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP.T,
     #                     norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
-    pcm = ax.contourf(MF_1CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
     rect1 = mpatches.Rectangle((-ic_arr_1CP[0], -delta), nx_1CP[0], 2*delta, fill=True,
                                linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
     ax.add_patch(rect1)
@@ -234,7 +230,7 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
     # ax.set_ylim(ymin-ic_3CP, ic_3CP-ymin)
     ax = axis[3]
     pcm = ax.contourf(MF_2CP, levels=lvls, cmap=cm_bw)
-    #pcm = ax.pcolormesh(np.arange(nx_2CP[1])-jc_2CP, np.arange(nx_2CP[0])-ic_2CP, MF_2CP,
+    # pcm = ax.pcolormesh(np.arange(nx_2CP[1])-jc_2CP, np.arange(nx_2CP[0])-ic_2CP, MF_2CP,
     #                    # norm = colors.SymLogNorm(linthresh=0.03,linscale=0.03,vmin=-max,vmax=max),
     #                    # norm = colors.PowerNorm(),
     #                    norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
@@ -322,6 +318,8 @@ def set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3C
 
     return nx_1CP, nx_2CP, nx_3CP, dt_fields_1CP, dt_fields_2CP, dt_fields_3CP
 
+
+# _______________________________________________________
 
 def define_geometry(nx_1CP, nx_2CP, nx_3CP, sep):
     # 1-CP simulation

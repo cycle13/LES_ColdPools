@@ -12,11 +12,6 @@ import matplotlib.colors as colors
 import matplotlib.cbook as cbook
 import time
 
-
-
-# from convert_fields_smaller_k import convert_file_for_varlist_horsection
-
-
 execfile('settings.py')
 label_size = 15
 plt.rcParams['xtick.labelsize'] = label_size
@@ -26,16 +21,12 @@ plt.rcParams['legend.fontsize'] = 15
 plt.rcParams['axes.labelsize'] = 18
 
 def main():
-    # Parse information from the command line
     parser = argparse.ArgumentParser(prog='PyCLES')
-    # parser.add_argument("casename")
-    # parser.add_argument("path_3CP")
     parser.add_argument("--level")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
     args = parser.parse_args()
 
-    global case_name_3CP
     case_name_1CP = 'ColdPoolDry_single_3D'
     case_name_2CP = 'ColdPoolDry_double_3D'
     case_name_3CP = 'ColdPoolDry_triple_3D'
@@ -55,13 +46,15 @@ def main():
     path_2CP = '/nbi/ac/coag/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/double_3D/'
     path_3CP = '/nbi/ac/cond2/meyerbe/ColdPools/3D_sfc_fluxes_off/triple_3D/'
     print('')
+    print('Case: ' + case)
     print('path 1CP:   ' + path_1CP)
     print('path 2CP:   ' + path_2CP)
     print('path 3CP:   ' + path_3CP)
     path_data = os.path.join(path_3CP, 'data_analysis')
     # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
     path_out_figs = '/nbi/home/meyerbe/paper_CP'
-
+    print('Path Figures: ' + path_out_figs)
+    print('')
 
     if args.level:
         zlevel = np.int(args.level)
@@ -90,58 +83,78 @@ def main():
         print('--- d='+str(sep)+'km ---')
         case_xCP = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar) + '_d' + str(sep) + 'km'
 
-        nml_2CP, nml_3CP, times, files = set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3CP,
+        nx_1CP, nx_2CP, nx_3CP, dt_fields_1CP, dt_fields_2CP, dt_fields_3CP = set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3CP,
                                                                      path_1CP, path_2CP, path_3CP,
                                                                      case, case_xCP)
+
+        ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, \
+                ic_arr_3CP, jc_arr_3CP, \
+                ic_2CP, jc_2CP, ic_3CP, jc_3CP = define_geometry(nx_1CP, nx_2CP, nx_3CP, sep)
+
         times = np.arange(t_ini[rst][i], t_final[rst][i], 100)
         print('times: ', times)
-
-        ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP, \
-                ic_2CP, jc_2CP, ic_3CP, jc_3CP = define_geometry(nml_2CP, nml_3CP)
         # print('CP geometry:')
         # print(ic_arr)
         # print(jc_arr)
         print('')
 
+
         ''' Mass Flux '''
         # read in flux (2D-field)
         filename_data = 'mass_flux_z' + str(zlevel) + '.nc'
-        print(os.path.join(path_1CP, case, 'data_analysis', filename_data))
-        root_in = nc.Dataset(os.path.join(path_1CP, case, 'data_analysis', filename_data), 'r')
+        path_in = os.path.join(path_1CP, case, 'data_analysis', filename_data)
+        print(path_in)
+        root_in = nc.Dataset(path_in, 'r')
         mass_flux_1CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
+        mass_flux_pos_1CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
+        time_mf_1CP = root_in.groups['timeseries'].variables['time'][:]
         root_in.close()
-        print(os.path.join(path_2CP, case_xCP, 'data_analysis', filename_data))
-        root_in = nc.Dataset(os.path.join(path_2CP, case_xCP, 'data_analysis', filename_data), 'r')
+        path_in = os.path.join(path_2CP, case_xCP, 'data_analysis', filename_data)
+        print(path_in)
+        root_in = nc.Dataset(path_in, 'r')
         mass_flux_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
         mass_flux_pos_2CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
-        # time_data_2CP = root_in.groups['timeseries'].variables['time'][:]
+        time_mf_2CP = root_in.groups['timeseries'].variables['time'][:]
         root_in.close()
-        print(os.path.join(path_3CP, case_xCP, 'data_analysis', filename_data))
-        root_in = nc.Dataset(os.path.join(path_3CP, case_xCP, 'data_analysis', filename_data), 'r')
+        path_in = os.path.join(path_3CP, case_xCP, 'data_analysis', filename_data)
+        print(path_in)
+        root_in = nc.Dataset(path_in, 'r')
         mass_flux_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
-        # mass_flux_pos_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:,:,:]
-        # time_data_3CP = root_in.groups['timeseries'].variables['time'][:]
+        mass_flux_pos_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:, :, :]
+        time_mf_3CP = root_in.groups['timeseries'].variables['time'][:]
         root_in.close()
-        # averaged mass flux
-        delta = 6
-        itmin = t_ini[rst]
-        itmax = 15
-        ic_1CP = np.int(nx_1CP[0]/2)
-        t0 = np.int(t_ini[rst][i]/dt_fields_1CP)
-        t1 = np.int(t_final[rst][i]/dt_fields_1CP)
-        print('MF times: ', t0, t1)
-        MF_1CP = np.sum(mass_flux_1CP[t0:t1, :, :], axis=0)
-        MF_mean_1CP = np.mean(MF_1CP[ic_1CP - delta:ic_1CP + delta + 01, :], axis=0)
-        t0 = np.int(t_ini[rst][i] / dt_fields_2CP)
-        t1 = np.int(t_final[rst][i] / dt_fields_2CP)
-        print('MF times: ', t0, t1)
-        MF_2CP = np.sum(mass_flux_2CP[t0:t1, :, :], axis=0)
-        MF_mean_2CP = np.mean(MF_2CP[ic_2CP - delta:ic_2CP + delta + 1, :], axis=0)
-        t0 = np.int(t_ini[rst][i] / dt_fields_3CP)
-        t1 = np.int(t_final[rst][i] / dt_fields_3CP)
-        print('MF times: ', t0, t1)
-        MF_3CP = np.sum(mass_flux_3CP[t0:t1, :, :], axis=0)
-        MF_mean_3CP = np.mean(MF_3CP[:, jc_3CP - delta:jc_3CP + delta + 1], axis=1)
+        ''' averaged mass flux '''
+        tmin = t_ini[rst][i]
+        tmax = t_final[rst][i]
+        delta = 5       # averaging over band of withd delta_y=2*delta*dy=600m
+        print('Mass flux: averaging from tmin='+str(tmin)+' to tmax='+str(tmax))
+        it0 = np.where(time_mf_1CP == tmin)[0][0]#np.int(tmin / dt_fields_1CP)
+        it1 = np.where(time_mf_1CP == tmax)[0][0]#np.int(tmax / dt_fields_1CP)
+        print('MF times 1CP: ', it0, it1)
+        MF_1CP = np.sum(mass_flux_1CP[it0:it1,:,:], axis=0)     # accumulate over time
+        MF_pos_1CP = np.sum(mass_flux_pos_1CP[it0:it1,:,:], axis=0)     # accumulate over time
+        MF_mean_1CP = np.mean(MF_1CP[:,jc_arr_1CP[0]-delta:jc_arr_1CP[0]+delta], axis=1)
+        MF_mean_1CP_ = np.mean(MF_1CP[ic_arr_1CP[0]-delta:ic_arr_1CP[0]+delta,:], axis=0)
+        MF_pos_mean_1CP = np.mean(MF_pos_1CP[:,jc_arr_1CP[0]-delta:jc_arr_1CP[0]+delta], axis=1)
+        MF_pos_mean_1CP_ = np.mean(MF_pos_1CP[ic_arr_1CP[0]-delta:ic_arr_1CP[0]+delta,:], axis=0)
+        it0 = np.where(time_mf_2CP == tmin)[0][0]  # np.int(tmin / dt_fields_2CP)
+        it1 = np.where(time_mf_2CP == tmax)[0][0]  # np.int(tmax / dt_fields_2CP)
+        print('MF times 2CP: ', it0, it1)
+        MF_2CP = np.sum(mass_flux_2CP[it0:it1, :, :], axis=0)  # accumulate over time
+        MF_pos_2CP = np.sum(mass_flux_pos_2CP[it0:it1, :, :], axis=0)  # accumulate over time
+        MF_mean_2CP = np.mean(MF_2CP[ic_2CP-delta:ic_2CP+delta,:], axis=0)
+        MF_mean_2CP_ = np.mean(MF_2CP[:,jc_2CP-delta:jc_2CP+delta], axis=1)
+        MF_pos_mean_2CP = np.mean(MF_pos_2CP[ic_2CP-delta:ic_2CP+delta,:], axis=0)
+        MF_pos_mean_2CP_ = np.mean(MF_pos_2CP[:,jc_2CP-delta:jc_2CP+delta], axis=1)
+        it0 = np.where(time_mf_3CP == tmin)[0][0]  # np.int(tmin / dt_fields_3CP)
+        it1 = np.where(time_mf_3CP == tmax)[0][0]  # np.int(tmax / dt_fields_3CP)
+        print('MF times 3CP: ', it0, it1)
+        MF_3CP = np.sum(mass_flux_3CP[it0:it1, :, :], axis=0)  # accumulate over time
+        MF_pos_3CP = np.sum(mass_flux_pos_3CP[it0:it1, :, :], axis=0)  # accumulate over time
+        MF_mean_3CP = np.mean(MF_3CP[:,jc_3CP-delta:jc_3CP+delta], axis=1)
+        MF_mean_3CP_ = np.mean(MF_3CP[ic_3CP-delta:ic_3CP+delta,:], axis=0)
+        MF_pos_mean_3CP = np.mean(MF_pos_3CP[:,jc_3CP-delta:jc_3CP+delta], axis=1)
+        MF_pos_mean_3CP_ = np.mean(MF_pos_3CP[ic_3CP-delta:ic_3CP+delta,:], axis=0)
 
         print('')
 
@@ -188,10 +201,19 @@ def main():
                                          MF_1CP, MF_2CP, MF_3CP, MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
                                          t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
                                          delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
-                                         ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
+                                         ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
                                          xmin_3CP[i], xmax_3CP[i], ymin_3CP[i],
-                                         case, case_xCP,
-                                         times, path_out_figs, fig_name)
+                                         times, nx_1CP, nx_2CP, nx_3CP, path_out_figs, fig_name)
+
+
+        fig_name = 'collisions_massflux_pos_CPheight_' + case_xCP + '_123.png'
+        plot_collision_massflux_CPheight(MF_pos_1CP, MF_pos_2CP, MF_pos_3CP, MF_pos_mean_1CP, MF_pos_mean_2CP, MF_pos_mean_3CP,
+                                         t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
+                                         delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
+                                         ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
+                                         xmin_3CP[i], xmax_3CP[i], ymin_3CP[i],
+                                         times, nx_1CP, nx_2CP, nx_3CP, path_out_figs, fig_name)
+
 
         fig_name = 'collisions_massflux_CPheight_' + case_xCP + '_3panels.png'
         plot_collision_massflux_CPheight_3panels(CP_height_1CP, CP_height_2CP, CP_height_3CP,
@@ -370,15 +392,16 @@ def plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP
                                      MF_1CP, MF_2CP, MF_3CP, MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
                                      t_ini, t_2CP, t_3CP, t_final,
                                      delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
-                                     ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
+                                     ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
                                      xmin, xmax, ymin,
-                                     case, case_xCP,
-                                     times, path_out_figs, fig_name):
-
+                                     times, nx_1CP, nx_2CP, nx_3CP, path_out_figs, fig_name):
 
     ncol = 5
     vmin = 1e-2
+    vmin = np.amin(MF_3CP)
     vmax = 6.5
+    vmax = np.amax(MF_3CP)
+    lvls = np.linspace(vmin, vmax, 10)
     fig, axis = plt.subplots(1, ncol, figsize=(ncol * 5, 5))
 
     ''' CP Height '''
@@ -417,7 +440,7 @@ def plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP
     ''' Mass Flux '''
     ax = axis[1]
     jc_1CP = np.int(nx_1CP[1] / 2)
-    ax.plot(np.arange(nx_1CP[1]) - jc_1CP, MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
+    ax.plot(np.arange(nx_1CP[0]) - jc_1CP, MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
     ax.plot(np.arange(nx_2CP[1]) - jc_2CP, MF_mean_2CP, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
     ax.plot(np.arange(nx_3CP[0]) - ic_arr_3CP[0], MF_mean_3CP, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
     ax.legend(loc=4)
@@ -428,27 +451,30 @@ def plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP
 
     ''' Mass Flux 2D '''
     ax = axis[2]
-    pcm = ax.pcolormesh(np.arange(nx_1CP[1])-jc_1CP, np.arange(nx_1CP[0])-jc_1CP, MF_1CP,
-                        norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
-    rect1 = mpatches.Rectangle((-jc_1CP, -delta), nx_1CP[0], 2 * delta, fill=True,
+    b = ic_arr_3CP[2]-ic_arr_3CP[0]
+    pcm = ax.contourf(MF_1CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
+    # pcm = ax.pcolormesh(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP.T,
+    #                     norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
+    rect1 = mpatches.Rectangle((-ic_arr_1CP[0], -delta), nx_1CP[0], 2*delta, fill=True,
                                linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
     ax.add_patch(rect1)
     ax.set_xlim(xmin-ic_3CP, ic_3CP-xmin)
     ax.set_ylim(ymin-ic_3CP, ic_3CP-ymin)
     ax = axis[3]
-    pcm = ax.pcolormesh(np.arange(nx_2CP[1])-jc_2CP, np.arange(nx_2CP[0])-ic_2CP, MF_2CP,
-                        # norm = colors.SymLogNorm(linthresh=0.03,linscale=0.03,vmin=-max,vmax=max),
-                        # norm = colors.PowerNorm(),
-                        norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
+    pcm = ax.contourf(MF_2CP, levels=lvls, cmap=cm_bw)
+    # pcm = ax.pcolormesh(np.arange(nx_2CP[1])-jc_2CP, np.arange(nx_2CP[0])-ic_2CP, MF_2CP,
+    #                     # norm = colors.SymLogNorm(linthresh=0.03,linscale=0.03,vmin=-max,vmax=max),
+    #                     # norm = colors.PowerNorm(),
+    #                     norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
     rect = mpatches.Rectangle((-jc_2CP, -delta), nx_2CP[1], 2*delta, fill=True,
                               linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
     ax.add_patch(rect)
     ax.set_xlim(xmin-ic_3CP, ic_3CP-xmin)
     ax.set_ylim(ymin-ic_3CP, ic_3CP-ymin)
-
     ax = axis[4]
-    pcm = ax.pcolormesh(np.arange(nx_3CP[0])-ic_3CP, np.arange(nx_3CP[1])-jc_3CP, MF_3CP.T,
-                        norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
+    pcm = ax.contourf(MF_3CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
+    # pcm = ax.pcolormesh(np.arange(nx_3CP[0])-ic_3CP, np.arange(nx_3CP[1])-jc_3CP, MF_3CP.T,
+    #                     norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
     plt.colorbar(pcm, ax=ax, extend='both')
     # rect2 = mpatches.Rectangle((-100, jc_arr_3CP[2] - delta), 300, 2*delta, fill=True,
     rect2 = mpatches.Rectangle((-100, -delta), 300, 2*delta, fill=True,
@@ -478,6 +504,9 @@ def plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP
     plt.subplots_adjust(bottom=0.1, right=.99, left=0.03, top=0.95, hspace=0.2, wspace=0.25)
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
+
+    print('')
+    print('')
 
     return
 
@@ -591,7 +620,6 @@ def set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3C
     nml_1CP = simplejson.loads(open(os.path.join(path_1CP, case, case_name_1CP + '.in')).read())
     nml_2CP = simplejson.loads(open(os.path.join(path_2CP, case_xCP, case_name_2CP + '.in')).read())
     nml_3CP = simplejson.loads(open(os.path.join(path_3CP, case_xCP, case_name_3CP + '.in')).read())
-    global nx_1CP, nx_2CP, nx_3CP, dx, dV, gw
     nx_1CP = np.zeros(3, dtype=np.int)
     nx_2CP = np.zeros(3, dtype=np.int)
     nx_3CP = np.zeros(3, dtype=np.int)
@@ -604,57 +632,38 @@ def set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3C
     nx_3CP[0] = nml_3CP['grid']['nx']
     nx_3CP[1] = nml_3CP['grid']['ny']
     nx_3CP[2] = nml_3CP['grid']['nz']
+    global dx
     dx = np.zeros(3, dtype=np.int)
     dx[0] = nml_3CP['grid']['dx']
     dx[1] = nml_3CP['grid']['dy']
     dx[2] = nml_3CP['grid']['dz']
-    gw = nml_3CP['grid']['gw']
-    dV = dx[0] * dx[1] * dx[2]
+    # gw = nml_3CP['grid']['gw']
+    # dV = dx[0] * dx[1] * dx[2]
     print('grid 1CP: ', nx_1CP)
     print('grid 2CP: ', nx_2CP)
     print('grid 3CP: ', nx_3CP)
 
 
-    global dt_fields_1CP, dt_fields_2CP, dt_fields_3CP, dt_stats, dt
+    # global dt_fields_1CP, dt_fields_2CP, dt_fields_3CP, dt_stats, dt
     dt_fields_1CP = np.int(nml_1CP['fields_io']['frequency'])
     dt_fields_2CP = np.int(nml_2CP['fields_io']['frequency'])
     dt_fields_3CP = np.int(nml_3CP['fields_io']['frequency'])
-    dt_stats = np.int(nml_3CP['stats_io']['frequency'])
-    dt = np.int(np.maximum(dt_stats, dt_fields_3CP))
+    print('Output timestep:')
+    print('1CP: ', dt_fields_1CP)
+    print('2CP: ', dt_fields_2CP)
+    print('3CP: ', dt_fields_3CP)
 
-    global tmin, tmax
-    if args.tmin:
-        tmin = np.int(args.tmin)
-    else:
-        tmin = 100
-    if args.tmax:
-        tmax = np.int(args.tmax)
-    else:
-        tmax = 3600
+    return nx_1CP, nx_2CP, nx_3CP, dt_fields_1CP, dt_fields_2CP, dt_fields_3CP
 
-    # times = [np.int(name[:-3]) for name in os.listdir(os.path.join(path_3CP, 'fields')) if name[-2:] == 'nc'
-    #          and tmin <= np.int(name[:-3]) <= tmax]
-    times = [np.int(name[:-3]) for name in os.listdir(os.path.join(path_3CP, case_xCP, 'fields')) if name[-2:] == 'nc'
-             and tmin <= np.int(name[:-3]) <= tmax and np.mod(np.int(name[:-3]), dt) == 0]
-    times.sort()
-    nt = len(times)
-    print('times: ' + str(times))
-    print('tmin, tmax: ' + str(tmin) + ', ' + str(tmax))
-    print('dt: ' + str(dt))
-    print('nt:', nt)
-    files = [str(t) + '.nc' for t in times]
-    print('')
-
-    return nml_2CP, nml_3CP, times, files
 
 # _______________________________________________________
 
-def define_geometry(nml_2CP, nml_3CP):
-    global rstar
+def define_geometry(nx_1CP, nx_2CP, nx_3CP, sep):
+    # 1-CP simulation
+    ic_arr_1CP = [np.int(nx_1CP[0]/2)]
+    jc_arr_1CP = [np.int(nx_1CP[1]/2)]
 
-    '''--- define geometry ---'''
-    rstar = nml_2CP['init']['r']
-    sep = nml_2CP['init']['sep']
+    # 2-CP simulation
     isep = np.int(np.round(sep / dx[0]))
     jsep = 0
     ic_2CP = np.int(np.round(nx_2CP[0] / 2))
@@ -666,15 +675,8 @@ def define_geometry(nml_2CP, nml_3CP):
     ic_arr_2CP = [ic1, ic2]
     jc_arr_2CP = [jc1, jc2]
 
-    try:
-        rstar = nml_3CP['init']['r']
-    except:
-        rstar = 5000.0  # half of the width of initial cold-pools [m]
-    try:
-        d = nml_3CP['init']['d']
-    except:
-        d = 1e3
-    i_d = np.int(np.round(d / dx[0]))
+    # 3-CP simulation
+    i_d = np.int(np.round(sep / dx[0]))
     idhalf = np.int(np.round(i_d / 2))
     a = np.int(np.round(i_d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
     r_int = np.int(np.sqrt(3.) / 6 * i_d)  # radius of inscribed circle
@@ -690,12 +692,16 @@ def define_geometry(nml_2CP, nml_3CP):
     ic_arr_3CP = [ic1, ic2, ic3]
     jc_arr_3CP = [jc1, jc2, jc3]
     print('')
-    print('CP constellations: ')
-    print('2CP: ', ic_2CP, jc_2CP, ic_arr_2CP, jc_arr_2CP)
-    print('3CP: ', ic_3CP, jc_3CP, ic_arr_3CP, jc_arr_3CP)
+    print('CP configuration: ')
+    print('1CP: ', ic_arr_1CP, jc_arr_1CP)
+    print('2CP: ', ic_arr_2CP, jc_arr_2CP)
+    print('3CP: ', ic_arr_3CP, jc_arr_3CP)
+    print('CP collision points: ')
+    print('2CP: ', ic_2CP, jc_2CP)
+    print('3CP: ', ic_3CP, jc_3CP)
+    print('')
 
-
-    return ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP, ic_2CP, jc_2CP, ic_3CP, jc_3CP
+    return ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP, ic_2CP, jc_2CP, ic_3CP, jc_3CP
 
 # _______________________________________________________
 
