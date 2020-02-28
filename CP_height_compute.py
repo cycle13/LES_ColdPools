@@ -503,6 +503,12 @@ def plot_geometry(s, i0, j0):
     ax1.plot(ic_arr, jc_arr, 'yo')
     ax1.plot(i0, j0, 'ko')
     ax2.plot(i0, j0, 'ko')
+
+    textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
+    for i in range(len(ic_arr)):
+        txt = 'CP'+str(i)
+        ax1.text(ic_arr[i]+10, jc_arr[i]+10, txt, fontsize=18, bbox=textprops)
+
     ax1.set_xlim(eps, nx-eps)
     ax1.set_ylim(eps, ny-eps)
     ax2.set_xlim(eps, nx-eps)
