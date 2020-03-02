@@ -65,23 +65,22 @@ def main():
     print('')
 
     # plotting parameters
-    del_x_min = np.zeros(3, dtype=np.int)
-    del_x_max = np.zeros(3, dtype=np.int)
-    del_y_min = np.zeros(3, dtype=np.int)
-    ymax_3CP = np.zeros(3, dtype=np.int)
+    del_x_min = {}
+    del_x_max = {}
+    del_y_min = {}
     if rstar == 1100:
-        del_x_min[0] = 100
-        del_x_max[0] = 180
-        del_y_min[0] = 150
-        del_x_min[1] = 200
-        del_x_max[1] = 500
-        del_y_min[1] = 100
-        del_x_min[2] = 200
-        del_x_max[2] = 600
-        del_y_min[2] = 50
+        del_x_min['10'] = 100
+        del_x_max['10'] = 180
+        del_y_min['10'] = 150
+        del_x_min['12'] = 100
+        del_x_max['12'] = 220
+        del_y_min['12'] = 150
+        del_x_min['15'] = 200
+        del_x_max['15'] = 600
+        del_y_min['15'] = 50
 
 
-    for i,sep in enumerate(d_range[rst][:]):
+    for i,sep in enumerate(d_range[rst][:1]):
         print('--- d='+str(sep)+'km ---')
         case_xCP = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar) + '_d' + str(sep) + 'km'
 
@@ -203,7 +202,7 @@ def main():
         #                                       time_CPheight_2CP, time_CPheight_3CP,
         #                                       t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
         #                                       ic_2CP, jc_2CP, ic_3CP, jc_3CP,
-        #                                       del_x_min[i], del_x_min[i],
+        #                                       del_x_min[str(sep)], del_x_min[str(sep)],
         #                                       case, case_xCP,
         #                                       times, nx_1CP, nx_2CP, nx_3CP, path_out_figs)
 
@@ -215,7 +214,7 @@ def main():
                                          t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
                                          delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
                                          ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
-                                         del_x_min[i], del_x_max[i], del_y_min[i],
+                                         del_x_min[str(sep)], del_x_max[str(sep)], del_y_min[str(sep)],
                                          times, nx_1CP, nx_2CP, nx_3CP, path_out_figs, fig_name)
 
 
@@ -227,7 +226,7 @@ def main():
                                          t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
                                          delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
                                          ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
-                                         del_x_min[i], del_x_max[i], del_y_min[i],
+                                         del_x_min[str(sep)], del_x_max[str(sep)], del_y_min[str(sep)],
                                          times, nx_1CP, nx_2CP, nx_3CP, path_out_figs, fig_name)
 
         #
@@ -238,7 +237,7 @@ def main():
         #                                  t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
         #                                  delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
         #                                  ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
-        #                                  del_x_min[i], del_x_min[i], del_y_min[i],
+        #                                  del_x_min[str(sep)], del_x_min[str(sep)], del_y_min[str(sep)],
         #                                  case, case_xCP,
         #                                  times, nx_1CP, nx_2CP, nx_3CP, path_out_figs, fig_name)
     return
@@ -419,7 +418,7 @@ def plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP
     vmin = np.amin(MF_3CP)
     vmax = 6.5
     vmax = np.amax(MF_3CP)
-    lvls = np.linspace(vmin, vmax, 10)
+    lvls = np.linspace(vmin, vmax, 20)
     fig, axis = plt.subplots(nrow, ncol, figsize=(ncol * 5, 5))
     # axis = axis_[0,:]
     # axis2 = axis_[1,:]
@@ -486,49 +485,79 @@ def plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP
 
 
     ''' Mass Flux 2D '''
-    ax = axis[2]
+    rect_y = .1
+    rect_h = .85
+    ax1 = fig.add_axes([.43,rect_y,.18,rect_h]) #[left, bottom, width, height]
+    ax2 = fig.add_axes([.6,rect_y,.15,rect_h])  #[left, bottom, width, height]
+    ax3 = fig.add_axes([.745,rect_y,.2,rect_h])   #[left, bottom, width, height]
+    # ax4 = fig.add_axes([.9,rect_y,.2,rect_h]) #[left, bottom, width, height]
     b = ic_arr_3CP[2]-ic_arr_3CP[0]
-    pcm = ax.contourf(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
-    # pcm = ax.pcolormesh(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP.T,
+    pcm = ax1.contourf(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
+    # pcm = ax1.pcolormesh(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP.T,
     #                     norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
-    rect1 = mpatches.Rectangle((-ic_arr_1CP[0], -delta), nx_1CP[0], 2*delta, fill=True,
-                               linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
-    ax.add_patch(rect1)
-    ax.set_xlim(-del_y_min+b, del_y_min+b)
-    ax.set_ylim(-del_y_min, del_y_min)
-    ax = axis[3]
-    pcm = ax.contourf(np.arange(nx_2CP[1])-jc_2CP, np.arange(nx_2CP[0])-ic_2CP, MF_2CP, levels=lvls, cmap=cm_bw)
-    # pcm = ax.pcolormesh(np.arange(nx_2CP[1])-jc_2CP, np.arange(nx_2CP[0])-ic_2CP, MF_2CP,
+    rect1 = mpatches.Rectangle((-ic_arr_1CP[0]+b, -delta), nx_1CP[0], 2*delta, fill=True,
+                               linewidth=1, edgecolor='lightyellow', facecolor='lightyellow', alpha=0.4)
+    ax1.add_patch(rect1)
+    ax1.set_xlim(-del_y_min+b, del_y_min+b)
+    ax1.set_ylim(-del_y_min, del_y_min)
+    ax1.set_aspect('equal')
+    # ax1.set_xticklabels([np.int(ti * 1e-3 * dx[0]) for ti in ax.get_xticks()])
+    ax1.set_yticklabels([np.round(ti * 1e-3, 1) for ti in axis[0].get_yticks()])
+    ax1.set_xlabel('x [km]')
+    ax1.set_ylabel('y [km]')
+    # ax2 = axis[3]
+    pcm = ax2.contourf(np.arange(nx_2CP[1])-jc_2CP, np.arange(nx_2CP[0])-ic_2CP, MF_2CP, levels=lvls, cmap=cm_bw)
+    # pcm = ax2.pcolormesh(np.arange(nx_2CP[1])-jc_2CP, np.arange(nx_2CP[0])-ic_2CP, MF_2CP,
     #                     # norm = colors.SymLogNorm(linthresh=0.03,linscale=0.03,vmin=-max,vmax=max),
     #                     # norm = colors.PowerNorm(),
     #                     norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
     rect = mpatches.Rectangle((-jc_2CP, -delta), nx_2CP[1], 2*delta, fill=True,
-                              linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
-    ax.add_patch(rect)
-    ax.set_xlim(-del_x_min, del_x_min)
-    ax.set_ylim(-del_y_min, del_y_min)
-    ax = axis[4]
-    pcm = ax.contourf(np.arange(nx_3CP[0])-ic_arr_3CP[0], np.arange(nx_3CP[1])-jc_3CP, MF_3CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
-    # pcm = ax.pcolormesh(np.arange(nx_3CP[0])-ic_3CP, np.arange(nx_3CP[1])-jc_3CP, MF_3CP.T,
+                              linewidth=1, edgecolor='lightyellow', facecolor='lightyellow', alpha=0.4)
+    ax2.add_patch(rect)
+    ax2.set_xlim(-del_x_min, del_x_min)
+    ax2.set_ylim(-del_y_min, del_y_min)
+    ax2.set_aspect('equal')
+    # ax2.set_xticklabels([np.int(ti * 1e-3 * dx[0]) for ti in ax.get_xticks()])
+    # ax2.set_yticklabels([np.round(ti * 1e-3, 1) for ti in axis[0].get_yticks()])
+    ax2.set_xlabel('x [km]')
+    # ax3 = axis[4]
+    pcm = ax3.contourf(np.arange(nx_3CP[0])-ic_arr_3CP[0], np.arange(nx_3CP[1])-jc_3CP, MF_3CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
+    # pcm = ax3.pcolormesh(np.arange(nx_3CP[0])-ic_3CP, np.arange(nx_3CP[1])-jc_3CP, MF_3CP.T,
     #                     norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
-    plt.colorbar(pcm, ax=ax, extend='both')
+    # plt.colorbar(pcm, ax=ax3, extend='both')
+    cbar = plt.colorbar(pcm, ax=ax3, ticks=np.arange(-1,np.amax(MF_3CP),1), extend='both', shrink=.8)
+    cbar.ax.set_yticklabels(np.arange(-1,np.amax(MF_3CP),1))
+    cbar.set_label('[kg/m$^2$]')
     # rect2 = mpatches.Rectangle((-100, jc_arr_3CP[2] - delta), 300, 2*delta, fill=True,
     rect2 = mpatches.Rectangle((-100, -delta), 300, 2*delta, fill=True,
-                               linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
-    ax.add_patch(rect2)
-    ax.set_xlim(-del_x_min, del_x_max)
-    ax.set_ylim(-del_y_min, del_y_min)
-    for ax in axis[2:].flat:
-        ax.set_aspect('equal')
-    axis[2].set_ylabel('y [km]')
+                               linewidth=1, edgecolor='lightyellow', facecolor='lightyellow', alpha=0.4)
+    ax3.add_patch(rect2)
+    ax3.set_xlim(-del_x_min, del_x_max)
+    ax3.set_ylim(-del_y_min, del_y_min)
+    ax3.set_aspect('equal')
+    # ax3.set_xticklabels([np.int(ti * 1e-3 * dx[0]) for ti in ax.get_xticks()])
+    ax3.set_xlabel('x [km]')
+    # for ax in axis[2:].flat:
+    #     ax.set_aspect('equal')
+    # axis[2].set_ylabel('y [km]')
 
-    for ax in axis:
+    for ax in [ax1, ax2, ax3]:
+        ax.set_xticklabels([np.int(ti * 1e-3 * dx[0]) for ti in ax.get_xticks()])
+    for ax in [ax2, ax3]:
+        for label in ax.yaxis.get_ticklabels():
+            label.set_visible(False)
+
+    for ax in axis[:2]:
         ax.set_xlabel('x [km]')
         ax.set_xticklabels([np.int(ti*1e-3*dx[0]) for ti in ax.get_xticks()])
     axis[0].set_yticklabels([np.round(ti*1e-3,1) for ti in axis[0].get_yticks()])
     axis[1].set_yticklabels([np.round(ti,1) for ti in axis[1].get_yticks()])
     for ax in axis[2:]:
         ax.set_yticklabels([np.int(ti*1e-3*dx[0]) for ti in ax.get_yticks()])
+
+    axis[2].axis('off')
+    axis[3].axis('off')
+    axis[4].axis('off')
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
     axis[0].text(0-ic_arr_1CP[0]+15, 900, 'a)', fontsize=18, bbox=textprops)
@@ -540,6 +569,7 @@ def plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP
     plt.subplots_adjust(bottom=0.1, right=.99, left=0.03, top=0.95, hspace=0.2, wspace=0.25)
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
+    print('FIGURE: ' + fig_name)
 
     print('')
     print('')
@@ -562,7 +592,7 @@ def plot_collision_massflux_CPheight_3panels(CP_height_1CP, CP_height_2CP, CP_he
     ncol = 3
     vmin = 1e-2
     vmax = 6.5
-    fig, axis = plt.subplots(1, ncol, figsize=(ncol * 5, 5))
+    fig, axis = plt.subplots(1, ncol, figsize=(ncol * 4.5, 5))
 
     ''' CP Height '''
     print('time windows: ', t_ini, t_2CP, t_3CP, t_final)
