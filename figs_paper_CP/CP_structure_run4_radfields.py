@@ -10,13 +10,13 @@ import os
 
 execfile('settings.py')
 
-# label_size = 12
+label_size = 15
 # plt.rcParams['xtick.labelsize'] = label_size
 # plt.rcParams['ytick.labelsize'] = label_size
 # plt.rcParams['lines.linewidth'] = 1
 # plt.rcParams['lines.markersize'] = 6
 # plt.rcParams['legend.fontsize'] = 12
-# plt.rcParams['axes.labelsize'] = 15
+plt.rcParams['axes.labelsize'] = 15
 plt.rcParams['font.sans-serif'] = 'Helvetica'
 # plt.rcParams['text.usetex'] = 'true'
 plt.rcParams['legend.numpoints'] = 1
@@ -40,7 +40,9 @@ def main():
     path = os.path.join(path_root, run + '_dx'+str(res)+'m', case)
     path_fields = os.path.join(path, 'fields')
     # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
-    path_out_figs = '/nbi/home/meyerbe/paper_CP'
+    path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP'
+    # path_out_figs = '/nbi/home/meyerbe/paper_CP'
+    print('path figures: ' + path_out_figs)
 
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
     ic = nml['init']['ic']
@@ -89,7 +91,6 @@ def main():
 
     jmin_range = [150, 100, 100]
     for i,t0 in enumerate([900, 1200, 1500]):
-    # for it,t0 in enumerate([900]):
         it = t0 / 100
         # print('')
         print('time: ', t0)
@@ -115,7 +116,7 @@ def main():
         #       fig_name, path_out_figs)
         fig_name = 'CP_structure_rad_dx' + str(res) + '_' + case + '_t' + str(t0) + '.png'
         print(fig_name)
-        plot_figure_rad(theta, theta_rad, u, v_rad, w, w_rad, vorticity, vort_rad,
+        plot_figure_rad(theta, theta_rad    , u, v_rad, w, w_rad, vorticity, vort_rad,
               it, jmin, jmax, rmax, kmax, dx, nx, ny,
               fig_name, path_out_figs)
 
@@ -153,7 +154,7 @@ def plot_figure_rad(theta, theta_rad, u, v_rad, w, w_rad, vorticity, vort_rad,
         ax[1].plot(theta_rad[it, :, k], str((1.7*np.double(k)/kmax)), label='z='+str(k*dx[2])+'m')
         print('k', k, k*dx[2], str(1.8*np.double(k) / kmax))
     # ax[1].plot(theta_rad[it,:,1], '.5')
-    ax[1].legend(loc='best', fontsize=8)
+    ax[1].legend(loc='best', fontsize=10)
     ax[1].set_ylabel(r'$\theta$ [K]')
     ax[1].set_ylim(min, max)
     y_ticks = [np.int(ti) for ti in ax[1].get_yticks()]
@@ -169,7 +170,7 @@ def plot_figure_rad(theta, theta_rad, u, v_rad, w, w_rad, vorticity, vort_rad,
     elif it == 15:
         for label in ax[1].yaxis.get_ticklabels()[1::5]:
             label.set_visible(True)
-    ax[0].text(title_pos_x, title_pos_y, 'a) potential temperature', fontsize=15, horizontalalignment='left',
+    ax[0].text(title_pos_x, title_pos_y, 'a) potential temperature', fontsize=16, horizontalalignment='left',
                bbox=textprops)
 
     ax = axes[1, :]
@@ -180,9 +181,9 @@ def plot_figure_rad(theta, theta_rad, u, v_rad, w, w_rad, vorticity, vort_rad,
     for k in range(0, 500/dx[2]+1, 4):
         ax[1].plot(w_rad[it, :, k], str((1.7*np.double(k)/kmax)), label='z='+str(k*dx[2])+'m')
     ax[1].set_ylabel(r'$w$ [m/s]')
-    y_ticks = [np.int(ti) for ti in ax[1].get_yticks()]
+    y_ticks = [ti for ti in ax[1].get_yticks()]
     ax[1].set_yticklabels(y_ticks)
-    for label in ax[1].yaxis.get_ticklabels()[1::2]:
+    for label in ax[1].yaxis.get_ticklabels()[0::2]:
         label.set_visible(False)
     ax[0].text(title_pos_x, title_pos_y, 'c) vertical velocity', fontsize=15, horizontalalignment='left',
                bbox=textprops)
@@ -198,7 +199,7 @@ def plot_figure_rad(theta, theta_rad, u, v_rad, w, w_rad, vorticity, vort_rad,
     ax[1].set_ylabel(r'$v_r$ [m/s]')
     y_ticks = [np.int(ti) for ti in ax[1].get_yticks()]
     ax[1].set_yticklabels(y_ticks)
-    for label in ax[1].yaxis.get_ticklabels()[1::2]:
+    for label in ax[1].yaxis.get_ticklabels()[0::2]:
         label.set_visible(False)
     ax[0].text(title_pos_x, title_pos_y, 'b) radial velocity', fontsize=15, horizontalalignment='left', bbox=textprops)
 
