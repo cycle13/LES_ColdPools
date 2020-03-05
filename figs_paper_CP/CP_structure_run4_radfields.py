@@ -40,7 +40,9 @@ def main():
     path = os.path.join(path_root, run + '_dx'+str(res)+'m', case)
     path_fields = os.path.join(path, 'fields')
     # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
-    path_out_figs = '/nbi/home/meyerbe/paper_CP'
+    path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP'
+    # path_out_figs = '/nbi/home/meyerbe/paper_CP'
+    print('path figures: ' + path_out_figs)
 
     nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
     ic = nml['init']['ic']
