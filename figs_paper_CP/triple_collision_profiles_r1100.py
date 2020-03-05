@@ -6,19 +6,20 @@ import json as simplejson
 import os
 import matplotlib.patches as mpatches
 
-label_size = 8
+execfile('settings.py')
+
+label_size = 15
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
+plt.rcParams['lines.markersize'] = 2
 plt.rcParams['lines.linewidth'] = 2
 plt.rcParams['legend.fontsize'] = 8
-plt.rcParams['axes.labelsize'] = 12
-plt.rcParams['lines.markersize'] = 2
+plt.rcParams['axes.labelsize'] = 18
 # plt.rcParams['xtick.direction']='out'
 # plt.rcParams['ytick.direction']='out'
 # plt.rcParams['figure.titlesize'] = 35
 plt.rcParams['text.usetex'] = 'true'
 
-execfile('settings.py')
 
 
 def main():
@@ -31,7 +32,8 @@ def main():
     case_name_triple = 'ColdPoolDry_triple_3D'
 
     # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single/'
-    path_out_figs = '/nbi/home/meyerbe/paper_CP/'
+    path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP/'
+    # path_out_figs = '/nbi/home/meyerbe/paper_CP/'
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
     print('path figs: ' + path_out_figs)
@@ -149,7 +151,12 @@ def main():
 
 
     ''' (A) plot from local (unaveraged) min / max in subdomains'''
-    ''' compute min/max values in subdomains (circle, rectangles) '''
+    ''' compute min/max values in subdomains '''
+    # Subdomains:
+    # - single CP: circle
+    # - double CP collisin: rectangles along collision line
+    # - triple CP collisin: square around collision point
+
     path_out = os.path.join(path_single, id_list_s[0], 'data_analysis')
     filename = 'minmax_subdomains_noaverage.nc'
     # w_min, w_max, th_min, th_max, s_min, s_max, z, z_half = \
@@ -183,6 +190,7 @@ def main():
     #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
 
     # # plot min/max in each subdomain for all times
+    # #     fig_name = 'collisions_minmax_alltimes_subdomain_unaveraged_rstar' + str(rstar) + '_d' + str(dstar) + 'km.png'
     # plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_list_t,
     #                                   t_2CP, t_3CP, t_final,
     #                                   path_single, path_double, path_triple,
@@ -190,6 +198,7 @@ def main():
 
     # print(path_double)
     # # plot min/max in each subdomain for time windows
+    # #     fig_name = 'collisions_minmax_profiles_subdomain_unaveraged_rstar' + str(rstar) + '.png'
     # plot_minmax_timewindows_subdomain(rstar, d_range, id_list_s, id_list_d, id_list_t,
     #                             t_ini, t_2CP, t_3CP, t_final,
     #                             path_single, path_double, path_triple,
@@ -222,18 +231,18 @@ def main():
     #         = compute_domain_max(path_triple, id_list_t[d], case_name_triple, kmax, times, nt)
     #     dump_minmax_file(w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half, kmax, times, filename, path_out)
 
-    path = os.path.join(path_single, id_list_s[0])
-    compute_CP_height(zstar, path, filename)
-    for d, dstar in enumerate(d_range):
-        path = os.path.join(path_double, id_list_d[d])
-        compute_CP_height(zstar, path, filename)
-        path = os.path.join(path_triple, id_list_t[d])
-        compute_CP_height(zstar, path, filename)
+    # path = os.path.join(path_single, id_list_s[0])
+    # compute_CP_height(zstar, path, filename)
+    # for d, dstar in enumerate(d_range):
+    #     path = os.path.join(path_double, id_list_d[d])
+    #     compute_CP_height(zstar, path, filename)
+    #     path = os.path.join(path_triple, id_list_t[d])
+    #     compute_CP_height(zstar, path, filename)
 
-    plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                  t_ini, t_2CP, t_3CP, t_final,
-                                  path_single, path_double, path_triple,
-                                  filename, path_out_figs)
+    # plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
+    #                               t_ini, t_2CP, t_3CP, t_final,
+    #                               path_single, path_double, path_triple,
+    #                               filename, path_out_figs)
 
     # plot min/max in each domain for time windows
     plot_minmax_timewindows_domain(rstar, d_range, id_list_s, id_list_d, id_list_t,
@@ -241,10 +250,12 @@ def main():
                                 path_single, path_double, path_triple,
                                 filename, path_out_figs)
 
-    plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_t,
-                                  t_ini, t_2CP, t_3CP, t_final,
-                                  path_single, path_double, path_triple,
-                                  filename, path_out_figs)
+    # plot separately for all three simulations
+    # # fig_name = 'collisions_minmax_timewindows_domain_unaveraged_rstar' + str(rstar) + '_d' + str(dstar) + 'km_w.png'
+    # plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_t,
+    #                               t_ini, t_2CP, t_3CP, t_final,
+    #                               path_single, path_double, path_triple,
+    #                               filename, path_out_figs)
 
 
 
@@ -1036,10 +1047,12 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
         axis[0, 2].set_title('double CP, collision line')
         axis[0, 3].set_title('triple CP, collision point')
         for ax in axis[:, 1].flat:
-            ax.set_ylabel('height z  [m]')
+            ax.set_ylabel('Height z  [m]')
+            ax.set_yticklabels([np.round(ti * 1e-3, 1) for ti in ax.get_yticks()])
         for ax in axis[0, 1:].flat:
             ax.set_xlabel('max(w)')
             ax.set_xlim(-0.1, maxw)
+            ax.set_xticklabels([np.round(ti,1) for ti in ax.get_xticks()])
         for ax in axis[1, 1:].flat:
             ax.set_xlim(298, 300.1)
             ax.set_xlabel('min(theta)')
@@ -1147,7 +1160,7 @@ def plot_minmax_timewindows_domain(rstar, d_range, id_list_s, id_list_d, id_list
     kmax_plot = np.int(zmax_plot / dx[2])
     alpha_list = [1, .5, .2]
 
-    fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='all')
+    fig, axis = plt.subplots(2, 4, figsize=(14, 10), sharey='all')
 
     maxw = 4.
     for ax in axis[0, :].flat:
@@ -1217,7 +1230,6 @@ def plot_minmax_timewindows_domain(rstar, d_range, id_list_s, id_list_d, id_list
     for d, dstar in enumerate(d_range):
         path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
         w_max_t, th_min_t, s_min_t, z, z_half, t_t = read_in_minmax(kmax_plot, path, filename)
-
         # al = 1. - d * 1. / (len(d_range) + 1)
         al = alpha_list[d]
         if d > 0:
@@ -1225,14 +1237,12 @@ def plot_minmax_timewindows_domain(rstar, d_range, id_list_s, id_list_d, id_list
             lbl_t = 'd=' + str(dstar) + 'km'
         else:
             lbl_t = 'triple CP collision,  d=' + str(dstar) + 'km'
-
         it_ini = np.int(t_ini[d] / dt_fields)
         it_2CP = np.int(t_2CP[d] / dt_fields)
         it_3CP = np.int(t_3CP[d] / dt_fields)
         it_final = np.int(t_final[d] / dt_fields)
         # print('triple: d=' + str(d), t_ini[d], t_2CP[d], t_3CP[d], t_final[d])
         # print(it_ini, it_2CP, it_3CP, it_final)
-
         axis[0, 0].plot(np.amax(w_max_t[it_ini:, :], axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
         axis[0, 1].plot(np.amax(w_max_t[it_ini:it_2CP, :], axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
         axis[0, 2].plot(np.amax(w_max_t[it_2CP:it_3CP, :], axis=0), z, color=colorlist3[2], alpha=al, label=lbl_t)
@@ -1245,30 +1255,62 @@ def plot_minmax_timewindows_domain(rstar, d_range, id_list_s, id_list_d, id_list
 
     for ax in axis[0, :].flat:
         ax.set_xlim(0, maxw)
+        ax.set_xticklabels([np.int(i) for i in ax.get_xticks()])
         ax.set_xlabel('max. w  [m/s]')
-        # ax.set_ylabel('height z  [m]')
+        for label in ax.xaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
     for ax in axis[1, :].flat:
         ax.set_xlim(298., 300.1)
+        ax.set_xticklabels([np.int(i) for i in ax.get_xticks()])
         ax.set_xlabel(r'min. $\theta$ [K]')
-        # ax.set_ylabel('height z  [m]')
+        for label in ax.xaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
     for ax in axis[:, 0].flat:
-        ax.set_ylabel('height z  [m]')
-    # axis[0, 0].set_title(r't $>$' + str(t_ini[d]))
-    # axis[0, 1].set_title(str(t_ini[d]) + r'$\leq$ t $<$' + str(t_2CP[d]))
-    # axis[0, 2].set_title(str(t_2CP[d]) + r'$\leq$ t $<$' + str(t_3CP[d]))
-    # axis[0, 3].set_title(str(t_3CP[d]) + r'$\leq$ t $<$' + str(t_final[d]))
-    axis[0, 0].set_title(r't $>$' + str(np.int(t_ini[0] / 60)) + 'min')
-    axis[0, 1].set_title(str(np.int(t_ini[0] / 60)) + 'min' + r'$\leq$ t $<$ t(2CP)')
-    axis[0, 2].set_title(r't(2CP) $\leq$ t $<$ t(3CP)')
-    axis[0, 3].set_title(r't(3CP) $\leq$ t $<$ t(3CP)+15min')
+        ax.set_ylabel('Height z  [km]')
+        ax.set_yticklabels([np.int(i*1e-3) for i in ax.get_yticks()])
+        for label in ax.yaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
+    # # axis[0, 0].set_title(r't $>$' + str(t_ini[d]))
+    # # axis[0, 1].set_title(str(t_ini[d]) + r'$\leq$ t $<$' + str(t_2CP[d]))
+    # # axis[0, 2].set_title(str(t_2CP[d]) + r'$\leq$ t $<$' + str(t_3CP[d]))
+    # # axis[0, 3].set_title(str(t_3CP[d]) + r'$\leq$ t $<$' + str(t_final[d]))
+    #
+    #
+    # axis[0, 0].set_title(r't $>$' + str(np.int(t_ini[0] / 60)) + 'min')
+    # axis[0, 1].set_title(str(np.int(t_ini[0] / 60)) + 'min' + r'$\leq$ t $<$ t(2CP)')
+    # axis[0, 2].set_title(r't(2CP) $\leq$ t $<$ t(3CP)')
+    # axis[0, 3].set_title(r't(3CP) $\leq$ t $<$ t(3CP)+15min')
+    txt_a = r't $>$' + str(np.int(t_ini[0] / 60)) + 'min'
+    txt_b = str(np.int(t_ini[0] / 60)) + 'min ' + r'$\leq$ t $<$ t$_{2CP}$'
+    txt_c = r't$_{2CP}$ $\leq$ t $<$ t$_{3CP}$'
+    txt_d = r't$_{3CP}$ $\leq$ t $<$ t$_{3CP}$ + 15min'
+    txt_a = r't$>$' + str(np.int(t_ini[0] / 60)) + 'min'
+    txt_b = str(np.int(t_ini[0] / 60)) + 'min' + r'$\leq$t$<$t$_{2CP}$'
+    txt_c = r't$_{2CP}\leq$t$<$t$_{3CP}$'
+    txt_d = r't$_{3CP}\leq$t$<$t$_{3CP}$+15min'
 
-    # # # # ax2.grid()
-    axis[0, 0].legend(loc='upper left', bbox_to_anchor=(0.15, .99),
+
+    textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
+    txt_x0 = 0.25
+    txt_x1 = 298.1
+    txt_y = 2700
+    ftsize = 18
+    axis[0, 0].text(txt_x0, txt_y, 'a) ' + txt_a, fontsize=ftsize, bbox=textprops)
+    axis[0, 1].text(txt_x0, txt_y, 'b) ' + txt_b, fontsize=ftsize, bbox=textprops)
+    axis[0, 2].text(txt_x0, txt_y, 'c) ' + txt_c, fontsize=ftsize, bbox=textprops)
+    axis[0, 3].text(txt_x0, txt_y, 'd) ' + txt_d, fontsize=ftsize, bbox=textprops)
+    axis[1, 0].text(txt_x1, txt_y, 'e) ' + txt_a, fontsize=ftsize, bbox=textprops)
+    axis[1, 1].text(txt_x1, txt_y, 'f) ' + txt_b, fontsize=ftsize, bbox=textprops)
+    axis[1, 2].text(txt_x1, txt_y, 'g) ' + txt_c, fontsize=ftsize, bbox=textprops)
+    axis[1, 3].text(txt_x1, txt_y, 'h) ' + txt_d, fontsize=ftsize, bbox=textprops)
+
+
+    axis[0, -1].legend(loc='upper left', bbox_to_anchor=(0.4, .85),
                       fancybox=False, shadow=False, ncol=1, fontsize=12)
     # # # ax2.legend(loc='upper left', bbox_to_anchor=(0.1, -0.1),
     # # #            fancybox=False, shadow=False, ncol=1, fontsize=9)
     # # # plt.suptitle('min/max for ' + var_name, fontsize=21)
-    plt.subplots_adjust(bottom=0.1, right=.95, left=0.05, top=0.95, hspace=0.2)
+    plt.subplots_adjust(bottom=0.06, right=.9, left=0.05, top=0.95, hspace=0.2, wspace=0.1)
     plt.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
     return
@@ -1385,13 +1427,12 @@ def plot_minmax_timewindows_subdomain(rstar, d_range, id_list_s, id_list_d, id_l
     for ax in axis[0, :].flat:
         ax.set_xlim(0, 4)
         ax.set_xlabel('max. w  [m/s]')
-        # ax.set_ylabel('height z  [m]')
     for ax in axis[1, :].flat:
         ax.set_xlim(298., 300.1)
         ax.set_xlabel(r'min. $\theta$ [K]')
-        # ax.set_ylabel('height z  [m]')
     for ax in axis[:, 0].flat:
-        ax.set_ylabel('height z  [m]')
+        ax.set_ylabel('Height z  [m]')
+        ax.set_yticklabels([np.round(i*1e-3,1) for i in ax.get_yticks()])
     # axis[0, 0].set_title(r't $>$' + str(t_ini[d]))
     # axis[0, 1].set_title(str(t_ini[d]) + r'$\leq$ t $<$' + str(t_2CP[d]))
     # axis[0, 2].set_title(str(t_2CP[d]) + r'$\leq$ t $<$' + str(t_3CP[d]))
