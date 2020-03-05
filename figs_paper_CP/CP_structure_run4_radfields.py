@@ -235,15 +235,15 @@ def plot_figure_rad(theta, theta_rad, u, v_rad, w, w_rad, vorticity, vort_rad,
         ax.set_yticklabels(y_ticks)
         for label in ax.yaxis.get_ticklabels()[1::2]:
             label.set_visible(False)
-        ax.set_ylabel('height  [km]')
+        ax.set_ylabel('Height  [km]')
     ax = axes[3,0]
     y_ticks = [ti * dx[2] * 1e-3 for ti in ax.get_yticks()]
     ax.set_yticklabels(y_ticks)
     for label in ax.yaxis.get_ticklabels()[0::2]:
         label.set_visible(False)
-    ax.set_ylabel('height  [km]')
+    ax.set_ylabel('Height  [km]')
     for ax in axes[-1, :]:
-        ax.set_xlabel('radius [km]')
+        ax.set_xlabel('Radius [km]')
 
     # axes[-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
     #                 fancybox=True, shadow=True, ncol=1, fontsize=10)
@@ -368,7 +368,7 @@ def plot_test(theta, theta_rad, u, v_rad, w, w_rad, vorticity, vort_rad,
         ax.set_xticklabels(x_ticks)
         for label in ax.yaxis.get_ticklabels()[1::2]:
             label.set_visible(False)
-        ax.set_ylabel('height  [km]')
+        ax.set_ylabel('Height  [km]')
     # for label in axes[-1,0].yaxis.get_ticklabels()[1::2]:
     #     label.set_visible(False)
     for n in range(nrow):
@@ -386,7 +386,7 @@ def plot_test(theta, theta_rad, u, v_rad, w, w_rad, vorticity, vort_rad,
         ax.set_xticklabels(x_ticks)
     axes[-1, 0].set_xlabel('distance [km]')
     for ax in axes[-1, 1:]:
-        ax.set_xlabel('radius [km]')
+        ax.set_xlabel('Radius [km]')
 
     # axes[-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
     #                 fancybox=True, shadow=True, ncol=1, fontsize=10)

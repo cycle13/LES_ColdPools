@@ -183,7 +183,7 @@ def main():
             ax.set_yticklabels(y_ticks)
             # for label in ax.yaxis.get_ticklabels()[1::2]:
             #     label.set_visible(dFalse)
-            ax.set_ylabel('height  [km]')
+            ax.set_ylabel('Height  [km]')
         for label in axes[-1,0].yaxis.get_ticklabels()[1::2]:
             label.set_visible(False)
         for ax in axes[:,1].flat:
@@ -195,7 +195,7 @@ def main():
             # for label in ax.yaxis.get_ticklabels()[1::2]:
             #     label.set_visible(False)
         for ax in axes[-1,:]:
-            ax.set_xlabel('distance [km]')
+            ax.set_xlabel('Radius [km]')
 
 
         # axes[-1].legend(loc='upper center', bbox_to_anchor=(1.2, 1.),
