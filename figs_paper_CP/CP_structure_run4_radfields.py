@@ -196,11 +196,10 @@ def plot_figure_rad(theta, theta_rad, u, v_rad, w, w_rad, vorticity, vort_rad,
     for k in range(0, 500 / dx[2] + 1, 4):
         ax[1].plot(v_rad[it, :, k], str((1.7 * np.double(k) / kmax)), label='z=' + str(k * dx[2]) + 'm')
     ax[1].set_ylabel(r'$v_r$ [m/s]')
-    # ax[1].set_ylim(-7,max)
-    y_ticks = [ti for ti in ax[1].get_yticks()]
+    y_ticks = [np.int(ti) for ti in ax[1].get_yticks()]
     ax[1].set_yticklabels(y_ticks)
-    # for label in ax[1].yaxis.get_ticklabels()[1::2]:
-    #     label.set_visible(False)
+    for label in ax[1].yaxis.get_ticklabels()[1::2]:
+        label.set_visible(False)
     ax[0].text(title_pos_x, title_pos_y, 'b) radial velocity', fontsize=15, horizontalalignment='left', bbox=textprops)
 
     ax = axes[3, :]
