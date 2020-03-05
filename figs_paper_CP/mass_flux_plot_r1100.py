@@ -53,8 +53,8 @@ def main():
     print('path 3CP:   ' + path_3CP)
     path_data = os.path.join(path_3CP, 'data_analysis')
     # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
-    # path_out_figs = '/nbi/home/meyerbe/paper_CP'
-    path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP'
+    path_out_figs = '/nbi/home/meyerbe/paper_CP'
+    # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP'
     print('Path Figures: ' + path_out_figs)
     print('')
 
@@ -412,14 +412,12 @@ def plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP
                                      del_x_min, del_x_max, del_y_min,
                                      times, nx_1CP, nx_2CP, nx_3CP, path_out_figs, fig_name):
 
-    ncol = 5
+    ncol = 4
     nrow = 1
-    vmin = 1e-2
     vmin = np.amin(MF_3CP)
-    vmax = 6.5
     vmax = np.amax(MF_3CP)
     lvls = np.linspace(vmin, vmax, 20)
-    fig, axis = plt.subplots(nrow, ncol, figsize=(ncol * 5, 5))
+    fig, axis = plt.subplots(nrow, ncol, figsize=(ncol *6, 5))
     # axis = axis_[0,:]
     # axis2 = axis_[1,:]
 
@@ -458,6 +456,8 @@ def plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP
     axis[0].set_ylabel(r'CP Height  [m]')
 
     ''' Mass Flux '''
+    MF_min = np.amin(MF_mean_3CP)-.1
+    MF_max = np.ceil(np.amax(MF_mean_3CP))
     b = ic_arr_3CP[2]-ic_arr_3CP[0]
     ax = axis[1]
     ax.plot(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, MF_mean_1CP_smooth, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
@@ -466,9 +466,9 @@ def plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP
     ax.plot(np.arange(nx_1CP[0])-ic_arr_1CP[0] + b, MF_mean_1CP, color=cm_gray(.1), alpha=0.3)
     ax.plot(np.arange(nx_2CP[1])-jc_2CP, MF_mean_2CP, color=cm_bwr_r(.8), alpha=0.3)
     ax.plot(np.arange(nx_3CP[0])-ic_arr_3CP[0], MF_mean_3CP, color=cm_bwr(.8), alpha=0.3)
-    ax.legend(loc='best')
+    # ax.legend(loc='best')
     ax.set_xlim(-del_x_min, del_x_max)
-    # ax.set_ylim(-2, np.ceil(np.amax(MF_mean_3CP)))
+    ax.set_ylim(MF_min, MF_max)
     ax.set_ylabel(r'Integrated Mass Flux  [kg/m$^2$]')
     # ax = axis2[1]
     # ax.plot(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, MF_mean_1CP_smooth, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
@@ -487,10 +487,9 @@ def plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP
     ''' Mass Flux 2D '''
     rect_y = .1
     rect_h = .85
-    ax1 = fig.add_axes([.43,rect_y,.18,rect_h]) #[left, bottom, width, height]
-    ax2 = fig.add_axes([.6,rect_y,.15,rect_h])  #[left, bottom, width, height]
-    ax3 = fig.add_axes([.745,rect_y,.2,rect_h])   #[left, bottom, width, height]
-    # ax4 = fig.add_axes([.9,rect_y,.2,rect_h]) #[left, bottom, width, height]
+    ax1 = fig.add_axes([.495,rect_y,.2,rect_h]) #[left, bottom, width, height]
+    ax2 = fig.add_axes([.645,rect_y,.15,rect_h])  #[left, bottom, width, height]
+    ax3 = fig.add_axes([.75,rect_y,.25,rect_h])   #[left, bottom, width, height]
     b = ic_arr_3CP[2]-ic_arr_3CP[0]
     pcm = ax1.contourf(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
     # pcm = ax1.pcolormesh(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP.T,
@@ -498,14 +497,12 @@ def plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP
     rect1 = mpatches.Rectangle((-ic_arr_1CP[0]+b, -delta), nx_1CP[0], 2*delta, fill=True,
                                linewidth=1, edgecolor='lightyellow', facecolor='lightyellow', alpha=0.4)
     ax1.add_patch(rect1)
-    ax1.set_xlim(-del_y_min+b, del_y_min+b)
+    ax1.set_xlim(b-del_x_min,b+del_x_min)
     ax1.set_ylim(-del_y_min, del_y_min)
     ax1.set_aspect('equal')
-    # ax1.set_xticklabels([np.int(ti * 1e-3 * dx[0]) for ti in ax.get_xticks()])
-    ax1.set_yticklabels([np.round(ti * 1e-3, 1) for ti in axis[0].get_yticks()])
+    ax1.set_yticklabels([np.int(ti*1e-3*dx[1]) for ti in axis[0].get_yticks()])
     ax1.set_xlabel('x [km]')
     ax1.set_ylabel('y [km]')
-    # ax2 = axis[3]
     pcm = ax2.contourf(np.arange(nx_2CP[1])-jc_2CP, np.arange(nx_2CP[0])-ic_2CP, MF_2CP, levels=lvls, cmap=cm_bw)
     # pcm = ax2.pcolormesh(np.arange(nx_2CP[1])-jc_2CP, np.arange(nx_2CP[0])-ic_2CP, MF_2CP,
     #                     # norm = colors.SymLogNorm(linthresh=0.03,linscale=0.03,vmin=-max,vmax=max),
@@ -517,29 +514,20 @@ def plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP
     ax2.set_xlim(-del_x_min, del_x_min)
     ax2.set_ylim(-del_y_min, del_y_min)
     ax2.set_aspect('equal')
-    # ax2.set_xticklabels([np.int(ti * 1e-3 * dx[0]) for ti in ax.get_xticks()])
-    # ax2.set_yticklabels([np.round(ti * 1e-3, 1) for ti in axis[0].get_yticks()])
     ax2.set_xlabel('x [km]')
-    # ax3 = axis[4]
     pcm = ax3.contourf(np.arange(nx_3CP[0])-ic_arr_3CP[0], np.arange(nx_3CP[1])-jc_3CP, MF_3CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
     # pcm = ax3.pcolormesh(np.arange(nx_3CP[0])-ic_3CP, np.arange(nx_3CP[1])-jc_3CP, MF_3CP.T,
     #                     norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
-    # plt.colorbar(pcm, ax=ax3, extend='both')
     cbar = plt.colorbar(pcm, ax=ax3, ticks=np.arange(-1,np.amax(MF_3CP),1), extend='both', shrink=.8)
-    cbar.ax.set_yticklabels(np.arange(-1,np.amax(MF_3CP),1))
-    cbar.set_label('[kg/m$^2$]')
-    # rect2 = mpatches.Rectangle((-100, jc_arr_3CP[2] - delta), 300, 2*delta, fill=True,
+    cbar.ax.set_yticklabels([i for i in range(np.int(np.amin(MF_3CP)),np.int(np.amax(MF_3CP)),1)])
+    cbar.set_label('mass flux [kg/m$^2$]')
     rect2 = mpatches.Rectangle((-100, -delta), 300, 2*delta, fill=True,
                                linewidth=1, edgecolor='lightyellow', facecolor='lightyellow', alpha=0.4)
     ax3.add_patch(rect2)
     ax3.set_xlim(-del_x_min, del_x_max)
     ax3.set_ylim(-del_y_min, del_y_min)
     ax3.set_aspect('equal')
-    # ax3.set_xticklabels([np.int(ti * 1e-3 * dx[0]) for ti in ax.get_xticks()])
     ax3.set_xlabel('x [km]')
-    # for ax in axis[2:].flat:
-    #     ax.set_aspect('equal')
-    # axis[2].set_ylabel('y [km]')
 
     for ax in [ax1, ax2, ax3]:
         ax.set_xticklabels([np.int(ti * 1e-3 * dx[0]) for ti in ax.get_xticks()])
@@ -557,16 +545,16 @@ def plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP
 
     axis[2].axis('off')
     axis[3].axis('off')
-    axis[4].axis('off')
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    axis[0].text(0-ic_arr_1CP[0]+15, 900, 'a)', fontsize=18, bbox=textprops)
-    # axis[1].text(xmin-ic_arr_2CP[0]+15, np.amax(MF_mean_3CP)-.3, 'b)', fontsize=18, bbox=textprops)
-    # axis[2].text(xmin-ic_arr_3CP[0]+15, ic_3CP-ymin-30, 'c)', fontsize=21, bbox=textprops)
-    # axis[3].text(xmin-ic_3CP+15, ic_3CP-ymin-30, 'd)', fontsize=21, bbox=textprops)
-    # axis[4].text(xmin-ic_3CP+15, ic_3CP-ymin-30, 'e)', fontsize=21, bbox=textprops)
+    ftsize= 21
+    axis[0].text(-del_x_min+15, 900, 'a)', fontsize=ftsize, bbox=textprops)
+    axis[1].text(-del_x_min+15, MF_max-.5, 'b)', fontsize=ftsize, bbox=textprops)
+    ax1.text(b-del_x_min+15, del_y_min-30, 'c)', fontsize=ftsize, bbox=textprops)
+    ax2.text(-del_x_min+15, del_y_min-30, 'd)', fontsize=ftsize, bbox=textprops)
+    ax3.text(-del_x_min+15, del_y_min-30, 'e)', fontsize=ftsize, bbox=textprops)
 
-    plt.subplots_adjust(bottom=0.1, right=.99, left=0.03, top=0.95, hspace=0.2, wspace=0.25)
+    plt.subplots_adjust(bottom=0.1, right=.99, left=0.035, top=0.95, hspace=0.2, wspace=0.23)
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
     print('FIGURE: ' + fig_name)
