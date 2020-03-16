@@ -55,9 +55,9 @@ def main():
     # sg = entropy_dry(Pg, Tg, qtg, 0.0, 0.0)
     # sg = 6e3
 
-    # compute reference pressure and density profiles (assuming dry thermodynamics)
-    p, al_d = compute_pressure_profile_dry()
-    rho_d = 1./al_d
+    # # compute reference pressure and density profiles (assuming dry thermodynamics)
+    # p, al_d = compute_pressure_profile_dry()
+    # rho_d = 1./al_d
 
 
     ''' evaporation parameters '''
@@ -190,7 +190,7 @@ def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_re
 
     i = 0
     while (rstar_ref<r_params[i]) and (i<len(r_params)):
-        i++
+        i+=1
     r_params_ = r_params.insert(i, rstar_ref)
     print('TESTING: ', i, r_params[i])
     print(r_params)
@@ -268,8 +268,13 @@ def compute_intensity_from_PE(PE0, rho_d, tau, A, z0, z_BL, theta0):
     # z0          # height of evaporation
     # z_BL        # height of sub-cloud layer [m]
     # theta0      # temperature at level of evaporation
+    # p           # reference pressure
     k0 = np.int(z0 / dz)
     evap = 0.1  # fraction of rain water that is evaporated
+
+    # compute reference pressure and density profiles (assuming dry thermodynamics)
+    p, al_d = compute_pressure_profile_dry()
+    rho_d = 1. / al_d
 
     V = A*z_BL
     dTh = PE0 * theta0 / (g*z0*rho_d[k0]*V)
