@@ -24,7 +24,7 @@ plt.rcParams['pdf.fonttype'] = 42         # Output Type 3 (Type3) or Type 42 (Tr
 plt.rcParams['font.sans-serif'] = 'Helvetica'
 
 
-cm = plt.cm.get_cmap('rainbow')
+cm_rain = plt.cm.get_cmap('rainbow')
 # cm_bwr = plt.cm.get_cmap('bwr')
 cm_bwr = plt.cm.get_cmap('seismic')
 cm_bwr_r = plt.cm.get_cmap('seismic_r')
