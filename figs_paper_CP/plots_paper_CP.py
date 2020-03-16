@@ -7,7 +7,8 @@ import json as simplejson
 import os
 import time
 
-label_size = 12
+execfile('settings.py')
+label_size = 15
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
 plt.rcParams['lines.linewidth'] = 2
@@ -123,11 +124,11 @@ def main():
     print x_ticks
     # ax1.set_xticklabels(x_ticks)
     ax1.set_xlabel('Radius r')
-    ax1.set_ylabel('PE / PE_ref')
+    ax1.set_ylabel(r'PE / PE$_0$')
     ax1.set_xlim(400,2500)
     ax1.set_ylim(0,8.5)
     plt.tight_layout()
-    plt.subplots_adjust(bottom=0.12, right=.85, left=0.2, top=0.9, wspace=0.25)
+    plt.subplots_adjust(bottom=0.2, right=.85, left=0.2, top=0.9, wspace=0.25)
     plt.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 

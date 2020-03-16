@@ -5,10 +5,12 @@ import matplotlib.pyplot as plt
 
 # import ../thermodynamic_profiles
 # from thermodynamic_profiles import eos
+
+execfile('settings.py')
 label_size = 15
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
-plt.rcParams['axes.labelsize'] = 18
+plt.rcParams['axes.labelsize'] = 21
 # plt.rcParams['xtick.direction']='out'
 # plt.rcParams['ytick.direction']='out'
 plt.rcParams['legend.fontsize'] = 10
@@ -115,15 +117,15 @@ def main():
 
 
 
-    fig, [ax0, ax1, ax2] = plt.subplots(1, 3, figsize=(20,5))
+    fig, [ax0, ax1, ax2] = plt.subplots(1, 3, figsize=(20,6))
     ax0.plot(PE_range, P, '-o')
-    ax0.set_xlabel('PE/PE_ref')
+    ax0.set_xlabel(r'PE / PE$_0$')
     ax1.plot(PE0*PE_range, P, '-o')
-    ax1.set_xlabel('PE/PE_ref')
+    ax1.set_xlabel('PE / PE_ref')
     ax2.bar(PE_range, I*1e3, align='center', facecolor='lightblue')
-    ax2.set_xlabel('PE/PE_ref')
+    ax2.set_xlabel('PE / PE_ref')
     ax2.set_ylabel('Intensity [mm/h]')
-    plt.subplots_adjust(bottom=0.12, right=.95, left=0.07, top=0.9, wspace=0.25)
+    plt.subplots_adjust(bottom=0.2, right=.95, left=0.07, top=0.9, wspace=0.25)
     plt.savefig('./preciptation_run5.png')
 
     print(I*1e3)
@@ -137,18 +139,19 @@ def main():
     print(PE_range)
     print(aux)
 
-    fig, [ax0, ax1, ax2] = plt.subplots(1, 3, figsize=(20, 5))
+    fig, [ax0, ax1, ax2] = plt.subplots(1, 3, figsize=(20, 6))
 
     ax0.plot(PE_range, np.round(I * 1e3, 0), '-o')
-    ax0.set_xlabel('PE/PE_ref')
+    ax0.set_xlabel(r'PE / PE$_0$')
     ax1.hist(aux)
-    ax1.set_xlabel('PE/PE_ref')
+    ax1.set_xlabel(r'PE / PE$_0$')
     ax1.set_ylabel('Intensity [mm/h]')
     # ax2.hist(np.round(I * 1e3, 0), '-o')
     ax2.bar(PE_range, I*1e3, align='center', facecolor='lightblue')
     # plt.bar(range(len(D)), D.values(), align='center')
-    ax2.set_xlabel('PE/PE_ref')
+    ax2.set_xlabel(r'PE / PE$_0$')
     ax2.set_ylabel('Intensity [mm/h]')
+    plt.subplots_adjust(bottom=0.2, right=.95, left=0.07, top=0.9, wspace=0.25)
     plt.savefig('./preciptation_run5_hist.png')
 
 
