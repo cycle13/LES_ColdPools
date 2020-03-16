@@ -68,7 +68,7 @@ def main():
     ''' rain event '''
     z_BL = 1e3      # height of sub-cloud layer [m]
     A = 1e3**2      # area of precipitation cell
-    # intensity = 5   # [mm/h]
+    intensity = 5   # [mm/h]
     tau = 1         # duration of rain event
 
 
@@ -121,10 +121,10 @@ def main():
     r_params_ = [500, 1000, 1100, 1600, 2300]
     z_params = [1000]
     PE_array = [0.5, 2, 4, 8]
-    PE_array_ = 2. ** np.arange(-1, 4)
+    PE_array_log = 2. ** np.arange(-1, 4)
     # print('PE: ' + str(PE_array))
     n_params = len(r_params)
-    plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_ref)
+    plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_ref, PE_array, PE_array_log)
 
 
     # ''' moist '''
@@ -185,7 +185,8 @@ def plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref):
     plt.savefig('./preciptation_run5_hist.png')
     return
 # -----------------------------------------
-def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_ref):
+def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_ref,
+                 PE_array, PE_array_log):
     fig_name = 'PE_scaling_run5.png'
 
     i = 0
@@ -238,12 +239,12 @@ def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_re
     ax0.legend(loc='upper right', bbox_to_anchor=(-0.2, 1.0),
                fancybox=True, ncol=1)
 
-    ax1.plot(r_params_, PE_array_, 'k', linewidth=0.5)
+    ax1.plot(r_params_, PE_array_log, 'k', linewidth=0.5)
     ax1.plot(r_params, PE_array, '--k', linewidth=0.5)
     for istar in range(n_params):
         # #     axes[0].plot(np.log2(PE_array[istar]), r_params_[istar], 'o', markersize=10, markeredgecolor='w', )
         ax1.plot(r_params[istar], PE_array[istar], 'o', markersize=10, markeredgecolor='w', )
-    ax1.plot(r_params_[1], PE_array_[1], 'ko', markersize=10, markeredgecolor='w', )
+    ax1.plot(r_params_[1], PE_array_log[1], 'ko', markersize=10, markeredgecolor='w', )
 
     # ax1.legend(loc='upper left', bbox_to_anchor=(1.05, 1.0),
     #            fancybox=True, ncol=1)
