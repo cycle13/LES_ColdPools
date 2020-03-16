@@ -55,9 +55,9 @@ def main():
     # sg = entropy_dry(Pg, Tg, qtg, 0.0, 0.0)
     # sg = 6e3
 
-    # # compute reference pressure and density profiles (assuming dry thermodynamics)
-    # p, al_d = compute_pressure_profile_dry()
-    # rho_d = 1./al_d
+    # compute reference pressure and density profiles (assuming dry thermodynamics)
+    p_ref, al_d = compute_pressure_profile_dry()
+    rho_d = 1./al_d
 
 
     ''' evaporation parameters '''
@@ -82,7 +82,7 @@ def main():
     # temperature change:   Q = dT * cp <<>> dT = Q / cp
     # >> Lv * V * rho_w * evap = dT * cp >> V = dT * cp / (Lv * rho_w * evap)
     print('tau: ' + str(tau) + ' h, area: '+str(A) + 'm2')
-    I_ref = compute_intensity_from_PE(PE_ref, rho_d, tau, A, z0, z_BL, theta0)
+    I_ref = compute_intensity_from_PE(PE_ref, rho_d, p_ref, tau, A, z0, z_BL, theta0)
     P = I_ref * A * tau
     height = P/A
     print('   Precip. intensity:  ' + str(np.round(I_ref*1e3,0)) + ' mm/h')
@@ -101,7 +101,7 @@ def main():
     PE_range = 2. ** np.arange(-1, 4)
     print(PE_range)
     print('tau: ' + str(tau) + ' h, area: ' + str(A) + 'm2')
-    I = compute_intensity_from_PE(PE_range * PE_ref, rho_d, tau, A, z0)
+    I = compute_intensity_from_PE(PE_range * PE_ref, rho_d, p_ref, tau, A, z0, z_BL, theta0)
     # P = -PE_ref*PE_range * theta0 / (g * z0 * rho_d[k0]) * cpd / (rho_w * evap) / exner_c(p[k0])
     P = I * A * tau
     height = P / A
@@ -261,7 +261,7 @@ def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_re
     plt.close(fig)
     return
 # -----------------------------------------
-def compute_intensity_from_PE(PE0, rho_d, tau, A, z0, z_BL, theta0):
+def compute_intensity_from_PE(PE0, rho_d, p, tau, A, z0, z_BL, theta0):
     ''' evaporation parameters '''
     # tau         # duration of rain event
     # A           # area of precipitation cell
@@ -269,12 +269,9 @@ def compute_intensity_from_PE(PE0, rho_d, tau, A, z0, z_BL, theta0):
     # z_BL        # height of sub-cloud layer [m]
     # theta0      # temperature at level of evaporation
     # p           # reference pressure
+    # rho_d       # reference density profile
     k0 = np.int(z0 / dz)
     evap = 0.1  # fraction of rain water that is evaporated
-
-    # compute reference pressure and density profiles (assuming dry thermodynamics)
-    p, al_d = compute_pressure_profile_dry()
-    rho_d = 1. / al_d
 
     V = A*z_BL
     dTh = PE0 * theta0 / (g*z0*rho_d[k0]*V)
