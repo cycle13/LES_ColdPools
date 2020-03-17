@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
@@ -124,7 +125,8 @@ def main():
     PE_array_log = 2. ** np.arange(-1, 4)
     # print('PE: ' + str(PE_array))
     n_params = len(r_params)
-    plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_ref, PE_array, PE_array_log)
+    plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_ref, PE_array, PE_array_log, 
+                 path_out_figs)
 
 
     # ''' moist '''
@@ -169,8 +171,8 @@ def plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref):
     print(PE_range)
     print(aux)
 
+    fig_name = 'precipitation_run5_hist.png'
     fig, [ax0, ax1, ax2] = plt.subplots(1, 3, figsize=(20, 6))
-
     ax0.plot(PE_range, np.round(I * 1e3, 0), '-o')
     ax0.set_xlabel(r'PE / PE$_0$')
     ax1.hist(aux)
@@ -182,17 +184,19 @@ def plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref):
     ax2.set_xlabel(r'PE / PE$_0$')
     ax2.set_ylabel('Intensity [mm/h]')
     plt.subplots_adjust(bottom=0.2, right=.95, left=0.07, top=0.9, wspace=0.25)
-    plt.savefig('./preciptation_run5_hist.png')
+    #plt.savefig('./preciptation_run5_hist.png')
+    plt.savefig(os.path.join(path_out_figs, fig_name))
     return
 # -----------------------------------------
 def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_ref,
-                 PE_array, PE_array_log):
+                 PE_array, PE_array_log, path_out_figs):
     fig_name = 'PE_scaling_run5.png'
-
+    
+    r_params_ = list(r_params)
     i = 0
-    while (rstar_ref<r_params[i]) and (i<len(r_params)):
+    while (rstar_ref>r_params[i]) and (i<len(r_params)):
         i+=1
-    r_params_ = r_params.insert(i, rstar_ref)
+    r_params_.insert(i, rstar_ref)
     print('TESTING: ', i, r_params[i])
     print(r_params)
     print(r_params_)
