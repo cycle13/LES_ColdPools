@@ -125,7 +125,9 @@ def main():
     PE_array_log = 2. ** np.arange(-1, 4)
     # print('PE: ' + str(PE_array))
     n_params = len(r_params)
-    plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_ref, PE_array, PE_array_log, 
+    plot_PE_vs_R(r_params, z_params, n_params, dTh,
+                 rstar_ref, zstar_ref, dTh_ref,
+                 PE_array, PE_array_log, I,
                  path_out_figs)
 
 
@@ -197,7 +199,7 @@ def plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref, path_out_figs)
     return
 # -----------------------------------------
 def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_ref,
-                 PE_array, PE_array_log,
+                 PE_array, PE_array_log, intensity,
                  path_out_figs):
     fig_name = 'PE_scaling_run5.png'
 
@@ -234,7 +236,7 @@ def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_re
     x_arr_[ic + irstar:] = rstar_ref + xc
     zmax[-1, :] = zstar_ref * np.cos((x_arr_ - xc) / rstar_ref * np.pi / 2) ** 2
 
-    fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(16, 6))
+    fig, (ax0, ax1, ax2) = plt.subplots(1, 3, figsize=(20, 6))
     for istar in range(n_params):
         zstar = z_params[0]
         rstar = r_params[istar]
@@ -243,7 +245,6 @@ def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_re
              label='dTh' + str(dTh_ref) + ', z*' + str(zstar_ref) + ', r*' + str(rstar_ref))
     ax0.set_ylabel('Height z  [km]', fontsize=21)
     ax0.set_ylim(0, z_params[-1] + 100)
-
     ax0.legend(loc='upper right', bbox_to_anchor=(-0.2, 1.0),
                fancybox=True, ncol=1)
 
@@ -254,8 +255,20 @@ def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_re
         ax1.plot(r_params[istar], PE_array[istar], 'o', markersize=10, markeredgecolor='w', )
     ax1.plot(r_params_[1], PE_array_log[1], 'ko', markersize=10, markeredgecolor='w', )
 
-    # ax1.legend(loc='upper left', bbox_to_anchor=(1.05, 1.0),
-    #            fancybox=True, ncol=1)
+    ax2.bar(PE_array_log, intensity * 1e3, align='center', facecolor='lightblue')
+    ax2.set_xlabel(r'PE / PE$_0$')
+    ax2.set_ylabel('Intensity [mm/h]')
+    ax2.xaxis.get_ticklabels()[3].set_visible(False)
+    ax2.xaxis.get_ticklabels()[5].set_visible(False)
+    ax2.xaxis.get_ticklabels()[6].set_visible(False)
+    ax2.xaxis.get_ticklabels()[7].set_visible(False)
+    ax2.xaxis.get_ticklabels()[9].set_visible(False)
+    # for ax in [ax0, ax1, ax2]:
+    #     ax.set_xticklabels([np.int(ti) for ti in ax.get_xticks()])
+    #     ax.set_yticklabels([np.int(ti) for ti in ax.get_yticks()])
+    ax2.set_xticklabels([np.int(ti) for ti in ax2.get_xticks()])
+    ax2.set_yticklabels([np.int(ti) for ti in ax2.get_yticks()])
+
     ax1.set_ylabel(r'PE / PE$_0$')
     ax1.set_xlim(400, 2500)
     ax1.set_ylim(0, 8.5)
