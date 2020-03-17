@@ -2,10 +2,13 @@ import os
 import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
-
+import netCDF4 as nc
+import json as simplejson
 
 # import ../thermodynamic_profiles
 # from thermodynamic_profiles import eos
+from thermodynamic_functions import thetas_c
+from ../Initialization_PE.py import compute_PE, compute_envelope
 
 execfile('settings.py')
 label_size = 15
@@ -22,6 +25,10 @@ plt.rcParams['grid.linewidth'] = 20
 def main():
     # # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
     # path_out_figs = '/nbi/home/meyerbe/paper_CP'
+    path_data_dx100m = '/nbi/ac/conv4/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/single_3D_noise/run5_PE_scaling_dx100m'
+    path_data_ref_dx100m = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2_dx100m/dTh3_z1000_r1000'
+    path_data_dx50m = '/nbi/ac/conv4/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/single_3D_noise/run6_PE_scaling_dx50m'
+
 
     'geometry'
     global nz, dz
@@ -29,7 +36,7 @@ def main():
     nz = 2e3/dz
     # nz = 3
 
-    # define parameters
+    ''' parameters '''
     global Rd, Rv, eps_v, eps_vi
     Rd = 287.1
     Rv = 461.5
@@ -48,7 +55,7 @@ def main():
     p_tilde = 100000.0
     sd_tilde = 6864.8
 
-    'surface values'
+    '''surface values'''
     global Pg, Tg, qtg
     Pg = 1.0e5
     Tg = 300.0
@@ -56,6 +63,7 @@ def main():
     # sg = entropy_dry(Pg, Tg, qtg, 0.0, 0.0)
     # sg = 6e3
 
+    ''' reference / background profile '''
     # compute reference pressure and density profiles (assuming dry thermodynamics)
     p_ref, al_d = compute_pressure_profile_dry()
     rho_d = 1./al_d
@@ -65,12 +73,66 @@ def main():
     z0 = 800.       # height of evaporation
     theta0 = 298.   # temperature at level of evaporation
     q0 = 298.       # moisture at level of evaporatio
-    # evap = 0.1      # fraction of rain water that is evaporated
+    evap = 0.1      # fraction of rain water that is evaporated
     ''' rain event '''
     z_BL = 1e3      # height of sub-cloud layer [m]
     A = 1e3**2      # area of precipitation cell
     intensity = 5   # [mm/h]
     tau = 1         # duration of rain event
+
+
+
+    ''' compute PE from reference simulation (r*=z*=1km, dTh=5K) '''
+    print('')
+    print('------ compute PE for reference simulation -----')
+    ''' (a) analytically '''
+    ''' (b) numerical '''
+    ''' (c) from output field '''
+    rstar = 1000.
+    zstar = 1000.
+    # dx = 100
+    nml = simplejson.loads(open(os.path.join(path_data_ref_dx100m, 'ColdPoolDry_single_3D.in')).read())
+    nx = nml['grid']['nx']
+    # ny = nml['grid']['ny']
+    # nz = nml['grid']['nz']
+    dx = nml['grid']['dx']
+    dV = dx**3
+    ic = nml['init']['ic']
+    jc = nml['init']['jc']
+    imin = ic - np.int((rstar + 1000)/dx)
+    imax = nx - imin
+    ni = imax - imin
+    ni2 = ni**2
+    kmax = np.int((zstar+1000.)/dx)
+    root = nc.Dataset(os.path.join(path_data_ref_dx100m, 'fields', '0.nc'))
+    temp_ = root.groups['fields']['temperature'][imin:imax,imin:imax,:kmax]
+    s_ = root.groups['fields']['s'][imin:imax,imin:imax,:kmax]
+    root.close()
+    theta_ = thetas_c(s_, 0.0)
+    root = nc.Dataset(os.path.join(path_data_ref_dx100m, 'Stats.ColdPoolDry_single_3D.nc'))
+    rho0_stats = root.groups['reference'].variables['rho0'][:kmax]
+    # alpha0_stats = root.groups['reference'].variables['alpha0'][:kmax]
+    zhalf_stats = root.groups['reference'].variables['z'][:kmax]
+    # rho_unit = root.groups['reference'].variables['rho0'].units
+    root.close()
+    Th_ref = Tg     # at surface, temperature equal to pot. temp. (Tg=Theta_g)
+    print('imin, imax, kmax: ', imin, imax, kmax)
+    print('shape: ', ni, 200, theta_.shape)
+    print('reference temperature: ', Th_ref, Tg, theta_[10,10,10])
+    print('reference density: ', np.amax(np.abs(rho_d[:kmax]-rho0_stats[:kmax])))
+    theta = theta_.reshape(ni2,kmax)
+    print('reshaping: ', theta.shape, theta_.shape, kmax)
+    PE0 = 0.
+    for i in range(ni2):
+        for k in range(kmax):
+            PE0 += (theta[i,k]-Th_ref)*zhalf_stats[k]*rho_d[k]*dV
+    PE0 = g/Th_ref*PE0
+    print('')
+
+    print('POTENTIAL ENERGY')
+    print('(c) from output field theta: ' + str(PE0))
+
+
 
 
     ''' (1) compute precipitation, given potential energy '''
