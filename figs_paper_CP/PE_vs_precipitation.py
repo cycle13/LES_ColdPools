@@ -82,130 +82,130 @@ def main():
 
 
 
-    # ''' compute PE from reference simulation (r*=z*=1km, dTh=5K) '''
-    # print('')
-    # print('------ compute PE for reference simulation -----')
-    # ''' (a) analytically '''
-    # ''' (b) numerical '''
-    # ''' (c) from output field '''
-    # rstar = 1000.
-    # zstar = 1000.
-    # # dx = 100
-    # nml = simplejson.loads(open(os.path.join(path_data_ref_dx100m, 'ColdPoolDry_single_3D.in')).read())
-    # nx = nml['grid']['nx']
-    # # ny = nml['grid']['ny']
-    # # nz = nml['grid']['nz']
-    # dx = nml['grid']['dx']
-    # dV = dx**3
-    # ic = nml['init']['ic']
-    # jc = nml['init']['jc']
-    # marg = nml['init']['marg']
-    # imin = ic - np.int((rstar + 1000)/dx)
-    # imax = nx - imin
-    # ni = imax - imin
-    # ni2 = ni**2
-    # kmax = np.int((zstar+1000.)/dx)
-    # root = nc.Dataset(os.path.join(path_data_ref_dx100m, 'fields', '0.nc'))
-    # temp_ = root.groups['fields']['temperature'][imin:imax,imin:imax,:kmax]
-    # s_ = root.groups['fields']['s'][imin:imax,imin:imax,:kmax]
-    # root.close()
-    # theta_ = thetas_c(s_, 0.0)
-    # root = nc.Dataset(os.path.join(path_data_ref_dx100m, 'Stats.ColdPoolDry_single_3D.nc'))
-    # rho0_stats = root.groups['reference'].variables['rho0'][:kmax]
-    # # alpha0_stats = root.groups['reference'].variables['alpha0'][:kmax]
-    # zhalf_stats = root.groups['reference'].variables['z'][:kmax]
-    # # rho_unit = root.groups['reference'].variables['rho0'].units
-    # root.close()
-    # Th_ref = Tg     # at surface, temperature equal to pot. temp. (Tg=Theta_g)
-    # print('imin, imax, kmax: ', imin, imax, kmax)
-    # print('shape: ', ni, 200, theta_.shape)
-    # print('reference temperature: ', Th_ref, Tg, theta_[10,10,10])
-    # print('reference density: ', np.amax(np.abs(rho_d[:kmax]-rho0_stats[:kmax])))
-    # theta = theta_.reshape(ni2,kmax)
-    # print('reshaping: ', theta.shape, theta_.shape, kmax)
-    # PE0 = 0.
-    # for i in range(ni2):
-    #     for k in range(kmax):
-    #         PE0 += (theta[i,k]-Th_ref)*zhalf_stats[k]*rho_d[k]*dV
-    # PE0 = g/Th_ref*PE0
-    # print('')
+    ''' compute PE from reference simulation (r*=z*=1km, dTh=5K) '''
+    print('')
+    print('------ compute PE for reference simulation -----')
+    ''' (a) analytically '''
+    ''' (b) numerical '''
+    ''' (c) from output field '''
+    rstar = 1000.
+    zstar = 1000.
+    # dx = 100
+    nml = simplejson.loads(open(os.path.join(path_data_ref_dx100m, 'ColdPoolDry_single_3D.in')).read())
+    nx = nml['grid']['nx']
+    # ny = nml['grid']['ny']
+    # nz = nml['grid']['nz']
+    dx = nml['grid']['dx']
+    dV = dx**3
+    ic = nml['init']['ic']
+    jc = nml['init']['jc']
+    marg = nml['init']['marg']
+    imin = ic - np.int((rstar + 1000)/dx)
+    imax = nx - imin
+    ni = imax - imin
+    ni2 = ni**2
+    kmax = np.int((zstar+1000.)/dx)
+    root = nc.Dataset(os.path.join(path_data_ref_dx100m, 'fields', '0.nc'))
+    temp_ = root.groups['fields']['temperature'][imin:imax,imin:imax,:kmax]
+    s_ = root.groups['fields']['s'][imin:imax,imin:imax,:kmax]
+    root.close()
+    theta_ = thetas_c(s_, 0.0)
+    root = nc.Dataset(os.path.join(path_data_ref_dx100m, 'Stats.ColdPoolDry_single_3D.nc'))
+    rho0_stats = root.groups['reference'].variables['rho0'][:kmax]
+    # alpha0_stats = root.groups['reference'].variables['alpha0'][:kmax]
+    zhalf_stats = root.groups['reference'].variables['z'][:kmax]
+    # rho_unit = root.groups['reference'].variables['rho0'].units
+    root.close()
+    Th_ref = Tg     # at surface, temperature equal to pot. temp. (Tg=Theta_g)
+    print('imin, imax, kmax: ', imin, imax, kmax)
+    print('shape: ', ni, 200, theta_.shape)
+    print('reference temperature: ', Th_ref, Tg, theta_[10,10,10])
+    print('reference density: ', np.amax(np.abs(rho_d[:kmax]-rho0_stats[:kmax])))
+    theta = theta_.reshape(ni2,kmax)
+    print('reshaping: ', theta.shape, theta_.shape, kmax)
+    PE0 = 0.
+    for i in range(ni2):
+        for k in range(kmax):
+            PE0 += (theta[i,k]-Th_ref)*zhalf_stats[k]*rho_d[k]*dV
+    PE0 = g/Th_ref*PE0
+    print('')
+
+    print('POTENTIAL ENERGY')
+    print('(c) from output field theta: ' + str(PE0))
+
+
+
+
+    ''' (1) compute precipitation, given potential energy '''
+    ''' dry '''
+    PE_ref = -0.8e11
+    # PE_ref = -0.5e11
+    # evaporated water:     V * rho_w * evap
+    # volume:               V = I * A * tau, A: area, I: intensity, tau: duration
+    # released heat:        Q = Lv * V * rho_w * evap
+    # temperature change:   Q = dT * cp <<>> dT = Q / cp
+    # >> Lv * V * rho_w * evap = dT * cp >> V = dT * cp / (Lv * rho_w * evap)
+    print('tau: ' + str(tau) + ' h, area: '+str(A) + 'm2')
+    I_ref = compute_intensity_from_PE(PE_ref, rho_d, p_ref, tau, A, z0, z_BL, theta0)
+    P = I_ref * A * tau
+    height = P/A
+    print('   Precip. intensity:  ' + str(np.round(I_ref*1e3,0)) + ' mm/h')
+    print('   Precip. total:      ' + str(np.round(P,2)) + ' m^3')
+    print('   height watercolumn: ' + str(np.round(1e3*height,0)) + ' mm')
+    # This corresponds to the cooling generated by the fractional evaporation of rain from a cell of area 1km2 that
+    # precipitates at moderate intensity of 5 mm/h for half an hour at an evaporation rate of 10%
+    tau_ = height / (intensity*1e-3)
+    intensity_ = height / tau * 1e3
+    print('if intensity is '+str(intensity)+'mm/h, then duration is: tau='+str(np.round(tau_,2))+' h')
+    print('if duration is '+str(tau)+'h, then intensity is: I='+str(np.round(intensity_,2))+' mm/h')
+
+    ''' (2) plot histogram '''
+    print('')
+    print('PE range: ')
+    PE_range = 2. ** np.arange(-1, 4)
+    print(PE_range)
+    print('tau: ' + str(tau) + ' h, area: ' + str(A) + 'm2')
+    I = compute_intensity_from_PE(PE_range * PE_ref, rho_d, p_ref, tau, A, z0, z_BL, theta0)
+    # P = -PE_ref*PE_range * theta0 / (g * z0 * rho_d[k0]) * cpd / (rho_w * evap) / exner_c(p[k0])
+    P = I * A * tau
+    height = P / A
+    print('   Precip. intensity:  ' + str(np.round(I * 1e3, 0)) + ' mm/h')
+    print('   Precip. total:      ' + str(np.round(P, 2)) + ' m^3')
+    print('   height watercolumn: ' + str(np.round(1e3 * height, 0)) + ' mm')
+    plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref, path_out_figs)
+
+
+    ''' (3) plot PE vs. R (run5)'''
+    dTh_ref = 3
+    rstar_ref = 1000
+    zstar_ref = 1000
+    # run5
+    dTh = 5
+    r_params = [500, 1100, 1600, 2300]
+    r_params_ = [500, 1000, 1100, 1600, 2300]
+    z_params = [1000]
+    PE_array = [0.5, 2, 4, 8]
+    PE_array_log = 2. ** np.arange(-1, 4)
+    # print('PE: ' + str(PE_array))
+    n_params = len(r_params)
+    plot_PE_vs_R(r_params, z_params, n_params, dTh,
+                 rstar_ref, zstar_ref, dTh_ref,
+                 PE_array, PE_array_log, I,
+                 path_out_figs)
+
+
+    # ''' moist '''
     #
-    # print('POTENTIAL ENERGY')
-    # print('(c) from output field theta: ' + str(PE0))
+    # T0 = theta
+    # print('!!')
+    # qt0 = 1e-3
+    # qv0 = qt0
+    # # evaporated rain
+    # # dqv =
     #
     #
-    #
-    #
-    # ''' (1) compute precipitation, given potential energy '''
-    # ''' dry '''
-    # PE_ref = -0.8e11
-    # # PE_ref = -0.5e11
-    # # evaporated water:     V * rho_w * evap
-    # # volume:               V = I * A * tau, A: area, I: intensity, tau: duration
-    # # released heat:        Q = Lv * V * rho_w * evap
-    # # temperature change:   Q = dT * cp <<>> dT = Q / cp
-    # # >> Lv * V * rho_w * evap = dT * cp >> V = dT * cp / (Lv * rho_w * evap)
-    # print('tau: ' + str(tau) + ' h, area: '+str(A) + 'm2')
-    # I_ref = compute_intensity_from_PE(PE_ref, rho_d, p_ref, tau, A, z0, z_BL, theta0)
-    # P = I_ref * A * tau
-    # height = P/A
-    # print('   Precip. intensity:  ' + str(np.round(I_ref*1e3,0)) + ' mm/h')
-    # print('   Precip. total:      ' + str(np.round(P,2)) + ' m^3')
-    # print('   height watercolumn: ' + str(np.round(1e3*height,0)) + ' mm')
-    # # This corresponds to the cooling generated by the fractional evaporation of rain from a cell of area 1km2 that
-    # # precipitates at moderate intensity of 5 mm/h for half an hour at an evaporation rate of 10%
-    # tau_ = height / (intensity*1e-3)
-    # intensity_ = height / tau * 1e3
-    # print('if intensity is '+str(intensity)+'mm/h, then duration is: tau='+str(np.round(tau_,2))+' h')
-    # print('if duration is '+str(tau)+'h, then intensity is: I='+str(np.round(intensity_,2))+' mm/h')
-    #
-    # ''' (2) plot histogram '''
-    # print('')
-    # print('PE range: ')
-    # PE_range = 2. ** np.arange(-1, 4)
-    # print(PE_range)
-    # print('tau: ' + str(tau) + ' h, area: ' + str(A) + 'm2')
-    # I = compute_intensity_from_PE(PE_range * PE_ref, rho_d, p_ref, tau, A, z0, z_BL, theta0)
-    # # P = -PE_ref*PE_range * theta0 / (g * z0 * rho_d[k0]) * cpd / (rho_w * evap) / exner_c(p[k0])
-    # P = I * A * tau
-    # height = P / A
-    # print('   Precip. intensity:  ' + str(np.round(I * 1e3, 0)) + ' mm/h')
-    # print('   Precip. total:      ' + str(np.round(P, 2)) + ' m^3')
-    # print('   height watercolumn: ' + str(np.round(1e3 * height, 0)) + ' mm')
-    # plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref, path_out_figs)
-    #
-    #
-    # ''' (3) plot PE vs. R (run5)'''
-    # dTh_ref = 3
-    # rstar_ref = 1000
-    # zstar_ref = 1000
-    # # run5
-    # dTh = 5
-    # r_params = [500, 1100, 1600, 2300]
-    # r_params_ = [500, 1000, 1100, 1600, 2300]
-    # z_params = [1000]
-    # PE_array = [0.5, 2, 4, 8]
-    # PE_array_log = 2. ** np.arange(-1, 4)
-    # # print('PE: ' + str(PE_array))
-    # n_params = len(r_params)
-    # plot_PE_vs_R(r_params, z_params, n_params, dTh,
-    #              rstar_ref, zstar_ref, dTh_ref,
-    #              PE_array, PE_array_log, I,
-    #              path_out_figs)
-    #
-    #
-    # # ''' moist '''
-    # #
-    # # T0 = theta
-    # # print('!!')
-    # # qt0 = 1e-3
-    # # qv0 = qt0
-    # # # evaporated rain
-    # # # dqv =
-    # #
-    # #
-    # # # rho = 1./alpha(T, p, qt, qv)
-    # # buoy = g*rho_d[k]*(alpha_tot(T0, p[k], qt0, qv0))
+    # # rho = 1./alpha(T, p, qt, qv)
+    # buoy = g*rho_d[k]*(alpha_tot(T0, p[k], qt0, qv0))
 
     return
 
