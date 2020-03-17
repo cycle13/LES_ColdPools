@@ -20,8 +20,8 @@ plt.rcParams['grid.linewidth'] = 20
 
 
 def main():
-    # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
-    path_out_figs = '/nbi/home/meyerbe/paper_CP'
+    # # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
+    # path_out_figs = '/nbi/home/meyerbe/paper_CP'
 
     'geometry'
     global nz, dz
@@ -109,7 +109,7 @@ def main():
     print('   Precip. intensity:  ' + str(np.round(I * 1e3, 0)) + ' mm/h')
     print('   Precip. total:      ' + str(np.round(P, 2)) + ' m^3')
     print('   height watercolumn: ' + str(np.round(1e3 * height, 0)) + ' mm')
-    plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref)
+    plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref, path_out_figs)
 
 
     ''' (3) plot PE vs. R (run5)'''
@@ -147,7 +147,7 @@ def main():
 
 
 # -----------------------------------------
-def plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref):
+def plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref, path_out_figs):
 
     fig, [ax0, ax1, ax2] = plt.subplots(1, 3, figsize=(20, 6))
     ax0.plot(PE_range, P, '-o')
@@ -189,9 +189,10 @@ def plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref):
     return
 # -----------------------------------------
 def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_ref,
-                 PE_array, PE_array_log, path_out_figs):
+                 PE_array, PE_array_log,
+                 path_out_figs):
     fig_name = 'PE_scaling_run5.png'
-    
+
     r_params_ = list(r_params)
     i = 0
     while (rstar_ref>r_params[i]) and (i<len(r_params)):

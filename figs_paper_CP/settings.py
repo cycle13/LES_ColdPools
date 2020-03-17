@@ -55,6 +55,12 @@ linestyle_list = ['-', '--', 'dotted', ':']
 
 # ----------------------------------------------------------------------
 
+path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP'
+# path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
+# path_out_figs = '/nbi/home/meyerbe/paper_CP'
+
+# ----------------------------------------------------------------------
+
 '''time windows for collisions (dTh=5K, z*=1000m)'''
 # rstar = 1100m
 d_range_r1100 = [10,    12,     15]
@@ -86,3 +92,6 @@ t_3CP['2000'] = t_3CP_r2000
 t_final = {}
 t_final['1100'] = t_final_r1100
 t_final['2000'] = t_final_r2000
+
+
+
