@@ -183,6 +183,11 @@ def plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref, path_out_figs)
     # plt.bar(range(len(D)), D.values(), align='center')
     ax2.set_xlabel(r'PE / PE$_0$')
     ax2.set_ylabel('Intensity [mm/h]')
+    ax2.xaxis.get_ticklabels()[3].set_visible(False)
+    ax2.xaxis.get_ticklabels()[5].set_visible(False)
+    ax2.xaxis.get_ticklabels()[6].set_visible(False)
+    ax2.xaxis.get_ticklabels()[7].set_visible(False)
+    ax2.xaxis.get_ticklabels()[9].set_visible(False)
     for ax in [ax0, ax1, ax2]:
         ax.set_xticklabels([np.int(ti) for ti in ax.get_xticks()])
         ax.set_yticklabels([np.int(ti) for ti in ax.get_yticks()])
@@ -229,7 +234,7 @@ def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_re
     x_arr_[ic + irstar:] = rstar_ref + xc
     zmax[-1, :] = zstar_ref * np.cos((x_arr_ - xc) / rstar_ref * np.pi / 2) ** 2
 
-    fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(16, 5))
+    fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(16, 6))
     for istar in range(n_params):
         zstar = z_params[0]
         rstar = r_params[istar]
