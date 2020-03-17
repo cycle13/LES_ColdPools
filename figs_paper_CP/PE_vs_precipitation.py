@@ -183,6 +183,9 @@ def plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref, path_out_figs)
     # plt.bar(range(len(D)), D.values(), align='center')
     ax2.set_xlabel(r'PE / PE$_0$')
     ax2.set_ylabel('Intensity [mm/h]')
+    for ax in [ax0, ax1, ax2]:
+        ax.set_xticklabels([np.int(ti) for ti in ax.get_xticks()])
+        ax.set_yticklabels([np.int(ti) for ti in ax.get_yticks()])
     plt.subplots_adjust(bottom=0.2, right=.95, left=0.07, top=0.9, wspace=0.25)
     #plt.savefig('./preciptation_run5_hist.png')
     plt.savefig(os.path.join(path_out_figs, fig_name))
@@ -233,13 +236,8 @@ def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_re
         ax0.plot(x_arr - xc, zmax[istar, :], label='dTh' + str(dTh) + ', z*' + str(zstar) + ', r*' + str(rstar))
     ax0.plot(x_arr - xc, zmax[-1], 'k',
              label='dTh' + str(dTh_ref) + ', z*' + str(zstar_ref) + ', r*' + str(rstar_ref))
-    ax0.set_xlabel('Radius r', fontsize=21)
-    ax0.set_ylabel('Height z', fontsize=21)
+    ax0.set_ylabel('Height z  [km]', fontsize=21)
     ax0.set_ylim(0, z_params[-1] + 100)
-    x_ticks = [np.int(i * 1e-3) for i in ax0.get_xticks()]
-    y_ticks = [np.round(i * 1e-3, 1) for i in ax0.get_yticks()]
-    ax0.set_xticklabels(x_ticks)
-    ax0.set_yticklabels(y_ticks)
 
     ax0.legend(loc='upper right', bbox_to_anchor=(-0.2, 1.0),
                fancybox=True, ncol=1)
@@ -253,14 +251,22 @@ def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_re
 
     # ax1.legend(loc='upper left', bbox_to_anchor=(1.05, 1.0),
     #            fancybox=True, ncol=1)
-    x_ticks = [np.round(i * 1e-3, 1) for i in ax1.get_xticks()]
-    print
-    x_ticks
-    # ax1.set_xticklabels(x_ticks)
-    ax1.set_xlabel('Radius r')
     ax1.set_ylabel(r'PE / PE$_0$')
     ax1.set_xlim(400, 2500)
     ax1.set_ylim(0, 8.5)
+    for ax in [ax0, ax1]:
+        ax.set_xlabel('Radius r  [km]')
+    ax0.set_xticklabels([np.int(ti*1e-3) for ti in ax0.get_xticks()])
+    ax1.set_xticklabels([np.round(ti*1e-3,1) for ti in ax1.get_xticks()])
+    ax0.set_yticklabels([np.round(ti*1e-3,0) for ti in ax0.get_yticks()])
+    ax1.set_yticklabels([np.int(ti) for ti in ax.get_yticks()])
+    for label in ax1.yaxis.get_ticklabels()[3::2]:
+        label.set_visible(False)
+    ax0.yaxis.get_ticklabels()[1].set_visible(False)
+    ax0.yaxis.get_ticklabels()[2].set_visible(False)
+    ax0.yaxis.get_ticklabels()[3].set_visible(False)
+    ax0.yaxis.get_ticklabels()[4].set_visible(False)
+    ax1.yaxis.get_ticklabels()[6].set_visible(False)
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.2, right=.85, left=0.2, top=0.9, wspace=0.25)
     plt.savefig(os.path.join(path_out_figs, fig_name))
