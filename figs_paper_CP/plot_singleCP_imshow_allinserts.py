@@ -281,11 +281,9 @@ def figure_wholeCP_zoomasinsert(vrad_2D_,
 def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
                                 time_range, dt_fields, nx, dx, imin, ic, jc, k0,
                                 path_fields, path_out_figs, fig_name):
-    nlev = 2e1
     ncol = len(time_range)
     nrow = 3
     axins_x = [0.14, 0.3655, .594, .82]
-    axins_x = [0.145, 0.371, .599, .825]
     axins_x = [0.145, 0.372, .598, .825]
     axins_y = [.815, .495, .175]
     axins_y = [.820, .500, .180]
@@ -319,15 +317,10 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
         vrad_2D = vrad_2D_[it, :, :]
 
         axs = axes_[0, :]
-        # cf = axs[i].imshow(theta[ic + 48:, jc + 48:].T, cmap=cm_bw_r, norm=norm_th, origin='lower')
         cf = axs[i].imshow(theta[ic:, jc:].T, cmap=cm_bw_r, norm=norm_th, origin='lower')
         axins = plt.axes([axins_x[i], axins_y[0], axins_width, axins_width])
         axins.imshow(theta[imin:imax, imin:imax].T, cmap=cm_bw_r, norm=norm_th, origin='lower')
         axins.set_aspect('equal')
-        # axins.set_xlim(0, axins_xlim[i])
-        # axins.set_ylim(0, axins_xlim[i])
-        # # axins.set_xticklabels('')
-        # # axins.set_yticklabels('')
         x_ticks = [np.int(n*dx[1]*1e-3) for n in axins.get_xticks()]
         axins.set_xticklabels(x_ticks)
         axins.set_yticklabels(x_ticks)
@@ -348,67 +341,57 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
             cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(298, 300.1, 1))
 
         axs = axes_[1, :]
-        # cf = axs[i].imshow(w[ic + 48:, jc + 48:].T, cmap=cm_bwr, norm=norm_w, origin='lower')
         cf = axs[i].imshow(w[ic:, jc:].T, cmap=cm_bwr, norm=norm_w, origin='lower')
-        axins = plt.axes([axins_x[i], axins_y[1], axins_width, axins_width])
-        axins.imshow(w[imin:imax, imin:imax].T, cmap=cm_bwr, norm=norm_w, origin='lower')
-        axins.set_aspect('equal')
-        # axins.set_xlim(0, axins_xlim[i])
-        # axins.set_ylim(0, axins_xlim[i])
-        # # axins.set_xticklabels('')
-        # # axins.set_yticklabels('')
-        for label in axins.xaxis.get_ticklabels()[2::4]:
-            label.set_visible(False)
-        for label in axins.xaxis.get_ticklabels()[3::4]:
-            label.set_visible(False)
-        for label in axins.yaxis.get_ticklabels()[4::4]:
-            label.set_visible(False)
-        for label in axins.yaxis.get_ticklabels()[2::4]:
-            label.set_visible(False)
-        for label in axins.yaxis.get_ticklabels()[3::4]:
-            label.set_visible(False)
-        for label in axins.xaxis.get_ticklabels()[4::4]:
-            label.set_visible(False)
-        x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
-        axins.set_xticklabels(x_ticks)
-        axins.set_yticklabels(x_ticks)
-        for label in axins.xaxis.get_ticklabels()[0::2]:
-            label.set_visible(False)
-        for label in axins.yaxis.get_ticklabels()[0::2]:
-            label.set_visible(False)
+        # axins = plt.axes([axins_x[i], axins_y[1], axins_width, axins_width])
+        # axins.imshow(w[imin:imax, imin:imax].T, cmap=cm_bwr, norm=norm_w, origin='lower')
+        # axins.set_aspect('equal')
+        # for label in axins.xaxis.get_ticklabels()[2::4]:
+        #     label.set_visible(False)
+        # for label in axins.xaxis.get_ticklabels()[3::4]:
+        #     label.set_visible(False)
+        # for label in axins.yaxis.get_ticklabels()[4::4]:
+        #     label.set_visible(False)
+        # for label in axins.yaxis.get_ticklabels()[2::4]:
+        #     label.set_visible(False)
+        # for label in axins.yaxis.get_ticklabels()[3::4]:
+        #     label.set_visible(False)
+        # for label in axins.xaxis.get_ticklabels()[4::4]:
+        #     label.set_visible(False)
+        # x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
+        # axins.set_xticklabels(x_ticks)
+        # axins.set_yticklabels(x_ticks)
+        # for label in axins.xaxis.get_ticklabels()[0::2]:
+        #     label.set_visible(False)
+        # for label in axins.yaxis.get_ticklabels()[0::2]:
+        #     label.set_visible(False)
         if t0 == time_range[-1]:
             cax = plt.axes([0.95, 0.38, 0.012, 0.22])
             cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(-3, 3 + 0.02, 1.))
 
         axs = axes_[2, :]
-        # cf = axs[i].imshow(vrad_2D[ic + 48:, jc + 48:].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
         cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
-        axins = plt.axes([axins_x[i], axins_y[2], axins_width, axins_width])
-        axins.imshow(vrad_2D[imin:imax, imin:imax].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
-        axins.set_aspect('equal')
-        # axins.set_xlim(0, axins_xlim[i])
-        # axins.set_ylim(0, axins_xlim[i])
-        # # axins.set_xticklabels('')
-        # # axins.set_yticklabels('')
-        for label in axins.xaxis.get_ticklabels()[2::4]:
-            label.set_visible(False)
-        for label in axins.xaxis.get_ticklabels()[3::4]:
-            label.set_visible(False)
-        for label in axins.yaxis.get_ticklabels()[4::4]:
-            label.set_visible(False)
-        for label in axins.yaxis.get_ticklabels()[2::4]:
-            label.set_visible(False)
-        for label in axins.yaxis.get_ticklabels()[3::4]:
-            label.set_visible(False)
-        for label in axins.xaxis.get_ticklabels()[4::4]:
-            label.set_visible(False)
-        x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
-        axins.set_xticklabels(x_ticks)
-        axins.set_yticklabels(x_ticks)
-        for label in axins.xaxis.get_ticklabels()[0::2]:
-            label.set_visible(False)
-        for label in axins.yaxis.get_ticklabels()[0::2]:
-            label.set_visible(False)
+        # axins = plt.axes([axins_x[i], axins_y[2], axins_width, axins_width])
+        # axins.imshow(vrad_2D[imin:imax, imin:imax].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
+        # axins.set_aspect('equal')
+        # for label in axins.xaxis.get_ticklabels()[2::4]:
+        #     label.set_visible(False)
+        # for label in axins.xaxis.get_ticklabels()[3::4]:
+        #     label.set_visible(False)
+        # for label in axins.yaxis.get_ticklabels()[4::4]:
+        #     label.set_visible(False)
+        # for label in axins.yaxis.get_ticklabels()[2::4]:
+        #     label.set_visible(False)
+        # for label in axins.yaxis.get_ticklabels()[3::4]:
+        #     label.set_visible(False)
+        # for label in axins.xaxis.get_ticklabels()[4::4]:
+        #     label.set_visible(False)
+        # x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
+        # axins.set_xticklabels(x_ticks)
+        # axins.set_yticklabels(x_ticks)
+        # for label in axins.xaxis.get_ticklabels()[0::2]:
+        #     label.set_visible(False)
+        # for label in axins.yaxis.get_ticklabels()[0::2]:
+        #     label.set_visible(False)
         if t0 == time_range[-1]:
             cax = plt.axes([0.95, 0.06, 0.012, 0.22])
             cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 5.1, 1), extend='max')
@@ -422,13 +405,8 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
 
         #ax.set_aspect('equal')
         x_ticks = [np.round((n-50)*dx[0]*1e-3,2) for n in ax.get_xticks()]
-        print('TICKS', dx)
-        print(ax.get_xticks())
-        print(x_ticks)
         ax.set_xticklabels(x_ticks)
         y_ticks = [np.round(n*dx[1]*1e-3,2) for n in ax.get_yticks()]
-        print(ax.get_yticks())
-        print(y_ticks)
         ax.set_yticklabels(y_ticks)
         for label in ax.xaxis.get_ticklabels()[0::2]:
             label.set_visible(False)
