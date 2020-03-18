@@ -4,6 +4,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.patches as mpatches
+import matplotlib.colors as colors
 #from matplotlib import cm
 # from matplotlib.widgets import TextBox
 import netCDF4 as nc
@@ -374,7 +375,8 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_, vtan_2D_,
 
         axs = axes_[2, :]
         # cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
-        cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_bw, norm=colors.LogNorm(vmin=1e-5, vmax=1e1), origin='lower')
+        cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_bw, norm=colors.LogNorm(vmin=1e-2, vmax=1e1), origin='lower')
+        cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_bw, norm=colors.LogNorm(vmin=1e-2, vmax=2e1), origin='lower')
         # cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_gnu, norm=norm_vrad, origin='lower')
         phi = vtan_2D[ic:,jc:]
         print('')
@@ -406,7 +408,8 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_, vtan_2D_,
         #     label.set_visible(False)
         if t0 == time_range[-1]:
             cax = plt.axes([0.95, 0.06, 0.012, 0.22])
-            cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 5.1, 1), extend='max')
+            #cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 5.1, 1), extend='max')
+            cbar = plt.colorbar(cf, cax=cax, extend='min')
 
         for ax in axes_[:,i].flat:
             ax.text(t_pos_x, t_pos_y, t_labels[i]+' t='+str(np.int(t0/60))+'min', fontsize=24, horizontalalignment='left', bbox=textprops)
