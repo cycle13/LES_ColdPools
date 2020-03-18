@@ -103,12 +103,13 @@ def main():
 
 
     ''' Figure with potential temperature, vertical velocity, radial velocity '''
-    # zoom in to see clefts
-    fig_name = 'CP_crosssection_dx' + str(res) + '_' + case + '_imshow_inserts.png'
-    figure_wholeCP_zoomasinsert(vrad_2D_,
-                                time_range, dt_fields, nx, dx, imin, ic, jc, k0,
-                                path_fields, path_out_figs, fig_name)
+    ## insert: zoom in to see clefts
+    #fig_name = 'CP_crosssection_dx' + str(res) + '_' + case + '_imshow_inserts.png'
+    #figure_wholeCP_zoomasinsert(vrad_2D_,
+    #                            time_range, dt_fields, nx, dx, imin, ic, jc, k0,
+    #                            path_fields, path_out_figs, fig_name)
 
+    # insert: whole CP
     fig_name = 'CP_crosssection_dx' + str(res) + '_' + case + '_imshow_zoomed.png'
     figure_zoomedCP_wholeCPasinsert(vrad_2D_,
                                 time_range, dt_fields, nx, dx, imin, ic, jc, k0,
@@ -288,8 +289,8 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
     axins_width = .13
     axins_xlim = [100, 180, 240, 280]
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    t_pos_x = 30.
-    t_pos_y = 650.
+    t_pos_x = 10.
+    t_pos_y = 295.
     t_labels = ['i)', 'ii)', 'iii)', 'iv)']
     imax = nx - imin
 
@@ -324,12 +325,20 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
         # axins.set_ylim(0, axins_xlim[i])
         # # axins.set_xticklabels('')
         # # axins.set_yticklabels('')
-        x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
+        x_ticks = [np.int(n*dx[1]*1e-3) for n in axins.get_xticks()]
         axins.set_xticklabels(x_ticks)
         axins.set_yticklabels(x_ticks)
-        for label in axins.xaxis.get_ticklabels()[1::2]:
+        for label in axins.xaxis.get_ticklabels()[2::4]:
             label.set_visible(False)
-        for label in axins.yaxis.get_ticklabels()[1::2]:
+        for label in axins.xaxis.get_ticklabels()[3::4]:
+            label.set_visible(False)
+        for label in axins.yaxis.get_ticklabels()[4::4]:
+            label.set_visible(False)
+        for label in axins.yaxis.get_ticklabels()[2::4]:
+            label.set_visible(False)
+        for label in axins.yaxis.get_ticklabels()[3::4]:
+            label.set_visible(False)
+        for label in axins.xaxis.get_ticklabels()[4::4]:
             label.set_visible(False)
         if t0 == time_range[-1]:
             cax = plt.axes([0.95, 0.7, 0.012, 0.22])
@@ -348,9 +357,9 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
         x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
         axins.set_xticklabels(x_ticks)
         axins.set_yticklabels(x_ticks)
-        for label in axins.xaxis.get_ticklabels()[1::2]:
+        for label in axins.xaxis.get_ticklabels()[0::2]:
             label.set_visible(False)
-        for label in axins.yaxis.get_ticklabels()[1::2]:
+        for label in axins.yaxis.get_ticklabels()[0::2]:
             label.set_visible(False)
         if t0 == time_range[-1]:
             cax = plt.axes([0.95, 0.38, 0.012, 0.22])
@@ -369,9 +378,9 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
         x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
         axins.set_xticklabels(x_ticks)
         axins.set_yticklabels(x_ticks)
-        for label in axins.xaxis.get_ticklabels()[1::2]:
+        for label in axins.xaxis.get_ticklabels()[0::2]:
             label.set_visible(False)
-        for label in axins.yaxis.get_ticklabels()[1::2]:
+        for label in axins.yaxis.get_ticklabels()[0::2]:
             label.set_visible(False)
         if t0 == time_range[-1]:
             cax = plt.axes([0.95, 0.06, 0.012, 0.22])
@@ -381,24 +390,31 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
             ax.text(t_pos_x, t_pos_y, t_labels[i]+' t='+str(np.int(t0/60))+'min', fontsize=24, horizontalalignment='left', bbox=textprops)
 
     for ax in axes_.flat:
-        # ax.set_xlim()
-        ax.set_aspect('equal')
-        x_ticks = [np.int(n*dx[0]*1e-3) for n in ax.get_xticks()]
-        ax.set_xticklabels(x_ticks)
-        y_ticks = [np.int(n*dx[1]*1e-3) for n in ax.get_yticks()]
+        ax.set_xlim(0, 330)
+        ax.set_ylim(0, 330)
+
+        #ax.set_aspect('equal')
+        x_ticks = [np.round(n*dx[0]*1e-3,2) for n in ax.get_xticks()]
+        print('TICKS', dx)
+        print(ax.get_xticks())
+        print(x_ticks)
+        #ax.set_xticklabels(x_ticks)
+        y_ticks = [np.round(n*dx[1]*1e-3,2) for n in ax.get_yticks()]
+        print(ax.get_yticks())
+        print(y_ticks)
         ax.set_yticklabels(y_ticks)
-    #     for label in ax.xaxis.get_ticklabels()[0::2]:
-    #         label.set_visible(False)
-    #     for label in ax.yaxis.get_ticklabels()[0::2]:
-    #         label.set_visible(False)
+        #for label in ax.xaxis.get_ticklabels()[0::2]:
+        #    label.set_visible(False)
+        for label in ax.yaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
     for ax in axes_[2,:].flat:
         ax.set_xlabel('x  [km]')
     for ax in axes_[:,0].flat:
         ax.set_ylabel('y  [km]')
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    title_pos_x = - 120
-    title_pos_y = imax
+    title_pos_x = - 50
+    title_pos_y = 345
     title_font = 28
     txt = 'a) potential temperature'
     axes_[0,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
