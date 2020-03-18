@@ -110,14 +110,16 @@ def main():
     nlev = 2e1
     ncol = len(time_range)
     nrow = 3
-    axins_x = [0.14,0.3655,.594,.82]
+    axins_x = [0.14, 0.3655, .594, .82]
     axins_y = [.815, .495, .175]
     axins_width = .13
     axins_xlim = [100,180,240,280]
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    t_pos_x = 85.
-    t_pos_y = 85.
+    t_pos_x = 80.
+    t_pos_y = 80.
+    t_labels = ['i)', 'ii)', 'iii)', 'iv)']
     imax = nx - imin
+
 
 
 
@@ -210,7 +212,8 @@ def main():
             cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 5.1, 1), extend='max')
 
         for ax in axes_[:,i].flat:
-            ax.text(t_pos_x, t_pos_y, 't='+str(np.int(t0/60))+'min', fontsize=18, horizontalalignment='left', bbox=textprops)
+            # ax.text(t_pos_x, t_pos_y, 't='+str(np.int(t0/60))+'min', fontsize=18, horizontalalignment='left', bbox=textprops)
+            ax.text(t_pos_x, t_pos_y, t_labels[i]+' t='+str(np.int(t0/60))+'min', fontsize=18, horizontalalignment='left', bbox=textprops)
 
     #for ax in axes_[:,2].flat:
     #    ax.plot(ic,jc, 'ko', markersize=10)
