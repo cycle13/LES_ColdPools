@@ -104,11 +104,11 @@ def main():
     print('------ compute PE from simulations -----')
     ''' (a) analytical '''
     ''' (b) numerical '''
-    PE0 = compute_PE_from_simulation(dTh_ref, rstar_ref, zstar_ref, path_data_ref_dx100m)
+    PE0 = compute_PE_from_simulation(dTh_ref, rstar_ref, zstar_ref, rho_d, Tg, path_data_ref_dx100m)
     PE_num = []
     for rstar in r_params:
         case = 'dTh'+str(dTh)+'_z1000_r'+str(rstar)
-        PE = compute_PE_from_simulation(dTh, rstar, z_params[0], rho_d, os.path.join(path_data_dx100m, case))
+        PE = compute_PE_from_simulation(dTh, rstar, z_params[0], rho_d, Tg, os.path.join(path_data_dx100m, case))
         PE_num.append(PE)
 
     print('')
@@ -330,7 +330,7 @@ def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_re
     plt.close(fig)
     return
 # -----------------------------------------
-def compute_PE_from_simulation(dTh, rstar, zstar, rho_d, path):
+def compute_PE_from_simulation(dTh, rstar, zstar, rho_d, Tg, path):
     nml = simplejson.loads(open(os.path.join(path, 'ColdPoolDry_single_3D.in')).read())
     nx = nml['grid']['nx']
     dx = nml['grid']['dx']
@@ -343,8 +343,10 @@ def compute_PE_from_simulation(dTh, rstar, zstar, rho_d, path):
     ni = imax - imin
     ni2 = ni ** 2
     kmax = np.int((zstar + 1000.) / dx)
+    print('computig PE: ')
+    print('imin, imax, kmax', imin, imax, kmax)
     ''' (b) numerical '''
-    compute_envelope(dTh, rstar)
+    compute_envelope(dTh, rstar, zstar, marg, ic, jc, Tg, dx, nx, nx, kmax)
     ''' (c) from output field '''
     root = nc.Dataset(os.path.join(path, 'fields', '0.nc'))
     temp_ = root.groups['fields']['temperature'][imin:imax, imin:imax, :kmax]
