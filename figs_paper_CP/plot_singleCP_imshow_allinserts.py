@@ -115,8 +115,8 @@ def main():
     axins_width = .13
     axins_xlim = [100,180,240,280]
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    t_pos_x = 80.
-    t_pos_y = 80.
+    t_pos_x = 30.
+    t_pos_y = 650.
     t_labels = ['i)', 'ii)', 'iii)', 'iv)']
     imax = nx - imin
 
