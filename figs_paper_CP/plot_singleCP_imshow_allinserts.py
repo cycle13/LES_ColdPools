@@ -13,13 +13,13 @@ import json as simplejson
 import os
 
 execfile('settings.py')
-label_size = 18
+label_size = 21
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
 plt.rcParams['lines.linewidth'] = 2
 plt.rcParams['lines.markersize'] = 6
 plt.rcParams['legend.fontsize'] = 12
-plt.rcParams['axes.labelsize'] = 21
+plt.rcParams['axes.labelsize'] = 24
 plt.rcParams['font.sans-serif'] = 'Helvetica'
 plt.rcParams['text.usetex'] = 'true'
 plt.rcParams['legend.numpoints'] = 1
@@ -327,8 +327,8 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_, vtan_2D_,
         axins.imshow(theta[imin:imax, imin:imax].T, cmap=cm_bw_r, norm=norm_th, origin='lower')
         axins.set_aspect('equal')
         x_ticks = [np.int(n*dx[1]*1e-3) for n in axins.get_xticks()]
-        axins.set_xticklabels(x_ticks)
-        axins.set_yticklabels(x_ticks)
+        axins.set_xticklabels(x_ticks, fontsize=18)
+        axins.set_yticklabels(x_ticks, fontsize=18)
         for label in axins.xaxis.get_ticklabels()[2::4]:
             label.set_visible(False)
         for label in axins.xaxis.get_ticklabels()[3::4]:
@@ -382,7 +382,10 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_, vtan_2D_,
         print('')
         print('MINMAX: ', np.amin(phi), np.amax(phi))
         print('')
-        axs[i].contour(phi.T, 'r', levels=np.linspace(np.amin(phi), np.amax(phi),3))
+        lvls = np.arange(-2, 2.1, .5)
+        lvls = [-2, -1.5, -1, 1, 1.5, 2]
+        # lvls = [-1.5, 1.5]
+        ct = axs[i].contour(phi.T, 'r', levels=lvls)#levels=np.linspace(np.amin(phi), np.amax(phi),3))
 
         # axins = plt.axes([axins_x[i], axins_y[2], axins_width, axins_width])
         # axins.imshow(vrad_2D[imin:imax, imin:imax].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
@@ -410,6 +413,7 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_, vtan_2D_,
             cax = plt.axes([0.95, 0.06, 0.012, 0.22])
             #cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 5.1, 1), extend='max')
             cbar = plt.colorbar(cf, cax=cax, extend='min')
+            cbar = plt.colorbar(ct, cax=cax)
 
         for ax in axes_[:,i].flat:
             ax.text(t_pos_x, t_pos_y, t_labels[i]+' t='+str(np.int(t0/60))+'min', fontsize=24, horizontalalignment='left', bbox=textprops)
