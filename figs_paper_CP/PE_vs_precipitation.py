@@ -81,63 +81,48 @@ def main():
     tau = 1         # duration of rain event
 
 
+    ''' simulation parameters '''
+    dTh_ref = 3
+    rstar_ref = 1000.
+    zstar_ref = 1000.
+    # run 5
+    dTh = 5
+    r_params = [500, 1100, 1600, 2300]
+    r_params_ = list(r_params)
+    i = 0
+    while (rstar_ref > r_params[i]) and (i < len(r_params)):
+        i += 1
+    r_params_.insert(i, rstar_ref)
+    z_params = [1000]
+    PE_array = [0.5, 2, 4, 8]
+    n_params = len(r_params)
 
-    ''' compute PE from reference simulation (r*=z*=1km, dTh=5K) '''
+
+
+    ''' (1) compute PE from simulations (r*=z*=1km, dTh=5K) '''
     print('')
-    print('------ compute PE for reference simulation -----')
-    ''' (a) analytically '''
+    print('------ compute PE from simulations -----')
+    ''' (a) analytical '''
     ''' (b) numerical '''
-    ''' (c) from output field '''
-    rstar = 1000.
-    zstar = 1000.
-    # dx = 100
-    nml = simplejson.loads(open(os.path.join(path_data_ref_dx100m, 'ColdPoolDry_single_3D.in')).read())
-    nx = nml['grid']['nx']
-    # ny = nml['grid']['ny']
-    # nz = nml['grid']['nz']
-    dx = nml['grid']['dx']
-    dV = dx**3
-    ic = nml['init']['ic']
-    jc = nml['init']['jc']
-    marg = nml['init']['marg']
-    imin = ic - np.int((rstar + 1000)/dx)
-    imax = nx - imin
-    ni = imax - imin
-    ni2 = ni**2
-    kmax = np.int((zstar+1000.)/dx)
-    root = nc.Dataset(os.path.join(path_data_ref_dx100m, 'fields', '0.nc'))
-    temp_ = root.groups['fields']['temperature'][imin:imax,imin:imax,:kmax]
-    s_ = root.groups['fields']['s'][imin:imax,imin:imax,:kmax]
-    root.close()
-    theta_ = thetas_c(s_, 0.0)
-    root = nc.Dataset(os.path.join(path_data_ref_dx100m, 'Stats.ColdPoolDry_single_3D.nc'))
-    rho0_stats = root.groups['reference'].variables['rho0'][:kmax]
-    # alpha0_stats = root.groups['reference'].variables['alpha0'][:kmax]
-    zhalf_stats = root.groups['reference'].variables['z'][:kmax]
-    # rho_unit = root.groups['reference'].variables['rho0'].units
-    root.close()
-    Th_ref = Tg     # at surface, temperature equal to pot. temp. (Tg=Theta_g)
-    print('imin, imax, kmax: ', imin, imax, kmax)
-    print('shape: ', ni, 200, theta_.shape)
-    print('reference temperature: ', Th_ref, Tg, theta_[10,10,10])
-    print('reference density: ', np.amax(np.abs(rho_d[:kmax]-rho0_stats[:kmax])))
-    theta = theta_.reshape(ni2,kmax)
-    print('reshaping: ', theta.shape, theta_.shape, kmax)
-    PE0 = 0.
-    for i in range(ni2):
-        for k in range(kmax):
-            PE0 += (theta[i,k]-Th_ref)*zhalf_stats[k]*rho_d[k]*dV
-    PE0 = g/Th_ref*PE0
-    print('')
+    PE0 = compute_PE_from_simulation(dTh_ref, rstar_ref, zstar_ref, path_data_ref_dx100m)
+    PE_num = []
+    for rstar in r_params:
+        case = 'dTh'+str(dTh)+'_z1000_r'+str(rstar)
+        PE = compute_PE_from_simulation(dTh, rstar, z_params[0], rho_d, os.path.join(path_data_dx100m, case))
+        PE_num.append(PE)
 
+    print('')
     print('POTENTIAL ENERGY')
     print('(c) from output field theta: ' + str(PE0))
+    print(PE_num)
+    print('')
 
 
 
 
-    ''' (1) compute precipitation, given potential energy '''
+    ''' (2) compute precipitation, given potential energy '''
     ''' dry '''
+    print('------ PRECIPITATION FROM PE ------')
     PE_ref = -0.8e11
     # PE_ref = -0.5e11
     # evaporated water:     V * rho_w * evap
@@ -158,9 +143,14 @@ def main():
     intensity_ = height / tau * 1e3
     print('if intensity is '+str(intensity)+'mm/h, then duration is: tau='+str(np.round(tau_,2))+' h')
     print('if duration is '+str(tau)+'h, then intensity is: I='+str(np.round(intensity_,2))+' mm/h')
-
-    ''' (2) plot histogram '''
     print('')
+
+
+
+    ''' (3) Plots '''
+    ''' plot histogram '''
+    print('')
+    print('------ PLOTTING (HISTOGRAM) ------')
     print('PE range: ')
     PE_range = 2. ** np.arange(-1, 4)
     print(PE_range)
@@ -173,21 +163,10 @@ def main():
     print('   Precip. total:      ' + str(np.round(P, 2)) + ' m^3')
     print('   height watercolumn: ' + str(np.round(1e3 * height, 0)) + ' mm')
     plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref, path_out_figs)
-
-
-    ''' (3) plot PE vs. R (run5)'''
-    dTh_ref = 3
-    rstar_ref = 1000
-    zstar_ref = 1000
+    ''' plot PE vs. R (run5)'''
     # run5
-    dTh = 5
-    r_params = [500, 1100, 1600, 2300]
-    r_params_ = [500, 1000, 1100, 1600, 2300]
-    z_params = [1000]
-    PE_array = [0.5, 2, 4, 8]
     PE_array_log = 2. ** np.arange(-1, 4)
     # print('PE: ' + str(PE_array))
-    n_params = len(r_params)
     plot_PE_vs_R(r_params, z_params, n_params, dTh,
                  rstar_ref, zstar_ref, dTh_ref,
                  PE_array, PE_array_log, I,
@@ -225,16 +204,16 @@ def plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref, path_out_figs)
     plt.subplots_adjust(bottom=0.2, right=.95, left=0.07, top=0.9, wspace=0.25)
     plt.savefig('./preciptation_run5.png')
 
-    print(I * 1e3)
+    # print(I * 1e3)
     aux = PE_range[0] * np.ones(np.int(I[0] * 1e3))
     aux = np.append(aux, np.ones(np.int(I_ref * 1e3)))
     aux = np.append(aux, PE_range[1] * np.ones(np.int(I[1] * 1e3)))
     aux = np.append(aux, PE_range[2] * np.ones(np.int(I[2] * 1e3)))
     aux = np.append(aux, PE_range[3] * np.ones(np.int(I[3] * 1e3)))
     aux = np.append(aux, PE_range[4] * np.ones(np.int(I[4] * 1e3)))
-    print(I * 1e3)
-    print(PE_range)
-    print(aux)
+    # print(I * 1e3)
+    # print(PE_range)
+    # print(aux)
 
     fig_name = 'precipitation_run5_hist.png'
     fig, [ax0, ax1, ax2] = plt.subplots(1, 3, figsize=(20, 6))
@@ -271,9 +250,6 @@ def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_re
     while (rstar_ref>r_params[i]) and (i<len(r_params)):
         i+=1
     r_params_.insert(i, rstar_ref)
-    print('TESTING: ', i, r_params[i])
-    print(r_params)
-    print(r_params_)
 
     ''' envelope '''
     Lx = 6e3
@@ -354,7 +330,49 @@ def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_re
     plt.close(fig)
     return
 # -----------------------------------------
+def compute_PE_from_simulation(dTh, rstar, zstar, rho_d, path):
+    nml = simplejson.loads(open(os.path.join(path, 'ColdPoolDry_single_3D.in')).read())
+    nx = nml['grid']['nx']
+    dx = nml['grid']['dx']
+    dV = dx ** 3
+    ic = nml['init']['ic']
+    jc = nml['init']['jc']
+    marg = nml['init']['marg']
+    imin = ic - np.int((rstar + 1000) / dx)
+    imax = nx - imin
+    ni = imax - imin
+    ni2 = ni ** 2
+    kmax = np.int((zstar + 1000.) / dx)
+    ''' (b) numerical '''
+    compute_envelope(dTh, rstar)
+    ''' (c) from output field '''
+    root = nc.Dataset(os.path.join(path, 'fields', '0.nc'))
+    temp_ = root.groups['fields']['temperature'][imin:imax, imin:imax, :kmax]
+    s_ = root.groups['fields']['s'][imin:imax, imin:imax, :kmax]
+    root.close()
+    theta_ = thetas_c(s_, 0.0)
+    root = nc.Dataset(os.path.join(path, 'Stats.ColdPoolDry_single_3D.nc'))
+    rho0_stats = root.groups['reference'].variables['rho0'][:kmax]
+    # alpha0_stats = root.groups['reference'].variables['alpha0'][:kmax]
+    zhalf_stats = root.groups['reference'].variables['z'][:kmax]
+    # rho_unit = root.groups['reference'].variables['rho0'].units
+    root.close()
+    Th_ref = Tg  # at surface, temperature equal to pot. temp. (Tg=Theta_g)
+    # print('imin, imax, kmax: ', imin, imax, kmax)
+    # print('shape: ', ni, 200, theta_.shape)
+    # print('reference temperature: ', Th_ref, Tg, theta_[10,10,10])
+    print('reference density: ', np.amax(np.abs(rho_d[:kmax] - rho0_stats[:kmax])))
+    theta = theta_.reshape(ni2, kmax)
+    # print('reshaping: ', theta.shape, theta_.shape, kmax)
+    PE = 0.
+    for i in range(ni2):
+        for k in range(kmax):
+            PE += (Th_ref - theta[i, k]) * zhalf_stats[k] * rho_d[k] * dV
+    PE = g / Th_ref * PE
+    return PE
+
 def compute_intensity_from_PE(PE0, rho_d, p, tau, A, z0, z_BL, theta0):
+    print('INTENSITY COMPUTATION')
     ''' evaporation parameters '''
     # tau         # duration of rain event
     # A           # area of precipitation cell
@@ -373,69 +391,8 @@ def compute_intensity_from_PE(PE0, rho_d, p, tau, A, z0, z_BL, theta0):
     print('   PE ref:             ' + str(PE0))
     print('   dTh:                ' + str(np.round(dTh, 2)) + ' K')
     print('   dT:                 ' + str(np.round(dT, 2)) + ' K')
+    print('')
     return I
-# -----------------------------------------
-def compute_pressure_profile_dry():
-    # compute entropy from pressure and temperature
-    # sg = Thermodynamics.entropy(self.Pg, self.Tg, self.qtg, 0.0, 0.0)
-    def entropy_dry(pd, T, qt, ql, qi):
-        print 'entropy dry'
-        sd_c = sd_tilde + cpd * np.log(T / T_tilde) - Rd * np.log(pd / p_tilde)
-        return sd_c
-
-    # compute Temperature from pressure and entropy (dry)
-    def eos(pd, s, qt):
-        ql = np.zeros(pd.shape)
-        qi = np.zeros(pd.shape)
-        eos_c = T_tilde * (np.exp((s - sd_tilde + Rd * np.log(pd / p_tilde)) / cpd))
-        return eos_c, ql, qi
-
-    def rhs(p, z):
-        ql = 0.0
-        qi = 0.0
-        # # given sfc values for pressure, temperature and moisture
-        # # >> compute sfc entropy (= constant value throught atmosphere for reference profile being defines as constant-entropy profile)
-        # # compute temperature from pressure and entropy (at any given height)
-        T, ql, qi = eos(np.exp(p), sg, qtg)
-        rhs_ = -g / (Rd * T * (1.0 - qtg + eps_vi * (qtg - ql - qi)))
-        return rhs_
-
-    sg = entropy_dry(Pg, Tg, qtg, 0.0, 0.0)
-    p0 = np.log(Pg)
-    # Construct arrays for integration points
-    z_ = np.array(np.arange(nz) * dz)
-    # Perform the integration
-    p = odeint(rhs, p0, z_, hmax=1.0)[:, 0]  # type: object
-    # p_half = odeint(rhs, p0, z_half, hmax=1.0)[1:, 0]
-    p = np.exp(p)
-    # temperature[k], ql[k], qi[k] = Thermodynamics.eos(p_[k], self.sg, self.qtg)
-    # print('...', sg, qtg)
-    T, ql, qi = eos(p, sg, qtg)
-    # qv[k] = self.qtg - (ql[k] + qi[k])
-    qv = np.zeros(p.shape)
-    # alpha[k] = Thermodynamics.alpha(p_[k], temperature[k], self.qtg, qv[k])
-    al = alpha_tot(T, p, qtg, qv)
-    # al = alpha_dry(T, p)
-
-    fig, axes = plt.subplots(1, 3, figsize=(24, 10))
-    ax = axes[0]
-    ax.plot(p, z_, '-')
-    ax.set_title('pressure')
-    ax = axes[1]
-    ax.plot(T, z_, '-')
-    ax.set_title('temperature')
-    ax = axes[2]
-    ax.plot(1./al, z_, '-')
-    ax.plot([np.amin(1./al), np.amax(1./al)], [800, 800], 'k')
-    # # ax.plot([3.0, 3.0],[0, 5000], 'k')
-    ax.plot([1./al[np.int(800. / dz)], 1./al[np.int(800. / dz)]], [0, 2e3], 'k')
-    ax.set_title('rho')
-    plt.savefig('./thermodynamic_profiles_pycles.png')
-    plt.close()
-
-    return p, al
-
-
 # -----------------------------------------
 def compute_envelope(dTh, rstar, zstar, marg, ic, jc, th_g, dx, nx, ny, kmax):
     z_max_arr = np.zeros((2, nx, ny), dtype=np.double)
@@ -445,7 +402,6 @@ def compute_envelope(dTh, rstar, zstar, marg, ic, jc, th_g, dx, nx, ny, kmax):
     x_half, y_half, z_half = compute_dimension_arrays(dx, dx, dx, nx, ny, kmax)
     xc = x_half[ic]  # center of cold-pool
     yc = y_half[jc]  # center of cold-pool
-
 
     for i in range(nx):
         # ishift = i * nlg[1] * nlg[2]
@@ -496,6 +452,65 @@ def compute_dimension_arrays(dx, dy, dz, nx, ny, nz):
         z_half[count] = (i + 0.5) * dz
         count += 1
     return x_half, y_half, z_half
+# -----------------------------------------
+def compute_pressure_profile_dry():
+    # compute entropy from pressure and temperature
+    # sg = Thermodynamics.entropy(self.Pg, self.Tg, self.qtg, 0.0, 0.0)
+    def entropy_dry(pd, T, qt, ql, qi):
+        # print('entropy dry')
+        sd_c = sd_tilde + cpd * np.log(T / T_tilde) - Rd * np.log(pd / p_tilde)
+        return sd_c
+
+    # compute Temperature from pressure and entropy (dry)
+    def eos(pd, s, qt):
+        ql = np.zeros(pd.shape)
+        qi = np.zeros(pd.shape)
+        eos_c = T_tilde * (np.exp((s - sd_tilde + Rd * np.log(pd / p_tilde)) / cpd))
+        return eos_c, ql, qi
+
+    def rhs(p, z):
+        ql = 0.0
+        qi = 0.0
+        # # given sfc values for pressure, temperature and moisture
+        # # >> compute sfc entropy (= constant value throught atmosphere for reference profile being defines as constant-entropy profile)
+        # # compute temperature from pressure and entropy (at any given height)
+        T, ql, qi = eos(np.exp(p), sg, qtg)
+        rhs_ = -g / (Rd * T * (1.0 - qtg + eps_vi * (qtg - ql - qi)))
+        return rhs_
+
+    sg = entropy_dry(Pg, Tg, qtg, 0.0, 0.0)
+    p0 = np.log(Pg)
+    # Construct arrays for integration points
+    z_ = np.array(np.arange(nz) * dz)
+    # Perform the integration
+    p = odeint(rhs, p0, z_, hmax=1.0)[:, 0]  # type: object
+    # p_half = odeint(rhs, p0, z_half, hmax=1.0)[1:, 0]
+    p = np.exp(p)
+    # temperature[k], ql[k], qi[k] = Thermodynamics.eos(p_[k], self.sg, self.qtg)
+    T, ql, qi = eos(p, sg, qtg)
+    # qv[k] = self.qtg - (ql[k] + qi[k])
+    qv = np.zeros(p.shape)
+    # alpha[k] = Thermodynamics.alpha(p_[k], temperature[k], self.qtg, qv[k])
+    al = alpha_tot(T, p, qtg, qv)
+    # al = alpha_dry(T, p)
+
+    fig, axes = plt.subplots(1, 3, figsize=(24, 10))
+    ax = axes[0]
+    ax.plot(p, z_, '-')
+    ax.set_title('pressure')
+    ax = axes[1]
+    ax.plot(T, z_, '-')
+    ax.set_title('temperature')
+    ax = axes[2]
+    ax.plot(1./al, z_, '-')
+    ax.plot([np.amin(1./al), np.amax(1./al)], [800, 800], 'k')
+    # # ax.plot([3.0, 3.0],[0, 5000], 'k')
+    ax.plot([1./al[np.int(800. / dz)], 1./al[np.int(800. / dz)]], [0, 2e3], 'k')
+    ax.set_title('rho')
+    plt.savefig('./thermodynamic_profiles_pycles.png')
+    plt.close()
+
+    return p, al
 # -----------------------------------------
 
 def alpha_tot(T, p0, qt, qv):
