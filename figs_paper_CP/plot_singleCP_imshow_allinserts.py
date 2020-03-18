@@ -354,6 +354,18 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
         # axins.set_ylim(0, axins_xlim[i])
         # # axins.set_xticklabels('')
         # # axins.set_yticklabels('')
+        for label in axins.xaxis.get_ticklabels()[2::4]:
+            label.set_visible(False)
+        for label in axins.xaxis.get_ticklabels()[3::4]:
+            label.set_visible(False)
+        for label in axins.yaxis.get_ticklabels()[4::4]:
+            label.set_visible(False)
+        for label in axins.yaxis.get_ticklabels()[2::4]:
+            label.set_visible(False)
+        for label in axins.yaxis.get_ticklabels()[3::4]:
+            label.set_visible(False)
+        for label in axins.xaxis.get_ticklabels()[4::4]:
+            label.set_visible(False)
         x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
         axins.set_xticklabels(x_ticks)
         axins.set_yticklabels(x_ticks)
@@ -375,6 +387,18 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
         # axins.set_ylim(0, axins_xlim[i])
         # # axins.set_xticklabels('')
         # # axins.set_yticklabels('')
+        for label in axins.xaxis.get_ticklabels()[2::4]:
+            label.set_visible(False)
+        for label in axins.xaxis.get_ticklabels()[3::4]:
+            label.set_visible(False)
+        for label in axins.yaxis.get_ticklabels()[4::4]:
+            label.set_visible(False)
+        for label in axins.yaxis.get_ticklabels()[2::4]:
+            label.set_visible(False)
+        for label in axins.yaxis.get_ticklabels()[3::4]:
+            label.set_visible(False)
+        for label in axins.xaxis.get_ticklabels()[4::4]:
+            label.set_visible(False)
         x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
         axins.set_xticklabels(x_ticks)
         axins.set_yticklabels(x_ticks)
