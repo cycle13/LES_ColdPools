@@ -315,7 +315,8 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
         vrad_2D = vrad_2D_[it, :, :]
 
         axs = axes_[0, :]
-        cf = axs[i].imshow(theta[ic + 48:, jc + 48:].T, cmap=cm_bw_r, norm=norm_th, origin='lower')
+        # cf = axs[i].imshow(theta[ic + 48:, jc + 48:].T, cmap=cm_bw_r, norm=norm_th, origin='lower')
+        cf = axs[i].imshow(theta[ic:, jc:].T, cmap=cm_bw_r, norm=norm_th, origin='lower')
         axins = plt.axes([axins_x[i], axins_y[0], axins_width, axins_width])
         axins.imshow(theta[imin:imax, imin:imax].T, cmap=cm_bw_r, norm=norm_th, origin='lower')
         axins.set_aspect('equal')
@@ -335,7 +336,8 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
             cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(298, 300.1, 1))
 
         axs = axes_[1, :]
-        cf = axs[i].imshow(w[ic + 48:, jc + 48:].T, cmap=cm_bwr, norm=norm_w, origin='lower')
+        # cf = axs[i].imshow(w[ic + 48:, jc + 48:].T, cmap=cm_bwr, norm=norm_w, origin='lower')
+        cf = axs[i].imshow(w[ic:, jc:].T, cmap=cm_bwr, norm=norm_w, origin='lower')
         axins = plt.axes([axins_x[i], axins_y[1], axins_width, axins_width])
         axins.imshow(w[imin:imax, imin:imax].T, cmap=cm_bwr, norm=norm_w, origin='lower')
         axins.set_aspect('equal')
@@ -355,7 +357,8 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
             cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(-3, 3 + 0.02, 1.))
 
         axs = axes_[2, :]
-        cf = axs[i].imshow(vrad_2D[ic + 48:, jc + 48:].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
+        # cf = axs[i].imshow(vrad_2D[ic + 48:, jc + 48:].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
+        cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
         axins = plt.axes([axins_x[i], axins_y[2], axins_width, axins_width])
         axins.imshow(vrad_2D[imin:imax, imin:imax].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
         axins.set_aspect('equal')
@@ -377,12 +380,13 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
         for ax in axes_[:,i].flat:
             ax.text(t_pos_x, t_pos_y, t_labels[i]+' t='+str(np.int(t0/60))+'min', fontsize=24, horizontalalignment='left', bbox=textprops)
 
-    # for ax in axes_.flat:
-    #     ax.set_aspect('equal')
-    #     x_ticks = [np.int(n*dx[0]*1e-3) for n in ax.get_xticks()]
-    #     ax.set_xticklabels(x_ticks)
-    #     y_ticks = [np.int(n*dx[1]*1e-3) for n in ax.get_yticks()]
-    #     ax.set_yticklabels(y_ticks)
+    for ax in axes_.flat:
+        # ax.set_xlim()
+        ax.set_aspect('equal')
+        x_ticks = [np.int(n*dx[0]*1e-3) for n in ax.get_xticks()]
+        ax.set_xticklabels(x_ticks)
+        y_ticks = [np.int(n*dx[1]*1e-3) for n in ax.get_yticks()]
+        ax.set_yticklabels(y_ticks)
     #     for label in ax.xaxis.get_ticklabels()[0::2]:
     #         label.set_visible(False)
     #     for label in ax.yaxis.get_ticklabels()[0::2]:
