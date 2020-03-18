@@ -351,7 +351,7 @@ def compute_PE_from_simulation(dTh, rstar, zstar, rho_d, path):
     s_ = root.groups['fields']['s'][imin:imax, imin:imax, :kmax]
     root.close()
     theta_ = thetas_c(s_, 0.0)
-    root = nc.Dataset(os.path.join(path, 'Stats.ColdPoolDry_single_3D.nc'))
+    root = nc.Dataset(os.path.join(path, 'stats', 'Stats.ColdPoolDry_single_3D.nc'))
     rho0_stats = root.groups['reference'].variables['rho0'][:kmax]
     # alpha0_stats = root.groups['reference'].variables['alpha0'][:kmax]
     zhalf_stats = root.groups['reference'].variables['z'][:kmax]
