@@ -285,7 +285,10 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
     ncol = len(time_range)
     nrow = 3
     axins_x = [0.14, 0.3655, .594, .82]
+    axins_x = [0.145, 0.371, .599, .825]
+    axins_x = [0.145, 0.372, .598, .825]
     axins_y = [.815, .495, .175]
+    axins_y = [.820, .500, .180]
     axins_width = .13
     axins_xlim = [100, 180, 240, 280]
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
@@ -418,17 +421,17 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
         ax.set_ylim(0, 330)
 
         #ax.set_aspect('equal')
-        x_ticks = [np.round(n*dx[0]*1e-3,2) for n in ax.get_xticks()]
+        x_ticks = [np.round((n-50)*dx[0]*1e-3,2) for n in ax.get_xticks()]
         print('TICKS', dx)
         print(ax.get_xticks())
         print(x_ticks)
-        #ax.set_xticklabels(x_ticks)
+        ax.set_xticklabels(x_ticks)
         y_ticks = [np.round(n*dx[1]*1e-3,2) for n in ax.get_yticks()]
         print(ax.get_yticks())
         print(y_ticks)
         ax.set_yticklabels(y_ticks)
-        #for label in ax.xaxis.get_ticklabels()[0::2]:
-        #    label.set_visible(False)
+        for label in ax.xaxis.get_ticklabels()[0::2]:
+            label.set_visible(False)
         for label in ax.yaxis.get_ticklabels()[1::2]:
             label.set_visible(False)
     for ax in axes_[2,:].flat:
