@@ -11,13 +11,13 @@ import json as simplejson
 import os
 
 execfile('settings.py')
-label_size = 15
+label_size = 18
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
 plt.rcParams['lines.linewidth'] = 2
 plt.rcParams['lines.markersize'] = 6
 plt.rcParams['legend.fontsize'] = 12
-plt.rcParams['axes.labelsize'] = 18
+plt.rcParams['axes.labelsize'] = 21
 plt.rcParams['font.sans-serif'] = 'Helvetica'
 plt.rcParams['text.usetex'] = 'true'
 plt.rcParams['legend.numpoints'] = 1
@@ -213,7 +213,7 @@ def main():
 
         for ax in axes_[:,i].flat:
             # ax.text(t_pos_x, t_pos_y, 't='+str(np.int(t0/60))+'min', fontsize=18, horizontalalignment='left', bbox=textprops)
-            ax.text(t_pos_x, t_pos_y, t_labels[i]+' t='+str(np.int(t0/60))+'min', fontsize=18, horizontalalignment='left', bbox=textprops)
+            ax.text(t_pos_x, t_pos_y, t_labels[i]+' t='+str(np.int(t0/60))+'min', fontsize=24, horizontalalignment='left', bbox=textprops)
 
     #for ax in axes_[:,2].flat:
     #    ax.plot(ic,jc, 'ko', markersize=10)
@@ -242,7 +242,7 @@ def main():
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
     title_pos_x = - 120
     title_pos_y = imax
-    title_font = 21
+    title_font = 28
     txt = 'a) potential temperature'
     axes_[0,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
     txt = 'b) vertical velocity'
