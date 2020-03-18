@@ -102,10 +102,28 @@ def main():
     # root_vort.close()
 
 
-    ''' Figure with potential temperature, vertical velocity, radial velocity ? '''
+    ''' Figure with potential temperature, vertical velocity, radial velocity '''
     # zoom in to see clefts
-
     fig_name = 'CP_crosssection_dx' + str(res) + '_' + case + '_imshow_inserts.png'
+    figure_wholeCP_zoomasinsert(vrad_2D_,
+                                time_range, dt_fields, nx, dx, imin, ic, jc, k0,
+                                path_fields, path_out_figs, fig_name)
+
+    fig_name = 'CP_crosssection_dx' + str(res) + '_' + case + '_imshow_zoomed.png'
+    figure_zoomedCP_wholeCPasinsert(vrad_2D_,
+                                time_range, dt_fields, nx, dx, imin, ic, jc, k0,
+                                path_fields, path_out_figs, fig_name)
+
+
+    return
+
+
+# ----------------------------------------------------------------------
+def figure_wholeCP_zoomasinsert(vrad_2D_,
+                                time_range, dt_fields, nx, dx, imin, ic, jc, k0,
+                                path_fields, path_out_figs, fig_name):
+
+
     # nlev = 2e2
     nlev = 2e1
     ncol = len(time_range)
@@ -119,8 +137,6 @@ def main():
     t_pos_y = 650.
     t_labels = ['i)', 'ii)', 'iii)', 'iv)']
     imax = nx - imin
-
-
 
 
 
@@ -259,9 +275,140 @@ def main():
     print('saving: ', os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
+    return
+# ----------------------------------------------------------------------
+def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
+                                time_range, dt_fields, nx, dx, imin, ic, jc, k0,
+                                path_fields, path_out_figs, fig_name):
+    nlev = 2e1
+    ncol = len(time_range)
+    nrow = 3
+    axins_x = [0.14, 0.3655, .594, .82]
+    axins_y = [.815, .495, .175]
+    axins_width = .13
+    axins_xlim = [100, 180, 240, 280]
+    textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
+    t_pos_x = 30.
+    t_pos_y = 650.
+    t_labels = ['i)', 'ii)', 'iii)', 'iv)']
+    imax = nx - imin
+
+    fig, axes_ = plt.subplots(nrow, ncol, figsize=(4.9 * ncol, 5 * nrow), sharex='col', sharey='row')
+    norm_th = matplotlib.cm.colors.Normalize(vmax=300, vmin=298)
+    norm_w = matplotlib.cm.colors.Normalize(vmax=2.5, vmin=-2.5)
+    norm_vrad = matplotlib.cm.colors.Normalize(vmax=5, vmin=0)
+
+    for i, t0 in enumerate(time_range):
+        it = np.int(t0/dt_fields)
+        print('time: ', t0)
+
+        fullpath_in = os.path.join(path_fields, str(t0) + '.nc')
+        root_field = nc.Dataset(fullpath_in)
+        grp = root_field.groups['fields']
+        s = grp.variables['s'][:, :, k0]
+        w = grp.variables['w'][:, :, k0]
+        # v = grp.variables['v'][:,:,k0]
+        # u = grp.variables['u'][:, :, k0]
+        root_field.close()
+        theta = thetas_c(s, 0.0)  # [ic - nx / 2:ic + nx / 2, :]
+        # vorticity = vorticity_[it, :, :]
+        vrad_2D = vrad_2D_[it, :, :]
+
+        axs = axes_[0, :]
+        cf = axs[i].imshow(theta[ic + 48:, jc + 48:].T, cmap=cm_bw_r, norm=norm_th, origin='lower')
+        axins = plt.axes([axins_x[i], axins_y[0], axins_width, axins_width])
+        axins.imshow(theta[imin:imax, imin:imax].T, cmap=cm_bw_r, norm=norm_th, origin='lower')
+        axins.set_aspect('equal')
+        # axins.set_xlim(0, axins_xlim[i])
+        # axins.set_ylim(0, axins_xlim[i])
+        # # axins.set_xticklabels('')
+        # # axins.set_yticklabels('')
+        x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
+        axins.set_xticklabels(x_ticks)
+        axins.set_yticklabels(x_ticks)
+        for label in axins.xaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
+        for label in axins.yaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
+        if t0 == time_range[-1]:
+            cax = plt.axes([0.95, 0.7, 0.012, 0.22])
+            cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(298, 300.1, 1))
+
+        axs = axes_[1, :]
+        cf = axs[i].imshow(w[ic + 48:, jc + 48:].T, cmap=cm_bwr, norm=norm_w, origin='lower')
+        axins = plt.axes([axins_x[i], axins_y[1], axins_width, axins_width])
+        axins.imshow(w[imin:imax, imin:imax].T, cmap=cm_bwr, norm=norm_w, origin='lower')
+        axins.set_aspect('equal')
+        # axins.set_xlim(0, axins_xlim[i])
+        # axins.set_ylim(0, axins_xlim[i])
+        # # axins.set_xticklabels('')
+        # # axins.set_yticklabels('')
+        x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
+        axins.set_xticklabels(x_ticks)
+        axins.set_yticklabels(x_ticks)
+        for label in axins.xaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
+        for label in axins.yaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
+        if t0 == time_range[-1]:
+            cax = plt.axes([0.95, 0.38, 0.012, 0.22])
+            cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(-3, 3 + 0.02, 1.))
+
+        axs = axes_[2, :]
+        cf = axs[i].imshow(vrad_2D[ic + 48:, jc + 48:].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
+        axins = plt.axes([axins_x[i], axins_y[2], axins_width, axins_width])
+        axins.imshow(vrad_2D[imin:imax, imin:imax].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
+        axins.set_aspect('equal')
+        # axins.set_xlim(0, axins_xlim[i])
+        # axins.set_ylim(0, axins_xlim[i])
+        # # axins.set_xticklabels('')
+        # # axins.set_yticklabels('')
+        x_ticks = [np.int(n * dx[1] * 1e-3) for n in axins.get_xticks()]
+        axins.set_xticklabels(x_ticks)
+        axins.set_yticklabels(x_ticks)
+        for label in axins.xaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
+        for label in axins.yaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
+        if t0 == time_range[-1]:
+            cax = plt.axes([0.95, 0.06, 0.012, 0.22])
+            cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 5.1, 1), extend='max')
+
+        for ax in axes_[:,i].flat:
+            ax.text(t_pos_x, t_pos_y, t_labels[i]+' t='+str(np.int(t0/60))+'min', fontsize=24, horizontalalignment='left', bbox=textprops)
+
+    # for ax in axes_.flat:
+    #     ax.set_aspect('equal')
+    #     x_ticks = [np.int(n*dx[0]*1e-3) for n in ax.get_xticks()]
+    #     ax.set_xticklabels(x_ticks)
+    #     y_ticks = [np.int(n*dx[1]*1e-3) for n in ax.get_yticks()]
+    #     ax.set_yticklabels(y_ticks)
+    #     for label in ax.xaxis.get_ticklabels()[0::2]:
+    #         label.set_visible(False)
+    #     for label in ax.yaxis.get_ticklabels()[0::2]:
+    #         label.set_visible(False)
+    for ax in axes_[2,:].flat:
+        ax.set_xlabel('x  [km]')
+    for ax in axes_[:,0].flat:
+        ax.set_ylabel('y  [km]')
+
+    textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
+    title_pos_x = - 120
+    title_pos_y = imax
+    title_font = 28
+    txt = 'a) potential temperature'
+    axes_[0,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
+    txt = 'b) vertical velocity'
+    axes_[1,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
+    txt = 'c) radial velocity'
+    axes_[2,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
+
+    plt.subplots_adjust(bottom=0.04, right=.94, left=0.05, top=0.95, wspace=0.08, hspace=0.18)
+    print('saving: ', os.path.join(path_out_figs, fig_name))
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
 
     return
-
 
 # ----------------------------------------------------------------------
 
