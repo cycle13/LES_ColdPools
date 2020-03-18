@@ -286,17 +286,18 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_, vtan_2D_,
                                 path_fields, path_out_figs, fig_name):
     ncol = len(time_range)
     nrow = 3
-    axins_x = [0.14, 0.3655, .594, .82]
     axins_x = [0.145, 0.372, .598, .825]
-    axins_y = [.815, .495, .175]
-    axins_y = [.820, .500, .180]
+    axins_x = [0.144, 0.364, .585, .805]
+    axins_y = [.830, .510, .190]
     axins_width = .13
     axins_xlim = [100, 180, 240, 280]
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
     t_pos_x = 10.
-    t_pos_y = 295.
+    t_pos_y = 298.
     t_labels = ['i)', 'ii)', 'iii)', 'iv)']
     imax = nx - imin
+    #cbar_labels = ['[K]', '[m/s]', '[m/s]']
+    cbar_pos_x = 0.93
 
     fig, axes_ = plt.subplots(nrow, ncol, figsize=(4.9 * ncol, 5 * nrow), sharex='col', sharey='row')
     norm_th = matplotlib.cm.colors.Normalize(vmax=300, vmin=298)
@@ -342,8 +343,9 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_, vtan_2D_,
         for label in axins.xaxis.get_ticklabels()[4::4]:
             label.set_visible(False)
         if t0 == time_range[-1]:
-            cax = plt.axes([0.95, 0.7, 0.012, 0.22])
+            cax = plt.axes([cbar_pos_x, 0.7, 0.012, 0.22])
             cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(298, 300.1, 1))
+            cbar.set_label(r'[K]', rotation=90)
 
         axs = axes_[1, :]
         cf = axs[i].imshow(w[ic:, jc:].T, cmap=cm_bwr, norm=norm_w, origin='lower')
@@ -370,22 +372,21 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_, vtan_2D_,
         # for label in axins.yaxis.get_ticklabels()[0::2]:
         #     label.set_visible(False)
         if t0 == time_range[-1]:
-            cax = plt.axes([0.95, 0.38, 0.012, 0.22])
+            cax = plt.axes([cbar_pos_x, 0.38, 0.012, 0.22])
             cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(-3, 3 + 0.02, 1.))
+            cbar.set_label(r'[m/s]')
 
         axs = axes_[2, :]
         # cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
-        cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_bw, norm=colors.LogNorm(vmin=1e-2, vmax=1e1), origin='lower')
         cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_bw, norm=colors.LogNorm(vmin=1e-2, vmax=2e1), origin='lower')
-        # cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_gnu, norm=norm_vrad, origin='lower')
-        phi = vtan_2D[ic:,jc:]
-        print('')
-        print('MINMAX: ', np.amin(phi), np.amax(phi))
-        print('')
-        lvls = np.arange(-2, 2.1, .5)
-        lvls = [-2, -1.5, -1, 1, 1.5, 2]
-        # lvls = [-1.5, 1.5]
-        ct = axs[i].contour(phi.T, 'r', levels=lvls)#levels=np.linspace(np.amin(phi), np.amax(phi),3))
+        #phi = vtan_2D[ic:,jc:]
+        #print('')
+        #print('MINMAX: ', np.amin(phi), np.amax(phi))
+        #print('')
+        #lvls = np.arange(-2, 2.1, .5)
+        #lvls = [-2, -1.5, -1, 1, 1.5, 2]
+        ## lvls = [-1.5, 1.5]
+        #ct = axs[i].contour(phi.T, 'r', levels=lvls)#levels=np.linspace(np.amin(phi), np.amax(phi),3))
 
         # axins = plt.axes([axins_x[i], axins_y[2], axins_width, axins_width])
         # axins.imshow(vrad_2D[imin:imax, imin:imax].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
@@ -410,10 +411,12 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_, vtan_2D_,
         # for label in axins.yaxis.get_ticklabels()[0::2]:
         #     label.set_visible(False)
         if t0 == time_range[-1]:
-            cax = plt.axes([0.95, 0.06, 0.012, 0.22])
+            cax = plt.axes([cbar_pos_x, 0.06, 0.012, 0.22])
             #cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 5.1, 1), extend='max')
             cbar = plt.colorbar(cf, cax=cax, extend='min')
-            cbar = plt.colorbar(ct, cax=cax)
+            cbar.set_label(r'[m/s]')
+            #cbar_ct = plt.colorbar(ct, cax=cax)
+            #cbar_ct.set_label(r'[m/s]')
 
         for ax in axes_[:,i].flat:
             ax.text(t_pos_x, t_pos_y, t_labels[i]+' t='+str(np.int(t0/60))+'min', fontsize=24, horizontalalignment='left', bbox=textprops)
@@ -447,7 +450,8 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_, vtan_2D_,
     txt = 'c) radial velocity'
     axes_[2,0].text(title_pos_x, title_pos_y, txt, fontsize=title_font, horizontalalignment='left', bbox=textprops)
 
-    plt.subplots_adjust(bottom=0.04, right=.94, left=0.05, top=0.95, wspace=0.08, hspace=0.18)
+    #plt.subplots_adjust(bottom=0.05, right=.94, left=0.05, top=0.96, wspace=0.08, hspace=0.18)
+    plt.subplots_adjust(bottom=0.05, right=.92, left=0.05, top=0.96, wspace=0.06, hspace=0.18)
     print('saving: ', os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
