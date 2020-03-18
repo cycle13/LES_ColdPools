@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import matplotlib.colors as colors
 #from matplotlib import cm
 # from matplotlib.widgets import TextBox
 import netCDF4 as nc
@@ -298,7 +299,8 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
     fig, axes_ = plt.subplots(nrow, ncol, figsize=(4.9 * ncol, 5 * nrow), sharex='col', sharey='row')
     norm_th = matplotlib.cm.colors.Normalize(vmax=300, vmin=298)
     norm_w = matplotlib.cm.colors.Normalize(vmax=2.5, vmin=-2.5)
-    norm_vrad = matplotlib.cm.colors.Normalize(vmax=5, vmin=0)
+    #norm_vrad = matplotlib.cm.colors.Normalize(vmax=5, vmin=0)
+    norm_vrad = matplotlib.cm.colors.Normalize(vmax=6, vmin=0)
 
     for i, t0 in enumerate(time_range):
         it = np.int(t0/dt_fields)
@@ -369,7 +371,9 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
             cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(-3, 3 + 0.02, 1.))
 
         axs = axes_[2, :]
-        cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
+        #cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
+        cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_bw, norm=colors.LogNorm(vmin=1e-2, vmax=2e1), origin='lower')
+        #cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_gnu, norm=norm_vrad, origin='lower')
         # axins = plt.axes([axins_x[i], axins_y[2], axins_width, axins_width])
         # axins.imshow(vrad_2D[imin:imax, imin:imax].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
         # axins.set_aspect('equal')
@@ -394,7 +398,8 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
         #     label.set_visible(False)
         if t0 == time_range[-1]:
             cax = plt.axes([0.95, 0.06, 0.012, 0.22])
-            cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 5.1, 1), extend='max')
+            #cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(0, 5.1, 1), extend='max')
+            cbar = plt.colorbar(cf, cax=cax, extend='min')
 
         for ax in axes_[:,i].flat:
             ax.text(t_pos_x, t_pos_y, t_labels[i]+' t='+str(np.int(t0/60))+'min', fontsize=24, horizontalalignment='left', bbox=textprops)
