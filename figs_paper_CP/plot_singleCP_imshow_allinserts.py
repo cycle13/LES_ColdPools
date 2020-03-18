@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import matplotlib.patches as mpatches
 #from matplotlib import cm
 # from matplotlib.widgets import TextBox
@@ -89,6 +90,7 @@ def main():
     root_vrad_2D = nc.Dataset(os.path.join(path, 'fields_v_rad/v_rad.nc'))
     # time_rad = root_vrad_2D.variables['time'][:]
     vrad_2D_ = root_vrad_2D.variables['v_rad'][:, :, :, k0]  # v_rad[nt,nx,ny,nz]
+    vtan_2D_ = root_vrad_2D.variables['v_tan'][:, :, :, k0]  # v_rad[nt,nx,ny,nz]
     root_vrad_2D.close()
     # root_vrad = nc.Dataset(os.path.join(path, 'data_analysis/stats_radial_averaged.nc'))
     # time_rad = root_vrad.groups['timeseries'].variables['time'][:]
@@ -111,7 +113,7 @@ def main():
 
     # insert: whole CP
     fig_name = 'CP_crosssection_dx' + str(res) + '_' + case + '_imshow_zoomed.png'
-    figure_zoomedCP_wholeCPasinsert(vrad_2D_,
+    figure_zoomedCP_wholeCPasinsert(vrad_2D_, vtan_2D_,
                                 time_range, dt_fields, nx, dx, imin, ic, jc, k0,
                                 path_fields, path_out_figs, fig_name)
 
@@ -278,7 +280,7 @@ def figure_wholeCP_zoomasinsert(vrad_2D_,
     plt.close(fig)
     return
 # ----------------------------------------------------------------------
-def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
+def figure_zoomedCP_wholeCPasinsert(vrad_2D_, vtan_2D_,
                                 time_range, dt_fields, nx, dx, imin, ic, jc, k0,
                                 path_fields, path_out_figs, fig_name):
     ncol = len(time_range)
@@ -298,7 +300,8 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
     fig, axes_ = plt.subplots(nrow, ncol, figsize=(4.9 * ncol, 5 * nrow), sharex='col', sharey='row')
     norm_th = matplotlib.cm.colors.Normalize(vmax=300, vmin=298)
     norm_w = matplotlib.cm.colors.Normalize(vmax=2.5, vmin=-2.5)
-    norm_vrad = matplotlib.cm.colors.Normalize(vmax=5, vmin=0)
+    # norm_vrad = matplotlib.cm.colors.Normalize(vmax=5, vmin=0)
+    norm_vrad = matplotlib.cm.colors.Normalize(vmax=6, vmin=0)
 
     for i, t0 in enumerate(time_range):
         it = np.int(t0/dt_fields)
@@ -315,6 +318,7 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
         theta = thetas_c(s, 0.0)  # [ic - nx / 2:ic + nx / 2, :]
         # vorticity = vorticity_[it, :, :]
         vrad_2D = vrad_2D_[it, :, :]
+        vtan_2D = vtan_2D_[it, :, :]
 
         axs = axes_[0, :]
         cf = axs[i].imshow(theta[ic:, jc:].T, cmap=cm_bw_r, norm=norm_th, origin='lower')
@@ -369,7 +373,15 @@ def figure_zoomedCP_wholeCPasinsert(vrad_2D_,
             cbar = plt.colorbar(cf, cax=cax, ticks=np.arange(-3, 3 + 0.02, 1.))
 
         axs = axes_[2, :]
-        cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
+        # cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
+        cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_bw, norm=colors.LogNorm(vmin=1e-5, vmax=1e1), origin='lower')
+        # cf = axs[i].imshow(vrad_2D[ic:, jc:].T, cmap=cm_gnu, norm=norm_vrad, origin='lower')
+        phi = vtan_2D[ic:,jc:]
+        print('')
+        print('MINMAX: ', np.amin(phi), np.amax(phi))
+        print('')
+        axs[i].contour(phi.T, 'r', levels=np.linspace(np.amin(phi), np.amax(phi),3))
+
         # axins = plt.axes([axins_x[i], axins_y[2], axins_width, axins_width])
         # axins.imshow(vrad_2D[imin:imax, imin:imax].T, cmap=cm_bw, norm=norm_vrad, origin='lower')
         # axins.set_aspect('equal')
