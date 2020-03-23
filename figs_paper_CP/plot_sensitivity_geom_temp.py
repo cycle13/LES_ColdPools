@@ -9,10 +9,11 @@ from scipy import stats
 
 execfile('settings.py')
 plt.rcParams['lines.linewidth'] = 3
-plt.rcParams['xtick.labelsize'] = 15
-plt.rcParams['ytick.labelsize'] = 15
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['ytick.labelsize'] = 18
 plt.rcParams['legend.fontsize'] = 12
 plt.rcParams['axes.labelsize'] = 21
+# plt.rcParams['legend.edgecolor'] = 'w'
 
 def main():
     parser = argparse.ArgumentParser(prog='LES_CP')
@@ -70,6 +71,8 @@ def main():
                                colorlist2, path_root, path_out_figs)
 
     return
+
+
 
 def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
                                dTh_range_B, rstar_range_B, zstar_range_B,
@@ -463,7 +466,7 @@ def plot_sensitivity_plots_all(dTh_range_A, rstar_range_A, zstar_range_A,
         axis[i,1].set_ylabel('average radius    [km]')
         axis[i,2].set_ylabel('maximum CP height    [m]')
         axis[i,3].set_ylabel('CP volume    [km^3]')
-        axis[i,4].set_ylabel('potential temperature    [K]')
+        axis[i,4].set_ylabel('maximum potential temperature    [K]')
         axis[i,5].set_ylabel('maximum w    [m/s]')
         axis[i,6].set_ylabel('maximum vorticity    [1/s]')
     for ax in axis[:,1].flat:
@@ -538,7 +541,7 @@ def plot_sensitivity_plots_all_v2(dTh_range_A, rstar_range_A, zstar_range_A,
 
     ''' envelopes configuration '''
     colorlist2_ = np.append(colorlist2, colorlist2[1])
-    colorlist2_[2] = colorlist4_blue[1]
+    # colorlist2_[2] = colorlist4_blue[1]
     colorlist2_[1] = 'k'
     colorlist4_ = np.append(colorlist4_blue, colorlist4_blue[3])
     colorlist4_[3] = colorlist4_blue[2]
@@ -552,16 +555,17 @@ def plot_sensitivity_plots_all_v2(dTh_range_A, rstar_range_A, zstar_range_A,
 
     axis[0,0].axis('off')
     axis[1,0].axis('off')
-    ax_x = .05  # .03
+    ax_x = .03  # .03
     ax_width = .12 #.075
-    spec = [ax_x, 0.68, ax_width, .25]
+    spec = [ax_x, 0.70, ax_width, .25]
     ax00 = plt.axes(spec)
-    spec = [ax_x, 0.24, ax_width, .25]
+    spec = [ax_x, 0.245, ax_width, .25]
     ax01 = plt.axes(spec)
     for i, dTh in enumerate([2,3,4]):
         zstar = [900, 1000, 900][i]
         rstar = [1300, 1000, 900][i]
-        lbl = r'$\Delta \theta$ =' + str(dTh) + 'K, z*=' + str(zstar) + 'm, r*=' + str(rstar)+'m'
+        # lbl = r'$\Delta \theta$ =' + str(dTh) + 'K, z*=' + str(zstar) + 'm, r*=' + str(rstar)+'m'
+        lbl = r'$\Delta\theta$ =' + str(dTh) + 'K, z*=' + str(np.round(zstar*1e-3,1)) + 'km, r*=' + str(np.round(rstar*1e-3,1))+'km'
         z_max = zstar * (np.cos(x_half / rstar * np.pi / 2) ** 2)
         imin = nx-rstar*dxi
         imax = nx+rstar*dxi+1
@@ -570,23 +574,31 @@ def plot_sensitivity_plots_all_v2(dTh_range_A, rstar_range_A, zstar_range_A,
     for i, dTh in enumerate([3, 3, 3, 3, 3]):
         rstar = [500, 600, 700, 1000, 1500][i]
         zstar = [2500, 2000, 1600, 1000, 500][i]
-        lbl = r'$\Delta \theta$ =' + str(dTh) + 'K, z*=' + str(zstar) + 'm, r*=' + str(rstar)+'m'
+        # lbl = r'$\Delta \theta$ =' + str(dTh) + 'K, z*=' + str(zstar) + 'm, r*=' + str(rstar)+'m'
+        lbl = r'$\Delta\theta$ =' + str(dTh) + 'K, z*=' + str(np.round(zstar * 1e-3, 1)) + 'km, r*=' + str(
+                        np.round(rstar * 1e-3, 1)) + 'km'
         z_max = zstar * (np.cos(x_half / rstar * np.pi / 2) ** 2)
         imin = nx - rstar * dxi
         imax = nx + rstar * dxi + 1
         ax01.plot(x_half[imin:imax], z_max[imin:imax], '-', color=colorlist4_[i], linewidth=2, label=lbl)
 
-    ax00.legend(loc='upper left', bbox_to_anchor=(-.25, -.2),
-                fancybox=False, shadow=False, ncol=1, fontsize=12)
-    ax01.legend(loc='upper left', bbox_to_anchor=(-.25, -.2),
-                fancybox=False, shadow=False, ncol=1, fontsize=12)
-
+    x_leg = -.29
+    y_leg = -.22
+    ax00.legend(loc='upper left', bbox_to_anchor=(x_leg, y_leg),
+                fancybox=False, shadow=False, ncol=1, fontsize=16, frameon=False)
+    ax01.legend(loc='upper left', bbox_to_anchor=(x_leg, y_leg),
+                fancybox=False, shadow=False, ncol=1, fontsize=16, frameon=False)
+    # for ax in [ax00, ax01]:
+    #     legend = ax.legend()
+    #     frame = legend.get_frame()
+    #     frame.set_edgecolor('w')
     for ax in [ax00, ax01]:
-        # ax.set_xticklabels(1.e-3*ax.get_xticks())
         ax.set_xticklabels([np.int(ti*1.e-3) for ti in ax.get_xticks()])
         ax.set_ylim(0, zstar_max + 200)
-        y_ticks = [np.round(ti*1e-3,1) for ti in ax.get_yticks()]
+        y_ticks = [np.int(ti*1e-3) for ti in ax.get_yticks()]
         ax.set_yticklabels(y_ticks)
+        for label in ax.yaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
         for label in ax.xaxis.get_ticklabels()[0::2]:
             label.set_visible(False)
         ax.set_xlabel('Radius  [km]')
@@ -649,7 +661,7 @@ def plot_sensitivity_plots_all_v2(dTh_range_A, rstar_range_A, zstar_range_A,
         # drdt_av = np.zeros((nt))
         U_rad_av = np.zeros((nt))
         for it, t0 in enumerate(times):
-            cp_id = 2
+            cp_id = 1
             # get_radius(fullpath_in, it, cp_id)
             dist_av[it], U_rad_av[it] = get_radius_vel(fullpath_in, it, cp_id, n_tracers, n_cps)
         r_av = dist_av * dx
@@ -742,7 +754,7 @@ def plot_sensitivity_plots_all_v2(dTh_range_A, rstar_range_A, zstar_range_A,
         # drdt_av = np.zeros((nt))
         U_rad_av = np.zeros((nt))
         for it, t0 in enumerate(times):
-            cp_id = 2
+            cp_id = 1
             # get_radius(fullpath_in, it, cp_id)
             dist_av[it], U_rad_av[it] = get_radius_vel(fullpath_in, it, cp_id, n_tracers, n_cps)
         r_av = dist_av * dx
@@ -840,7 +852,7 @@ def plot_sensitivity_plots_all_v2(dTh_range_A, rstar_range_A, zstar_range_A,
     # drdt_av = np.zeros((nt))
     U_rad_av = np.zeros((nt))
     for it, t0 in enumerate(times):
-        cp_id = 2
+        cp_id = 1
         # get_radius(fullpath_in, it, cp_id)
         dist_av[it], U_rad_av[it] = get_radius_vel(fullpath_in, it, cp_id, n_tracers, n_cps)
     r_av = dist_av * dx
@@ -884,89 +896,86 @@ def plot_sensitivity_plots_all_v2(dTh_range_A, rstar_range_A, zstar_range_A,
 
     textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
     ftsize = 21
-    ax00.text(0.32, 0.91, 'a)',    transform=axis[0,0].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
-    axis[0,1].text(0.04, 0.97, 'b) average radius',     transform=axis[0,1].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
-    axis[0,2].text(0.05, 0.97, 'c) max. CP height',     transform=axis[0,2].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
+    ax00.text(0.25, 0.97, 'a)',    transform=axis[0,0].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
+    axis[0,1].text(0.04, 0.97, 'b) average Radius',     transform=axis[0,1].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
+    axis[0,2].text(0.05, 0.97, 'c) CP Height',     transform=axis[0,2].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
     # axis[0,3].text(0.05, 0.97, 'd)',     transform=axis[0,3].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
-    axis[0,3].text(0.05, 0.97, 'd) max. pot. temperature',     transform=axis[0,3].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
+    axis[0,3].text(0.05, 0.97, 'd) potential temperature',     transform=axis[0,3].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
     axis[0,3].text(0.3, 0.98, 'environmental temperature', transform=axis[0, 4].transAxes, fontsize=12, verticalalignment='top', bbox=textprops)
-    axis[0,4].text(0.05, 0.97, 'e) max. w',     transform=axis[0,4].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
+    axis[0,4].text(0.05, 0.97, 'e) vertical velocity',     transform=axis[0,4].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
     # axis[0,5].text(0.05, 0.97, 'f)',     transform=axis[0,6].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
-    ax01.text(.31, 0.94, 'f)',     transform=axis[1,0].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
-    axis[1,1].text(.05, 0.97, 'g) average radius',     transform=axis[1,1].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
-    axis[1,2].text(.05, 0.97, 'h) max. CP height',     transform=axis[1,2].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
+    ax01.text(.25, 0.97, 'f)',     transform=axis[1,0].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
+    axis[1,1].text(.05, 0.97, 'g) average Radius',     transform=axis[1,1].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
+    axis[1,2].text(.05, 0.97, 'h) CP Height',     transform=axis[1,2].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
     # axis[1,3].text(.05, 0.97, 'i)',     transform=axis[1,3].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
-    axis[1,3].text(.05, 0.97, 'i) max. pot. temperature',     transform=axis[1,3].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
+    axis[1,3].text(.05, 0.97, 'i) potential temperature',     transform=axis[1,3].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
     axis[1,3].text(0.3, 0.98, 'environmental temperature', transform=axis[1, 4].transAxes, fontsize=12, verticalalignment='top', bbox=textprops)
-    axis[1,4].text(.05, 0.97, 'k) max. w',     transform=axis[1,4].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
+    axis[1,4].text(.05, 0.97, 'k) vertical velocity',     transform=axis[1,4].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
     # axis[1,5].text(.05, 0.97, 'l)',     transform=axis[1,5].transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
 
     print('')
     for i in range(2):
-        axis[i,1].set_ylabel('average radius    [km]')
-        axis[i,2].set_ylabel('maximum CP height    [km]')
+        axis[i,1].set_ylabel('average Radius    [km]')
+        axis[i,2].set_ylabel('max(CP Height)    [km]')
         # axis[i,3].set_ylabel('CP volume    [km^3]')
-        axis[i,3].set_ylabel('potential temperature    [K]')
-        axis[i,4].set_ylabel('maximum w    [m/s]')
+        # axis[i,3].set_ylabel('max(potential temperature)    [K]')
+        axis[i,3].set_ylabel(r'max($\theta$)    [K]')
+        axis[i,4].set_ylabel('max(w)    [m/s]')
         # axis[i,5].set_ylabel('maximum vorticity    [1/s]')
     for ax in axis[:,1:].flat:
         ax.set_xlim(0,3600)
         ax.set_xticks(np.arange(0, 3700, step=900.))
         x_ticks = [ti/3600 for ti in ax.get_xticks()]
         ax.set_xticklabels(x_ticks)
-        # ax.set_ylim(min_range[i], max_range[i])
         y_ticks = ax.get_yticks()
         ax.set_yticklabels(y_ticks)
         for label in ax.xaxis.get_ticklabels()[1::2]:
             label.set_visible(False)
 
-    # print('')
-    # max_range[3] += 0.1
-    # max_range[4] += .5
-    # max_range[5] += .2
-    # max_range[6] = .13
-    # for i in range(2):
+    # max_range[2] += 0.1
+    max_range[3] += .5
+    max_range[4] += .25
+    # max_range[5] = .13
+    for i in range(2):
     #     axis[i,1].set_ylim(min_range[1], max_range[1])
-    #     axis[i,2].set_ylim(min_range[2], max_range[2])
-    #     axis[i,3].set_ylim(min_range[3], max_range[3])
-    #     axis[i,4].set_ylim(min_range[4], max_range[4])
-    #     axis[i,5].set_ylim(min_range[5], max_range[5])
-    #     axis[i,6].set_ylim(min_range[6], max_range[6])
+        axis[i,2].set_ylim(min_range[2], max_range[2])
+        axis[i,3].set_ylim(min_range[3], max_range[3])
+        axis[i,4].set_ylim(min_range[4], max_range[4])
     for ax in axis[1,1:].flat:
         ax.set_xlabel('time [h]')
-    # # for i in range(1,ncols):
-    # #     axis[0,i].set_ylim(min_range[i],max_range[i])
-    # #     axis[1,i].set_ylim(min_range[i],max_range[i])
-    # for ax in axis.flat:
-    #     y_ticks = ax.get_yticks()
-    #     ax.set_yticklabels(y_ticks)
-    # for ax in axis[:,0]:
-    #     y_ticks = [np.int(i) for i in ax.get_yticks()]
-    #     ax.set_yticklabels(y_ticks)
-    for ax in axis[1:,1]:
+
+    for ax in axis[:,1]:
         y_ticks = [np.int(i*1e-3) for i in ax.get_yticks()]
         ax.set_yticklabels(y_ticks)
     for ax in axis[:,2]:
-        y_ticks = [np.round(i*1e-3,1) for i in ax.get_yticks()]
+        y_ticks = [np.int(i*1e-3) for i in ax.get_yticks()]
         ax.set_yticklabels(y_ticks)
+        for label in ax.yaxis.get_ticklabels()[1::2]:
+            label.set_visible(False)
     for ax in axis[:,3]:
         y_ticks = [np.int(ti) for ti in ax.get_yticks()]
         ax.set_yticklabels(y_ticks)
         for label in ax.yaxis.get_ticklabels()[0::2]:
             label.set_visible(False)
     for ax in axis[:1,4]:
-        for label in ax.yaxis.get_ticklabels()[1::4]:
+        y_ticks = [np.int(ti) for ti in ax.get_yticks()]
+        ax.set_yticklabels(y_ticks)
+        for label in ax.yaxis.get_ticklabels()[1::5]:
             label.set_visible(False)
-        for label in ax.yaxis.get_ticklabels()[2::4]:
+        for label in ax.yaxis.get_ticklabels()[2::5]:
             label.set_visible(False)
-        for label in ax.yaxis.get_ticklabels()[3::4]:
+        for label in ax.yaxis.get_ticklabels()[3::5]:
             label.set_visible(False)
-        for label in ax.yaxis.get_ticklabels()[4::4]:
+        for label in ax.yaxis.get_ticklabels()[4::5]:
             label.set_visible(False)
     for ax in axis[1:,4]:
+        y_ticks = [np.int(ti) for ti in ax.get_yticks()]
+        ax.set_yticklabels(y_ticks)
         for label in ax.yaxis.get_ticklabels()[1::2]:
             label.set_visible(False)
+
     plt.subplots_adjust(bottom=0.075, right=.99, left=0.0, top=0.95, wspace=0.3, hspace=0.1)
+    print('saving: '+ os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 
