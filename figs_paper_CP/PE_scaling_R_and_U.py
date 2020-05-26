@@ -130,6 +130,38 @@ def main():
 
 
 
+    # --------------------------------------
+    print('Fitting R:')
+    fig_name = 'R_scaling.png'
+
+    t0_r = np.double(tmin_r * dt_fields)
+    print('       t0:' + str(t0_r), tmin_r)
+
+    # R00 = r_av[0, tmin_r]
+    R0_log = np.log(r_av[:, tmin_r])  # log(R[t0])
+    # dR = 1. / r_av[:, tmin_r]
+    r_av_ens_mean = np.average(r_av[:, :], axis=0)  # ensemble mean
+    dR_ens_mean = 1. / r_av_ens_mean[tmin_r]
+
+    m0 = -0.5
+    istar = 0
+    # popt, pcov = curve_fit(func, xdata, ydata)
+    m_fitted = np.zeros(5, dtype=np.double)
+    for istar in range(n_params):
+        m_fitted[istar], pcov = optimize.curve_fit(fit_r_test, times[1:-1], np.log(r_av[istar, 1:-1]) - R0_log[istar])
+    # m_fitted[1], pcov = optimize.curve_fit(fit_r_test, times[1:-1], np.log(r_av[istar, 1:-1]) - R0_log[istar])
+    # m_fitted[2], pcov = optimize.curve_fit(fit_r_test, times[1:-1], np.log(r_av[istar, 1:-1]) - R0_log[istar])
+    # m_fitted[3], pcov = optimize.curve_fit(fit_r_test, times[1:-1], np.log(r_av[istar, 1:-1]) - R0_log[istar])
+    # m_fitted[4], pcov = optimize.curve_fit(fit_r_test, times[1:-1], np.log(r_av[istar, 1:-1]) - R0_log[istar])
+    print('Parameters: ', m_fitted)
+    print('')
+
+    collist = ['b', 'k', 'g', 'r', 'cyan']
+    plot_R_1x2(r_av, r_av_ens_mean, dR_ens_mean, R0_log, t0_r, m_fitted,
+               r_params, dt_fields, collist, path_out_figs, fig_name)
+>>>>>>> db4da1ab62cb28f3964774546f8423898ee4d545
+
+
 
     # --------------------------------------
     print('Fitting R:')
@@ -513,6 +545,10 @@ def plot_R_1x2(r_av, r_av_ens_mean, dR_ens_mean, R0_log, t0_r, m_fitted,
     ''' mean values '''
     ax1.plot(np.log(times[3:-1] / t0_r), np.log(r_av_ens_mean[3:-1] * dR_ens_mean), '-', color='k', linewidth=3,
              label='ensemble mean')
+    # m = 0.6
+    # ax1.plot(np.log(times[3:-1] / t0_r), m * (np.log(times[3:-1] / t0_r)), '-r', label='y=a*x, a=' + str(m))
+    # m = 0.54
+    # ax1.plot(np.log(times[4:-1]) - np.log(t0_r), m * (np.log(times[4:-1]) - np.log(t0_r)), '-g', label='m=0.54')
     for istar,m_ in enumerate(m_fitted):
         ax1.plot(np.log(times[1:-1]/t0_r), m_*np.log(times[1:-1]/t0_r), color=collist[istar], linewidth=1, label='y=m*x, m='+str(np.round(m_,2)))
 
