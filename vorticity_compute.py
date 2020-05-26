@@ -91,27 +91,27 @@ def main():
 
 
     # ''' PLOTTING '''
-    figname = 'vort_stats_yz.png'
-    stats_file_name = 'Stats_vorticity.nc'
-    file = nc.Dataset(os.path.join(path_out_fields, stats_file_name), 'r')
-    ts_grp = file.groups['timeseries']
-    vort_max = ts_grp.variables['vort_yz_max'][:]
-    vort_min = ts_grp.variables['vort_yz_min'][:]
-    vort_sum = ts_grp.variables['vort_yz_sum'][:]
-    vort_env = ts_grp.variables['vort_yz_env'][:]
-    file.close()
-    # plot_vorticity_timeseries(vort_max, vort_min, vort_sum, vort_env, 'vort_yz', timerange, figname)
-    #
-    figname = 'vort_stats_xz.png'
-    file = nc.Dataset(os.path.join(path_out_fields, stats_file_name), 'r')
-    ts_grp = file.groups['timeseries']
-    vort_max = ts_grp.variables['vort_xz_max'][:]
-    vort_min = ts_grp.variables['vort_xz_min'][:]
-    vort_sum = ts_grp.variables['vort_xz_sum'][:]
-    vort_env = ts_grp.variables['vort_xz_env'][:]
-    file.close()
-    # plot_vorticity_timeseries(vort_max, vort_min, vort_sum, vort_env, 'vort_xz', timerange, figname)
-    #
+    # figname = 'vort_stats_yz.png'
+    # stats_file_name = 'Stats_vorticity.nc'
+    # file = nc.Dataset(os.path.join(path_out_fields, stats_file_name), 'r')
+    # ts_grp = file.groups['timeseries']
+    # vort_max = ts_grp.variables['vort_yz_max'][:]
+    # vort_min = ts_grp.variables['vort_yz_min'][:]
+    # vort_sum = ts_grp.variables['vort_yz_sum'][:]
+    # vort_env = ts_grp.variables['vort_yz_env'][:]
+    # file.close()
+    # # plot_vorticity_timeseries(vort_max, vort_min, vort_sum, vort_env, 'vort_yz', timerange, figname)
+    # #
+    # figname = 'vort_stats_xz.png'
+    # file = nc.Dataset(os.path.join(path_out_fields, stats_file_name), 'r')
+    # ts_grp = file.groups['timeseries']
+    # vort_max = ts_grp.variables['vort_xz_max'][:]
+    # vort_min = ts_grp.variables['vort_xz_min'][:]
+    # vort_sum = ts_grp.variables['vort_xz_sum'][:]
+    # vort_env = ts_grp.variables['vort_xz_env'][:]
+    # file.close()
+    # # plot_vorticity_timeseries(vort_max, vort_min, vort_sum, vort_env, 'vort_xz', timerange, figname)
+    # #
     figname = 'vort_stats_phi.png'
     file = nc.Dataset(os.path.join(path_out_fields, stats_file_name_phi), 'r')
     ts_grp = file.groups['timeseries']
@@ -122,10 +122,10 @@ def main():
     file.close()
     plot_vorticity_timeseries(vort_max_phi, vort_min_phi, vort_sum_phi, vort_env_phi, 'vort_phi', timerange, figname)
 
-    figname = 'vort_stats_phi_vs_xz.png'
-    plot_vorticity_timeseries_comparison('vort_phi', 'vort_xz', vort_max_phi, vort_min_phi, vort_sum_phi, vort_env_phi,
-                                         vort_max, vort_min, vort_sum, vort_env,
-                                         'vort_phi vs. vort_xz', timerange, figname)
+    # figname = 'vort_stats_phi_vs_xz.png'
+    # plot_vorticity_timeseries_comparison('vort_phi', 'vort_xz', vort_max_phi, vort_min_phi, vort_sum_phi, vort_env_phi,
+    #                                      vort_max, vort_min, vort_sum, vort_env,
+    #                                      'vort_phi vs. vort_xz', timerange, figname)
 
     return
 
