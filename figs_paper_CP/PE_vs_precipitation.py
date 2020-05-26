@@ -28,8 +28,10 @@ def main():
     parser.add_argument("--dz")
     args = parser.parse_args()
 
-    # # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
-    # path_out_figs = '/nbi/home/meyerbe/paper_CP'
+    collist = ['b', 'k', 'g', 'r', 'cyan']
+
+    # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
+    path_out_figs = '/nbi/home/meyerbe/paper_CP'
     path_data_dx100m = '/nbi/ac/conv4/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/single_3D_noise/run5_PE_scaling_dx100m'
     # path_data_dx50m = '/nbi/ac/conv4/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/single_3D_noise/run6_PE_scaling_dx50m'
     path_data_ref_dx100m = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2_dx100m/dTh3_z1000_r1000'
@@ -135,20 +137,23 @@ def main():
     print('------ compute PE from simulations -----')
     ''' (a) analytical '''
     ''' (b) numerical '''
-    # dz = 100m
-    PE0_dz100m = compute_PE_from_simulation(dTh_ref, rstar_ref, zstar_ref, Tg, path_data_ref_dx100m)
+    # compute_PE_numerical(dTh_ref, rstar_ref, zstar_ref, Tg, path_data_ref_dx100m)
+    ''' (c) from output field '''
+    # # dz = 100m
+    # PE0_dz100m = compute_PE_from_simulation(dTh_ref, rstar_ref, zstar_ref, Tg, path_data_ref_dx100m)
     # # dz = 50m
     # PE0_dz50m = compute_PE_from_simulation(dTh_ref, rstar_ref, zstar_ref, Tg, path_data_ref_dx50m)
     # # dz = 25m
     # PE0_dz25m = compute_PE_from_simulation(dTh_ref, rstar_ref, zstar_ref, Tg, path_data_ref_dx25m)
+    PE0 = compute_PE_from_simulation(dTh_ref, rstar_ref, zstar_ref, Tg, path_data_ref)
     print('Reference potential energy: PE0')
-    print('dx=100m: '+str(PE0_dz100m) + ' (rel. diff: ' + str(np.round((PE0_dz100m-PE0_dz100m)/PE0_dz100m,4)) + ')')
+    # print('dx=100m: '+str(PE0_dz100m) + ' (rel. diff: ' + str(np.round((PE0_dz100m-PE0_dz100m)/PE0_dz100m,4)) + ')')
     # print('dx= 50m: '+str(PE0_dz50m) + ' (rel. diff: ' + str(np.round((PE0_dz50m-PE0_dz100m)/PE0_dz100m,4)) + ')')
     # print('dx= 25m: '+str(PE0_dz25m) + ' (rel. diff: ' + str(np.round((PE0_dz25m-PE0_dz100m)/PE0_dz100m,4)) + ')')
+    print('dx='+str(dz)+'m: '+str(PE0))
     print('')
 
     ''' compute PE range '''
-    # PE0 = PE0_dz100m
     # PE_num = []
     # for rstar in r_params:
     #     case = 'dTh'+str(dTh)+'_z1000_r'+str(rstar)
@@ -173,10 +178,9 @@ def main():
     # >> Lv * V * rho_w * evap = dT * cp >> V = dT * cp / (Lv * rho_w * evap)
 
     print('--- (A) How much water needs to evaporate to cool by Q=PE?')
-    PE = PE0_dz100m
     # PE_ref = -0.8e11
     # # PE_ref = -0.5e11
-    mw = PE / Lv
+    mw = PE0 / Lv
     print('evaporated mass of water: '+str(np.round(mw,1))+' kg')
 
     # cooled air mass (column):     md = rho_d * A * z_BL
@@ -184,16 +188,15 @@ def main():
     md_ref = compute_air_column_mass(rho0_stats, zhalf_stats, z_BL, dz, A_ref)
     CP_vol = compute_CP_volume(rstar_ref, zstar_ref, Tg, path_data_ref)
     print('z_BL = '+str(z_BL))
-    print('warmed air mass: (A='+str(A)+') md='+str(md)+' kg')
+    print('cooled air mass: (A='+str(A)+') md='+str(md)+' kg')
     print('                 (A='+str(np.round(A_ref,1))+') md='+str(md_ref)+' kg')
-    print('warmed air volume: ')
+    print('cooled air volume: ')
     print('     A*z_BL='+str(A*z_BL) + ', ('+str(A*z_BL/CP_vol)+')')
     print('     md/rho='+str(md / np.mean(rho0_stats[:nz])) + 'm3, ' + str(md / (np.mean(rho0_stats[:nz]*CP_vol))))
     print('CP volume: '+str(CP_vol) + 'm3')
-    dT = PE / (md*cpd)
+    dT = PE0 / (md*cpd)
     print('temperature depression (if md warmed)  : '+str(np.round(dT,5)) + 'K')
 
-    PE0 = PE0_dz100m
     rain = PE0 / (Lv * (evap * rho_w * A))  # rain = tau*I; [m]
     tau = 1./6  # 10min
     I = rain / tau * 1e3  # [mm/h]
@@ -232,11 +235,11 @@ def main():
     print('evaporated mass of water: ' + str(np.round(mw, 1)) + ' kg')
     rain = Q_CP / (Lv * (evap * rho_w * A))  # rain = tau*I; [m]
     print('Rain intensities: I=1/tau * Q / (Lv*evap*rho_w*A)')
-    I_range['PE0'] = np.zeros(shape=len(tau_range))
+    I_range[str(rstar_ref)] = np.zeros(shape=len(tau_range))
     for i,tau in enumerate(tau_range):
         I = rain / tau * 1e3  # [mm/h]
         print('              for tau=' + str(np.int(tau*60)) + 'min, I=' + str(np.round(I, 2))+'mm/h')
-        I_range['PE0'][i] = np.round(I, 1)
+        I_range[str(rstar_ref)][i] = np.round(I, 1)
 
     print('(ii) PE range')
     zstar = z_params[0]
@@ -256,7 +259,7 @@ def main():
 
 
 
-    # I_ref = compute_intensity_from_PE(PE0_dz100m, rho_d, p_ref, tau, A, z0, dz, z_BL, Tg, evap)
+    # I_ref = compute_intensity_from_PE(PE0, rho_d, p_ref, tau, A, z0, dz, z_BL, Tg, evap)
     # P = I_ref * A * tau
     # height = P/A
     # print('   Precip. intensity:  ' + str(np.round(I_ref*1e3,0)) + ' mm/h')
@@ -269,25 +272,34 @@ def main():
     # print('if intensity is '+str(intensity)+'mm/h, then duration is: tau='+str(np.round(tau_,2))+' h')
     # print('if duration is '+str(tau)+'h, then intensity is: I='+str(np.round(intensity_,2))+' mm/h')
     # print('')
-    #
+
 
 
     ''' (3) Plots '''
-    # ''' plot histogram '''
-    # print('')
-    # print('------ PLOTTING (HISTOGRAM) ------')
-    # print('PE range: ')
-    # PE_range = 2. ** np.arange(-1, 4)
-    # print(PE_range)
-    # print('tau: ' + str(tau) + ' h, area: ' + str(A) + 'm2')
+    ''' plot histogram '''
+    print('')
+    print('------ PLOTTING (HISTOGRAM) ------')
+    print('PE range: ')
+    PE_range = 2. ** np.arange(-1, 4)
+    print(PE_range)
+    print('tau: ' + str(tau) + ' h, area: ' + str(A) + 'm2')
     # I = compute_intensity_from_PE(PE_range * PE_ref, rho_d, p_ref, tau, A, z0, dz, z_BL, theta0)
     # # P = -PE_ref*PE_range * theta0 / (g * z0 * rho_d[k0]) * cpd / (rho_w * evap) / exner_c(p[k0])
-    # P = I * A * tau
-    # height = P / A
-    # print('   Precip. intensity:  ' + str(np.round(I * 1e3, 0)) + ' mm/h')
-    # print('   Precip. total:      ' + str(np.round(P, 2)) + ' m^3')
-    # print('   height watercolumn: ' + str(np.round(1e3 * height, 0)) + ' mm')
-    # plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref, path_out_figs)
+    I = []
+    tau = 0.5
+    itau = np.where(np.asarray(tau_range) == tau)[0][0]
+    for i,r in enumerate(r_params):
+        I.append(I_range[str(r)][itau])
+    I.insert(1, I_range[str(rstar_ref)][itau])
+    I = np.asarray(I)
+    P = I * A * tau
+    height = P / A
+    print('   Precip. total:      ' + str(np.round(P, 2)) + ' m^3')
+    print('   Precip. intensity:  ' + str(np.round(I, 0)) + ' mm/h')
+    print('   Area:               ' + str(np.round(A, 0)) + ' m^2')
+    print('   height watercolumn: ' + str(np.round(1e3 * height, 0)) + ' mm')
+    plot_histogram_PE_vs_Intensity(PE_range, P, PE0, I, I_range[str(rstar_ref)][itau],
+                                   collist, path_out_figs)
     # ''' plot PE vs. R (run5)'''
     # # run5
     # PE_array_log = 2. ** np.arange(-1, 4)
@@ -307,39 +319,46 @@ def main():
 
 
 # -----------------------------------------
-def plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref, path_out_figs):
+def plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref, collist, path_out_figs):
+    print('')
+    print('AAAAAAA')
+    print('PE_range', PE_range, type(I))
+    print(I.shape)
+
 
     fig, [ax0, ax1, ax2] = plt.subplots(1, 3, figsize=(20, 6))
     ax0.plot(PE_range, P, '-o')
     ax0.set_xlabel(r'PE / PE$_0$')
     ax1.plot(PE_ref * PE_range, P, '-o')
     ax1.set_xlabel('PE / PE_ref')
-    ax2.bar(PE_range, I * 1e3, align='center', facecolor='lightblue')
+    ax2.bar(PE_range, I, align='center', facecolor='lightblue')
     ax2.set_xlabel('PE / PE_ref')
     ax2.set_ylabel('Intensity [mm/h]')
     plt.subplots_adjust(bottom=0.2, right=.95, left=0.07, top=0.9, wspace=0.25)
-    plt.savefig('./preciptation_run5.png')
+    # plt.savefig('./preciptation_run5.png')
+    plt.savefig(os.path.join(path_out_figs, 'preciptation_run5.png'))
 
-    # print(I * 1e3)
-    aux = PE_range[0] * np.ones(np.int(I[0] * 1e3))
-    aux = np.append(aux, np.ones(np.int(I_ref * 1e3)))
-    aux = np.append(aux, PE_range[1] * np.ones(np.int(I[1] * 1e3)))
-    aux = np.append(aux, PE_range[2] * np.ones(np.int(I[2] * 1e3)))
-    aux = np.append(aux, PE_range[3] * np.ones(np.int(I[3] * 1e3)))
-    aux = np.append(aux, PE_range[4] * np.ones(np.int(I[4] * 1e3)))
-    # print(I * 1e3)
-    # print(PE_range)
-    # print(aux)
-
+    # # print(I)
+    aux = PE_range[0] * np.ones(np.int(I[0]))
+    aux = np.append(aux, np.ones(np.int(I_ref)))
+    aux = np.append(aux, PE_range[1] * np.ones(np.int(I[1])))
+    aux = np.append(aux, PE_range[2] * np.ones(np.int(I[2])))
+    aux = np.append(aux, PE_range[3] * np.ones(np.int(I[3])))
+    aux = np.append(aux, PE_range[4] * np.ones(np.int(I[4])))
+    # # print(I * 1e3)
+    # # print(PE_range)
+    # # print(aux)
+    #
     fig_name = 'precipitation_run5_hist.png'
     fig, [ax0, ax1, ax2] = plt.subplots(1, 3, figsize=(20, 6))
-    ax0.plot(PE_range, np.round(I * 1e3, 0), '-o')
+    ax0.plot(PE_range, np.round(I, 0), '-o')
     ax0.set_xlabel(r'PE / PE$_0$')
+    ax0.set_ylabel('Intensity [mm/h]')
     ax1.hist(aux)
     ax1.set_xlabel(r'PE / PE$_0$')
     ax1.set_ylabel('Intensity [mm/h]')
-    # ax2.hist(np.round(I * 1e3, 0), '-o')
-    ax2.bar(PE_range, I * 1e3, align='center', facecolor='lightblue')
+    # # ax2.hist(np.round(I, 0), '-o')
+    ax2.bar(PE_range, I, align='center', facecolor='lightblue')
     # plt.bar(range(len(D)), D.values(), align='center')
     ax2.set_xlabel(r'PE / PE$_0$')
     ax2.set_ylabel('Intensity [mm/h]')
@@ -352,7 +371,7 @@ def plot_histogram_PE_vs_Intensity(PE_range, P, PE_ref, I, I_ref, path_out_figs)
         ax.set_xticklabels([np.int(ti) for ti in ax.get_xticks()])
         ax.set_yticklabels([np.int(ti) for ti in ax.get_yticks()])
     plt.subplots_adjust(bottom=0.2, right=.95, left=0.07, top=0.9, wspace=0.25)
-    #plt.savefig('./preciptation_run5_hist.png')
+    # #plt.savefig('./preciptation_run5_hist.png')
     plt.savefig(os.path.join(path_out_figs, fig_name))
     return
 # -----------------------------------------
@@ -446,6 +465,26 @@ def plot_PE_vs_R(r_params, z_params, n_params, dTh, rstar_ref, zstar_ref, dTh_re
     plt.close(fig)
     return
 # -----------------------------------------
+def compute_PE_numerical(dTh, rstar, zstar, Tg, path):
+    nml = simplejson.loads(open(os.path.join(path, 'ColdPoolDry_single_3D.in')).read())
+    nx = nml['grid']['nx']
+    dx = nml['grid']['dx']
+    dV = dx ** 3
+    ic = nml['init']['ic']
+    jc = nml['init']['jc']
+    marg = nml['init']['marg']
+    imin = np.int(ic - (rstar + 1000) / dx)
+    imax = nx - imin
+    ni = imax - imin
+    ni2 = ni ** 2
+    kmax = np.int((zstar + 1000.) / dx)
+    print('computig PE: r*,z*', rstar, zstar, 'dz', dx)
+    print('imin, imax, kmax', imin, imax, kmax, ic, jc)
+
+    z_max_arr, theta_z = compute_envelope(dTh, rstar, zstar, marg, ic, jc, Tg, dx, nx, nx, kmax)
+    return
+
+
 def compute_PE_from_simulation(dTh, rstar, zstar, Tg, path):
     nml = simplejson.loads(open(os.path.join(path, 'ColdPoolDry_single_3D.in')).read())
     nx = nml['grid']['nx']
@@ -461,10 +500,7 @@ def compute_PE_from_simulation(dTh, rstar, zstar, Tg, path):
     kmax = np.int((zstar + 1000.) / dx)
     print('computig PE: r*,z*', rstar, zstar, 'dz', dx)
     print('imin, imax, kmax', imin, imax, kmax, ic, jc)
-    ''' (b) numerical '''
-    z_max_arr, theta_z = compute_envelope(dTh, rstar, zstar, marg, ic, jc, Tg, dx, nx, nx, kmax)
 
-    ''' (c) from output field '''
     root = nc.Dataset(os.path.join(path, 'fields', '0.nc'))
     # temp_ = root.groups['fields']['temperature'][imin:imax, imin:imax, :kmax]
     s_ = root.groups['fields']['s'][imin:imax, imin:imax, :kmax]
