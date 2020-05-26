@@ -53,6 +53,7 @@ def main():
     print('')
 
     # READ IN density profile
+    print(os.path.join(path, 'stats', 'Stats.' + case_name + '.nc'))
     try:
         rootgrp = nc.Dataset(os.path.join(path, 'stats', 'Stats.' + case_name + '.nc'))
     except:
@@ -80,17 +81,18 @@ def main():
     #           >> w[kr=0] = 0.5*(w[kr=-1/2]+w[kr=1/2]) = 0.5*(w[ks=0]+w[ks=-1]) = 0
 
     # ''' COMPUTE VORTICITY '''
-    stats_file_name = 'Stats_vorticity.nc'
+    # stats_file_name = 'Stats_vorticity.nc'
     # compute_vorticity_xz_yz(n_CPs, ic, jc, nx_half, ny_half, kmax, timerange, stats_file_name)
-    #
+
     stats_file_name_phi = 'Stats_vorticity_phi.nc'
-    # file_name_in = 'stats_radial_averaged.nc'
-    # compute_vorticity_radav(kmax, timerange, file_name_in, stats_file_name_phi)
-    #
+    file_name_in = 'stats_radial_averaged.nc'
+    compute_vorticity_radav(kmax, timerange, file_name_in, stats_file_name_phi)
+
 
 
     # ''' PLOTTING '''
     figname = 'vort_stats_yz.png'
+    stats_file_name = 'Stats_vorticity.nc'
     file = nc.Dataset(os.path.join(path_out_fields, stats_file_name), 'r')
     ts_grp = file.groups['timeseries']
     vort_max = ts_grp.variables['vort_yz_max'][:]
@@ -98,8 +100,8 @@ def main():
     vort_sum = ts_grp.variables['vort_yz_sum'][:]
     vort_env = ts_grp.variables['vort_yz_env'][:]
     file.close()
-    plot_vorticity_timeseries(vort_max, vort_min, vort_sum, vort_env, 'vort_yz', timerange, figname)
-
+    # plot_vorticity_timeseries(vort_max, vort_min, vort_sum, vort_env, 'vort_yz', timerange, figname)
+    #
     figname = 'vort_stats_xz.png'
     file = nc.Dataset(os.path.join(path_out_fields, stats_file_name), 'r')
     ts_grp = file.groups['timeseries']
@@ -108,8 +110,8 @@ def main():
     vort_sum = ts_grp.variables['vort_xz_sum'][:]
     vort_env = ts_grp.variables['vort_xz_env'][:]
     file.close()
-    plot_vorticity_timeseries(vort_max, vort_min, vort_sum, vort_env, 'vort_xz', timerange, figname)
-
+    # plot_vorticity_timeseries(vort_max, vort_min, vort_sum, vort_env, 'vort_xz', timerange, figname)
+    #
     figname = 'vort_stats_phi.png'
     file = nc.Dataset(os.path.join(path_out_fields, stats_file_name_phi), 'r')
     ts_grp = file.groups['timeseries']
@@ -173,12 +175,12 @@ def compute_vorticity_xz_yz(n_CPs, ic, jc, nx_half, ny_half, kmax, timerange, st
         # v[:,:,0] = -v[:,:,1]
         w[:,:,0] = -w[:,:,1]
 
-        u_ = np.roll(np.roll(u[:, :, :], ishift, axis=0), jshift,
-                     axis=1)[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
-        v_ = np.roll(np.roll(v[:, :, :], ishift, axis=0), jshift,
-                         axis=1)[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
-        w_ = np.roll(np.roll(w[:, :, :], ishift, axis=0), jshift,
-                     axis=1)[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
+        # u_ = np.roll(np.roll(u[:, :, :], ishift, axis=0), jshift,
+        #              axis=1)[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
+        # v_ = np.roll(np.roll(v[:, :, :], ishift, axis=0), jshift,
+        #                  axis=1)[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
+        # w_ = np.roll(np.roll(w[:, :, :], ishift, axis=0), jshift,
+        #              axis=1)[ic - nx_half + ishift:ic + nx_half + ishift, jc - ny_half + jshift:jc + ny_half + jshift, :]
 
 
 
@@ -266,8 +268,12 @@ def compute_vorticity_radav(kmax, timerange, rad_stats_file_name, stats_file_nam
     # (2) read in azimuthally averaged vertical velocity
     # (3) interpolate
     # (4) compute gradients
+    print('')
+    print('compute vorticity from azimuthally averaged velocity fields (u, w)')
+    print('')
 
     path_in = os.path.join(path, 'data_analysis', rad_stats_file_name)
+    # print(path_in)
     file = nc.Dataset(path_in, 'r')
 
     try:
@@ -330,7 +336,6 @@ def compute_vorticity_radav(kmax, timerange, rad_stats_file_name, stats_file_nam
     dump_statistics_variable(vort_env, 'vort_phi_env', 'timeseries', stats_file_name, path_out_fields)
 
     return vort_phi
-
 
 # ---------------------------------- PLOTTING ------------------------------------
 def plot_vorticity_timeseries(vort_yz_max, vort_yz_min, vort_yz_sum, vort_yz_env, title, timerange, figname):
@@ -575,184 +580,7 @@ def comparison_vort_yz_vort_xz(vort_xz_, vort_yz_, kmax, t0):
     plt.close()
     return
 
-# ----------------------------------------------------------------------
-
-def set_input_output_parameters(args):
-    print('--- set input parameters ---')
-    global path, path_in, path_out_figs, path_out_fields, path_stats, path_fields
-    path = args.path
-    path_in = os.path.join(path, 'fields_CP_rim')
-    path_fields = os.path.join(path, 'fields')
-    path_out_figs = os.path.join(path, 'figs_vorticity')
-    path_out_fields = os.path.join(path, 'fields_vorticity')
-    if not os.path.exists(path_out_figs):
-        os.mkdir(path_out_figs)
-    if not os.path.exists(path_out_fields):
-        os.mkdir(path_out_fields)
-
-    global case_name
-    case_name = args.casename
-    nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
-    global nx, ny, nz, dx, dy, dz, dV, gw
-    nx = nml['grid']['nx']
-    ny = nml['grid']['ny']
-    nz = nml['grid']['nz']
-    dx = np.zeros(3, dtype=np.int)
-    dx[0] = nml['grid']['dx']
-    dx[1] = nml['grid']['dy']
-    dx[2] = nml['grid']['dz']
-    gw = nml['grid']['gw']
-    dV = dx[0] * dx[1] * dx[2]
-
-
-    ''' determine file range '''
-    global nt
-    if args.tmin:
-        tmin = np.int(args.tmin)
-    else:
-        tmin = 100
-    if args.tmax:
-        tmax = np.int(args.tmax)
-    else:
-        tmax = tmin
-    timerange = np.arange(tmin, tmax + 100, 100)
-    nt = len(timerange)
-
-    if args.kmax:
-        kmax = np.int(args.kmax)
-    else:
-        kmax = 60
-    print('nx, ny, nz', nx, ny, nz)
-    print('times', timerange, nt)
-    print('')
-
-
-    return timerange, kmax, nml
-
-
-
-def define_geometry(case_name, nml):
-    print('--- define geometry ---')
-    global x_half, y_half, z_half
-    global nx_, ny_
-    global shift, ishift, jshift
-    global ic_arr, jc_arr
-    global rstar, irstar, zstar, kstar
-
-    x_half = np.empty((nx), dtype=np.double, order='c')
-    y_half = np.empty((ny), dtype=np.double, order='c')
-    z_half = np.empty((nz), dtype=np.double, order='c')
-    count = 0
-    for i in xrange(nx):
-        x_half[count] = (i + 0.5) * dx[0]
-        count += 1
-    count = 0
-    for j in xrange(ny):
-        y_half[count] = (j + 0.5) * dx[1]
-        count += 1
-    count = 0
-    for i in xrange(nz):
-        z_half[count] = (i + 0.5) * dx[2]
-        count += 1
-
-    # set coordinates for plots
-    if case_name == 'ColdPoolDry_single_3D':
-        n_CPs = 1
-        rstar = nml['init']['r']
-        irstar = np.int(np.round(rstar / dx[0]))
-        zstar = nml['init']['h']
-        kstar = np.int(np.round(zstar / dx[2]))
-        try:
-            ic = nml['init']['ic']
-            jc = nml['init']['jc']
-            # print('(ic,jc) from nml')
-        except:
-            ic = np.int(nx/2)
-            jc = np.int(ny/2)
-            # print('(ic,jc) NOT from nml')
-        ic_arr = np.zeros(1)
-        jc_arr = np.zeros(1)
-        ic_arr[0] = ic
-        jc_arr[0] = jc
-    elif case_name == 'ColdPoolDry_double_2D':
-        try:
-            rstar = nml['init']['r']
-        except:
-            rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx[0]))
-        zstar = nml['init']['h']
-        kstar = np.int(np.round(zstar / dx[2]))
-        isep = 4 * irstar
-        ic1 = np.int(nx / 3)  # np.int(Gr.dims.ng[0] / 3)
-        ic2 = ic1 + isep
-        jc1 = np.int(ny / 2)
-        jc2 = jc1
-        ic_arr = [ic1, ic2]
-        jc_arr = [jc1, jc2]
-    elif case_name == 'ColdPoolDry_double_3D':
-        n_CPs = 2
-        try:
-            rstar = nml['init']['r']
-        except:
-            rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx[0]))
-        zstar = nml['init']['h']
-        kstar = np.int(np.round(zstar / dx[2]))
-        isep = 4 * irstar
-        jsep = 0
-        ic1 = np.int(nx / 3)
-        jc1 = np.int(ny / 2)
-        # ic2 = ic1 + isep
-        # jc2 = jc1 + jsep
-        ic = ic1
-        jc = jc1
-
-        # ic_arr = [ic1, ic2]
-        # jc_arr = [jc1, jc2]
-    elif case_name == 'ColdPoolDry_triple_3D':
-        n_CPs = 2
-        try:
-            rstar = nml['init']['r']
-        except:
-            rstar = 5000.0  # half of the width of initial cold-pools [m]
-        irstar = np.int(np.round(rstar / dx))
-        zstar = nml['init']['h']
-        kstar = np.int(np.round(zstar / dx[2]))
-        marg_i = 10  # width of margin
-        # d = np.int(np.round(ny / 2))
-        d = np.int(np.round((ny + gw) / 2))
-        # d = np.int(np.round(10 * irstar)) # for r=1km, dTh=2K
-        a = np.int(np.round(d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
-        ic1 = np.int(np.round(a / 2))
-        # ic1 = 10 + np.int(np.round(a / 2)) + Gr.dims.gw # for r=1km
-        ic2 = ic1
-        ic3 = ic1 + np.int(np.round(a))
-        jc1 = np.int(np.round(d / 2))
-        # jc1 = np.int(np.round(d / 2) + gw)  # np.int(np.round(d/2) + Gr.dims.gw)
-        jc2 = jc1 + d
-        jc2 = jc1 + d
-        jc3 = jc1 + np.int(np.round(d / 2))
-        ic = ic1
-        jc = jc1
-        ic_arr = [ic1, ic2, ic3]
-        jc_arr = [jc1, jc2, jc3]
-
-    shift = 120
-    nx_half = irstar + shift
-    ny_half = irstar + shift
-    ishift = np.max(nx_half - ic, 0)
-    jshift = np.max(ny_half - jc, 0)
-    nx_ = 2 * nx_half
-    ny_ = 2 * ny_half
-
-
-    print('rstar:     ' + str(rstar), irstar)
-    print('ic,jc,id,jd', ic, jc, nx_half, ny_half)
-    print('nx_,ny_    ', nx_, ny_)
-    print('shift, ishift, jshift', shift, ishift, jshift)
-
-    return n_CPs
-
+#
 # ----------------------------------------------------------------------
 
 def create_statistics_file(file_name, path, nt, timerange):#, nk, krange):
@@ -765,7 +593,6 @@ def create_statistics_file(file_name, path, nt, timerange):#, nk, krange):
     var = ts_grp.createVariable('time', 'f8', ('nt'))
     var.units = "s"
     var[:] = timerange[:]
-
 
     rootgrp.close()
     return
@@ -868,6 +695,185 @@ def dump_vort_field(name, data, it, t0, file_name):
     return
 
 
+ # ----------------------------------------------------------------------
+
+def set_input_output_parameters(args):
+    print('--- set input parameters ---')
+    global path, path_in, path_out_figs, path_out_fields, path_stats, path_fields
+    path = args.path
+    path_in = os.path.join(path, 'fields_CP_rim')
+    path_fields = os.path.join(path, 'fields')
+    path_out_figs = os.path.join(path, 'figs_vorticity')
+    path_out_fields = os.path.join(path, 'fields_vorticity')
+    if not os.path.exists(path_out_figs):
+        os.mkdir(path_out_figs)
+    if not os.path.exists(path_out_fields):
+        os.mkdir(path_out_fields)
+
+    global case_name
+    case_name = args.casename
+    nml = simplejson.loads(open(os.path.join(path, case_name + '.in')).read())
+    global nx, ny, nz, dx, dy, dz, dV, gw
+    nx = nml['grid']['nx']
+    ny = nml['grid']['ny']
+    nz = nml['grid']['nz']
+    dx = np.zeros(3, dtype=np.int)
+    dx[0] = nml['grid']['dx']
+    dx[1] = nml['grid']['dy']
+    dx[2] = nml['grid']['dz']
+    gw = nml['grid']['gw']
+    dV = dx[0] * dx[1] * dx[2]
+
+
+    ''' determine file range '''
+    global nt
+    if args.tmin:
+        tmin = np.int(args.tmin)
+    else:
+        tmin = 100
+    if args.tmax:
+        tmax = np.int(args.tmax)
+    else:
+        tmax = tmin
+    timerange = np.arange(tmin, tmax + 100, 100)
+    nt = len(timerange)
+
+    if args.kmax:
+        kmax = np.int(args.kmax)
+    else:
+        kmax = 60
+    print('nx, ny, nz', nx, ny, nz)
+    print('times', timerange, nt)
+    print('')
+
+
+    return timerange, kmax, nml
+
+
+
+def define_geometry(case_name, nml):
+    print('--- define geometry ---')
+    global x_half, y_half, z_half
+    global nx_, ny_
+    global shift, ishift, jshift
+    global ic_arr, jc_arr
+    global rstar, irstar, zstar, kstar
+
+    x_half = np.empty((nx), dtype=np.double, order='c')
+    y_half = np.empty((ny), dtype=np.double, order='c')
+    z_half = np.empty((nz), dtype=np.double, order='c')
+    count = 0
+    for i in xrange(nx):
+        x_half[count] = (i + 0.5) * dx[0]
+        count += 1
+    count = 0
+    for j in xrange(ny):
+        y_half[count] = (j + 0.5) * dx[1]
+        count += 1
+    count = 0
+    for i in xrange(nz):
+        z_half[count] = (i + 0.5) * dx[2]
+        count += 1
+
+    # set coordinates for plots
+    if case_name[:21] == 'ColdPoolDry_single_3D':
+        n_CPs = 1
+        rstar = nml['init']['r']
+        irstar = np.int(np.round(rstar / dx[0]))
+        zstar = nml['init']['h']
+        kstar = np.int(np.round(zstar / dx[2]))
+        try:
+            ic = nml['init']['ic']
+            jc = nml['init']['jc']
+            # print('(ic,jc) from nml')
+        except:
+            ic = np.int(nx/2)
+            jc = np.int(ny/2)
+            # print('(ic,jc) NOT from nml')
+        ic_arr = np.zeros(1)
+        jc_arr = np.zeros(1)
+        ic_arr[0] = ic
+        jc_arr[0] = jc
+    elif case_name == 'ColdPoolDry_double_2D':
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx[0]))
+        zstar = nml['init']['h']
+        kstar = np.int(np.round(zstar / dx[2]))
+        isep = 4 * irstar
+        ic1 = np.int(nx / 3)  # np.int(Gr.dims.ng[0] / 3)
+        ic2 = ic1 + isep
+        jc1 = np.int(ny / 2)
+        jc2 = jc1
+        ic_arr = [ic1, ic2]
+        jc_arr = [jc1, jc2]
+    elif case_name == 'ColdPoolDry_double_3D':
+        n_CPs = 2
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx[0]))
+        zstar = nml['init']['h']
+        kstar = np.int(np.round(zstar / dx[2]))
+        isep = 4 * irstar
+        jsep = 0
+        ic1 = np.int(nx / 3)
+        jc1 = np.int(ny / 2)
+        ic2 = ic1 + isep
+        jc2 = jc1 + jsep
+        ic = ic1
+        jc = jc1
+        ic_arr = [ic1, ic2]
+        jc_arr = [jc1, jc2]
+    elif case_name == 'ColdPoolDry_triple_3D':
+        n_CPs = 2       # number of CPs for tracers ??
+        try:
+            rstar = nml['init']['r']
+        except:
+            rstar = 5000.0  # half of the width of initial cold-pools [m]
+        irstar = np.int(np.round(rstar / dx))
+        zstar = nml['init']['h']
+        kstar = np.int(np.round(zstar / dx[2]))
+        marg = nml['init']['marg']  # width of margin
+        try:
+            d = nml['init']['d']
+        except:
+            d = np.int(np.round((ny + 2*gw) / 2))
+            # d = np.int(np.round(10 * irstar)) # for r=1km, dTh=2K
+        i_d = np.int(np.round(d / dx[0]))
+        idhalf = np.int(np.round(i_d / 2))
+        a = np.int(np.round(i_d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
+        r_int = np.int(np.round(np.sqrt(3.) / 6 * i_d))  # radius of inscribed circle
+        # point of 3-CP collision (ic, jc)
+        ic = np.int(np.round(nx / 2))
+        jc = np.int(np.round(ny / 2))
+        ic1 = ic - r_int
+        ic2 = ic1
+        ic3 = ic + (a - r_int)
+        jc1 = jc - idhalf
+        jc2 = jc + idhalf
+        jc3 = jc
+        ic_arr = [ic1, ic2, ic3]
+        jc_arr = [jc1, jc2, jc3]
+
+    shift = 120
+    nx_half = irstar + shift
+    ny_half = irstar + shift
+    ishift = np.max(nx_half - ic, 0)
+    jshift = np.max(ny_half - jc, 0)
+    nx_ = 2 * nx_half
+    ny_ = 2 * ny_half
+
+
+    print('rstar:     ' + str(rstar), irstar)
+    print('ic,jc,id,jd', ic, jc, nx_half, ny_half)
+    print('nx_,ny_    ', nx_, ny_)
+    print('shift, ishift, jshift', shift, ishift, jshift)
+
+    return n_CPs
 
 
 # ----------------------------------------------------------------------
