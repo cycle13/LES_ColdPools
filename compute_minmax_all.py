@@ -4,11 +4,34 @@ import matplotlib.mlab as mlab
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 import matplotlib.colors as colors
+import matplotlib.patches as mpatches
 import netCDF4 as nc
 import argparse
 import json as simplejson
 import os
 import sys
+
+label_size = 12
+plt.rcParams['xtick.labelsize'] = label_size
+plt.rcParams['ytick.labelsize'] = label_size
+plt.rcParams['axes.labelsize'] = 18
+# plt.rcParams['xtick.direction']='out'
+# plt.rcParams['ytick.direction']='out'
+plt.rcParams['legend.fontsize'] = 8
+plt.rcParams['lines.linewidth'] = 2
+plt.rcParams['grid.linewidth'] = 20
+plt.rcParams['xtick.major.size'] = 5
+plt.rcParams['xtick.minor.size'] = 2.5
+plt.rcParams['ytick.major.size'] = 5
+plt.rcParams['ytick.minor.size'] = 2.5
+plt.rcParams['xtick.major.width'] = 1.5
+plt.rcParams['xtick.minor.width'] = 1
+plt.rcParams['ytick.major.width'] = 1.5
+plt.rcParams['ytick.minor.width'] = 1
+plt.rcParams['pdf.fonttype'] = 42         # Output Type 3 (Type3) or Type 42 (TrueType)
+
+
+
 
 def main():
     print('COMPUTING MIN MAX')
@@ -39,7 +62,7 @@ def main():
         # sys.exit()
 
     save_name = 'dTh' + str(dTh) + '_minmax_all.png'
-    minmax_domain = plot_domain_minmax(dTh, z_params, r_params, dx, times,
+    minmax_domain = plot_minmax_domain(dTh, z_params, r_params, dx, times,
                                        case_name, path_root, save_name, path_out_figs)
 
     # read in azimuthally averaged fields
@@ -79,7 +102,7 @@ def main():
         var_min = np.amax(var_min_arr, axis=2)
 
         figname = var_name + '_minmax_all.png'
-        fig, axes = plt.subplots(2,1, figsize=(6, 12))
+        fig, axes = plt.subplots(2,1, figsize=(7, 12))
         ax1 = axes[0]
         ax2 = axes[1]
 
@@ -97,6 +120,7 @@ def main():
         ax2.set_ylabel('min(' + var_name + ')', fontsize=18)
         ax2.set_xlabel('time [s]', fontsize=18)
         fig.suptitle(var_name)
+        plt.subplots_adjust(bottom=0.1, right=.9, left=0.15, top=0.9)#, hspace=0.2, wspace=0.25)
         fig.savefig(os.path.join(path_out_figs, figname))
         plt.close(fig)
 
@@ -172,7 +196,7 @@ def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
             zstar = z_params[istar]
             rstar = r_params[istar]
             ID = 'dTh' + str(dTh)+ '_z' + str(zstar) + '_r' + str(rstar)
-            print('id', ID)
+            print('ID', ID)
             path_fields = os.path.join(path_root, ID, 'fields')
             print(path_fields)
 
@@ -203,7 +227,7 @@ def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
 
 
 # compute domain minimum and maximum of variables (s, temperature, w) for each timestep
-def plot_domain_minmax(dTh, z_params, r_params, dx, times,
+def plot_minmax_domain(dTh, z_params, r_params, dx, times,
                        case_name, path_root, save_name, path_out_figs):
     print('computing min/max domain')
 
