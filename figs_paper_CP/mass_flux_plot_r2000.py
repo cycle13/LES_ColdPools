@@ -25,6 +25,7 @@ def main():
     parser.add_argument("--level")
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
+    parser.add_argument("--delta")      # width of averaging area for MF crosssection
     args = parser.parse_args()
 
     case_name_1CP = 'ColdPoolDry_single_3D'
@@ -52,7 +53,8 @@ def main():
     print('path 3CP:   ' + path_3CP)
     path_data = os.path.join(path_3CP, 'data_analysis')
     # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
-    path_out_figs = '/nbi/home/meyerbe/paper_CP'
+    # path_out_figs = '/nbi/home/meyerbe/paper_CP'
+    path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP'
     print('Path Figures: ' + path_out_figs)
     print('')
 
@@ -86,17 +88,16 @@ def main():
         nx_1CP, nx_2CP, nx_3CP, dt_fields_1CP, dt_fields_2CP, dt_fields_3CP = set_input_output_parameters(args, case_name_1CP, case_name_2CP, case_name_3CP,
                                                                      path_1CP, path_2CP, path_3CP,
                                                                      case, case_xCP)
-
         ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, \
                 ic_arr_3CP, jc_arr_3CP, \
                 ic_2CP, jc_2CP, ic_3CP, jc_3CP = define_geometry(nx_1CP, nx_2CP, nx_3CP, sep)
-
         times = np.arange(t_ini[rst][i], t_final[rst][i], 100)
         print('times: ', times)
         print('')
 
 
         ''' Mass Flux '''
+        # read in flux (2D-field)
         filename_data = 'mass_flux_z' + str(zlevel) + '.nc'
         path_in = os.path.join(path_1CP, case, 'data_analysis', filename_data)
         print(path_in)
@@ -121,8 +122,14 @@ def main():
         root_in.close()
         ''' averaged mass flux '''
         tmin = t_ini[rst][i]
-        tmax = t_final[rst][i]
-        delta = 5       # averaging over band of withd delta_y=2*delta*dy=600m
+        if args.tmax:
+            tmax = np.int(args.tmax)
+        else:
+            tmax = t_final[rst][i]
+        if args.delta:
+            delta = np.int(args.delta)
+        else:
+            delta = 5       # averaging over band of withd delta_y=2*delta*dy=600m
         print('Mass flux: averaging from tmin='+str(tmin)+' to tmax='+str(tmax))
         it0 = np.where(time_mf_1CP == tmin)[0][0]#np.int(tmin / dt_fields_1CP)
         it1 = np.where(time_mf_1CP == tmax)[0][0]#np.int(tmax / dt_fields_1CP)
@@ -130,45 +137,97 @@ def main():
         MF_1CP = np.sum(mass_flux_1CP[it0:it1,:,:], axis=0)     # accumulate over time
         MF_pos_1CP = np.sum(mass_flux_pos_1CP[it0:it1,:,:], axis=0)     # accumulate over time
         MF_mean_1CP = np.mean(MF_1CP[:,jc_arr_1CP[0]-delta:jc_arr_1CP[0]+delta], axis=1)
-        MF_mean_1CP_ = np.mean(MF_1CP[ic_arr_1CP[0]-delta:ic_arr_1CP[0]+delta,:], axis=0)
+        coarseness = 2*delta
+        aux = jc_arr_1CP[0]/coarseness
+        MF_mean_1CP_= coarsening(MF_1CP, coarseness)[:,aux]
         MF_pos_mean_1CP = np.mean(MF_pos_1CP[:,jc_arr_1CP[0]-delta:jc_arr_1CP[0]+delta], axis=1)
-        MF_pos_mean_1CP_ = np.mean(MF_pos_1CP[ic_arr_1CP[0]-delta:ic_arr_1CP[0]+delta,:], axis=0)
+        MF_pos_mean_1CP_ = coarsening(MF_pos_1CP, coarseness)[:, aux]
         it0 = np.where(time_mf_2CP == tmin)[0][0]  # np.int(tmin / dt_fields_2CP)
         it1 = np.where(time_mf_2CP == tmax)[0][0]  # np.int(tmax / dt_fields_2CP)
         print('MF times 2CP: ', it0, it1)
         MF_2CP = np.sum(mass_flux_2CP[it0:it1, :, :], axis=0)  # accumulate over time
         MF_pos_2CP = np.sum(mass_flux_pos_2CP[it0:it1, :, :], axis=0)  # accumulate over time
         MF_mean_2CP = np.mean(MF_2CP[ic_2CP-delta:ic_2CP+delta,:], axis=0)
-        MF_mean_2CP_ = np.mean(MF_2CP[:,jc_2CP-delta:jc_2CP+delta], axis=1)
+        aux = ic_2CP/coarseness
+        MF_mean_2CP_ = coarsening(MF_2CP, coarseness)[aux,:]
         MF_pos_mean_2CP = np.mean(MF_pos_2CP[ic_2CP-delta:ic_2CP+delta,:], axis=0)
-        MF_pos_mean_2CP_ = np.mean(MF_pos_2CP[:,jc_2CP-delta:jc_2CP+delta], axis=1)
+        MF_pos_mean_2CP_ = coarsening(MF_pos_2CP, coarseness)[aux,:]
         it0 = np.where(time_mf_3CP == tmin)[0][0]  # np.int(tmin / dt_fields_3CP)
         it1 = np.where(time_mf_3CP == tmax)[0][0]  # np.int(tmax / dt_fields_3CP)
         print('MF times 3CP: ', it0, it1)
         MF_3CP = np.sum(mass_flux_3CP[it0:it1, :, :], axis=0)  # accumulate over time
         MF_pos_3CP = np.sum(mass_flux_pos_3CP[it0:it1, :, :], axis=0)  # accumulate over time
         MF_mean_3CP = np.mean(MF_3CP[:,jc_3CP-delta:jc_3CP+delta], axis=1)
-        MF_mean_3CP_ = np.mean(MF_3CP[ic_3CP-delta:ic_3CP+delta,:], axis=0)
+        aux = jc_3CP/coarseness
+        MF_mean_3CP_ = coarsening(MF_3CP, coarseness)[:,aux]
         MF_pos_mean_3CP = np.mean(MF_pos_3CP[:,jc_3CP-delta:jc_3CP+delta], axis=1)
-        MF_pos_mean_3CP_ = np.mean(MF_pos_3CP[ic_3CP-delta:ic_3CP+delta,:], axis=0)
+        MF_pos_mean_3CP_ = coarsening(MF_pos_3CP, coarseness)[:,aux]
+
+        MF_mean_1CP_smooth = running_mean(MF_mean_1CP, coarseness)
+        MF_mean_2CP_smooth = running_mean(MF_mean_2CP, coarseness)
+        MF_mean_3CP_smooth = running_mean(MF_mean_3CP, coarseness)
+        MF_pos_mean_1CP_smooth = running_mean(MF_pos_mean_1CP, coarseness)
+        MF_pos_mean_2CP_smooth = running_mean(MF_pos_mean_2CP, coarseness)
+        MF_pos_mean_3CP_smooth = running_mean(MF_pos_mean_3CP, coarseness)
+        print('')
+
+        ''' CP height '''
+        filename_CP_height = 'CP_height_' + case + '_sth0.5' + '.nc'
+        print(os.path.join(path_1CP, case, 'data_analysis', filename_CP_height))
+        root_in = nc.Dataset(os.path.join(path_1CP, case, 'data_analysis', filename_CP_height), 'r')
+        time_CPheight_1CP = root_in.groups['timeseries'].variables['time'][:]
+        CP_height_1CP = root_in.groups['fields_2D'].variables['CP_height_2d'][:, :, :]
+        root_in.close()
+        filename_CP_height = 'CP_height_' + case_xCP + '_sth0.5' + '.nc'
+        print(os.path.join(path_2CP, case_xCP, 'data_analysis', filename_CP_height))
+        root_in = nc.Dataset(os.path.join(path_2CP, case_xCP, 'data_analysis', filename_CP_height), 'r')
+        time_CPheight_2CP = root_in.groups['timeseries'].variables['time'][:]
+        CP_height_2CP = root_in.groups['fields_2D'].variables['CP_height_2d'][:, :, :]
+        root_in.close()
+        print(os.path.join(path_3CP, case_xCP, 'data_analysis', filename_CP_height))
+        root_in = nc.Dataset(os.path.join(path_3CP, case_xCP, 'data_analysis', filename_CP_height), 'r')
+        time_CPheight_3CP = root_in.groups['timeseries'].variables['time'][:]
+        CP_height_3CP = root_in.groups['fields_2D'].variables['CP_height_2d'][:, :, :]
+        root_in.close()
+
+        global dt_CP_height_1CP, dt_CP_height_2CP, dt_CP_height_3CP
+        dt_CP_height_1CP = time_CPheight_1CP[1] - time_CPheight_1CP[0]
+        dt_CP_height_2CP = time_CPheight_2CP[1] - time_CPheight_2CP[0]
+        dt_CP_height_3CP = time_CPheight_3CP[1] - time_CPheight_3CP[0]
+        print('dt CP height: ', dt_CP_height_1CP, dt_CP_height_2CP, dt_CP_height_3CP)
+        print('')
+
+
+
+        # plot_collision_massflux_CPheight_test(CP_height_1CP, CP_height_2CP, CP_height_3CP,
+        #                                       time_CPheight_2CP, time_CPheight_3CP,
+        #                                       t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
+        #                                       ic_2CP, jc_2CP, ic_3CP, jc_3CP,
+        #                                       del_x_min[str(sep)], del_x_min[str(sep)],
+        #                                       case, case_xCP,
+        #                                       times, nx_1CP, nx_2CP, nx_3CP, path_out_figs)
 
         fig_name = 'collisions_massflux_CPheight_' + case_xCP + '_123.png'
-        plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3CP,
-                                         #time_CPheight_1CP, time_CPheight_2CP, time_CPheight_3CP,
+        plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP,
+                                         time_CPheight_1CP, time_CPheight_2CP, time_CPheight_3CP,
                                          MF_1CP, MF_2CP, MF_3CP, MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
+                                         MF_mean_1CP_smooth, MF_mean_2CP_smooth, MF_mean_3CP_smooth,
                                          t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
                                          delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
                                          ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
-                                         xmin_3CP[i], xmax_3CP[i], ymin_3CP[i],
+                                         del_x_min[str(sep)], del_x_max[str(sep)], del_y_min[str(sep)],
                                          times, nx_1CP, nx_2CP, nx_3CP, path_out_figs, fig_name)
 
 
         fig_name = 'collisions_massflux_pos_CPheight_' + case_xCP + '_123.png'
-        plot_collision_massflux_CPheight(MF_pos_1CP, MF_pos_2CP, MF_pos_3CP, MF_pos_mean_1CP, MF_pos_mean_2CP, MF_pos_mean_3CP,
+        plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP,
+                                         time_CPheight_1CP, time_CPheight_2CP, time_CPheight_3CP,
+                                         MF_pos_1CP, MF_pos_2CP, MF_pos_3CP, MF_pos_mean_1CP, MF_pos_mean_2CP, MF_pos_mean_3CP,
+                                         MF_pos_mean_1CP_smooth, MF_pos_mean_2CP_smooth, MF_pos_mean_3CP_smooth,
                                          t_ini[rst][i], t_2CP[rst][i], t_3CP[rst][i], t_final[rst][i],
                                          delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
                                          ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
-                                         xmin_3CP[i], xmax_3CP[i], ymin_3CP[i],
+                                         del_x_min[str(sep)], del_x_max[str(sep)], del_y_min[str(sep)],
                                          times, nx_1CP, nx_2CP, nx_3CP, path_out_figs, fig_name)
 
 
@@ -177,16 +236,15 @@ def main():
     return
 
 
-
-
-# _______________________________________________________
-def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3CP,
-                                     #time_CPheight_1CP, time_CPheight_2CP, time_CPheight_3CP,
+# ----------------------------------------------------------------------
+def plot_collision_massflux_CPheight(CP_height_1CP, CP_height_2CP, CP_height_3CP,
+                                     time_CPheight_1CP, time_CPheight_2CP, time_CPheight_3CP,
                                      MF_1CP, MF_2CP, MF_3CP, MF_mean_1CP, MF_mean_2CP, MF_mean_3CP,
+                                     MF_mean_1CP_smooth, MF_mean_2CP_smooth, MF_mean_3CP_smooth,
                                      t_ini, t_2CP, t_3CP, t_final,
                                      delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
                                      ic_arr_1CP, jc_arr_1CP, ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
-                                     xmin, xmax, ymin,
+                                     del_x_min, del_x_max, del_y_min,
                                      times, nx_1CP, nx_2CP, nx_3CP, path_out_figs, fig_name):
 
     ncol = 5
@@ -201,55 +259,65 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
     axis2 = axis_[1,:]
 
     ''' Mass Flux '''
+    b = ic_arr_3CP[2]-ic_arr_3CP[0]
     ax = axis[1]
-    ax.plot(np.arange(nx_1CP[0]) - jc_arr_1CP[0], MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
-    ax.plot(np.arange(nx_2CP[1]) - jc_arr_2CP[0], MF_mean_2CP, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
-    ax.plot(np.arange(nx_3CP[0]) - ic_arr_3CP[0], MF_mean_3CP, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
-    ax.legend(loc=4)
-    # ax.set_xlim(xmin - ic_3CP, xmax - ic_3CP)
+    ax.plot(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, MF_mean_1CP_smooth, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
+    ax.plot(np.arange(nx_2CP[1])-jc_2CP, MF_mean_2CP_smooth, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
+    ax.plot(np.arange(nx_3CP[0])-ic_arr_3CP[0], MF_mean_3CP_smooth, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
+    ax.plot(np.arange(nx_1CP[0])-ic_arr_1CP[0] + b, MF_mean_1CP, color=cm_gray(.1), alpha=0.3)
+    ax.plot(np.arange(nx_2CP[1])-jc_2CP, MF_mean_2CP, color=cm_bwr_r(.8), alpha=0.3)
+    ax.plot(np.arange(nx_3CP[0])-ic_arr_3CP[0], MF_mean_3CP, color=cm_bwr(.8), alpha=0.3)
+    ax.legend(loc='best')
+    ax.set_xlim(-del_x_min, del_x_max)
     # ax.set_ylim(-2, np.ceil(np.amax(MF_mean_3CP)))
     ax.set_ylabel(r'Integrated Mass Flux  [kg/m$^2$]')
-    ax = axis2[1]
-    # ax.plot(np.arange(nx_1CP[0]) - jc_arr_1CP[0], MF_mean_1CP, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
-    # ax.plot(np.arange(nx_2CP[1]) - ic_arr_2CP[0], MF_mean_2CP, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
-    # ax.plot(np.arange(nx_3CP[0]) - ic_arr_3CP[0], MF_mean_3CP, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
-    ax.legend(loc=4)
-    ax.set_ylabel(r'Integrated Mass Flux  [kg/m$^2$]')
+    # ax = axis2[1]
+    # ax.plot(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, MF_mean_1CP_smooth, label='single CP', color=cm_gray(.1))  # color=colorlist2[0])
+    # ax.plot(np.arange(nx_2CP[1])-jc_2CP, MF_mean_2CP_smooth, label='double collision', color=cm_bwr_r(.8))  # color=colorlist2[0])
+    # ax.plot(np.arange(nx_3CP[0])-ic_arr_3CP[0], MF_mean_3CP_smooth, label='triple collision', color=cm_bwr(.8))  # color=colorlist2[1])
+    # ax.plot(np.arange(nx_1CP[0])-ic_arr_1CP[0] + b, MF_mean_1CP, label='single CP', color=cm_gray(.1), alpha=0.5)
+    # ax.plot(np.arange(nx_2CP[1])-jc_2CP, MF_mean_2CP, label='double collision', color=cm_bwr_r(.8), alpha=0.5)
+    # ax.plot(np.arange(nx_3CP[0])-ic_arr_3CP[0], MF_mean_3CP, label='triple collision', color=cm_bwr(.8), alpha=0.5)
+    # # ax.legend(loc=4)
+    # ax.set_xlim(-del_x_min, del_x_max)
+    # ax.set_ylabel(r'Integrated Mass Flux  [kg/m$^2$]')
+
+
 
 
     ''' Mass Flux 2D '''
     ax = axis[2]
     b = ic_arr_3CP[2]-ic_arr_3CP[0]
-    pcm = ax.contourf(MF_1CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
+    pcm = ax.contourf(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
     # pcm = ax.pcolormesh(np.arange(nx_1CP[0])-ic_arr_1CP[0]+b, np.arange(nx_1CP[1])-jc_arr_1CP[0], MF_1CP.T,
     #                     norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
     rect1 = mpatches.Rectangle((-ic_arr_1CP[0], -delta), nx_1CP[0], 2*delta, fill=True,
                                linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
     ax.add_patch(rect1)
-    # ax.set_xlim(xmin-ic_3CP, ic_3CP-xmin)
-    # ax.set_ylim(ymin-ic_3CP, ic_3CP-ymin)
+    ax.set_xlim(-del_y_min+b, del_y_min+b)
+    ax.set_ylim(-del_y_min, del_y_min)
     ax = axis[3]
-    pcm = ax.contourf(MF_2CP, levels=lvls, cmap=cm_bw)
+    pcm = ax.contourf(np.arange(nx_2CP[1])-jc_2CP, np.arange(nx_2CP[0])-ic_2CP, MF_2CP, levels=lvls, cmap=cm_bw)
     # pcm = ax.pcolormesh(np.arange(nx_2CP[1])-jc_2CP, np.arange(nx_2CP[0])-ic_2CP, MF_2CP,
-    #                    # norm = colors.SymLogNorm(linthresh=0.03,linscale=0.03,vmin=-max,vmax=max),
-    #                    # norm = colors.PowerNorm(),
-    #                    norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
+    #                     # norm = colors.SymLogNorm(linthresh=0.03,linscale=0.03,vmin=-max,vmax=max),
+    #                     # norm = colors.PowerNorm(),
+    #                     norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
     rect = mpatches.Rectangle((-jc_2CP, -delta), nx_2CP[1], 2*delta, fill=True,
                               linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
     ax.add_patch(rect)
-    #ax.set_xlim(xmin-ic_3CP, ic_3CP-xmin)
-    #ax.set_ylim(ymin-ic_3CP, ic_3CP-ymin)
+    ax.set_xlim(-del_x_min, del_x_min)
+    ax.set_ylim(-del_y_min, del_y_min)
     ax = axis[4]
-    pcm = ax.contourf(MF_3CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
-    # pcm = ax.pcolormesh(np.arange(nx_3CP[0])-ic_arr_3CP[0], np.arange(nx_3CP[1])-jc_3CP, MF_3CP.T,
+    pcm = ax.contourf(np.arange(nx_3CP[0])-ic_arr_3CP[0], np.arange(nx_3CP[1])-jc_3CP, MF_3CP.T, levels=lvls, cmap=cm_bw)  # cmap='RdBu_r')
+    # pcm = ax.pcolormesh(np.arange(nx_3CP[0])-ic_3CP, np.arange(nx_3CP[1])-jc_3CP, MF_3CP.T,
     #                     norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cm_bw)  # cmap='RdBu_r')
     plt.colorbar(pcm, ax=ax, extend='both')
     # rect2 = mpatches.Rectangle((-100, jc_arr_3CP[2] - delta), 300, 2*delta, fill=True,
     rect2 = mpatches.Rectangle((-100, -delta), 300, 2*delta, fill=True,
                                linewidth=0, edgecolor='r', facecolor='lightyellow', alpha=0.3)
     ax.add_patch(rect2)
-    # ax.set_xlim(xmin-ic_3CP, xmax-ic_3CP)
-    # ax.set_ylim(ymin-ic_3CP, ic_3CP-ymin)
+    ax.set_xlim(-del_x_min, del_x_max)
+    ax.set_ylim(-del_y_min, del_y_min)
     for ax in axis[2:].flat:
         ax.set_aspect('equal')
     axis[2].set_ylabel('y [km]')
@@ -262,10 +330,10 @@ def plot_collision_massflux_CPheight(#CP_height_1CP, CP_height_2CP, CP_height_3C
     for ax in axis[2:]:
         ax.set_yticklabels([np.int(ti*1e-3*dx[0]) for ti in ax.get_yticks()])
 
-    # textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
-    # axis[0].text(xmin-ic_3CP+15, 900, 'a)', fontsize=18, bbox=textprops)
-    # axis[1].text(xmin-ic_3CP+15, np.amax(MF_mean_3CP)-.3, 'b)', fontsize=18, bbox=textprops)
-    # axis[2].text(xmin-ic_3CP+15, ic_3CP-ymin-30, 'c)', fontsize=21, bbox=textprops)
+    textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
+    axis[0].text(0-ic_arr_1CP[0]+15, 900, 'a)', fontsize=18, bbox=textprops)
+    # axis[1].text(xmin-ic_arr_2CP[0]+15, np.amax(MF_mean_3CP)-.3, 'b)', fontsize=18, bbox=textprops)
+    # axis[2].text(xmin-ic_arr_3CP[0]+15, ic_3CP-ymin-30, 'c)', fontsize=21, bbox=textprops)
     # axis[3].text(xmin-ic_3CP+15, ic_3CP-ymin-30, 'd)', fontsize=21, bbox=textprops)
     # axis[4].text(xmin-ic_3CP+15, ic_3CP-ymin-30, 'e)', fontsize=21, bbox=textprops)
 
@@ -327,7 +395,7 @@ def define_geometry(nx_1CP, nx_2CP, nx_3CP, sep):
     jc_arr_1CP = [np.int(nx_1CP[1]/2)]
 
     # 2-CP simulation
-    isep = np.int(np.round(sep / dx[0]))
+    isep = np.int(np.round(sep*1.e3/ dx[0]))
     jsep = 0
     ic_2CP = np.int(np.round(nx_2CP[0] / 2))
     jc_2CP = np.int(np.round(nx_2CP[1] / 2))
@@ -339,7 +407,7 @@ def define_geometry(nx_1CP, nx_2CP, nx_3CP, sep):
     jc_arr_2CP = [jc1, jc2]
 
     # 3-CP simulation
-    i_d = np.int(np.round(sep / dx[0]))
+    i_d = np.int(np.round(sep*1.e3 / dx[0]))
     idhalf = np.int(np.round(i_d / 2))
     a = np.int(np.round(i_d * np.sin(60.0 / 360.0 * 2 * np.pi)))  # sin(60 degree) = np.sqrt(3)/2
     r_int = np.int(np.sqrt(3.) / 6 * i_d)  # radius of inscribed circle
