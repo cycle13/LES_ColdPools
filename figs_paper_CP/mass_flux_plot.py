@@ -71,7 +71,6 @@ def main():
     # print('d='+d)
     # print('')
 
-
     time_windows = {}
     if rstar == 2000:
         time_windows['10'] = [600, 750, 3600]
@@ -96,7 +95,7 @@ def main():
     root_in.close()
     print(os.path.join(path_3CP, 'data_analysis', filename_data_3CP))
     root_in = nc.Dataset(os.path.join(path_3CP, 'data_analysis', filename_data_3CP), 'r')
-    mass_flux_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:, :, :]
+    mass_flux_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D'][:,:,:]
     # mass_flux_pos_3CP = root_in.groups['fields_2D'].variables['mass_flux_2D_positive'][:,:,:]
     # time_data_3CP = root_in.groups['timeseries'].variables['time'][:]
     root_in.close()
@@ -126,30 +125,30 @@ def main():
     # print(time_CPheight_2CP)
     # print(time_CPheight_3CP)
 
-    # fig_name = 'collisions_massflux_CPheight_' + case + '.png'
-    # timerange = np.arange(tmin, tmax+100, 100)
-    # time_bins = time_windows[str(d)][:-1]
-    # time_bins.insert(0,tmin)
-    # time_bins.append(tmax)
-    # print('------', time_bins)
-    # plot_collision_massflux_CPheight(CP_height_2CP, CP_height_3CP, time_CPheight_2CP, time_CPheight_3CP,
-    #                                  MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
+    fig_name = 'collisions_massflux_CPheight_' + case + '.png'
+    timerange = np.arange(tmin, tmax+100, 100)
+    time_bins = time_windows[str(d)][:-1]
+    time_bins.insert(0,tmin)
+    time_bins.append(tmax)
+    print('------', time_bins)
+    plot_collision_massflux_CPheight(CP_height_2CP, CP_height_3CP, time_CPheight_2CP, time_CPheight_3CP,
+                                     MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
+                            delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
+                            ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
+                            case, timerange, time_bins, path_out_figs, fig_name)
+
+    # fig_name = 'collisions_massflux_' + case + '.png'
+    # plot_collision_massflux(MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
     #                         delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
     #                         ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
-    #                         case, timerange, time_bins, path_out_figs, fig_name)
+    #                         case, path_out_figs, fig_name)
     #
-    # # fig_name = 'collisions_massflux_' + case + '.png'
-    # # plot_collision_massflux(MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
-    # #                         delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
-    # #                         ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
-    # #                         case, path_out_figs, fig_name)
-    # #
-    # #
-    # # # fig_name = 'collisions_massflux_2CP_3CP.png'
-    # # # plot_collision_massflux_testfigures(MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
-    # # #                                     delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
-    # # #                                     ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
-    # # #                                     case, time_windows, path_out_figs, fig_name):
+    #
+    # # fig_name = 'collisions_massflux_2CP_3CP.png'
+    # # plot_collision_massflux_testfigures(MF_2CP, MF_3CP, MF_mean_2CP, MF_mean_3CP,
+    # #                                     delta, ic_2CP, jc_2CP, ic_3CP, jc_3CP,
+    # #                                     ic_arr_2CP, jc_arr_2CP, ic_arr_3CP, jc_arr_3CP,
+    # #                                     case, time_windows, path_out_figs, fig_name):
     return
 
 

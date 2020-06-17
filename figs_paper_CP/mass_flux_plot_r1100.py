@@ -13,7 +13,7 @@ import matplotlib.cbook as cbook
 import time
 
 execfile('settings.py')
-label_size = 15
+label_size = 18
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
 plt.rcParams['lines.linewidth'] = 2
@@ -53,8 +53,8 @@ def main():
     print('path 3CP:   ' + path_3CP)
     path_data = os.path.join(path_3CP, 'data_analysis')
     # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP_single'
-    path_out_figs = '/nbi/home/meyerbe/paper_CP'
-    # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP'
+    # path_out_figs = '/nbi/home/meyerbe/paper_CP'
+    path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP'
     print('Path Figures: ' + path_out_figs)
     print('')
 
@@ -80,7 +80,7 @@ def main():
         del_y_min['15'] = 50
 
 
-    for i,sep in enumerate(d_range[rst][:1]):
+    for i,sep in enumerate(d_range[rst][:]):
         print('--- d='+str(sep)+'km ---')
         case_xCP = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar) + '_d' + str(sep) + 'km'
 

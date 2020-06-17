@@ -13,7 +13,7 @@ import matplotlib.cbook as cbook
 import time
 
 execfile('settings.py')
-label_size = 15
+label_size = 18
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
 plt.rcParams['lines.linewidth'] = 2
