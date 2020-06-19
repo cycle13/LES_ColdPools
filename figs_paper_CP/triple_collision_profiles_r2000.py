@@ -6,19 +6,21 @@ import json as simplejson
 import os
 import matplotlib.patches as mpatches
 
-label_size = 8
+execfile('settings.py')
+
+label_size = 15
 plt.rcParams['xtick.labelsize'] = label_size
 plt.rcParams['ytick.labelsize'] = label_size
+plt.rcParams['lines.markersize'] = 2
 plt.rcParams['lines.linewidth'] = 2
 plt.rcParams['legend.fontsize'] = 8
-plt.rcParams['axes.labelsize'] = 12
-plt.rcParams['lines.markersize'] = 2
+# plt.rcParams["legend.edgecolor"] = 'w'
+plt.rcParams['axes.labelsize'] = 18
 # plt.rcParams['xtick.direction']='out'
 # plt.rcParams['ytick.direction']='out'
 # plt.rcParams['figure.titlesize'] = 35
 plt.rcParams['text.usetex'] = 'true'
 
-execfile('settings.py')
 
 
 def main():
@@ -126,7 +128,7 @@ def main():
 
     # plotting limits
     if rstar == 1100:
-        lim_single = [0,0,0]
+        lim_single = [50, 50, 20]
         lim_double = [[100, 200], [100, 250], [100, 220]]
         lim_triple = [120, 220, 300]
     elif rstar == 2000:
@@ -146,7 +148,12 @@ def main():
 
 
     ''' (A) plot from local (unaveraged) min / max in subdomains'''
-    ''' compute min/max values in subdomains (circle, rectangles) '''
+    ''' compute min/max values in subdomains '''
+    # Subdomains:
+    # - single CP: circle
+    # - double CP collision: rectangles along collision line
+    # - triple CP collision: square around collision point
+
     # path_out = os.path.join(path_single, id_list_s[0], 'data_analysis')
     # filename = 'minmax_subdomains_noaverage.nc'
     # w_min, w_max, th_min, th_max, s_min, s_max, z, z_half = \
@@ -168,7 +175,7 @@ def main():
     #         os.mkdir(path_out)
     #     dump_minmax_file(w_min_d, w_max_d, th_min_d, th_max_d, s_min_d, s_max_d,
     #                      z, z_half, kmax, times, filename, path_out)
-
+    #
     #     w_min_t, w_max_t, th_min_t, th_max_t, s_min_t, s_max_t, z, z_half \
     #         = compute_subdomains_max_triple(path_triple, id_list_t[d], case_name_triple,
     #                                         d, dstar,
@@ -198,7 +205,7 @@ def main():
     filename = 'minmax_domain_noaverage.nc'
     ''' compute domain min/max values '''
     # w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half \
-    #      = compute_domain_max(path_single, id_list_s[0], case_name_single, kmax, times, nt)
+    #     = compute_domain_max(path_single, id_list_s[0], case_name_single, kmax, times, nt)
     # path_out = os.path.join(path_single, id_list_s[0], 'data_analysis')
     # dump_minmax_file(w_min_s, w_max_s, th_min_s, th_max_s, s_min_s, s_max_s, z, z_half, kmax, times, filename, path_out)
     #  w_min_s, w_max_s, th_min_s, th_max_s, z, z_half \
@@ -230,10 +237,14 @@ def main():
                                 path_single, path_double, path_triple,
                                 filename, path_out_figs)
 
+    # plot separately for all three simulations
+    # # fig_name = 'collisions_minmax_timewindows_domain_unaveraged_rstar' + str(rstar) + '_d' + str(dstar) + 'km_w.png'
     # plot_minmax_alltimes_separate(rstar, d_range, id_list_s, id_list_d, id_list_t,
     #                               t_ini, t_2CP, t_3CP, t_final,
     #                               path_single, path_double, path_triple,
     #                               filename, path_out_figs)
+
+
 
 
 
@@ -243,77 +254,77 @@ def main():
     # - double - average along collision line
     # - triple - average about a few grid points at center
 
-    # # # fig_name = 'collisions_minmax_profiles_domain.png'
-    # # # zrange = np.arange(nz) * dx[2]
-    # # # fig, axis = plt.subplots(1, 3, figsize=(14, 5))
-    # # # ax0 = axis[0]
-    # # # ax1 = axis[1]
-    # # # for i_id, ID in enumerate(id_list):
-    # # #     al = np.double(i_id + 1) / (ncases + 1)
-    # # #     ax0.plot(ts_max_w[i_id, :nz], zrange, color='b', alpha=al, label='single, ' + ID)
-    # # #     ax1.plot(ts_min_th[i_id, :nz], zrange, color='b', alpha=al, label='single, ' + ID)
-    # # # ax0.legend(loc='upper left', bbox_to_anchor=(-0.1, -0.1),
-    # # #            fancybox=False, shadow=False, ncol=3, fontsize=9)
-    # # # # ax1.legend(loc='upper left', bbox_to_anchor=(0.1, -0.1),
-    # # # #            fancybox=False, shadow=False, ncol=1, fontsize=9)
-    # # # ax0.set_ylabel('height [km]')
-    # # # ax0.set_xlabel('max(w) [m/s]')
-    # # # ax1.set_xlabel(r'min(potential temperature  ) [K]')
-    # # # for ax in axis.flatten():
-    # # #     y_ticks = [np.int(ti * 1e-3) for ti in ax.get_yticks()]
-    # # #     ax.set_yticklabels(y_ticks)
-    # # # plt.subplots_adjust(bottom=0.18, right=.95, left=0.1, top=0.9, hspace=0.4)
-    # # # plt.savefig(os.path.join(path_out_figs, fig_name))
-    # # # plt.close()
-    # # #
-    # # # time_bins = np.ndarray((ncases,3), dtype=np.double)
-    # # # time_bins[0,:] = [1000, 1400, times[-1]]
-    # # # time_bins[1,:] = [4500, 5900, times[-1]]
-    # # # # time_bins[1,:] = [2300, 3200, times[-1]]
-    # # # # time_bins[2,:] = [4500, 5900, times[-1]]
-    # # # time_bins_ = {}
-    # # # time_bins_['d10km'] = [1000, 1400, times[-1]]
-    # # # time_bins_['d15km'] = [2300, 3200, times[-1]]
-    # # # time_bins_['d20km'] = [4500, 5900, times[-1]]
-    # # #
-    # # # fig_name = 'collisions_minmax_profiles.png'
-    # # # zrange = np.arange(nz) * dx[2]
-    # # # fig, axis = plt.subplots(1, 3, figsize=(14, 5))
-    # # # ax0 = axis[0]
-    # # # ax1 = axis[1]
-    # # # for i_id, ID in enumerate(id_list):
-    # # #     print(ID[-5:])
-    # # #     # it_s = np.int(times_array_w[i_id, 0]/dt_fields)
-    # # #     # it_d = np.int(times_array_w[i_id, 1]/dt_fields)
-    # # #     # it_s = np.int(time_bins[i_id, 0]/dt_fields)
-    # # #     # it_d = np.int(time_bins[i_id, 1]/dt_fields)
-    # # #     it_s = np.int(time_bins_[ID[-5:]][0]/dt_fields)
-    # # #     it_d = np.int(time_bins_[ID[-5:]][1]/dt_fields)
-    # # #     # it_t = times_array_w[i_id, 2]
-    # # #     print('it single, double: ', it_s, it_d)
-    # # #     al = np.double(i_id + 1) / (ncases + 1)
-    # # #     aux = np.amax(prof_max_w[i_id, :it_s, :nz], axis=0)
-    # # #     print('', prof_max_w.shape, aux.shape, nz, zrange.shape)
-    # # #     ax0.plot(np.amax(prof_max_w[i_id, :it_s, :nz], axis=0), zrange, color='b', alpha=al, label='single, ' + ID)
-    # # #     # ax0.plot(prof_max_w[i_id, :nz], zrange, '-', color='g', alpha=al, label='double')
-    # # #     # ax0.plot(prof_max_w[i_id, :nz], zrange, '-', color='r', alpha=al, label='triple')
-    # # # #     ax1.plot(prof_min_th[i_id, :nz], zrange, color='b', alpha=al, label='single, ' + ID)
-    # # # #     # ax1.plot(prof_min_th[i_id, :nz], zrange, '-', color='g', alpha=al, label='double')
-    # # # #     # ax1.plot(prof_min_th[i_id, :nz], zrange, '-', color='r', alpha=al, label='triple')
-    # # # # ax0.legend(loc='upper left', bbox_to_anchor=(-0.1, -0.1),
-    # # # #            fancybox=False, shadow=False, ncol=3, fontsize=9)
-    # # # # # ax1.legend(loc='upper left', bbox_to_anchor=(0.1, -0.1),
-    # # # # #            fancybox=False, shadow=False, ncol=1, fontsize=9)
-    # # # ax0.set_ylabel('height [km]')
-    # # # ax0.set_xlabel('max(w) [m/s]')
-    # # # ax1.set_xlabel(r'min(potential temperature  ) [K]')
-    # # # # ax1.set_xlim(250,350)
-    # # # for ax in axis.flatten():
-    # # #     y_ticks = [np.int(ti * 1e-3) for ti in ax.get_yticks()]
-    # # #     ax.set_yticklabels(y_ticks)
-    # # # plt.subplots_adjust(bottom=0.18, right=.95, left=0.1, top=0.9, hspace=0.4)
-    # # # plt.savefig(os.path.join(path_out_figs, fig_name))
-    # # # plt.close()
+    # fig_name = 'collisions_minmax_profiles_domain.png'
+    # zrange = np.arange(nz) * dx[2]
+    # fig, axis = plt.subplots(1, 3, figsize=(14, 5))
+    # ax0 = axis[0]
+    # ax1 = axis[1]
+    # for i_id, ID in enumerate(id_list):
+    #     al = np.double(i_id + 1) / (ncases + 1)
+    #     ax0.plot(ts_max_w[i_id, :nz], zrange, color='b', alpha=al, label='single, ' + ID)
+    #     ax1.plot(ts_min_th[i_id, :nz], zrange, color='b', alpha=al, label='single, ' + ID)
+    # ax0.legend(loc='upper left', bbox_to_anchor=(-0.1, -0.1),
+    #            fancybox=False, shadow=False, ncol=3, fontsize=9)
+    # # ax1.legend(loc='upper left', bbox_to_anchor=(0.1, -0.1),
+    # #            fancybox=False, shadow=False, ncol=1, fontsize=9)
+    # ax0.set_ylabel('height [km]')
+    # ax0.set_xlabel('max(w) [m/s]')
+    # ax1.set_xlabel(r'min(potential temperature  ) [K]')
+    # for ax in axis.flatten():
+    #     y_ticks = [np.int(ti * 1e-3) for ti in ax.get_yticks()]
+    #     ax.set_yticklabels(y_ticks)
+    # plt.subplots_adjust(bottom=0.18, right=.95, left=0.1, top=0.9, hspace=0.4)
+    # plt.savefig(os.path.join(path_out_figs, fig_name))
+    # plt.close()
+    #
+    # time_bins = np.ndarray((ncases,3), dtype=np.double)
+    # time_bins[0,:] = [1000, 1400, times[-1]]
+    # time_bins[1,:] = [4500, 5900, times[-1]]
+    # # time_bins[1,:] = [2300, 3200, times[-1]]
+    # # time_bins[2,:] = [4500, 5900, times[-1]]
+    # time_bins_ = {}
+    # time_bins_['d10km'] = [1000, 1400, times[-1]]
+    # time_bins_['d15km'] = [2300, 3200, times[-1]]
+    # time_bins_['d20km'] = [4500, 5900, times[-1]]
+    #
+    # fig_name = 'collisions_minmax_profiles.png'
+    # zrange = np.arange(nz) * dx[2]
+    # fig, axis = plt.subplots(1, 3, figsize=(14, 5))
+    # ax0 = axis[0]
+    # ax1 = axis[1]
+    # for i_id, ID in enumerate(id_list):
+    #     print(ID[-5:])
+    #     # it_s = np.int(times_array_w[i_id, 0]/dt_fields)
+    #     # it_d = np.int(times_array_w[i_id, 1]/dt_fields)
+    #     # it_s = np.int(time_bins[i_id, 0]/dt_fields)
+    #     # it_d = np.int(time_bins[i_id, 1]/dt_fields)
+    #     it_s = np.int(time_bins_[ID[-5:]][0]/dt_fields)
+    #     it_d = np.int(time_bins_[ID[-5:]][1]/dt_fields)
+    #     # it_t = times_array_w[i_id, 2]
+    #     print('it single, double: ', it_s, it_d)
+    #     al = np.double(i_id + 1) / (ncases + 1)
+    #     aux = np.amax(prof_max_w[i_id, :it_s, :nz], axis=0)
+    #     print('', prof_max_w.shape, aux.shape, nz, zrange.shape)
+    #     ax0.plot(np.amax(prof_max_w[i_id, :it_s, :nz], axis=0), zrange, color='b', alpha=al, label='single, ' + ID)
+    #     # ax0.plot(prof_max_w[i_id, :nz], zrange, '-', color='g', alpha=al, label='double')
+    #     # ax0.plot(prof_max_w[i_id, :nz], zrange, '-', color='r', alpha=al, label='triple')
+    # #     ax1.plot(prof_min_th[i_id, :nz], zrange, color='b', alpha=al, label='single, ' + ID)
+    # #     # ax1.plot(prof_min_th[i_id, :nz], zrange, '-', color='g', alpha=al, label='double')
+    # #     # ax1.plot(prof_min_th[i_id, :nz], zrange, '-', color='r', alpha=al, label='triple')
+    # # ax0.legend(loc='upper left', bbox_to_anchor=(-0.1, -0.1),
+    # #            fancybox=False, shadow=False, ncol=3, fontsize=9)
+    # # # ax1.legend(loc='upper left', bbox_to_anchor=(0.1, -0.1),
+    # # #            fancybox=False, shadow=False, ncol=1, fontsize=9)
+    # ax0.set_ylabel('height [km]')
+    # ax0.set_xlabel('max(w) [m/s]')
+    # ax1.set_xlabel(r'min(potential temperature  ) [K]')
+    # # ax1.set_xlim(250,350)
+    # for ax in axis.flatten():
+    #     y_ticks = [np.int(ti * 1e-3) for ti in ax.get_yticks()]
+    #     ax.set_yticklabels(y_ticks)
+    # plt.subplots_adjust(bottom=0.18, right=.95, left=0.1, top=0.9, hspace=0.4)
+    # plt.savefig(os.path.join(path_out_figs, fig_name))
+    # plt.close()
 
     return
 
@@ -429,9 +440,9 @@ def compute_subdomains_max_double(path, ID, casename, d, dstar, rstar,
 
 
 def compute_subdomains_max_single(path, ID, casename,
-                           delta_s, kmax, times, nt,
-                           t_ini, t_2CP, t_3CP, t_final,
-                           r_av, d_range, path_out_figs):
+                                  delta_s, kmax, times, nt,
+                                  t_ini, t_2CP, t_3CP, t_final,
+                                  r_av, d_range, path_out_figs):
     print('single: compute max in subdomain')
     w_min = np.zeros((nt, kmax), dtype=np.double)
     w_max = np.zeros((nt, kmax), dtype=np.double)
@@ -710,7 +721,7 @@ def get_radius(fullpath_in, t0, cp_id, n_tracers, n_cps):
 # ----------------------------------------------------------------------
 def define_geometry(case_name_single, case_name_double, case_name_triple,
                     path_single, path_double, path_triple, id_list_s, id_list_d, id_list_t):
-    print 'define geometry'
+    print('define geometry')
 
     global nx_s, nx_d, nx_t
     nx_s = np.empty(3, dtype=np.int)
@@ -998,10 +1009,12 @@ def plot_minmax_timeseries_domain(rstar, d_range, id_list_s, id_list_d, id_list_
         axis[0, 2].set_title('double CP, collision line')
         axis[0, 3].set_title('triple CP, collision point')
         for ax in axis[:, 1].flat:
-            ax.set_ylabel('height z  [m]')
+            ax.set_ylabel('Height z  [m]')
+            ax.set_yticklabels([np.round(ti * 1e-3, 1) for ti in ax.get_yticks()])
         for ax in axis[0, 1:].flat:
             ax.set_xlabel('max(w)')
             ax.set_xlim(-0.1, maxw)
+            ax.set_xticklabels([np.round(ti,1) for ti in ax.get_xticks()])
         for ax in axis[1, 1:].flat:
             ax.set_xlim(298, 300.1)
             ax.set_xlabel('min(theta)')
@@ -1028,12 +1041,13 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
                                       t_2CP, t_3CP, t_final,
                                       path_single, path_double, path_triple,
                                       filename, path_out_figs):
+    path = os.path.join(path_single, id_list_s[0], 'data_analysis')
+    w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
     for d, dstar in enumerate(d_range):
         fig_name = 'collisions_minmax_alltimes_subdomain_unaveraged_rstar' + str(rstar) + '_d' + str(dstar) + 'km.png'
         zmax_plot = 3000.
         kmax_plot = np.int(zmax_plot / dx[2])
-        path = os.path.join(path_single, id_list_s[0], 'data_analysis')
-        w_max_s, th_min_s, s_min_s, z, z_half, t_s = read_in_minmax(kmax_plot, path, filename)
+
         path = os.path.join(path_double, id_list_d[d], 'data_analysis')
         w_max_d, th_min_d, s_min_d, z, z_half, t_d = read_in_minmax(kmax_plot, path, filename)
         path = os.path.join(path_triple, id_list_t[d], 'data_analysis')
@@ -1057,12 +1071,12 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
             cl = t0 * 1. / t_final[d]
 
             axis[0, 1].plot(w_max_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
-            #axis[0, 2].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
-            #axis[0, 3].plot(w_max_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[0, 2].plot(w_max_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[0, 3].plot(w_max_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
 
             axis[1, 1].plot(th_min_s[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
-            #axis[1, 2].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
-            #axis[1, 3].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[1, 2].plot(th_min_d[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
+            axis[1, 3].plot(th_min_t[it, :kmax_plot], z[:kmax_plot], color=cm(cl), label=lbl)
 
         axis[0, 1].set_title('single CP')
         axis[0, 2].set_title('double CP, collision line')
@@ -1084,12 +1098,12 @@ def plot_minmax_timeseries_subdomains(rstar, d_range, id_list_s, id_list_d, id_l
         axis[1, 0].set_ylim(th_min - .5, th_max)
         axis[1, 0].set_xlim(0, t_final[d])
 
-        for ax in axis[:, 2:].flat:
-            ax.axis('off')
+        # for ax in axis[:, 2].flat:
+        #     ax.axis('off')
 
         axis[0, 0].legend(loc=1, fontsize=12)
-        axis[0, 1].legend(loc='upper left', bbox_to_anchor=(1, 1.),
-                   fancybox=False, shadow=False, ncol=1, fontsize=12)
+        axis[0, 3].legend(loc='upper left', bbox_to_anchor=(1, 1.),
+                          fancybox=False, shadow=False, ncol=1, fontsize=12)
         plt.subplots_adjust(bottom=0.1, right=.9, left=0.05, top=0.95, hspace=0.2, wspace=0.1)
         plt.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
@@ -1108,7 +1122,7 @@ def plot_minmax_timewindows_domain(rstar, d_range, id_list_s, id_list_d, id_list
     kmax_plot = np.int(zmax_plot / dx[2])
     alpha_list = [1, .5, .2]
 
-    fig, axis = plt.subplots(2, 4, figsize=(14, 12), sharey='all')
+    fig, axis = plt.subplots(2, 4, figsize=(14, 10), sharey='all')
 
     maxw = 4.
     for ax in axis[0, :].flat:
