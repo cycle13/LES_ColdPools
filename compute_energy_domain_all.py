@@ -4,13 +4,17 @@ import matplotlib.mlab as mlab
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 import matplotlib.colors as colors
+from matplotlib.colors import LogNorm
 import netCDF4 as nc
 import argparse
 import json as simplejson
 import os
 
+execfile('settings.py')
+
 # compute potential temperature by integrating over anomaly
 #   PE = \int dz g * (th_anomaly(z) - th_env(z)) * z
+# KE ~ v**2 = (v_rad**2 + v_tan**2 + w**2)
 
 label_size = 8
 plt.rcParams['xtick.labelsize'] = label_size
@@ -39,35 +43,46 @@ def main():
     cm_grey = plt.cm.get_cmap('gist_gray_r')
     cm_hsv = plt.cm.get_cmap('hsv')
 
-    nml, dTh, z_params, r_params, tmin, tmax = set_input_parameters(args)
-    i0_center, j0_center = define_geometry(case_name, nml)
+    nml, tmin, tmax, times = set_input_parameters(args)
 
-    ng = len(z_params)
-    kmax = np.amax(z_params) + 2000./dx[2]
+    n_params = len(z_params)
+    kmax = np.int((np.amax(z_params) + 2000.)/dx[2])
+    nt = len(times)
+    print('kmax: '+str(kmax))
 
-    # KE = np.ndarray((ng, nt))
-    #     , KEd, KE_x
+    PE_computed = np.zeros((n_params, nt))
+    KE_computed = np.zeros((n_params, nt))
 
-    print ' '
-    for istar in range(ng):
+    print('')
+    for istar in range(n_params):
         zstar = z_params[istar]
         rstar = r_params[istar]
         irstar = np.int(np.round(rstar / dx[0]))
-        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
 
-        path_in = os.path.join(path_root, id)
-        path_fields = os.path.join(path_root, id, 'fields')
-        path_out = os.path.join(path_root, id, 'figs_CP_energy')
+        path_in = os.path.join(path_root, ID)
+        path_figs_out = os.path.join(path_root, ID, 'figs_CP_energy')
+        if not os.path.exists(path_figs_out):
+            os.mkdir(path_figs_out)
+        path_out = os.path.join(path_root, ID, 'data_analysis')
         if not os.path.exists(path_out):
             os.mkdir(path_out)
 
-        print('id', id)
-        print path_in
-        print path_out
+        print('IDs: ' + ID)
+        print('path in: ' + path_in)
+        print('path out: ' + path_out)
+
+        ic_arr, jc_arr, nx = define_geometry(case_name, ID)
 
         ''' create output file '''
-        filename = 'CP_energy_' + id + '.nc'
-        create_output_file(filename, path_out)
+        filename = 'CP_energy_' + ID + '.nc'
+        create_output_file(filename, path_out, times, nx)
+
+        ''' geometry '''
+        ic = ic_arr[0]
+        jc = jc_arr[0]
+        id = np.int(2*rstar*1./dx[0])
+        jd = id
 
         ''' (A) Potential Energy (PE) '''
         ''' (A1) for LES gravity current '''
@@ -76,7 +91,12 @@ def main():
         # 3. ??? convert potential temperature to density
         # 4. define background profile (here: take profile at any point outside the anomaly region)
         # 5. integrate
-        # compute_PE(ic,jc,id,jd,nx_,ny_,case_name,path,path_fields)
+        PE_computed[istar,:] = compute_PE_from_fields(ic, jc, id, jd, nx, kmax, times,
+                               case_name, path_in)
+        ''' output '''
+        dump_output_file(path_out, filename, PE_computed[istar,:], 'PE')
+
+
 
         ''' (B) Kinetic Energy (KE) '''
         # 1. read in velocity fields
@@ -84,48 +104,53 @@ def main():
         # 3. define rim of cold pool
         # define_cp_rim()
         # 4. integrate: KE = 0.5*sum_i(rho_i*dV*v_i**2) from center (ic,jc) to rim
+        KE_computed[istar,:], KEd, KE_x = compute_KE(ic, jc, nx, irstar, times, id, ID, path_in, path_figs_out)
 
-        ic = ic_arr[0]
-        jc = jc_arr[0]
-        KE, KEd, KE_x = compute_KE(ic, jc, irstar, tmin, tmax, id, filename, path_in, path_fields, path_out)
-        rootgrp = nc.Dataset(os.path.join(path_out, filename), 'r+', format='NETCDF4')
-        ts_grp = rootgrp.groups['timeseries']
-        var = ts_grp.variables['KE']
-        var[:] = KE[:]
-        var = ts_grp.variables['KEd']
-        var[:] = KEd[:]
-        var = ts_grp.variables['KE_x']
-        var[:,:] = KE_x[:,:]
-        rootgrp.close()
-        del KE, KEd, KE_x
+        ''' output '''
+        dump_output_file(path_out, filename, KE_computed[istar,:], 'KE')
+
+
 
 
     ''' plot for all cases '''
-    print ' '
+    print('')
+    print('')
     path_root_out = os.path.join(path_root, 'figs_energy')
     if not os.path.exists(path_root_out):
         os.mkdir(path_root_out)
     print('path_root_out', path_root_out)
-    fig = plt.figure()
-    for istar in range(ng):
+    fig, axis = plt.subplots(1, 2, figsize=(2 * 6, 1 * 5))
+    ax0 = axis[0]
+    ax1 = axis[1]
+    for istar in range(n_params):
+        print('')
         zstar = z_params[istar]
         rstar = r_params[istar]
-        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-        path_in = os.path.join(path_root, id, 'figs_CP_energy')
-        print('plot ' + id)
-        print path_in
-        filename = 'CP_energy_' + id + '.nc'
-        rootgrp = nc.Dataset(os.path.join(path_in, filename), 'r+', format='NETCDF4')
+        ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        lbl = 'dTh' + str(dTh) + ', z' + str(zstar) + ', r' + str(rstar)
+        path_in = os.path.join(path_root, ID, 'data_analysis')
+        print('plot ' + ID)
+        print(path_in)
+        filename = 'CP_energy_' + ID + '.nc'
+        print(os.path.join(path_in, filename))
+        rootgrp = nc.Dataset(os.path.join(path_in, filename), 'r', format='NETCDF4')
         ts_grp = rootgrp.groups['timeseries']
         KE = ts_grp.variables['KE'][:]
+        PE = ts_grp.variables['PE'][:]
         rootgrp.close()
 
-        plt.plot(timerange, KE, '-o', label=id)
+        ax0.plot(times, KE, '-o', color=colorlist5[istar], label=lbl)
+        ax1.plot([times[0], times[-1]], [PE[0], PE[0]], '-', color=colorlist5[istar], linewidth=1)
+        ax1.plot(times, PE, '-o', color=colorlist5[istar], label=lbl)
 
-    plt.legend(loc='best')
-    plt.xlabel('time [s]')
-    plt.ylabel('KE  [J]')
-    plt.savefig(os.path.join(path_root_out, 'dTh_'+str(dTh)+'_KE_domain.png'))
+    for ax in axis:
+        # pass
+        ax.legend(loc='best')
+        ax.set_xlabel('time [s]')
+    ax0.set_ylabel('KE  [J]')
+    ax1.set_ylabel('PE  [J]')
+    print('saving: '+os.path.join(path_root_out, 'dTh'+str(dTh)+'_energy_domain.png'))
+    plt.savefig(os.path.join(path_root_out, 'dTh'+str(dTh)+'_energy_domain.png'))
     plt.close(fig)
 
 
@@ -135,13 +160,11 @@ def main():
 
 
 
-def compute_KE(ic, jc, irstar, tmin, tmax, id, filename, path_in, path_fields, path_out):
-    times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
-             and np.int(name[:-3]) >= tmin and np.int(name[:-3]) <= tmax]
-    times.sort()
-    # print('times', times)
+def compute_KE(ic, jc, nx, irstar, times, id, ID, path_in, path_figs_out):
+
+    print('compute KE ')
     files = [str(t) + '.nc' for t in times]
-    print 'files', files
+    # print('files', files)
     nt = len(times)
     kmax = 100
     krange = np.arange(0,20)
@@ -150,8 +173,7 @@ def compute_KE(ic, jc, irstar, tmin, tmax, id, filename, path_in, path_fields, p
     KEd = np.zeros((nt))
     KE_x = np.zeros((nt, nx))       # compute KE[x, jc, :] (columnwise integration over z)
 
-    print 'path_in', path_in
-    print path_fields
+    print('path_in', path_in)
     try:
         rootgrp = nc.Dataset(os.path.join(path_in, 'Stats.' + case_name + '.nc'))
     except:
@@ -163,9 +185,9 @@ def compute_KE(ic, jc, irstar, tmin, tmax, id, filename, path_in, path_fields, p
 
     for it,t0 in enumerate(times):
         print('--t='+str(t0)+'--')
-        u = read_in_netcdf_fields('u', os.path.join(path_fields, str(t0)+'.nc'))[:,:,:kmax]
-        v = read_in_netcdf_fields('v', os.path.join(path_fields, str(t0)+'.nc'))[:,:,:kmax]
-        w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0)+'.nc'))[:,:,:kmax]
+        u = read_in_netcdf_fields('u', os.path.join(path_in, 'fields', str(t0)+'.nc'))[:,:,:kmax]
+        v = read_in_netcdf_fields('v', os.path.join(path_in, 'fields', str(t0)+'.nc'))[:,:,:kmax]
+        w = read_in_netcdf_fields('w', os.path.join(path_in, 'fields', str(t0)+'.nc'))[:,:,:kmax]
         u2 = u * u
         v2 = v * v
         w2 = w * w
@@ -215,10 +237,9 @@ def compute_KE(ic, jc, irstar, tmin, tmax, id, filename, path_in, path_fields, p
     # ax2.set_ylabel('KE [J]')
     # plt.suptitle('kinetic energy in rim (w>0.5m/s)')
     #
-    # plt.savefig(os.path.join(path,'KE_density.png'))
+    # plt.savefig(os.path.join(path_figs_out,'KE_density.png'))
     # plt.close()
 
-    from matplotlib.colors import LogNorm
     fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(10,5), sharey='all')
     # lvls =
     cf = ax0.contourf(KE_x[:,ic-irstar-100:ic+irstar+100])
@@ -231,7 +252,7 @@ def compute_KE(ic, jc, irstar, tmin, tmax, id, filename, path_in, path_fields, p
     ax1.set_xlabel('x')
     plt.ylabel('time')
     plt.suptitle('Kinetic Energy KE[x,jc,:]')
-    plt.savefig(os.path.join(path_out,'KE_x_'+id + '.png'))
+    plt.savefig(os.path.join(path_figs_out,'KE_x_'+ ID + '.png'))
     plt.close()
 
 
@@ -240,78 +261,124 @@ def compute_KE(ic, jc, irstar, tmin, tmax, id, filename, path_in, path_fields, p
 
 
 
-def compute_PE(ic,jc,id,jd,nx_,ny_, filename, case_name, path, path_fields):
-    # 1. read in initial s-field
-    s = read_in_netcdf_fields('s', os.path.join(path_fields,'0.nc'))
-    s_ = s[ic-id:ic+id,jc-jd:jc+jd,:]
-    print('shape s', s_.shape, id, 2*id, jd, 2*jd)
-    # 2. convert entropy to potential temperature
-    th_s = theta_s(s_)
+def compute_PE_from_fields(ic,jc,id,jd,nx,kmax, times, case_name, path):
+    print('')
+    print('compute PE from entropy-field (t=0)')
 
-    # 4. define background profile (here: take profile at any point outside the anomaly region)
-    i0 = 0
-    j0 = 0
-    theta_env = th_s[i0,j0,:]
-    th_g = theta_env[0]
-    rootgrp = nc.Dataset(os.path.join(path, 'Stats.'+case_name+'.nc'))
-    rho0 = rootgrp.groups['reference'].variables['rho0'][:]
-    rho_unit = rootgrp.groups['reference'].variables['rho0'].units
-    z_half = rootgrp.groups['reference'].variables['z'][:]
-    rootgrp.close()
-
-
-    # 5. integrate
     g = 9.80665
-    # PEd = PE/kg = sum(g*dz*dTh_i) = g*dz*sum(dTh_i)
-    # [PE/kg] = m/s^2*m = (m/s)^2
-    # PE = m*a*s        >>  [PE] = kg*m/s^2*m = kg*(m/s)^2
-    # KE = 0.5*m*v^2    >>  [KE] = kg*(m/s)^2
-    # int dz a(z) = sum_i a_i dz_i
-    PE = 0.0
-    PEd = 0.0
-    for i in range(nx_):
-        for j in range(ny_):
-            for k in range(nz):
-                PEd += z_half[k]*(theta_env[k] - th_s[i,j,k])
-                PE +=  z_half[k]*(theta_env[k] - th_s[i,j,k]) * dV*rho0[k]
-    PEd = g/th_g * PEd
-    PE = g/th_g * PE
-    # PE_ = g*dz*PE
-    print('PE', PE, 'PEd', PEd)
-    print('density at 500m: ' + str(rho0[5]) + ' ' + rho_unit)
-    print('mass per grid cell at 500m: ' + str(dV * z_half[5]) + ' kg')
-    i = ic
-    j = jc
-    k = 10
-    print(z_half[k]*(theta_env[k] - th_s[i,j,k]) * dV*rho0[k])
+
+    # environment profile
+    i0 = 10
+    j0 = 10
+    di = 10
+
+    PE = np.zeros((len(times)))
+    PE2 = np.zeros((len(times)))
+    PE3 = np.zeros((len(times)))
+    PEd = np.zeros((len(times)))
+
+    for it,t0 in enumerate(times):
+        print('-- t='+str(t0) + '(it='+str(it)+') --')
+        # 1. read in initial s-field
+        root = nc.Dataset(os.path.join(path, 'fields', str(t0)+'.nc'), 'r')
+        s = root.groups['fields'].variables['s'][:,:,:]  #[ic-id:ic+id,jc-jd:jc+jd,:]
+        root.close()
+
+        # 2. convert entropy to potential temperature
+        th_s = theta_s(s)
+
+        # 3. define background profile (here: take profile at any point outside the anomaly region)
+        # s_env = np.average(np.average(s[i0 - di:i0 + di, j0 - di:j0 + di, :kmax], axis=0), axis=0)
+        # th_env = theta_s(s_env)
+        th_env = np.average(np.average(th_s[i0-di:i0+di, j0-di:j0+di, :kmax], axis=0), axis=0)
+        th_g = th_env[0]
+        th_g_ = 300.
+        print('theta env: '+str(th_env))
+        print('theta env: ', np.amin(th_env), np.amax(th_env))
+        print('th_g: '+str(th_g))
+        print('theta_s: ', np.amin(th_s), np.amax(th_s))
+
+        # 4. reference profiles
+        try:
+            rootgrp = nc.Dataset(os.path.join(path, 'stats', 'Stats.'+case_name+'.nc'))
+        except:
+            rootgrp = nc.Dataset(os.path.join(path, 'Stats.'+case_name+'.nc'))
+        rho0 = rootgrp.groups['reference'].variables['rho0'][:]
+        rho_unit = rootgrp.groups['reference'].variables['rho0'].units
+        z_half = rootgrp.groups['reference'].variables['z'][:]
+        rootgrp.close()
+
+        # 5. integrate
+
+        # PEd = PE/kg = sum(g*dz*dTh_i) = g*dz*sum(dTh_i)
+        # [PE/kg] = m/s^2*m = (m/s)^2
+        # PE = m*a*s        >>  [PE] = kg*m/s^2*m = kg*(m/s)^2
+        # KE = 0.5*m*v^2    >>  [KE] = kg*(m/s)^2
+        # int dz a(z) = sum_i a_i dz_i
+        # for i in range(i0-di,i0+di):
+        print('PE', PE[it])
+        print('PE2', PE2[it])
+
+        # for i in range(nx):
+        aux = 0.
+        aux2 = 0.
+        aux3 = 0.
+        # for i in range(nx):
+        for i in range(20):
+            # for j in range(j0-dj,j0+dj):
+            # for j in range(nx):
+            for j in range(20):
+                # for k in range(kmax):
+                for k in range(kmax):
+                    # print('th_env, th_s', th_env[k], th_s[i,j,k])
+                    # print('z ', z_half[k])
+                    aux = aux + 1./th_env[k]*(th_env[k] - th_s[i,j,k])
+                    aux2 = aux2 + 1./th_g*(th_g - th_s[i,j,k])
+                    aux3 = aux3 + 1./th_g_*(th_g_ - th_s[i,j,k])
+                    PEd[it] += 1./th_env[k]*z_half[k]*(th_env[k] - th_s[i,j,k])
+                    PE[it] += 1./th_env[k]*z_half[k]*(th_env[k] - th_s[i,j,k]) * dV*rho0[k]
+                    PE2[it] += 1./th_g*z_half[k]*(th_g - th_s[i,j,k]) * dV*rho0[k]
+                    PE3 += 1./th_g_*z_half[k]*(th_g_ - th_s[i,j,k]) * dV*rho0[k]
+        PEd[it] = g * PEd[it]
+        PE[it] = g * PE[it]
+        PE2[it] = g * PE2[it]
+        # aux3 = g/300*aux3
+        # PEd = g/th_g * PEd
+        # PE = g/th_g * PE
+        # PE_ = g*dz*PE
+        print('PE ', PE[it])
+        print('PE2', PE2[it])
+        print('PE3', PE3[it])
+        print('diff', (PE2[it]-PE[it])/PE[it])
+        print('aux ', aux)
+        print('aux2 ', aux2)
+        print('aux3 ', aux3)
+        print('diff', nx*nx*kmax*dV*g/th_g*rho0[0])
+        print('PEd', PEd[it])
+        # print('density at 500m: ' + str(rho0[5]) + ' ' + rho_unit)
+        # print('mass per grid cell at 500m: ' + str(dV * z_half[5]) + ' kg')
 
 
-    plt.figure()
-    ax1 = plt.subplot(1, 3, 1)
-    plt.imshow(s[:, jc, :].T, origin='lower')
-    plt.colorbar(shrink=0.5)
-    ax1.set_title('s')
-    ax2 = plt.subplot(1, 3, 2)
-    plt.contourf(th_s[:, np.int(ny_/2), :].T)
-    plt.colorbar(shrink=0.5)
-    ax2.set_title('theta')
-    plt.subplot(1,3,3)
-    plt.plot(rho0,z_half)
-    plt.xlabel('rho0 [' + rho_unit+']')
-    plt.suptitle(case_name + ': PE='+str(np.round(PEd,2)))
-    plt.savefig(os.path.join(path,'pot_energy_check.png'))
-    plt.savefig('./pot_energy_check.png')
-    # plt.show()
-    plt.close()
-    del s, s_
 
-    # rootgrp = nc.Dataset(os.path.join(path_out, filename), 'r+', format='NETCDF4')
-    # ts_grp = rootgrp.groups['timeseries']
-    # var = ts_grp.variables['PE']
-    # var[:] = PE[:]
-    # var = ts_grp.variables['PEd']
-    # var[:] = PEd[:]
-    # rootgrp.close()
+    # plt.figure()
+    # ax1 = plt.subplot(1, 3, 1)
+    # plt.imshow(s[:, jc, :].T, origin='lower')
+    # plt.colorbar(shrink=0.5)
+    # ax1.set_title('s')
+    # ax2 = plt.subplot(1, 3, 2)
+    # plt.contourf(th_s[:, np.int(ny_/2), :].T)
+    # plt.colorbar(shrink=0.5)
+    # ax2.set_title('theta')
+    # plt.subplot(1,3,3)
+    # plt.plot(rho0,z_half)
+    # plt.xlabel('rho0 [' + rho_unit+']')
+    # plt.suptitle(case_name + ': PE='+str(np.round(PEd,2)))
+    # plt.savefig(os.path.join(path_figs_out,'pot_energy_check.png'))
+    #
+    # # plt.show()
+    # plt.close()
+    # del s, s_
+
 
     return PE
 
@@ -321,23 +388,28 @@ def set_input_parameters(args):
     print('--- set input parameters ---')
     global case_name
     global path_root
-    global timerange, nt
 
     path_root = args.path_root
-    path_out_figs = os.path.join(path_root, 'figs_CP_height')
+    path_out_figs = os.path.join(path_root, 'figs_CP_energy')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
 
     dTh = args.dTh
-    z_params = args.zparams
-    r_params = args.rparams
+    if args.zparams:
+        z_params = args.zparams
+    else:
+        z_params = [1000]
+    if args.rparams:
+        r_params = args.rparams
+    else:
+        r_params = [1000]
     print('z*: ', z_params)
     print('r*: ', r_params)
 
     case_name = args.casename
     id0 = 'dTh' + str(dTh) + '_z' + str(z_params[0]) + '_r' + str(r_params[0])
     nml = simplejson.loads(open(os.path.join(path_root, id0, case_name + '.in')).read())
-    global nx, ny, nz, dx, dV, gw
+    global dx, dV, gw
     nx = nml['grid']['nx']
     ny = nml['grid']['ny']
     nz = nml['grid']['nz']
@@ -353,28 +425,20 @@ def set_input_parameters(args):
     if args.tmin:
         tmin = np.int(args.tmin)
     else:
-        tmin = 100
+        tmin = 0
     if args.tmax:
         tmax = np.int(args.tmax)
     else:
         tmax = tmin
     timerange = np.arange(tmin, tmax + 100, 100)
     nt = len(timerange)
-    # times = [np.int(name[:-3]) for name in files]
+    # times = [np.int(name[:-3]) for name in os.listdir(path_fields) if name[-2:] == 'nc'
+    #          and np.int(name[:-3]) >= tmin and np.int(name[:-3]) <= tmax]
     # times.sort()
+    # print('times', times)
     print('timerange', timerange)
 
-    return nml, dTh, z_params, r_params, tmin, tmax
-
-
-
-
-def define_geometry(case_name, nml):
-    print('--- define geometry ---')
     global x_half, y_half, z_half
-    global ic_arr, jc_arr
-    # global rstar, irstar, zstar, kstar
-
     x_half = np.empty((nx), dtype=np.double, order='c')
     y_half = np.empty((ny), dtype=np.double, order='c')
     z_half = np.empty((nz), dtype=np.double, order='c')
@@ -391,6 +455,27 @@ def define_geometry(case_name, nml):
         z_half[count] = (i + 0.5) * dx[2]
         count += 1
 
+    return nml, dTh, z_params, r_params, tmin, tmax, timerange
+
+
+
+
+def define_geometry(case_name, ID):
+    print('--- define geometry ---')
+    # global ic_arr, jc_arr
+    # global rstar, irstar, zstar, kstar
+
+    nml = simplejson.loads(open(os.path.join(path_root, ID, case_name + '.in')).read())
+    nx = nml['grid']['nx']
+    ny = nml['grid']['ny']
+    nz = nml['grid']['nz']
+    dx = np.zeros(3, dtype=np.int)
+    dx[0] = nml['grid']['dx']
+    dx[1] = nml['grid']['dy']
+    dx[2] = nml['grid']['dz']
+    gw = nml['grid']['gw']
+    dV = dx[0] * dx[1] * dx[2]
+
     # set coordinates for plots
     if case_name == 'ColdPoolDry_single_3D':
         try:
@@ -400,7 +485,7 @@ def define_geometry(case_name, nml):
         except:
             ic = np.int(nx/2)
             jc = np.int(ny/2)
-            # print('(ic,jc) NOT from nml')
+            print('(ic,jc) NOT from nml')
         ic_arr = np.zeros(1)
         jc_arr = np.zeros(1)
         ic_arr[0] = ic
@@ -476,8 +561,11 @@ def define_geometry(case_name, nml):
         j0_coll = jc_arr[2]
         j0_center = jc_arr[0]
         # domain boundaries for plotting
+    print('geometry')
+    print('nx', nx)
+    print('ic, jc', ic_arr, jc_arr)
 
-    return i0_center, j0_center
+    return ic_arr, jc_arr, nx
 
 
 
@@ -498,13 +586,13 @@ def theta_s(s):
     return th_s
 
 # ----------------------------------
-def create_output_file(filename, path_out):
+def create_output_file(filename, path_out, times, nx):
     # output for each CP:
     # - min, max (timeseries)
     # - CP height (field; max=timeseries)
     # - (ok) CP rim (field)
     nt = len(times)
-    print(path_out)
+    print('create output file: ' + os.path.join(path_out, filename))
 
     rootgrp = nc.Dataset(os.path.join(path_out, filename), 'w', format='NETCDF4')
 
@@ -541,23 +629,22 @@ def create_output_file(filename, path_out):
     return
 
 
-# def dump_output_file(filename, KE, KEd, it):
-#     rootgrp = nc.Dataset(os.path.join(path_out, filename), 'r+', format='NETCDF4')
-#
-#     ts_grp = rootgrp.groups['timeseries']
-#     var = ts_grp.variables['KE']
-#     var[it] = KE[it]
-#     var = ts_grp.variables['KEd']
-#     var[it] = KEd[it]
-#
-#     # field_grp = rootgrp.groups['fields_2D']
-#     # var = field_grp.variables['w_max']
-#     # var[it,:,:] = w_max[0,:,:]
-#     # var = field_grp.variables['w_max_height']
-#     # var[it,:,:] = w_max[1,:,:]
-#
-#     rootgrp.close()
-#     return
+def dump_output_file(path_out, filename, var, varname):
+    print('dumping '+varname)
+    rootgrp = nc.Dataset(os.path.join(path_out, filename), 'r+', format='NETCDF4')
+
+    ts_grp = rootgrp.groups['timeseries']
+    var_ = ts_grp.variables[varname]
+    var_[:] = var[:]
+
+    # field_grp = rootgrp.groups['fields_2D']
+    # var = field_grp.variables['w_max']
+    # var[it,:,:] = w_max[0,:,:]
+    # var = field_grp.variables['w_max_height']
+    # var[it,:,:] = w_max[1,:,:]
+
+    rootgrp.close()
+    return
 
 
 
