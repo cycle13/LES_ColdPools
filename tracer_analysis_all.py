@@ -51,7 +51,7 @@ def main():
     n_cps = get_number_cps(fullpath_in)
     print('number of CPs: ', n_cps)
     print('number of tracers per CP: ', n_tracers)
-    print ''
+    print('')
     nt = len(times)
 
     krange = [0]
@@ -86,8 +86,8 @@ def main():
         if it > 0:
             drdt_av[:,it,:] = 1./dt_fields * (r_av[:,it,:] - r_av[:,it-1,:])
             print('........ t0: '+str(t0)+'---', it, drdt_av[:,it,:])
-    print ''
-    print ''
+        print('')
+    print('')
 
 
     ''' (b) plot r_av, drdt_av, U_rad_av '''
@@ -202,7 +202,7 @@ def plot_vel_normalized_w_av(r_av, times, istar, k0, id, fig_name):
     for t0 in t_out[1::2]:
         if t0 >= np.int(times[0]) and t0 <= times[-1]:
             count = np.double(t0) / times[-1]
-            print '>> it', it, t0, count
+            print('>> it', it, t0, count)
             iR = r_av[istar, it, k0] / dx[0]
             ax1.plot(r_array[imin:imax], w[it, imin:imax, k0], '-', color=cm_grey2(count),
                      label='t=' + str(t0) + 's')
@@ -243,7 +243,7 @@ def plot_vel_normalized_w_av(r_av, times, istar, k0, id, fig_name):
 
 def plot_vel_normalized(r_av, times, istar, k0, id, fig_name):
     print('')
-    print os.path.join(path_root, id, 'fields_merged', 'fields_allt_yz_i200.nc')
+    print(os.path.join(path_root, id, 'fields_merged', 'fields_allt_yz_i200.nc'))
     # read in vertical velocity for all times
     rootgrp = nc.Dataset(os.path.join(path_root, id, 'fields_merged', 'fields_allt_yz_i200.nc'))
     w = rootgrp.variables['w'][:, :, :]
@@ -272,7 +272,7 @@ def plot_vel_normalized(r_av, times, istar, k0, id, fig_name):
     for t0 in t_out[0::2]:
         if t0 >= np.int(times[0]) and t0 <= times[-1]:
             count = np.double(t0) / times[-1]
-            print '>> it', it, t0, count
+            print('>> it', it, t0, count)
             iR = r_av[istar, it, k0] / dx[0] + ic
             ax1.plot(r_array[imin:imax], w[it, imin:imax, k0], '-', color=cm_grey2(count),
                      label='t=' + str(t0) + 's')
@@ -316,7 +316,8 @@ def plot_vel_normalized(r_av, times, istar, k0, id, fig_name):
 def plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_params, k0,
                   title, fig_name):
 
-    fig, (ax0, ax1, ax2) = plt.subplots(1, 3, sharex='all', figsize=(18, 5))
+    fig, axes = plt.subplots(2, 3, sharex='none', figsize=(18, 10))
+    [ax0, ax1, ax2] = axes[0,:]
     for istar in range(n_params):
         if len(dTh_params) == 1:
             dTh = dTh_params[0]
@@ -338,8 +339,39 @@ def plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_par
     ax1.set_ylabel('drdt_av')
     ax2.set_ylabel('U_rad_av  [m/s]')
     ax1.legend()
+
+    [ax0, ax1, ax2] = axes[1, :]
+    for istar in range(n_params):
+        if len(dTh_params) == 1:
+            dTh = dTh_params[0]
+        else:
+            dTh = dTh_params[istar]
+        zstar = z_params[istar]
+        rstar = r_params[istar]
+        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        ax0.loglog(times, r_av[istar, :, k0], 'o-', label=id)
+        ax1.semilogy(times[1:], drdt_av[istar, 1:, k0], 'o-', label=id)
+        ax2.semilogy(times, U_rad_av[istar, :, k0], 'o-', label=id)
+    # ax0.set_title('r_av')
+    # ax1.set_title('drdt_av')
+    # ax2.set_title('U_av')
+    ax0.set_xlabel('times [s]')
+    ax1.set_xlabel('times [s]')
+    ax2.set_xlabel('times [s]')
+    ax0.set_ylabel('r_av  [m]')
+    ax1.set_ylabel('drdt_av')
+    ax2.set_ylabel('U_rad_av  [m/s]')
+    ax1.legend()
+
+
+    axes[0,0].plot([1800,1800], [0,12e3],'k', linewidth=1)
+    axes[1,0].loglog([1800,1800], [0,1e5],'k', linewidth=1)
+    for ax in axes.flat:
+        ax.set_xlim(0,times[-1])
+
     fig.suptitle(title)
     fig.tight_layout()
+    print('saving: ', os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 
@@ -349,11 +381,11 @@ def plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_par
 def plot_comparison_drdt_Urad(r_av, drdt_av, U_rad_av,
                               dTh_params, z_params, r_params, n_params, k0,
                             title, fig_name):
-    fig, axis = plt.subplots(2, n_params, sharex='all', sharey='row', figsize=(6*n_params, 10))
-    print n_params
+    fig, axis = plt.subplots(2, np.maximum(n_params,2), sharex='all', sharey='row', figsize=(6*n_params, 10))
+    print('nparams', n_params)
     colorlist = ['navy', 'blue', 'forestgreen']
     for istar in range(n_params):
-        print istar
+        print(istar)
         if len(dTh_params) == 1:
             dTh = dTh_params[0]
         else:
@@ -425,10 +457,10 @@ def read_in_txtfile(fullpath_in):
     column =lines[0].split()
     # print column
     start_c = int(column[1])   #get the first timestep when tracking starts
-    print 'precip starts at timestep', start_c
+    print('precip starts at timestep', start_c)
     column = lines[-1].split()
     end_c = int(column[1])
-    print 'last timestep in precip tracking', end_c
+    print('last timestep in precip tracking', end_c)
     for line in lines:
         columns = line.split()
         tist = (int(columns[0]))    # timestep
@@ -534,10 +566,10 @@ def set_input_parameters(args):
     path_out_figs = os.path.join(path_root, 'figs_tracers')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
-    print ''
-    print 'path_root: ', path_root
-    print 'path figs: ', path_out_figs
-    print ''
+    print('')
+    print('path_root: ', path_root)
+    print('path figs: ', path_out_figs)
+    print('')
 
     dTh = args.dTh
     if args.zparams:
@@ -601,7 +633,7 @@ def set_input_parameters(args):
     # times = [np.int(name[:-3]) for name in files]
     times.sort()
     print('times', times)
-    print ''
+    print('')
 
 
     return dTh, z_params, r_params
