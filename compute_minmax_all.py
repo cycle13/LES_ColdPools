@@ -63,13 +63,10 @@ def main():
 
     ''' (A) plot and output domain min/max '''
     var_list = ['w', 's', 'temperature', 'theta']
-    save_name = 'dTh' + str(dTh) + '_minmax_all.png'
+    fig_name = 'dTh' + str(dTh) + '_minmax_all.png'
+    minmax_file_name = 'minmax_domain.nc'
     data_minmax_domain, kmax = plot_minmax_domain(dTh, z_params, r_params, var_list, dx, times,
-                                       case_name, path_root, save_name, path_out_figs)
-    # minmax_file_name = 'minmax_domain.nc'
-    # dump_minmax_file(data_minmax_domain, var_list, times, kmax,
-    #                  dTh, z_params, r_params,
-    #                  minmax_file_name, path_root)
+                                       path_root, fig_name, path_out_figs, minmax_file_name)
 
 
 
@@ -235,7 +232,7 @@ def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
 # compute domain minimum and maximum of variables (s, temperature, w) for each timestep
 def plot_minmax_domain(dTh, z_params, r_params,
                        var_list, dx, times,
-                       case_name, path_root, save_name, path_out_figs):
+                       path_root, save_name, path_out_figs, filename):
     print('computing min/max domain')
 
     # nth = geom_params.shape[0]
@@ -243,16 +240,25 @@ def plot_minmax_domain(dTh, z_params, r_params,
     kmax = (np.amax(z_params) + 2000.) / dx[2]
 
     minmax = {}
-    minmax['time'] = times
+    nt_ranges = np.zeros(ng)
+    time_range = {}
     for istar in range(ng):
         zstar = z_params[istar]
         rstar = r_params[istar]
         ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+
+        print('FILE: ', os.path.join(path_root, ID, 'data_analysis', filename))
+        minmax_file = nc.Dataset(os.path.join(path_root, ID, 'data_analysis', filename), 'r', format='NETCDF4')
+        ts_grp = minmax_file.groups['timeseries']
+
         minmax[ID] = {}
+        nt_ranges[istar] = ts_grp.dimensions['nt'].size
+        time_range[ID] = ts_grp.variables['time'][:]
         for var_name in var_list:
             minmax[ID][var_name] = {}
-            minmax[ID][var_name]['max'] = np.zeros(len(times), dtype=np.double)
-            minmax[ID][var_name]['min'] = np.zeros(len(times), dtype=np.double)
+            minmax[ID][var_name]['max'] = ts_grp[var_name+'_max'][:]
+            minmax[ID][var_name]['min'] = ts_grp[var_name+'_min'][:]
+        minmax_file.close()
 
     for var_name in var_list:
         print('')
@@ -262,21 +268,8 @@ def plot_minmax_domain(dTh, z_params, r_params,
             zstar = z_params[istar]
             rstar = r_params[istar]
             ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-            print('id', ID)
-            path_fields = os.path.join(path_root, ID, 'fields')
-            print(path_fields)
-            for it, t0 in enumerate(times):
-                print('t0='+str(t0))
-                if var_name == 'theta':
-                    s_var = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0)+'.nc'))
-                    var = theta_s(s_var)
-                else:
-                    var = read_in_netcdf_fields(var_name, os.path.join(path_fields, str(t0)+'.nc'))
-                minmax[ID][var_name]['max'][it] = np.amax(var[:,:,:kmax])
-                minmax[ID][var_name]['min'][it] = np.amin(var[:,:,:kmax])
-                del var
-            maxx = ax1.plot(times, minmax[ID][var_name]['max'][:], 'o-', label=ID)
-            minn = ax2.plot(times, minmax[ID][var_name]['min'][:], 'o-', label=ID)
+            maxx = ax1.plot(time_range[ID], minmax[ID][var_name]['max'][:], 'o-', label=ID)
+            minn = ax2.plot(time_range[ID], minmax[ID][var_name]['min'][:], 'o-', label=ID)
         ax1.legend(loc='best', fontsize=10)
         ax2.legend(loc='best', fontsize=10)
         ax1.set_title('max(' + var_name + ')')

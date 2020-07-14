@@ -37,7 +37,7 @@ def main():
 
     ''' (A) plot and output domain min/max '''
     var_list = ['w', 's', 'temperature', 'theta']
-    var_list = ['w']
+    # var_list = ['w']
     data_minmax_domain = plot_minmax_domain(var_list, ID, kmax, times)
     minmax_file_name = 'minmax_domain.nc'
     dump_minmax_file(data_minmax_domain, var_list, times, kmax,
