@@ -61,10 +61,17 @@ def main():
         print('wrong number of parameters! ')
         # sys.exit()
 
+    # (A) plot and output domain min/max
+    var_list = ['w', 's', 'temperature', 'theta']
     save_name = 'dTh' + str(dTh) + '_minmax_all.png'
-    minmax_domain = plot_minmax_domain(dTh, z_params, r_params, dx, times,
+    data_minmax_domain, kmax = plot_minmax_domain(dTh, z_params, r_params, var_list, dx, times,
                                        case_name, path_root, save_name, path_out_figs)
+    minmax_file_name = 'minmax_domain.nc'
+    dump_minmax_file(data_minmax_domain, var_list, times, kmax,
+                     dTh, z_params, r_params,
+                     minmax_file_name, path_root)
 
+    # (B) plot min/max from  azimuthally averaged fields
     # read in azimuthally averaged fields
     ng = len(r_params)
     zstar = z_params[0]
@@ -83,7 +90,7 @@ def main():
     rad = root.groups['stats'].variables['r'][:]
     nr = len(rad)
     rmax = nr-30
-    print('radius: ', rad)
+    print('radius: '+str(rad[:3]) + '...'+str(rad[-3:]))
     dims = root.groups['dimensions'].dimensions
     nk = dims['nz'].size
     root.close()
@@ -128,12 +135,11 @@ def main():
         plot_minmax_radial(var_name, rad, var_max_arr, var_min_arr, rmax, times, id_list)
 
 
-    # minmax_xz = plot_xz_minmax(dTh, z_params, r_params,
+    # data_minmax_xz = plot_xz_minmax(dTh, z_params, r_params,
     #                            ic_arr, jc_arr, dx, times,
-    #                            case_name, path_root, path_out_figs, path_out_data)
+    #                            case_name, path_root, path_out_figs)
 
 
-    # add output of minmax_domain
 
 
 
@@ -142,12 +148,12 @@ def main():
 
 
 
-# ----------------------------------
-# ----------------------------------
+# --------------------------------------------------------------------
+
 def plot_minmax_radial(var_name, rad, var_max_arr, var_min_arr, rmax, times, id_list):
     cm = plt.cm.get_cmap('coolwarm')
     for i, ID in enumerate(id_list):
-        print ID
+        print(ID)
         fullpath_out = os.path.join(path_root, ID, 'figs_minmax')
         if not os.path.exists(fullpath_out):
             os.mkdir(fullpath_out)
@@ -170,12 +176,11 @@ def plot_minmax_radial(var_name, rad, var_max_arr, var_min_arr, rmax, times, id_
         fig.savefig(os.path.join(fullpath_out, figname))
         plt.close(fig)
     return
-# ----------------------------------
-# ----------------------------------
 
+# ----------------------------------
 
 def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
-                   case_name, path_root, path_out_figs, path_out_data):
+                   case_name, path_root, path_out_figs):
     print('')
     print('compting min/max xz')
     var_list = ['u', 'w', 's', 'temperature']
@@ -225,27 +230,27 @@ def plot_xz_minmax(dTh, z_params, r_params, ic_arr, jc_arr, dx, times,
     return minmax
 
 
-
 # compute domain minimum and maximum of variables (s, temperature, w) for each timestep
-def plot_minmax_domain(dTh, z_params, r_params, dx, times,
+def plot_minmax_domain(dTh, z_params, r_params,
+                       var_list, dx, times,
                        case_name, path_root, save_name, path_out_figs):
     print('computing min/max domain')
 
-    var_list = ['w', 's', 'temperature', 'theta']
-    # var_list = ['theta']
-    minmax = {}
-    minmax['time'] = times
-    for var_name in var_list:
-        minmax[var_name] = {}
-        minmax[var_name]['max'] = np.zeros(len(times), dtype=np.double)
-        minmax[var_name]['min'] = np.zeros(len(times), dtype=np.double)
-    # # # minmax['w'] = {}
-    # # # minmax['s'] = {}
-    # # # minmax['temp'] = {}
-
     # nth = geom_params.shape[0]
     ng = len(z_params)
-    kmax = np.amax(z_params) + 2000. / dx[2]
+    kmax = (np.amax(z_params) + 2000.) / dx[2]
+
+    minmax = {}
+    minmax['time'] = times
+    for istar in range(ng):
+        zstar = z_params[istar]
+        rstar = r_params[istar]
+        ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        minmax[ID] = {}
+        for var_name in var_list:
+            minmax[ID][var_name] = {}
+            minmax[ID][var_name]['max'] = np.zeros(len(times), dtype=np.double)
+            minmax[ID][var_name]['min'] = np.zeros(len(times), dtype=np.double)
 
     for var_name in var_list:
         print('')
@@ -265,11 +270,11 @@ def plot_minmax_domain(dTh, z_params, r_params, dx, times,
                     var = theta_s(s_var)
                 else:
                     var = read_in_netcdf_fields(var_name, os.path.join(path_fields, str(t0)+'.nc'))
-                minmax[var_name]['max'][it] = np.amax(var[:,:,:kmax])
-                minmax[var_name]['min'][it] = np.amin(var[:,:,:kmax])
+                minmax[ID][var_name]['max'][it] = np.amax(var[:,:,:kmax])
+                minmax[ID][var_name]['min'][it] = np.amin(var[:,:,:kmax])
                 del var
-            maxx = ax1.plot(times, minmax[var_name]['max'][:], 'o-', label=ID)
-            minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=ID)
+            maxx = ax1.plot(times, minmax[ID][var_name]['max'][:], 'o-', label=ID)
+            minn = ax2.plot(times, minmax[ID][var_name]['min'][:], 'o-', label=ID)
         ax1.legend(loc='best', fontsize=10)
         ax2.legend(loc='best', fontsize=10)
         ax1.set_title('max(' + var_name + ')')
@@ -279,10 +284,11 @@ def plot_minmax_domain(dTh, z_params, r_params, dx, times,
         ax2.set_xlabel('time [s]')
         fig.suptitle('dTh='+str(dTh))
         # fig.savefig(os.path.join(path_out_figs, var_name+'_dTh'+str(dTh)+'_minmax_all.png'))
+        print('saving: ' + os.path.join(path_out_figs, var_name + '_' + save_name))
         fig.savefig(os.path.join(path_out_figs, var_name + '_' + save_name))
         plt.close(fig)
 
-    return minmax
+    return minmax, kmax
 
 
 
@@ -295,8 +301,7 @@ def theta_s(s):
     th_s = T_tilde * np.exp( (s - sd_tilde)/cpd )
     return th_s
 
-# ----------------------------------
-# ----------------------------------
+# --------------------------------------------------------------------
 def set_geom_parameters(dTh):
 
     if dTh == 1:
@@ -337,9 +342,9 @@ def set_input_parameters(args):
     path_out_figs = os.path.join(path_root, 'figs_minmax')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
-    print path_root
-    print path_out_data
-    print path_out_figs
+    print('path data in: ' + path_root)
+    print('path data out: ' + path_out_data)
+    print('path figures:  ' + path_out_figs)
 
 
     dTh = args.dTh
@@ -360,7 +365,7 @@ def set_input_parameters(args):
     dx[0] = nml['grid']['dx']
     dx[1] = nml['grid']['dy']
     dx[2] = nml['grid']['dz']
-    gw = nml['grid']['gw']
+    # gw = nml['grid']['gw']
 
 
     try:
@@ -404,6 +409,47 @@ def set_input_parameters(args):
 
     return dTh, z_params, r_params, ic_arr, jc_arr, marg, times
 
+
+# --------------------------------------------------------------------
+
+# def dump_statistics_file(data_dictionary, v_rad_av, v_tan_av, var_list, it, file_name, path_out_data):
+def dump_minmax_file(data, var_list, times, kmax,
+                     dTh, z_params, r_params,
+                     file_name, path_root):
+    print(' ')
+    print('-------- dump minmax data -------- ')
+    # print(os.path.join(path_out_data, file_name))
+
+    nt = len(times)
+    ng = len(z_params)
+    for istar in range(ng):
+        zstar = z_params[istar]
+        rstar = r_params[istar]
+        ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        path_out_data = os.path.join(path_root, ID, 'data_analysis')
+
+        print(os.path.join(path_out_data, file_name))
+        rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'w', format='NETCDF4')
+
+        dims_grp = rootgrp.createGroup('dimensions')
+        # dims_grp.createDimension('dx', dx[0])
+        dims_grp.createDimension('nz', kmax)
+
+        ts_grp = rootgrp.createGroup('timeseries')
+        ts_grp.createDimension('nt', nt)
+        var = ts_grp.createVariable('time', 'f8', ('nt'))
+        var.unit = "s"
+        var[:] = times
+
+        for var_name in var_list:
+            var = ts_grp.createVariable(var_name+'_max', 'f8', ('nt'))
+            var[:] = data[ID][var_name]['max'][:]
+            var = ts_grp.createVariable(var_name + '_min', 'f8', ('nt'))
+            var[:] = data[ID][var_name]['min'][:]
+
+        rootgrp.close()
+    print('')
+    return
 
 # ----------------------------------
 
