@@ -62,26 +62,29 @@ def main():
     ''' ---------------- for each dTh ---------------- '''
     ''' (a) read in data from tracer output (text-file)'''
     n_params = len(z_params)
-    dist_av = np.zeros((n_params, nt, nk))
+    dist_av = np.zeros((nt, nk))
     r_av = np.zeros((n_params, nt, nk))
+    r_variance = np.zeros((n_params, nt, nk))
     drdt_av = np.zeros((n_params, nt, nk))
     U_rad_av = np.zeros((n_params, nt, nk))
+    U_rad_variance = np.zeros((n_params, nt, nk))
     dU_rad_av = np.zeros((n_params, nt, nk))
 
     for istar in range(n_params):
         zstar = z_params[istar]
         rstar = r_params[istar]
-        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-        print('id', id)
-        fullpath_in = os.path.join(path_root, id, 'tracer_k'+str(k0), 'output')
+        ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        print('ID', ID)
+        fullpath_in = os.path.join(path_root, ID, 'tracer_k'+str(k0), 'output')
 
         # read_in_txtfile(fullpath_in)
         for it, t0 in enumerate(times):
             print('---t0: '+str(t0)+'---', it)
             cp_id = 2
             # get_radius(fullpath_in, it, cp_id)
-            dist_av[istar, it, k0], U_rad_av[istar, it, k0] = get_radius_vel(fullpath_in, it, cp_id, n_tracers, n_cps)
-        r_av = dist_av * dx[0]
+            dist_av[it, k0], dist_variance, U_rad_av[istar, it, k0], U_rad_variance[istar,it,k0] = get_radius_vel(fullpath_in, it, cp_id, n_tracers, n_cps)
+            r_variance[istar, it, k0] = dist_variance * dx[0]
+        r_av[istar,:,:] = dist_av[:,:] * dx[0]
     for it, t0 in enumerate(times[:]):
         if it > 0:
             drdt_av[:,it,:] = 1./dt_fields * (r_av[:,it,:] - r_av[:,it-1,:])
@@ -110,15 +113,25 @@ def main():
     for istar in range(n_params):
         zstar = z_params[istar]
         rstar = r_params[istar]
-        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-        print('id', id)
-        figname_norm = 'CP_rim_normalized_' + id + '.png'
-        plot_vel_normalized(r_av, times, istar, k0, id, figname_norm)
-        # figname_norm = 'CP_rim_normalized_' + id + '_av.png'
-        # plot_vel_normalized_w_av(r_av, times, istar, k0, id, figname_norm)
+        ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        print('ID', ID)
+        figname_norm = 'CP_rim_normalized_' + ID + '.png'
+        plot_vel_normalized(r_av, times, istar, k0, ID, figname_norm)
+        # figname_norm = 'CP_rim_normalized_' + ID + '_av.png'
+        # plot_vel_normalized_w_av(r_av, times, istar, k0, ID, figname_norm)
 
 
-
+    ''' (d) plot variance in tracer radius '''
+    print('plotting tracer radius variance')
+    for istar in range(n_params):
+        zstar = z_params[istar]
+        rstar = r_params[istar]
+        ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        print('ID', ID)
+        figname_norm = 'CP_rim_instabilities_' + ID + '.png'
+        plot_tracer_statistics(r_av, r_variance, U_rad_av, U_rad_variance,
+                               times, [dTh], z_params, r_params, n_params,
+                               k0, figname_norm)
 
 
     # # -----------------------------------------------
@@ -142,9 +155,9 @@ def main():
     # #     dTh = dTh_params[istar]
     # #     zstar = z_params[istar]
     # #     rstar = r_params[istar]
-    # #     id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-    # #     print('id', id)
-    # #     fullpath_in = os.path.join(path_root, id, 'tracer_k'+str(k0), 'output')
+    # #     ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+    # #     print('ID', ID)
+    # #     fullpath_in = os.path.join(path_root, ID, 'tracer_k'+str(k0), 'output')
     # #     for it, t0 in enumerate(times):
     # #         print('---t0: '+str(t0)+'---', it)
     # #         cp_id = 1
@@ -237,6 +250,7 @@ def plot_vel_normalized_w_av(r_av, times, istar, k0, id, fig_name):
     ax3.grid()
     fig.tight_layout()
     fig.savefig(os.path.join(path_out_figs, fig_name))
+    print('saving: '+os.path.join(path_out_figs, fig_name))
     plt.close(fig)
     return
 
@@ -378,6 +392,69 @@ def plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_par
     return
 
 # ----------------------------------------------------------------------
+def plot_tracer_statistics(r_av, r_var, U_rad_av, U_rad_var,
+                           times, dTh_params, z_params, r_params, n_params,
+                           k0, fig_name):
+    fig, axes = plt.subplots(3, 3, sharex='none', figsize=(18, 15))
+    [ax0, ax1, ax2] = axes[0, :]
+    rmax = np.amax(r_av)
+    rvarmax = np.amax(r_var)
+    ax0.loglog([1800, 1800], [1e3, rmax], 'k-', linewidth=1)
+    # ax0.plot([np.log(1800), np.log(1800)], [np.log(1e3), np.log(rmax)], 'k-', linewidth=1)
+    ax1.plot([1800, 1800], [0, rmax], 'k-', linewidth=1)
+    ax2.plot([1800, 1800], [0, rvarmax], 'k-', linewidth=1)
+    for istar in range(n_params):
+        if len(dTh_params) == 1:
+            dTh = dTh_params[0]
+        else:
+            dTh = dTh_params[istar]
+        zstar = z_params[istar]
+        rstar = r_params[istar]
+        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        ax0.loglog(times, r_av[istar, :, k0], 'o-', label=id)
+        ax1.plot(times, r_av[istar, :, k0], 'o-', label=id)
+        ax2.plot(times, r_var[istar, :, k0], 'o-', label=id)
+    ax0.set_ylabel('log[mean(r)]  [m]')
+    ax1.set_ylabel('mean(r)  [m]')
+    ax2.set_ylabel('var(r)')
+    ax0.set_xlabel('log(t) [s]')
+    ax1.set_xlabel('t [s]')
+    ax2.set_xlabel('t [s]')
+
+    ax0.legend()
+
+    [ax0, ax1, ax2] = axes[1, :]
+    Umax = np.amax(U_rad_av)
+    ax0.loglog([1800, 1800], [1e-1, Umax], 'k-', linewidth=1)
+    ax1.plot([1800, 1800], [0, Umax], 'k-', linewidth=1)
+    ax2.plot([1800, 1800], [0, 3], 'k-', linewidth=1)
+    for istar in range(n_params):
+        if len(dTh_params) == 1:
+            dTh = dTh_params[0]
+        else:
+            dTh = dTh_params[istar]
+        zstar = z_params[istar]
+        rstar = r_params[istar]
+        id = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+        ax0.loglog(times, U_rad_av[istar, :, k0], 'o-', label=id)
+        ax1.plot(times, U_rad_av[istar, :, k0], 'o-', label=id)
+        ax2.plot(times, U_rad_var[istar, :, k0], 'o-', label=id)
+    ax0.set_ylabel('log[mean(U)]  [m/s]')
+    ax1.set_ylabel('mean(U)  [m/s]')
+    ax2.set_ylabel('var(U)')
+    ax0.set_xlabel('log(t) [s]')
+    ax1.set_xlabel('t [s]')
+    ax2.set_xlabel('t [s]')
+
+    ax0.legend()
+
+    # fig.suptitle(title)
+    fig.tight_layout()
+    print('saving: ', os.path.join(path_out_figs, fig_name))
+    fig.savefig(os.path.join(path_out_figs, fig_name))
+    plt.close(fig)
+    return
+# ----------------------------------------------------------------------
 def plot_comparison_drdt_Urad(r_av, drdt_av, U_rad_av,
                               dTh_params, z_params, r_params, n_params, k0,
                             title, fig_name):
@@ -513,9 +590,12 @@ def get_radius_vel(fullpath_in, t0, cp_id, n_tracers, n_cps):
         timestep = int(lines[count].split()[0])
     f.close()
     r_av = np.average(dist)
+    r_var = np.var(dist)
     vel_av = np.average(vel)
+    vel_var = np.var(vel)
 
-    return r_av, vel_av
+
+    return r_av, r_var, vel_av, vel_var
 
 
 def get_number_tracers(fullpath_in):
