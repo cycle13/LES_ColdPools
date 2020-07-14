@@ -40,7 +40,7 @@ def main():
     # (B) maximum in cross-sections
     #   determine max v in yz-crosssections
     #   determine max u in xz-crosssections
-    #
+
 
     ''' set paths & parameters '''
     # Parse information from the command line
@@ -54,24 +54,26 @@ def main():
     parser.add_argument("--tmax")
     args = parser.parse_args()
 
-    dTh, z_params, r_params, ic_arr, jc_arr, marg, times = set_input_parameters(args)
+    dTh, z_params, r_params, ic_arr, jc_arr, times = set_input_parameters(args)
     nt = len(times)
 
     if len(z_params) != len(r_params):
         print('wrong number of parameters! ')
         # sys.exit()
 
-    # (A) plot and output domain min/max
+    ''' (A) plot and output domain min/max '''
     var_list = ['w', 's', 'temperature', 'theta']
     save_name = 'dTh' + str(dTh) + '_minmax_all.png'
     data_minmax_domain, kmax = plot_minmax_domain(dTh, z_params, r_params, var_list, dx, times,
                                        case_name, path_root, save_name, path_out_figs)
-    minmax_file_name = 'minmax_domain.nc'
-    dump_minmax_file(data_minmax_domain, var_list, times, kmax,
-                     dTh, z_params, r_params,
-                     minmax_file_name, path_root)
+    # minmax_file_name = 'minmax_domain.nc'
+    # dump_minmax_file(data_minmax_domain, var_list, times, kmax,
+    #                  dTh, z_params, r_params,
+    #                  minmax_file_name, path_root)
 
-    # (B) plot min/max from  azimuthally averaged fields
+
+
+    ''' (B) plot min/max from  azimuthally averaged fields '''
     # read in azimuthally averaged fields
     ng = len(r_params)
     zstar = z_params[0]
@@ -342,10 +344,12 @@ def set_input_parameters(args):
     path_out_figs = os.path.join(path_root, 'figs_minmax')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
+    print('')
+    print('paths: ')
     print('path data in: ' + path_root)
     print('path data out: ' + path_out_data)
     print('path figures:  ' + path_out_figs)
-
+    print('')
 
     dTh = args.dTh
     z_params = args.zparams
@@ -387,12 +391,12 @@ def set_input_parameters(args):
             jc_arr[0] = jc
         else:
             print('ic, jc not defined')
-    try:
-        marg = nml['init']['marg']
-        print('marg from nml')
-    except:
-        marg = 500.
-        print('marg NOT from nml')
+    # try:
+    #     marg = nml['init']['marg']
+    #     print('marg from nml')
+    # except:
+    #     marg = 500.
+    #     print('marg NOT from nml')
 
     if args.tmin:
         tmin = np.int(args.tmin)
@@ -407,12 +411,11 @@ def set_input_parameters(args):
     print('times', times)
     print('')
 
-    return dTh, z_params, r_params, ic_arr, jc_arr, marg, times
+    return dTh, z_params, r_params, ic_arr, jc_arr, times
 
 
 # --------------------------------------------------------------------
 
-# def dump_statistics_file(data_dictionary, v_rad_av, v_tan_av, var_list, it, file_name, path_out_data):
 def dump_minmax_file(data, var_list, times, kmax,
                      dTh, z_params, r_params,
                      file_name, path_root):

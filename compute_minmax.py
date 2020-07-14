@@ -14,10 +14,10 @@ def main():
     print('COMPUTING MIN MAX')
     # (A) domain maximum
     #
-    # (B) cross-sections
+    # (B) maximum in cross-sections
     #   determine max v in yz-crosssections
     #   determine max u in xz-crosssections
-    #
+
 
     ''' set paths & parameters '''
     # Parse information from the command line
@@ -30,15 +30,22 @@ def main():
     parser.add_argument("--kmax")
     args = parser.parse_args()
 
-    files, times, krange, nml = set_input_parameters(args)
+    files, times, nml, ic_arr, jc_arr, kmax = set_input_parameters(args)
 
     ID = os.path.split(path_in)[1]
-    print ('id: ', ID)
+    print('id: ', ID)
 
+    ''' (A) plot and output domain min/max '''
     var_list = ['w', 's', 'temperature', 'theta']
     var_list = ['w']
-    minmax_domain = plot_minmax_domain(var_list, ID, times)
+    data_minmax_domain = plot_minmax_domain(var_list, ID, kmax, times)
+    minmax_file_name = 'minmax_domain.nc'
+    dump_minmax_file(data_minmax_domain, var_list, times, kmax,
+                     ID, minmax_file_name, path_in)
 
+
+
+    ''' (B) plot min/max from  azimuthally averaged fields '''
     minmax_xz = plot_xz_minmax(ID, jc_arr, times)
 
 
@@ -80,7 +87,7 @@ def plot_xz_minmax(ID, jc_arr, times):
         ax2.set_ylabel('min(' + var_name + ')')
         ax2.set_xlabel('time [s]')
         fig.suptitle(ID)
-        fig.savefig(os.path.join(path_out_figs, var_name + '_dTh' + str(dTh) + '_minmax_xz.png'))
+        fig.savefig(os.path.join(path_out_figs, var_name + '_' + ID + '_minmax_xz.png'))
         plt.close(fig)
 
     return minmax
@@ -88,7 +95,7 @@ def plot_xz_minmax(ID, jc_arr, times):
 
 
 # compute domain minimum and maximum of variables (s, temperature, w) for each timestep
-def plot_minmax_domain(var_list, ID, times):
+def plot_minmax_domain(var_list, ID, kmax, times):
     print('computing min/max domain')
 
     minmax = {}
@@ -118,13 +125,15 @@ def plot_minmax_domain(var_list, ID, times):
         minn = ax2.plot(times, minmax[var_name]['min'][:], 'o-', label=ID)
         ax1.legend(loc='best', fontsize=10)
         ax2.legend(loc='best', fontsize=10)
-        ax1.set_title('max('+var_name+')')
-        ax1.set_ylabel('max('+var_name+')')
-        ax2.set_title('min('+var_name+')')
-        ax2.set_ylabel('min('+var_name+')')
+        ax1.set_title('max(' + var_name + ')')
+        ax1.set_ylabel('max(' + var_name + ')')
+        ax2.set_title('min(' + var_name + ')')
+        ax2.set_ylabel('min(' + var_name + ')')
         ax2.set_xlabel('time [s]')
         fig.suptitle(ID)
-        fig.savefig(os.path.join(path_out_figs, var_name+'_'+str(ID)+'_minmax.png'))
+        fig_name = var_name+'_'+str(ID)+'_minmax.png'
+        print('saving: ' + os.path.join(path_out_figs, var_name + '_' + fig_name))
+        fig.savefig(os.path.join(path_out_figs, fig_name))
         plt.close(fig)
         print('')
 
@@ -144,24 +153,24 @@ def theta_s(s):
 # ----------------------------------
 def set_input_parameters(args):
     ''' setting parameters '''
-    print''
-    print'paths: '
     global path_in, path_out_data, path_out_figs, path_fields
     path_in = args.path
     if os.path.exists(os.path.join(path_in, 'fields')):
         path_fields = os.path.join(path_in, 'fields')
     elif os.path.exists(os.path.join(path_in, 'fields_k120')):
         path_fields = os.path.join(path_in, 'fields_k120')
-    print path_in
     path_out_data = os.path.join(path_in, 'data_analysis')
     if not os.path.exists(path_out_data):
         os.mkdir(path_out_data)
     path_out_figs = os.path.join(path_in, 'figs_minmax')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
-    print path_out_data
-    print path_out_figs
-    print path_fields
+    print('')
+    print('paths: ')
+    print('path data in: ' + path_in)
+    print('path data out: ' + path_out_data)
+    print('path figures:  ' + path_out_figs)
+    print('')
 
     global case_name
     case_name = args.casename
@@ -174,13 +183,17 @@ def set_input_parameters(args):
     dx[0] = nml['grid']['dx']
     dx[1] = nml['grid']['dy']
     dx[2] = nml['grid']['dz']
-    gw = nml['grid']['gw']
+    # gw = nml['grid']['gw']
 
 
     try:
         print('(ic,jc) from nml')
         ic = nml['init']['ic']
         jc = nml['init']['jc']
+        ic_arr = np.zeros(1)
+        jc_arr = np.zeros(1)
+        ic_arr[0] = ic
+        jc_arr[0] = jc
     except:
         print('(ic,jc) NOT from nml')
         if case_name == 'ColdPoolDry_single_3D':
@@ -192,24 +205,24 @@ def set_input_parameters(args):
             jc_arr[0] = jc
         else:
             print('ic, jc not defined')
-    try:
-        marg = nml['init']['marg']
-        print('marg from nml')
-    except:
-        marg = 500.
-        print('marg NOT from nml')
+    # try:
+    #     marg = nml['init']['marg']
+    #     print('marg from nml')
+    # except:
+    #     marg = 500.
+    #     print('marg NOT from nml')
 
 
-    global krange
-    if args.kmin:
-        kmin = np.int(args.kmin)
-    else:
-        kmin = 1
+    # global krange
+    # if args.kmin:
+    #     kmin = np.int(args.kmin)
+    # else:
+    #     kmin = 1
     if args.kmax:
         kmax = np.int(args.kmax)
     else:
-        kmax = 1
-    krange = np.arange(kmin, kmax + 1)
+        kmax = np.int(10e3*1./dx[2])
+    # krange = np.arange(kmin, kmax + 1)
 
     if args.tmin:
         tmin = np.int(args.tmin)
@@ -243,9 +256,43 @@ def set_input_parameters(args):
     print('')
     print('times', times)
     print('')
-    print('krange', krange)
+    return files, times, nml, ic_arr, jc_arr, kmax
+
+
+# --------------------------------------------------------------------
+
+def dump_minmax_file(data, var_list, times, kmax,
+                     ID, file_name, path_in):
+    print(' ')
+    print('-------- dump minmax data -------- ')
+    # print(os.path.join(path_out_data, file_name))
+
+    nt = len(times)
+
+    path_out_data = os.path.join(path_in, 'data_analysis')
+    print(os.path.join(path_out_data, file_name))
+
+    rootgrp = nc.Dataset(os.path.join(path_out_data, file_name), 'w', format='NETCDF4')
+
+    dims_grp = rootgrp.createGroup('dimensions')
+    # dims_grp.createDimension('dx', dx[0])
+    dims_grp.createDimension('nz', kmax)
+
+    ts_grp = rootgrp.createGroup('timeseries')
+    ts_grp.createDimension('nt', nt)
+    var = ts_grp.createVariable('time', 'f8', ('nt'))
+    var.unit = "s"
+    var[:] = times
+
+    for var_name in var_list:
+        var = ts_grp.createVariable(var_name+'_max', 'f8', ('nt'))
+        var[:] = data[var_name]['max'][:]
+        var = ts_grp.createVariable(var_name + '_min', 'f8', ('nt'))
+        var[:] = data[var_name]['min'][:]
+
+    rootgrp.close()
     print('')
-    return files, times, krange, nml
+    return
 # ----------------------------------
 
 
