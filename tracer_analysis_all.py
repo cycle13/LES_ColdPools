@@ -88,7 +88,7 @@ def main():
     for it, t0 in enumerate(times[:]):
         if it > 0:
             drdt_av[:,it,:] = 1./dt_fields * (r_av[:,it,:] - r_av[:,it-1,:])
-            print('........ t0: '+str(t0)+'---', it, drdt_av[:,it,:])
+            # print('........ t0: '+str(t0)+'---', it, drdt_av[:,it,:])
         print('')
     print('')
 
@@ -123,13 +123,14 @@ def main():
 
     ''' (d) plot variance in tracer radius '''
     print('plotting tracer radius variance')
-    for istar in range(n_params):
-        zstar = z_params[istar]
-        rstar = r_params[istar]
-        ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
-        print('ID', ID)
-        figname_norm = 'CP_rim_instabilities_' + ID + '.png'
-        plot_tracer_statistics(r_av, r_variance, U_rad_av, U_rad_variance,
+    # for istar in range(n_params):
+    #     zstar = z_params[istar]
+    #     rstar = r_params[istar]
+    #     ID = 'dTh' + str(dTh) + '_z' + str(zstar) + '_r' + str(rstar)
+    #     print('ID', ID)
+    #     figname_norm = 'CP_rim_instabilities_' + ID + '.png'
+    figname_norm = 'CP_rim_instabilities.png'
+    plot_tracer_statistics(r_av, r_variance, U_rad_av, U_rad_variance,
                                times, [dTh], z_params, r_params, n_params,
                                k0, figname_norm)
 
@@ -174,7 +175,7 @@ def main():
     # # # plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_params, k0, title, figname)
     # # # figname = 'CP_rim_vel_r1km.png'
     # # # plot_vel(r_av, U_rad_av, dTh_params, z_params, r_params, n_params, k0, figname)
-    #
+
 
 
     return
@@ -215,7 +216,7 @@ def plot_vel_normalized_w_av(r_av, times, istar, k0, id, fig_name):
     for t0 in t_out[1::2]:
         if t0 >= np.int(times[0]) and t0 <= times[-1]:
             count = np.double(t0) / times[-1]
-            print('>> it', it, t0, count)
+            # print('>> it', it, t0, count)
             iR = r_av[istar, it, k0] / dx[0]
             ax1.plot(r_array[imin:imax], w[it, imin:imax, k0], '-', color=cm_grey2(count),
                      label='t=' + str(t0) + 's')
@@ -257,9 +258,14 @@ def plot_vel_normalized_w_av(r_av, times, istar, k0, id, fig_name):
 
 def plot_vel_normalized(r_av, times, istar, k0, id, fig_name):
     print('')
-    print(os.path.join(path_root, id, 'fields_merged', 'fields_allt_yz_i200.nc'))
     # read in vertical velocity for all times
-    rootgrp = nc.Dataset(os.path.join(path_root, id, 'fields_merged', 'fields_allt_yz_i200.nc'))
+    try:
+        filename = 'fields_allt_xz_j'+str(np.int(nx*.5)) + '_transp.nc'
+        print(os.path.join(path_root, id, 'fields_merged', filename))
+        rootgrp = nc.Dataset(os.path.join(path_root, id, 'fields_merged', filename))
+    except:
+        print('no file '+filename +' exists')
+        return
     w = rootgrp.variables['w'][:, :, :]
     t_out = rootgrp.variables['time'][:]
     rootgrp.close()
@@ -273,6 +279,7 @@ def plot_vel_normalized(r_av, times, istar, k0, id, fig_name):
     #plotting parameters
     imin = ic - 5
     imax = ic + 80
+    # print('......', w.shape, imin, imax, k0)
 
     fig, axes = plt.subplots(2, 2, sharex='none', figsize=(20, 12))
     ax0 = axes[0,0]
@@ -286,17 +293,17 @@ def plot_vel_normalized(r_av, times, istar, k0, id, fig_name):
     for t0 in t_out[0::2]:
         if t0 >= np.int(times[0]) and t0 <= times[-1]:
             count = np.double(t0) / times[-1]
-            print('>> it', it, t0, count)
+            # print('>> it', it, t0, count)
             iR = r_av[istar, it, k0] / dx[0] + ic
-            ax1.plot(r_array[imin:imax], w[it, imin:imax, k0], '-', color=cm_grey2(count),
+            ax1.plot(r_array[imin:imax], w[it, k0, imin:imax], '-', color=cm_grey2(count),
                      label='t=' + str(t0) + 's')
-            ax1.plot(r_array[iR], w[it, iR, k0], 'd', color=cm_grey2(count), markersize=12)
-            R_array = r_array / r_av[istar, it, k0]
-            ax2.plot(R_array[imin:imax], w[it, imin:imax, k0], '-', color=cm_grey2(count), linewidth=3,
-                     label='t=' + str(t0) + 's')
-            ax3.plot(R_array[imin:imax], w[it, imin:imax, k0], '-', color=cm_grey2(count), linewidth=3,
-                     label='t=' + str(t0) + 's')
-            ax3.plot(R_array[iR], w[it, iR, k0], 'd', color=cm_grey(count), markersize=12)
+            ax1.plot(r_array[iR], w[it, k0, iR], 'd', color=cm_grey2(count), markersize=12)
+            # R_array = r_array / r_av[istar, it, k0]
+            # ax2.plot(R_array[imin:imax], w[it, imin:imax, k0], '-', color=cm_grey2(count), linewidth=3,
+            #          label='t=' + str(t0) + 's')
+            # ax3.plot(R_array[imin:imax], w[it, imin:imax, k0], '-', color=cm_grey2(count), linewidth=3,
+            #          label='t=' + str(t0) + 's')
+            # ax3.plot(R_array[iR], w[it, iR, k0], 'd', color=cm_grey(count), markersize=12)
             it += 1
     fig.suptitle(id)
     ax0.legend(loc=3)
@@ -321,6 +328,7 @@ def plot_vel_normalized(r_av, times, istar, k0, id, fig_name):
     ax2.grid()
     ax3.grid()
     fig.tight_layout()
+    print('saving: ' + os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
     return
@@ -385,7 +393,7 @@ def plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_par
 
     fig.suptitle(title)
     fig.tight_layout()
-    print('saving: ', os.path.join(path_out_figs, fig_name))
+    print('saving: '+ os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 
@@ -395,7 +403,7 @@ def plot_dist_vel(r_av, drdt_av, U_rad_av, dTh_params, z_params, r_params, n_par
 def plot_tracer_statistics(r_av, r_var, U_rad_av, U_rad_var,
                            times, dTh_params, z_params, r_params, n_params,
                            k0, fig_name):
-    fig, axes = plt.subplots(3, 3, sharex='none', figsize=(18, 15))
+    fig, axes = plt.subplots(2, 3, sharex='none', figsize=(18, 12))
     [ax0, ax1, ax2] = axes[0, :]
     rmax = np.amax(r_av)
     rvarmax = np.amax(r_var)
@@ -421,7 +429,7 @@ def plot_tracer_statistics(r_av, r_var, U_rad_av, U_rad_var,
     ax1.set_xlabel('t [s]')
     ax2.set_xlabel('t [s]')
 
-    ax0.legend()
+    ax0.legend(loc='best')
 
     [ax0, ax1, ax2] = axes[1, :]
     Umax = np.amax(U_rad_av)
@@ -450,7 +458,7 @@ def plot_tracer_statistics(r_av, r_var, U_rad_av, U_rad_var,
 
     # fig.suptitle(title)
     fig.tight_layout()
-    print('saving: ', os.path.join(path_out_figs, fig_name))
+    print('saving: '+ os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
     return
@@ -494,6 +502,7 @@ def plot_comparison_drdt_Urad(r_av, drdt_av, U_rad_av,
     fig.suptitle(title)
     fig.tight_layout()
     plt.subplots_adjust(bottom=0.08, right=.95, left=0.07, top=0.9, wspace=0.25)
+    print('saving: '+ os.path.join(path_out_figs, fig_name))
     fig.savefig(os.path.join(path_out_figs, fig_name))
     plt.close(fig)
 
@@ -667,8 +676,8 @@ def set_input_parameters(args):
             r_params_ = [1500, 1000, 700, 600, 500]  # run2, run3
             z_params = [500, 1000, 2000]  # run2
             r_params_ = [1500, 1000, 600]  # run2
-            z_params = [1000]  # run2
-            r_params_ = [1000]  # run2
+            z_params = [500, 700, 1000, 1400, 1700, 2000]  # run2b, 3b
+            r_params_ = [1900, 1400, 1000, 700, 600, 500]  # run2b, 3b
         elif dTh == 4:
             # z_params = [1730, 870, 430]     # run1
             z_params = [500, 900, 1600, 2000, 2500]  # run2, run3
