@@ -168,7 +168,7 @@ def plot_R_twofits_variance(times, r_av, r_var, r_std, itsplit,
     y1 = r_av[it0:itsplit] / R0
     n1 = len(x1)
     # [a1_, m1_], pcov = optimize.curve_fit(powlaw_fit, x1, r_av[1:t_split])
-    p0 = [1, .5]
+    # p0 = [1, .5]
     # print('.....', p0)
     # [a1_, m1_], pcov = optimize.curve_fit(powlaw_fit, x1, r_av[1:t_split], p0=[r_av[0], .5])
     # # err_pow1_ = sq_error(y1, powlaw_fit(x1, a1_, m1_))
@@ -260,11 +260,11 @@ def plot_R_twofits_variance(times, r_av, r_var, r_std, itsplit,
 
 
 
-    fig, axes = plt.subplots(1, 4, sharex='none', figsize=(22, 5))
+    fig, axes = plt.subplots(1, 3, sharex='none', figsize=(20, 5))
     ax0 = axes[0]
     ax1 = axes[1]
     ax2 = axes[2]
-    ax3 = axes[3]
+    # ax3 = axes[3]
     itplot0 = 1
     x = times[itplot0:] / t0
     x_log = np.log(times[itplot0:] / t0)
@@ -279,44 +279,41 @@ def plot_R_twofits_variance(times, r_av, r_var, r_std, itsplit,
     ax0.plot(times[itplot0:], R0*powlaw_fit_two(x, l1, k1, l2, k2), 'b-', label=lbl)
 
     ax1.plot([np.log(t0/t0), np.log(t0/t0)], [-2,2], '.5', linewidth=.5)
-    ax1.plot([np.log(t_split / t0), np.log(t_split / t0)], [-2, 2], '--', color='.5', linewidth=.5)
+    ax1.plot([np.log(t_split/t0), np.log(t_split/t0)], [-2,2], '--', color='.5', linewidth=.5)
 
-    ax2.plot([np.log(t0/t0), np.log(t0/t0)], [-2,2], '.5', linewidth=.5)
-    ax2.plot([np.log(t_split/t0), np.log(t_split/t0)], [-2,2], '--', color='.5', linewidth=.5)
-
-    ax2.plot(x_log, np.log(r_av[itplot0:]/R0), '-o', color='k', markeredgecolor='w')
+    ax1.plot(x_log, np.log(r_av[itplot0:]/R0), '-o', color='k', markeredgecolor='w')
     lbl = 'y=a+m*x, a=' + str(np.round(o1, 1)) + ', m=' + str(np.round(m1, 1)) + ' (' + str(np.round(perr1, 3)) + ')'
-    ax2.plot(x_log, o1 + m1*x_log, '-', color='.3', linewidth=1, label=lbl)
+    ax1.plot(x_log, o1 + m1*x_log, '-', color='.3', linewidth=1, label=lbl)
     lbl = 'y=a+m*x, a=' + str(np.round(o2, 1)) + ', m=' + str(np.round(m2, 1)) + ' (' + str(np.round(perr2, 3)) + ')'
-    ax2.plot(x_log, o2 + m2*x_log, 'k-', linewidth=1, label=lbl)
+    ax1.plot(x_log, o2 + m2*x_log, 'k-', linewidth=1, label=lbl)
     lbl = 'log(R/R0)=a+m*log(t/t0)'
-    ax2.plot(x_log, np.log(powlaw_fit_two(x, l1, k1, l2, k2)), 'b-', label=lbl)
+    ax1.plot(x_log, np.log(powlaw_fit_two(x, l1, k1, l2, k2)), 'b-', label=lbl)
 
-    ax3.plot([t0, t0], [0, np.sqrt(rvarmax)], '.5', linewidth=.5)
-    ax3.plot([t_split, t_split], [0, np.sqrt(rvarmax)], '--', color='.5', linewidth=.5)
-    ax3.plot(times[itplot0:], r_std[itplot0:], 'o-', color='k', markeredgecolor='w')
-    # ax3_ = ax3.twinx()
-    # ax3_.plot(times[itplot0:], r_var[itplot0:], 'o-', color='.8', markeredgecolor='w')
+    ax2.plot([t0, t0], [0, np.sqrt(rvarmax)], '.5', linewidth=.5)
+    ax2.plot([t_split, t_split], [0, np.sqrt(rvarmax)], '--', color='.5', linewidth=.5)
+    ax2.plot(times[itplot0:], r_std[itplot0:], 'o-', color='k', markeredgecolor='w')
+    # ax2_ = ax2.twinx()
+    # ax2_.plot(times[itplot0:], r_var[itplot0:], 'o-', color='.8', markeredgecolor='w')
 
     ax0.set_xticks(np.arange(0, tmax, step=600))
     ax0.set_xticklabels([np.int(n / 60) for n in ax0.get_xticks()])
     ax0.set_yticklabels([np.int(n * 1e-3) for n in ax0.get_yticks()])
-    ax3.set_xticks(np.arange(0, tmax, step=600))
-    ax3.set_xticklabels([np.int(n / 60) for n in ax3.get_xticks()])
-    ax3.set_yticklabels([np.round(n*1e-3,2) for n in ax3.get_yticks()])
-    # ax3_.set_yticklabels([np.int(n) for n in ax3_.get_yticks()])
+    ax2.set_xticks(np.arange(0, tmax, step=600))
+    ax2.set_xticklabels([np.int(n / 60) for n in ax2.get_xticks()])
+    ax2.set_yticklabels([np.round(n*1e-3,2) for n in ax2.get_yticks()])
+    # ax2_.set_yticklabels([np.int(n) for n in ax2_.get_yticks()])
 
     ax0.legend(loc='best')
-    ax2.legend(loc='best')
+    ax1.legend(loc='best')
     ax0.set_ylim(0, rmax*1.1)
-    ax2.set_ylim(-1.5, 2.)
+    ax1.set_ylim(-1.5, 2.)
     ax0.set_xlabel('t  [min]')
     ax0.set_ylabel('R  [km]')
-    ax2.set_xlabel('log(t/t0)  [-]')
-    ax2.set_ylabel('log(R/R0)  [-]')
-    ax3.set_xlabel('t  [min]')
-    ax3.set_ylabel(r'std(R)  [km]')
-    # ax3_.set_ylabel(r'var(R)  [m$^2$]')
+    ax1.set_xlabel('log(t/t0)  [-]')
+    ax1.set_ylabel('log(R/R0)  [-]')
+    ax2.set_xlabel('t  [min]')
+    ax2.set_ylabel(r'std(R)  [km]')
+    # ax2_.set_ylabel(r'var(R)  [m$^2$]')
 
     plt.subplots_adjust(bottom=0.12, right=.97, left=0.05, top=0.87, wspace=0.25, hspace=0.2)
     print('saving: ' + str(os.path.join(path_out_figs, fig_name)))
