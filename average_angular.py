@@ -65,26 +65,26 @@ def main():
     plot_configuration(ic, jc, radius, times, path_out_data_2D)
 
 
-    # print ''
-    # print('----- compute radius ----------- ')
-    # # OUTPUT: th_field[nx, ny], r_field[nx, ny]
-    # file_name_rthfield = 'r_th_field.nc'    # in 'fields_v_rad'
-    # th_field, r_field = compute_radius(ic, jc, irange, jrange, file_name_rthfield, path_out_data_2D)
-    #
-    #
-    # print ''
-    # print('----- compute radial velocity ----------- ')
-    # # creates 2D output-file with v_rad[nt, nx, ny, kmax], v_ran[nt, nx, ny, kmax] and r_field[nx, ny]
-    # file_name_vradfield = 'v_rad.nc'    # in 'fields_v_rad'
-    # compute_radial_velocity(th_field, r_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data_2D)
-    #
+    print ''
+    print('----- compute radius ----------- ')
+    # OUTPUT: th_field[nx, ny], r_field[nx, ny]
+    file_name_rthfield = 'r_th_field.nc'    # in 'fields_v_rad'
+    th_field, r_field = compute_radius(ic, jc, irange, jrange, file_name_rthfield, path_out_data_2D)
 
-    # print ''
-    # print('----- compute angular average ----------- ')
-    # # OUTPUT: file with angular averaged statistics, e.g. v_rad[nt, nr, nz]
-    # # file_name_stats = 'stats_radial_averaged_test.nc'
-    # file_name_stats = 'stats_radial_averaged.nc'
-    # compute_angular_average(rmax, times, file_name_stats, path_out_data, path_out_data_2D)
+
+    print ''
+    print('----- compute radial velocity ----------- ')
+    # creates 2D output-file with v_rad[nt, nx, ny, kmax], v_ran[nt, nx, ny, kmax] and r_field[nx, ny]
+    file_name_vradfield = 'v_rad.nc'    # in 'fields_v_rad'
+    compute_radial_velocity(th_field, r_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data_2D)
+
+
+    print ''
+    print('----- compute angular average ----------- ')
+    # OUTPUT: file with angular averaged statistics, e.g. v_rad[nt, nr, nz]
+    # file_name_stats = 'stats_radial_averaged_test.nc'
+    file_name_stats = 'stats_radial_averaged.nc'
+    compute_angular_average(rmax, times, file_name_stats, path_out_data, path_out_data_2D)
 
 
     ''' testing '''
@@ -148,21 +148,21 @@ def main():
         plt.close(fig)
 
 
-    # print ''
-    # print('----- compute angular average CP height ----------- ')
-    # sth = 0.5
-    # file_name_CP_height = 'CP_height_' + ID + '_sth' + str(sth) + '.nc' # in path_out_data
-    # compute_CP_height_radial_av(rmax, times, file_name_CP_height, path_out_data, path_out_data_2D)
-    #
-    #
-    #
-    # print ''
-    # print('----- plotting ----------- ')
-    # file_name_stats = 'stats_radial_averaged.nc'
-    # plot_radially_averaged_vars(rmax_plot, times, file_name_stats, path_out_data, path_out_figs)
-    # # ----- plot CP height radially averaged
-    # file_name_CP_height = 'CP_height_' + ID + '_sth' + str(sth) + '.nc' # in path_out_data
-    # plot_radially_averaged_CP_height(rmax_plot, times, file_name_CP_height, path_out_data)
+    print ''
+    print('----- compute angular average CP height ----------- ')
+    sth = 0.5
+    file_name_CP_height = 'CP_height_' + ID + '_sth' + str(sth) + '.nc' # in path_out_data
+    compute_CP_height_radial_av(rmax, times, file_name_CP_height, path_out_data, path_out_data_2D)
+
+
+
+    print ''
+    print('----- plotting ----------- ')
+    file_name_stats = 'stats_radial_averaged.nc'
+    plot_radially_averaged_vars(rmax_plot, times, file_name_stats, path_out_data, path_out_figs)
+    # ----- plot CP height radially averaged
+    file_name_CP_height = 'CP_height_' + ID + '_sth' + str(sth) + '.nc' # in path_out_data
+    plot_radially_averaged_CP_height(rmax_plot, times, file_name_CP_height, path_out_data)
 
     return
 
@@ -279,33 +279,33 @@ def compute_radial_velocity(th_field, r_field, times, filename, ic, jc, rmax, pa
 
         # v_hor_diff = v_hor - v_hor_int
 
-        fig, axis = plt.subplots(2, 2, figsize=(10,10))
-        ax11 = axis[0, 0]
-        ax12 = axis[0, 1]
-        ax21 = axis[1, 0]
-        ax22 = axis[1, 1]
-        circle1 = plt.Circle((ic, jc), rmax/2, fill=False, color='r', linewidth=2)
-        cf = ax11.imshow(v_rad_int[it, :, :, 0].T, origin='lower')
-        plt.colorbar(cf, ax=ax11, shrink=0.8)
-        ax11.set_title('radial velocity')
-        ax11.add_artist(circle1)
-        ax11.plot(ic-0.5, jc-0.5, 'ow', markersize=7)
-        cf = ax12.imshow(v_tan_int[it, :, :, 0].T, origin='lower')
-        ax12.set_title('tangential velocity')
-        plt.colorbar(cf, ax=ax12, shrink=0.8)
-        ax21.imshow(v_hor_int[0, :, :].T, origin='lower')
-        plt.colorbar(cf, ax=ax21, shrink=0.8)
-        ax21.set_title('u')
-        ax22.imshow(v_hor_int[1, :, :].T, origin='lower')
-        plt.colorbar(cf, ax=ax22, shrink=0.8)
-        ax22.set_title('v')
-        ax11.set_xlim(0, nx)
-        ax11.set_ylim(0, ny)
-        ax12.set_xlim(0, nx)
-        ax12.set_ylim(0, ny)
-        plt.tight_layout()
-        plt.savefig(os.path.join(path_out_data_2D, 'test_field_vrad_vtan_t'+str(t0)+'.png'))
-        plt.close()
+        # fig, axis = plt.subplots(2, 2, figsize=(10,10))
+        # ax11 = axis[0, 0]
+        # ax12 = axis[0, 1]
+        # ax21 = axis[1, 0]
+        # ax22 = axis[1, 1]
+        # circle1 = plt.Circle((ic, jc), rmax/2, fill=False, color='r', linewidth=2)
+        # cf = ax11.imshow(v_rad_int[it, :, :, 0].T, origin='lower')
+        # plt.colorbar(cf, ax=ax11, shrink=0.8)
+        # ax11.set_title('radial velocity')
+        # ax11.add_artist(circle1)
+        # ax11.plot(ic-0.5, jc-0.5, 'ow', markersize=7)
+        # cf = ax12.imshow(v_tan_int[it, :, :, 0].T, origin='lower')
+        # plt.colorbar(cf, ax=ax12, shrink=0.8)
+        # ax12.set_title('tangential velocity')
+        # cf = ax21.imshow(v_hor_int[0, :, :].T, origin='lower')
+        # plt.colorbar(cf, ax=ax21, shrink=0.8)
+        # ax21.set_title('u')
+        # cf = ax22.imshow(v_hor_int[1, :, :].T, origin='lower')
+        # plt.colorbar(cf, ax=ax22, shrink=0.8)
+        # ax22.set_title('v')
+        # ax11.set_xlim(0, nx)
+        # ax11.set_ylim(0, ny)
+        # ax12.set_xlim(0, nx)
+        # ax12.set_ylim(0, ny)
+        # #plt.tight_layout()
+        # plt.savefig(os.path.join(path_out_data_2D, 'test_field_vrad_vtan_t'+str(t0)+'.png'))
+        # plt.close()
 
     # dump r_field, th_field, v_rad, v_tan
     create_vrad_field(v_rad_int, v_tan_int, r_field, th_field, kmax, filename, path_out_data_2D)
