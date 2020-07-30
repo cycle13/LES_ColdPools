@@ -32,13 +32,13 @@ def main():
     path_out_figs = os.path.join(path, 'figs_radial_average')
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
-    print ''
-    print 'paths:'
-    print 'data:    ', path_out_data
-    print 'data 2D: ', path_out_data_2D
-    print 'figs:    ', path_out_figs
-    print 'fields:  ', path_fields
-    print ''
+    print('')
+    print('paths:')
+    print('data:    ', path_out_data)
+    print('data 2D: ', path_out_data_2D)
+    print('figs:    ', path_out_figs)
+    print('fields:  ', path_fields)
+    print('')
 
     ic_arr, jc_arr, rstar = define_geometry(nml)
     # radius = np.int(np.double(ID[12:16]) / dx[0])
@@ -65,21 +65,21 @@ def main():
     plot_configuration(ic, jc, radius, times, path_out_data_2D)
 
 
-    print ''
+    print('')
     print('----- compute radius ----------- ')
     # OUTPUT: th_field[nx, ny], r_field[nx, ny]
     file_name_rthfield = 'r_th_field.nc'    # in 'fields_v_rad'
     th_field, r_field = compute_radius(ic, jc, irange, jrange, file_name_rthfield, path_out_data_2D)
 
 
-    print ''
+    print('')
     print('----- compute radial velocity ----------- ')
     # creates 2D output-file with v_rad[nt, nx, ny, kmax], v_ran[nt, nx, ny, kmax] and r_field[nx, ny]
     file_name_vradfield = 'v_rad.nc'    # in 'fields_v_rad'
     compute_radial_velocity(th_field, r_field, times, file_name_vradfield, ic, jc, 0.5*np.amax(r_field), path_out_data_2D)
 
 
-    print ''
+    print('')
     print('----- compute angular average ----------- ')
     # OUTPUT: file with angular averaged statistics, e.g. v_rad[nt, nr, nz]
     # file_name_stats = 'stats_radial_averaged_test.nc'
@@ -148,7 +148,7 @@ def main():
         plt.close(fig)
 
 
-    print ''
+    print('')
     print('----- compute angular average CP height ----------- ')
     sth = 0.5
     file_name_CP_height = 'CP_height_' + ID + '_sth' + str(sth) + '.nc' # in path_out_data
@@ -156,7 +156,7 @@ def main():
 
 
 
-    print ''
+    print('')
     print('----- plotting ----------- ')
     file_name_stats = 'stats_radial_averaged.nc'
     plot_radially_averaged_vars(rmax_plot, times, file_name_stats, path_out_data, path_out_figs)
@@ -258,8 +258,8 @@ def compute_radial_velocity(th_field, r_field, times, filename, ic, jc, rmax, pa
         print('t=' + str(t0))
         fullpath_in = os.path.join(path, 'fields', str(t0) + '.nc')
         rootgrp = nc.Dataset(fullpath_in, 'r')
-        u = rootgrp.groups['fields'].variables['u'][:,:,:]
-        v = rootgrp.groups['fields'].variables['v'][:,:,:]
+        u = rootgrp.groups['fields'].variables['u'][:,:,:kmax]
+        v = rootgrp.groups['fields'].variables['v'][:,:,:kmax]
         for k0 in range(kmax):
             # print('   k=' + str(k0))
             v_hor_int = np.zeros((2, nx, ny))
