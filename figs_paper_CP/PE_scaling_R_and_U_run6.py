@@ -75,6 +75,11 @@ def main():
     it0 = 6
     t0 = times[it0]
     itsplit = np.int(1600./dt_fields)
+
+    # # plot timeseries without fitting
+    # fig_name = 'R_scaling_no_fits'
+    # plot_timeseries(times, r_av, r_sigma, r_params, itsplit, path_out_figs, fig_name)
+
     # R0 = r_av[istar,it0]
     # print('it0', it0, R0)
     # x = np.log(times[1:]*1./t0)
@@ -280,28 +285,26 @@ def plot_run6_fits(times, r_av, r_std,
     x = times[itplot0:] / t0
     x_log = np.log(times[itplot0:] / t0)
 
-    print('PLOTTING: ', x.shape)
-
+    ax00.plot([t0, t0], [0, 12e3], '.5', linewidth=.5)
+    ax00.plot([t_split, t_split], [0, 14e3], '--', color='.5', linewidth=.5)
+    ax01.plot([np.log(t0 / t0), np.log(t0 / t0)], [-2, 2], '.5', linewidth=.5)
+    ax01.plot([np.log(t_split / t0), np.log(t_split / t0)], [-2, 2], '--', color='.5', linewidth=.5)
+    ax10.plot([t0, t0], [0, np.amax(r_std)], '.5', linewidth=.5)
+    ax10.plot([t_split, t_split], [0, np.amax(r_std)], '--', color='.5', linewidth=.5)
     for istar in range(n_params):
         R0 = r_av[istar, it0]
 
-        ax00.plot([t0, t0], [0, 12e3], '.5', linewidth=.5)
-        ax00.plot([t_split, t_split], [0, 14e3], '--', color='.5', linewidth=.5)
         ax00.plot(times[itplot0:], r_av[istar, itplot0:], 'x', color=colorlist5[istar])
         lbl = r'R=a+b$\,$log(1+c$\,$t), (S$^2$='+str(np.round(err_log[istar],1))\
               +', $\epsilon$='+str(np.round(eps_log[istar],1))+')'
         ax00.plot(times[itplot0:], a[istar] + b[istar] * np.log(1 + c[istar] * times[itplot0:]), '-', color=colorlist5[istar], label=lbl)
 
-        ax01.plot([np.log(t0 / t0), np.log(t0 / t0)], [-2, 2], '.5', linewidth=.5)
-        ax01.plot([np.log(t_split / t0), np.log(t_split / t0)], [-2, 2], '--', color='.5', linewidth=.5)
         ax01.plot(x_log, np.log(r_av[istar, itplot0:] / R0), 'x', color=colorlist5[istar])
         lbl = 'R=R0+a*(t/t0)**m, (S$^2$=' + str(np.round(err_pow_normed[istar], 1)) \
               + ', $\epsilon$=' + str(np.round(eps_pow[istar], 1)) + ')'
         ax01.plot(x_log, np.log(powlaw_fit_two(x, l1[istar], k1[istar], l2[istar], k2[istar])),
                   '-', color=colorlist5[istar], label=lbl)
 
-        ax10.plot([t0, t0], [0, np.amax(r_std)], '.5', linewidth=.5)
-        ax10.plot([t_split, t_split], [0, np.amax(r_std)], '--', color='.5', linewidth=.5)
         lbl = 'r*=' + str(r_params[istar])
         ax10.plot(times[itplot0:], r_std[istar, itplot0:], '-x', color=colorlist5[istar], linewidth=1, label=lbl)
         # ax2_ = ax2.twinx()
@@ -358,9 +361,9 @@ def plot_run6_fits(times, r_av, r_std,
     ftsize = 21
     ax00.text(0., txt_x, 'a) Logarithmic fit', transform=ax00.transAxes, fontsize=ftsize, verticalalignment='top',
               bbox=textprops)
-    ax01.text(0., txt_x, 'b) Power law fit', transform=ax10.transAxes, fontsize=ftsize, verticalalignment='top',
+    ax01.text(0., txt_x, 'b) Power law fit', transform=ax01.transAxes, fontsize=ftsize, verticalalignment='top',
               bbox=textprops)
-    ax10.text(0., txt_x, 'c) Standard deviation of the radius', transform=ax01.transAxes, fontsize=ftsize,
+    ax10.text(0., txt_x, 'c) Standard deviation of the radius', transform=ax10.transAxes, fontsize=ftsize,
               verticalalignment='top', bbox=textprops)
 
     plt.subplots_adjust(bottom=0.12, right=.97, left=0.05, top=0.92, wspace=0.25, hspace=0.2)
@@ -543,9 +546,84 @@ def plot_R_twofits_variance(times, r_av, r_var, r_std, itsplit, rstar,
     plt.subplots_adjust(bottom=0.12, right=.97, left=0.05, top=0.87, wspace=0.25, hspace=0.2)
     print('saving: ' + str(os.path.join(path_out_figs, fig_name)))
     fig.savefig(os.path.join(path_out_figs, fig_name + '.png'))
-    fig.savefig(os.path.join(path_out_figs, fig_name + '.pdf'))
+    # fig.savefig(os.path.join(path_out_figs, fig_name + '.pdf'))
     plt.close(fig)
     print('')
+    return
+
+# ----------------------------------------------------------------------
+def plot_timeseries(times, r_av, r_std, r_params, itsplit,
+                    path_out_figs, fig_name):
+    t0 = it0 * dt_fields
+    t_split = itsplit * dt_fields
+
+
+
+
+    fig, axes = plt.subplots(1, 3, sharex='none', figsize=(20, 6))
+    lblsize = 24
+    ticksize= 15
+    ax00 = axes[0]
+    ax01 = axes[1]
+    ax10 = axes[2]
+
+    itplot0 = 1
+
+    x_log = np.log(times[itplot0:] / t0)
+
+    for istar in range(n_params):
+        R0 = r_av[istar, it0]
+
+        ax00.plot([t0, t0], [0, 12e3], '.5', linewidth=.5)
+        ax00.plot([t_split, t_split], [0, 14e3], '--', color='.5', linewidth=.5)
+        ax00.plot(times[itplot0:], r_av[istar, itplot0:], 'x', color=colorlist5[istar])
+
+        ax01.plot([np.log(t0/t0), np.log(t0/t0)], [-2,2], '.5', linewidth=.5)
+        ax01.plot([np.log(t_split/t0), np.log(t_split/t0)], [-2,2], '--', color='.5', linewidth=.5)
+        ax01.plot(x_log, np.log(r_av[istar, itplot0:]/R0), 'x', color=colorlist5[istar])
+
+        ax10.plot([t0, t0], [0, np.sqrt(np.amax(r_std))], '.5', linewidth=.5)
+        ax10.plot([t_split, t_split], [0, np.sqrt(np.amax(r_std))], '--', color='.5', linewidth=.5)
+        lbl = 'r*='+str(r_params[istar])
+        ax10.plot(times[itplot0:], r_std[istar,itplot0:], '-x', color=colorlist5[istar], linewidth=1, label=lbl)
+        # ax2_ = ax2.twinx()
+        # ax2_.plot(times[itplot0:], r_var[itplot0:], 'o-', color='.8', markeredgecolor='w')
+
+    ax00.set_xticks(np.arange(0, tmax, step=600))
+    ax00.set_xticklabels([np.int(n / 60) for n in ax00.get_xticks()], fontsize=ticksize)
+    ax00.set_yticklabels([np.int(n * 1e-3) for n in ax00.get_yticks()], fontsize=ticksize)
+    ax01.set_xticklabels([n for n in ax01.get_xticks()], fontsize=ticksize)
+    ax01.set_yticklabels([n for n in ax01.get_yticks()], fontsize=ticksize)
+    ax10.set_xticks(np.arange(0, tmax, step=600))
+    ax10.set_xticklabels([np.int(n / 60) for n in ax10.get_xticks()], fontsize=ticksize)
+    ax10.set_yticklabels([np.round(n*1e-3,2) for n in ax10.get_yticks()], fontsize=ticksize)
+    # # ax2_.set_yticklabels([np.int(n) for n in ax2_.get_yticks()])
+
+    ax00.legend(loc=2, fontsize=12)
+    ax10.legend(loc='best', fontsize=12)
+    ax01.legend(loc=2, fontsize=12)
+    ax00.set_ylim(0, np.amax(r_av)*1.1)
+    ax01.set_ylim(-1.5, 2.)
+    ax00.set_xlabel('t  [min]', fontsize=lblsize)
+    ax00.set_ylabel('R  [km]', fontsize=lblsize)
+    ax01.set_xlabel('log(t/t0)  [-]', fontsize=lblsize)
+    ax01.set_ylabel('log(R/R0)  [-]', fontsize=lblsize)
+    ax10.set_xlabel('t  [min]', fontsize=lblsize)
+    ax10.set_ylabel(r'std(R)  [km]', fontsize=lblsize)
+
+    textprops = dict(facecolor='white', alpha=0.9, linewidth=0.)
+    txt_x = 1.08
+    ftsize = 21
+    ax00.text(0., txt_x, 'a) Logarithmic fit', transform=ax00.transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
+    ax10.text(0., txt_x, 'b) Power law fit', transform=ax10.transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
+    ax01.text(0., txt_x, 'c) Standard deviation of the radius', transform=ax01.transAxes, fontsize=ftsize, verticalalignment='top', bbox=textprops)
+
+    plt.subplots_adjust(bottom=0.12, right=.97, left=0.05, top=0.92, wspace=0.25, hspace=0.2)
+    print('saving: ' + str(os.path.join(path_out_figs, fig_name)))
+    fig.savefig(os.path.join(path_out_figs, fig_name + '.png'))
+    fig.savefig(os.path.join(path_out_figs, fig_name + '.pdf'))
+    plt.close(fig)
+
     return
 
 # ----------------------------------------------------------------------
