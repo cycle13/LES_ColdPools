@@ -10,8 +10,9 @@ import os
 import time
 import scipy
 import scipy.ndimage
+import time
 
-
+from thermodynamic_functions import entropy_from_thetas_c
 
 label_size = 8
 plt.rcParams['xtick.labelsize'] = label_size
@@ -31,6 +32,7 @@ def main():
     parser.add_argument("--tmin")
     parser.add_argument("--tmax")
     parser.add_argument("--s_crit")
+    parser.add_argument("--th_crit")
     args = parser.parse_args()
 
     global cm_bwr, cm_grey, cm_vir, cm_hsv, cm_cw
@@ -47,16 +49,22 @@ def main():
 
     ''' threshold for entropy '''
     if args.s_crit:
-        s_crit = args.scrit
+        s_crit = np.double(args.s_crit)
     else:
-        s_crit = 5e-1
-    print('threshold for ds=s-s_bg: ' + str(s_crit) + 'J/K')
+        s_crit = entropy_from_thetas_c(5e-1, 0.0)
+    if args.th_crit:
+        th_crit = np.double(args.th_crit)
+    else:
+        th_crit = 5e-1
+    print('threshold for ds=s-s_bg:    ' + str(s_crit) + ' J/K')
+    print('threshold for dth=th-th_bg: ' + str(th_crit) + ' K')
+    print('kmax: ' + str(kmax) + ' (zmax='+str(kmax*dx[2])+')')
     print('')
 
     ID = os.path.basename(path)
     if ID == '':
         ID = os.path.basename(path[:-1])
-    print('id: ', ID)
+    print('id: '+ ID)
 
 
     ''' background entropy '''
@@ -65,87 +73,105 @@ def main():
     except:
         s0 = read_in_netcdf_fields('s', os.path.join(path_fields, '100.nc'))[ic_arr[2],jc_arr[0],5]
     s_bg = np.average(np.average(s0[:10,:10,:kmax], axis=0), axis=0)
+    th_bg = theta_s(s_bg)
     smax = np.amax(s0)
     smin = np.amin(s0)
     plot_geometry(s0, i0_coll, j0_coll)
     del s0
     print('sminmax', smin, smax)
+    print('th_bg', np.amin(th_bg), np.amax(th_bg))
     print ''
 
     # ''' create output file '''
-    filename = 'CP_height_' + ID + '_sth' + str(s_crit) + '.nc'
-    create_output_file(filename, s_crit, nx, ny, times)
+    filename = 'CP_height_' + ID + '_thcrit' + str(th_crit) + '.nc'
+    create_output_file(filename, nx, ny, kmax, times)
     ''' define CP height & maximal updraft velocity'''
     # Output:
     #       CP_top[it, x, y]: 2D-field with CP-height for each xy-value
     #       w_max[0,it,x,y]:  2D-field with maximum value of w for each column
     #       w_max[1,it,x,y]:  height where maximum value of w for each column
     w_max, w_max_height, w_max_2d = compute_w_max(kmax, times)
+    print('-------- w_max' +
+          str(np.amax(w_max)) + ', w_max_height: ' + str(np.amax(w_max_height)))
     dump_output_file('w_max', 'timeseries', w_max, filename)
     dump_output_file('w_max_2d', 'fields_2D', w_max_2d[0,:,:,:], filename)
     dump_output_file('w_max_height', 'timeseries', w_max_height, filename)
     dump_output_file('w_max_height_2d', 'fields_2D', w_max_2d[1,:,:,:], filename)
-    CP_top, CP_top_max = compute_CP_height_threshold(s_bg, s_crit, kmax, times)
+    # t0 = time.time()
+    CP_top, CP_top_max = compute_CP_height_threshold(s_bg, s_crit, kmax, times, case_name)
+    # t1 = time.time()
+    print('-------- CP_top (s) ', np.amax(CP_top), np.amax(CP_top_max))
     dump_output_file('CP_height_max', 'timeseries', CP_top_max, filename)
     dump_output_file('CP_height_2d', 'fields_2D', CP_top[:,:,:], filename)
-    CP_top_grad, CP_top_grad_max, CP_top_gradgrad = compute_CP_height_gradient(i0_coll, j0_coll, kmax, times)
-    dump_output_file('CP_height_gradient_max', 'timeseries', CP_top_grad_max, filename)
-    dump_output_file('CP_height_gradient_2d', 'fields_2D', CP_top_grad[:,:,:], filename)
+    print('')
+    # t2 = time.time()
+    CP_top_th, CP_top_max_th, th_var = compute_CP_height_threshold_theta(th_bg, th_crit, kmax, times, case_name)
+    print('-------- CP_top (th)', np.amax(CP_top_th), np.amax(CP_top_max_th))
+    dump_output_file('th_var', 'profiles', th_var, filename)
+    dump_output_file('CP_height_th_max', 'timeseries', CP_top_max_th, filename)
+    dump_output_file('CP_height_th_2d', 'fields_2D', CP_top_th[:, :, :], filename)
+    # t3 = time.time()
+    # print('')
+    # print('TIMES: '+str(t1-t0)+', '+str(t3-t2))
+    print('')
+    # CP_top_grad, CP_top_grad_max, CP_top_gradgrad = compute_CP_height_gradient(i0_coll, j0_coll, kmax, times)
+    # dump_output_file('CP_height_gradient_max', 'timeseries', CP_top_grad_max, filename)
+    # dump_output_file('CP_height_gradient_2d', 'fields_2D', CP_top_grad[:,:,:], filename)
     print('')
 
 
 
-    '''plot contour-figure of CP_top, w_max, height of w_max (xy-plane)'''
-    print('plotting')
-    filename = 'CP_height_' + ID + '_sth' + str(s_crit) + '.nc'
-    root = nc.Dataset(os.path.join(path_out, filename), 'r')
-    time_range = root.groups['timeseries'].variables['time'][:]
-    CP_top = root.groups['timeseries'].variables['CP_height_max'][:]
-    CP_top_2D = root.groups['fields_2D'].variables['CP_height_2d'][:,:,:]
-    CP_top_gradient = root.groups['timeseries'].variables['CP_height_gradient_max'][:]
-    CP_top_gradient_2D = root.groups['fields_2D'].variables['CP_height_gradient_2d'][:,:,:]
-    w_max_height = root.groups['timeseries'].variables['w_max_height'][:]
-    w_max_2D = root.groups['fields_2D'].variables['w_max_2d'][:,:,:]
-    w_max_height_2D = root.groups['fields_2D'].variables['w_max_height_2d'][:,:,:]
-    root.close()
-
-
-
-    for it, t0 in enumerate(times):
-        print('plot --- t: ', it, t0)
-        print(xmin_plt, xmax_plt, ymin_plt, ymax_plt)
-        figname = 'CP_height_t'+str(t0)+'.png'
-        plot_contourf_xy(CP_top_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt],
-                         w_max_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt],
-                         w_max_height_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt], t0,
-                         figname)
-        figname = 'CP_height_gradient_t'+str(t0)+'.png'
-        plot_contourf_xy(CP_top_gradient_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt],
-                         w_max_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt],
-                         w_max_height_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt], t0,
-                         figname)
-        plot_contourf_test_yz(smin, smax, CP_top_2D[it, :, :], CP_top_gradient_2D[it, :, :],
-                              CP_top_gradgrad[it,:,:], kmax, j0_coll, t0)
-
-
-
-    ''' plotting crosssections '''
-    i1 = i0_center
-    i2 = i0_coll
-    j1 = i0_center
-    j2 = j0_coll
-    s0 = read_in_netcdf_fields('s', os.path.join(path_fields, '0.nc'))
-    # plot_x_crosssections(s0, CP_top_2D, w_max_2D, j1, j2, times)
-    # plot_x_crosssections(s0, CP_top_2D, w_max_2D, j1, j2, times)
-    # plot_x_crosssections_CPtop_w(s0, CP_top_2D, w_max_2D, j1, j2, times)
-    # plot_y_crosssections(s0, CP_top_2D, w_max_2D, i1, i2, times)
-    # plot_y_crosssections_CPtop_w(s0, CP_top_2D, w_max_2D, i1, i2, times)
+    # '''plot contour-figure of CP_top, w_max, height of w_max (xy-plane)'''
+    # print('plotting')
+    # filename = 'CP_height_' + ID + '_sth' + str(s_crit) + '.nc'
+    # root = nc.Dataset(os.path.join(path_out, filename), 'r')
+    # time_range = root.groups['timeseries'].variables['time'][:]
+    # CP_top = root.groups['timeseries'].variables['CP_height_max'][:]
+    # CP_top_2D = root.groups['fields_2D'].variables['CP_height_2d'][:,:,:]
+    # CP_top_gradient = root.groups['timeseries'].variables['CP_height_gradient_max'][:]
+    # CP_top_gradient_2D = root.groups['fields_2D'].variables['CP_height_gradient_2d'][:,:,:]
+    # w_max_height = root.groups['timeseries'].variables['w_max_height'][:]
+    # w_max_2D = root.groups['fields_2D'].variables['w_max_2d'][:,:,:]
+    # w_max_height_2D = root.groups['fields_2D'].variables['w_max_height_2d'][:,:,:]
+    # root.close()
     #
-    ''' plotting timeseries '''
-    figname = 'CP_height_timeseries.png'
-    plot_timeseries(CP_top_2D, CP_top, w_max_height, s0, i0_coll, j0_coll, time_range, figname)
-    figname = 'CP_height_timeseries_gradient.png'
-    plot_timeseries(CP_top_gradient_2D, CP_top_gradient, w_max_height, s0, i0_coll, j0_coll, time_range, figname)
+    #
+    #
+    # for it, t0 in enumerate(times):
+    #     print('plot --- t: ', it, t0)
+    #     print(xmin_plt, xmax_plt, ymin_plt, ymax_plt)
+    #     figname = 'CP_height_t'+str(t0)+'.png'
+    #     plot_contourf_xy(CP_top_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt],
+    #                      w_max_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt],
+    #                      w_max_height_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt], t0,
+    #                      figname)
+    #     figname = 'CP_height_gradient_t'+str(t0)+'.png'
+    #     plot_contourf_xy(CP_top_gradient_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt],
+    #                      w_max_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt],
+    #                      w_max_height_2D[it, xmin_plt:xmax_plt, ymin_plt:ymax_plt], t0,
+    #                      figname)
+    #     plot_contourf_test_yz(smin, smax, CP_top_2D[it, :, :], CP_top_gradient_2D[it, :, :],
+    #                           CP_top_gradgrad[it,:,:], kmax, j0_coll, t0)
+    #
+    #
+    #
+    # ''' plotting crosssections '''
+    # i1 = i0_center
+    # i2 = i0_coll
+    # j1 = i0_center
+    # j2 = j0_coll
+    # s0 = read_in_netcdf_fields('s', os.path.join(path_fields, '0.nc'))
+    # # plot_x_crosssections(s0, CP_top_2D, w_max_2D, j1, j2, times)
+    # # plot_x_crosssections(s0, CP_top_2D, w_max_2D, j1, j2, times)
+    # # plot_x_crosssections_CPtop_w(s0, CP_top_2D, w_max_2D, j1, j2, times)
+    # # plot_y_crosssections(s0, CP_top_2D, w_max_2D, i1, i2, times)
+    # # plot_y_crosssections_CPtop_w(s0, CP_top_2D, w_max_2D, i1, i2, times)
+    # #
+    # ''' plotting timeseries '''
+    # figname = 'CP_height_timeseries_sth'+str(s_crit)+'.png'
+    # plot_timeseries(CP_top_2D, CP_top, w_max_height, s0, i0_coll, j0_coll, time_range, figname)
+    # figname = 'CP_height_timeseries_gradient_sth'+str(s_crit)+'.png'
+    # plot_timeseries(CP_top_gradient_2D, CP_top_gradient, w_max_height, s0, i0_coll, j0_coll, time_range, figname)
 
 
 
@@ -163,7 +189,7 @@ def compute_w_max(kmax, times):
     w_max = np.zeros((nt))
     w_max_height = np.zeros((nt))
     for it, t0 in enumerate(times):
-        print('--- t: ', it, t0)
+        print('--- t: ' + str(t0) + ' (it=' + str(it) + ')')
         w = read_in_netcdf_fields('w', os.path.join(path_fields, str(t0) + '.nc'))[xmin:xmax, xmin:xmax, :kmax+1]
         w_ = np.array(w, copy=True)
         w_[w_ < 0.5] = 0
@@ -177,34 +203,80 @@ def compute_w_max(kmax, times):
     return w_max, w_max_height, w_max_2d
 
 
-def compute_CP_height_threshold(s_bg, s_crit, kmax, times):
-    print('--- compute CP height by threshold ---')
+def compute_CP_height_threshold_theta(th_bg, th_crit, kmax, times, case_name):
+    print('--- compute CP height from theta ---')
+    print('th_crit: ' + str(th_crit))
     nt = len(times)
     xmin = 0
-    xmax = nx
+    ymin = 0
+    if case_name == 'ColdPoolDry_single_3D':
+        xmax = np.int(nx * .5) + 10
+        ymax = np.int(ny * .5) + 10
+    else:
+        xmax = nx
+        ymax = ny
+    # define CP height by threshold in entropy directly (theta-theta_bg > th_crit)
+    CP_top = np.zeros((nt, nx, ny), dtype=np.int)
+    CP_top_max = np.zeros((nt))
+    th_var = np.zeros((nt, kmax), dtype=np.double)
+
+    for it, t0 in enumerate(times):
+        print('--- t: '+str(t0)+' (it='+str(it)+')')
+        s = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0) + '.nc'))[xmin:xmax, xmin:xmax, :kmax]
+        th = theta_s(s)
+        del s
+        for k in range(kmax):
+            th_var[it,k] = np.var(th[:,:,k])
+
+        th_diff = np.subtract(th, th_bg)
+        for i in range(xmin,xmax):
+            for j in range(ymin,ymax):
+                k = kmax
+                while k > 0:
+                    k -= 1
+                    if np.abs(th_diff[i, j, k]) > th_crit:
+                        CP_top[it, i, j] = (k+0.5)*dx[2]    # staggered grid for entropy
+                        k = 0
+        print('    max, min CP_top: ' +
+              str(np.amax(CP_top[it, :, :])) + ', ' + str(np.amin(CP_top[it, :, :])))
+        CP_top_max[it] = np.amax(CP_top[it, :, :])
+
+    return CP_top, CP_top_max, th_var
+
+
+
+
+def compute_CP_height_threshold(s_bg, s_crit, kmax, times, case_name):
+    print('--- compute CP height by threshold ---')
+    print('s_crit: ' + str(s_crit))
+    nt = len(times)
+    xmin = 0
+    ymin = 0
+    if case_name == 'ColdPoolDry_single_3D':
+        xmax = np.int(nx * .5) + 10
+        ymax = np.int(ny * .5) + 10
+    else:
+        xmax = nx
+        ymax = ny
     # define CP height by threshold in entropy directly (s > s_crit)
     CP_top = np.zeros((nt, nx, ny), dtype=np.int)
     CP_top_max = np.zeros((nt))
 
     for it, t0 in enumerate(times):
-        print('--- t: ', it, t0)
+        print('--- t: '+str(t0)+' (it='+str(it)+')')
         s = read_in_netcdf_fields('s', os.path.join(path_fields, str(t0) + '.nc'))[xmin:xmax, xmin:xmax, :kmax]
-        s_diff = s - s_bg
-        for i in range(nx):
-            for j in range(ny):
-                # for k in range(kmax-1, 0, -1):
+        s_diff = np.subtract(s, s_bg)
+        for i in range(xmin,xmax):
+            for j in range(ymin,ymax):
                 k = kmax
-                while k >= 0:
+                while k > 0:
                     k -= 1
-                    # if np.abs(s_diff[i, j, k]) > s_crit and CP_top[it, i, j] == 0:
-                    if np.abs(s[i, j, k]-s_bg[k]) > s_crit and CP_top[it, i, j] == 0:
-                        # print('if-in', k)
+                    if np.abs(s_diff[i, j, k]) > s_crit:
                         CP_top[it, i, j] = (k+0.5)*dx[2]    # staggered grid for entropy
                         k = 0
-        print(kmax, (kmax+0.5)*dx[2], np.amax(CP_top[it,:,:]), np.amin(CP_top[it,:,:]))
+        print('    max, min CP_top: ' +
+              str(np.amax(CP_top[it, :, :])) + ', ' + str(np.amin(CP_top[it, :, :])))
         CP_top_max[it] = np.amax(CP_top[it, :, :])
-
-
 
     return CP_top, CP_top_max
 
@@ -877,7 +949,7 @@ def define_geometry(case_name, nml):
         ymin_plt = xmin_plt
         ymax_plt = xmax_plt
 
-    print ''
+    print('')
     return i0_center, j0_center, i0_coll, j0_coll, xmin_plt, xmax_plt, ymin_plt, ymax_plt
 
 
@@ -897,8 +969,23 @@ def theta_s(s):
     th_s = T_tilde * np.exp( (s - sd_tilde)/cpd )
     return th_s
 
+def s_from_theta_s(s):
+    # T_tilde = 298.15
+    # thetas_c(s, qt){
+    #     return T_tilde * exp((s - (1.0 - qt) * sd_tilde - qt * sv_tilde) / cpm_c(qt));
+    # }
+    # cpm_c(qt){
+    #     return (1.0 - qt) * cpd + qt * cpv;
+    # }
+    # parameters from pycles
+    T_tilde = 298.15
+    sd_tilde = 6864.8
+    cpd = 1004.0
+    th_s = T_tilde * np.exp( (s - sd_tilde)/cpd )
+    return th_s
+
 # ----------------------------------
-def create_output_file(filename, s_crit, nx, ny, times):
+def create_output_file(filename, nx, ny, kmax, times):
     # output for each CP:
     # - min, max (timeseries)
     # - CP height (field; max=timeseries)
@@ -915,11 +1002,22 @@ def create_output_file(filename, s_crit, nx, ny, times):
     var.units = "s"
     var[:] = times
 
+    ps_grp = rootgrp.createGroup('profiles')
+    ps_grp.createDimension('nt', nt)
+    ps_grp.createDimension('kmax', kmax)
+
     var = ts_grp.createVariable('CP_height_max', 'f8', ('nt'))
-    var.long_name = 'domain max CP height (from threshold)'
+    var.long_name = 'domain max CP height (from entropy threshold)'
     var.units = "m"
     var = ts_grp.createVariable('CP_height_gradient_max', 'f8', ('nt'))
     var.long_name = 'domain max CP height (from gradient)'
+    var.units = "m"
+
+    var = ts_grp.createVariable('CP_height_th_max', 'f8', ('nt'))
+    var.long_name = 'domain max CP height (from theta threshold)'
+    var.units = "m"
+    var = ps_grp.createVariable('th_var', 'f8', ('nt','kmax'))
+    var.long_name = 'profile of theta variance'
     var.units = "m"
 
     var = ts_grp.createVariable('w_max', 'f8', ('nt'))
@@ -933,6 +1031,8 @@ def create_output_file(filename, s_crit, nx, ny, times):
     field_grp.createDimension('ny', ny)
     var = field_grp.createVariable('CP_height_2d', 'f8', ('nt', 'nx', 'ny'))
     var.units = "m"
+    var = field_grp.createVariable('CP_height_th_2d', 'f8', ('nt', 'nx', 'ny'))
+    var.units = "m"
     var = field_grp.createVariable('CP_height_gradient_2d', 'f8', ('nt', 'nx', 'ny'))
     var.units = "m"
     var = field_grp.createVariable('w_max_2d', 'f8', ('nt', 'nx', 'ny'))
@@ -941,19 +1041,21 @@ def create_output_file(filename, s_crit, nx, ny, times):
     var.units = "m"
 
     rootgrp.close()
-    print ''
+    print('')
     return
 
 
 
 def dump_output_file(var_name, group_name, var_in, filename):
     # print('dumping', os.path.join(path_out, filename))
-    print('dump ' + var_name )
+    print('dump ' + var_name)
     rootgrp = nc.Dataset(os.path.join(path_out, filename), 'r+', format='NETCDF4')
     grp = rootgrp.groups[group_name]
     var = grp.variables[var_name]
     if group_name == 'timeseries':
         var[:] = var_in
+    elif group_name == 'profiles':
+        var[:,:] = var_in
     elif group_name == 'fields_2D':
         var[:,:,:] = var_in
     rootgrp.close()
