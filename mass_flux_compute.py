@@ -82,11 +82,13 @@ def main():
     create_output_file(filename_out, times, path_out_data)
     rho = np.zeros((nt), dtype=np.double)
     # read in density
+    print('stats-file: ', os.path.join(path, 'stats', 'Stats.' + case_name + '.nc'))
     rootgrp = nc.Dataset(os.path.join(path, 'stats', 'Stats.' + case_name + '.nc'))
     time_stats = rootgrp.groups['profiles'].variables['t'][:]
     # rho0_stat = rootgrp.groups['reference'].variables['rho0_full'][:]
     rho_mean = 1./rootgrp.groups['profiles'].variables['alpha_mean'][:,k0]
     rootgrp.close()
+    print('time stats: ', time_stats)
     if time_stats[-1] < tmax:
         print('Using restart stats-file')
         nt_ = len(time_stats)
@@ -103,6 +105,7 @@ def main():
         rho[:] = rho_mean[:nt]
     # compute mass flux
     w_2D = field_k0.variables['w'][:,:,:]
+    print('shapes: rho=', rho.shape, 'w_2D=',w_2D.shape, tmin, tmax)
     mf_w = np.sum(w_2D[:itmax+1,:,:], axis=0)
     flux = np.zeros((w_2D.shape), dtype=np.double)
     for it,t0 in enumerate(range(tmin, tmax+dt, dt)):
