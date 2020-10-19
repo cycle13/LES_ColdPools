@@ -10,52 +10,116 @@ import os
 from scipy.integrate import odeint
 import sys
 
+from thermodynamic_functions import thetas_c
 # import thermodynamic_profiles
 # from thermodynamic_profiles import alpha_c
 
 def main():
-    cm = plt.cm.get_cmap('rainbow')
+    cm_rain = plt.cm.get_cmap('rainbow')
+    cm_rep = plt.cm.get_cmap('prism')
+    cm = cm_rain
+
+    parser = argparse.ArgumentParser(prog='LES_CP')
+    parser.add_argument("--dx")
+    parser.add_argument("--dTh_min")
+    parser.add_argument("--dTh_max")
+    args = parser.parse_args()
 
     path_out = './figs_Initialization/'
 
-    define_geometry()
-
-
-    Th_g = 300.0  # temperature for neutrally stratified background (value from Soares Surface)
     'surface values'
+    Th_g = 300.0  # temperature for neutrally stratified background (value from Soares Surface)
+    if args.dx:
+        dx_ = np.int(args.dx)
+    else:
+        dx_ = 50
+    marg = 200.
+    z_half = define_geometry(dx_, marg)
     set_parameters()
+    print('dx: '+str(dx_))
 
-    # parameter range
+
+    ''' Parameter range '''
+    if args.dTh_min:
+        dTh_min = np.int(args.dTh_min)
+    else:
+        dTh_min = 2
+    if args.dTh_max:
+        dTh_max = np.int(args.dTh_max)
+    else:
+        dTh_max = 4
+    dTh_range = np.arange(dTh_min, dTh_max+1)
     dTh_range = [2, 3, 4]
-    zstar_min = 400
-    zstar_max = 2500
-    dTh_range = [4]
-    # zstar_min = 800
-    # zstar_max = 800
-    zstar_range = np.arange(zstar_min, zstar_max+100, 100)
-    print('zstar', zstar_range)
-
+    # for dx=100m, no matches for r*>4200m;
+    # for dx=50m, matches for r*=..., 3600, 4900, 5000; no matches for r<400m
+    rstar_min = 5e2
+    rstar_max = 25e2
+    zstar_min = 5e2
+    zstar_max = 25e2
+    rstar_range = np.arange(rstar_min, rstar_max+100, 100)
+    zstar_range = np.arange(zstar_min, zstar_max+100, 1e2)
     n_thermo = len(dTh_range)
     n_geom_z = len(zstar_range)
+    n_geom_r = len(rstar_range)
+    print('dTh: ' + str(dTh_range))
+    print('zstar: ' + str(zstar_range))
+    print('rstar: ' + str(rstar_range))
+    print('n_geom_z: ' + str(n_geom_z))
+    print('n_geom_r: ' + str(n_geom_r))
 
-    path = '/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2/dTh3_z1000_r1000/stats/'
+    ''' PE scaling-range '''
+    # scaling = [2**(-1), 2**0, 2**1, 2**2, 2**3]
+    scaling = [2**0]
+    print('scaling: ' + str(scaling))
+    print('')
+
+    ''' Reference case '''
+    dTh_ref = 3
+    rstar_ref = 1000
+    zstar_ref = 1000
+    if dx_== 100:
+        path_ref = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2_dx100m/dTh3_z1000_r1000/'
+    elif dx_==50:
+        path_ref = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run3_dx50m/dTh3_z1000_r1000_nz240/'
     case_name = 'ColdPoolDry_single_3D'
-    rootgrp = nc.Dataset(os.path.join(path, 'Stats.' + case_name + '.nc'))
+    print('Reference case: ' + path_ref)
+    rootgrp = nc.Dataset(os.path.join(path_ref, 'stats', 'Stats.' + case_name + '.nc'))
     rho0_stats = rootgrp.groups['reference'].variables['rho0'][:]
     # alpha0_stats = rootgrp.groups['reference'].variables['alpha0'][:]
     zhalf_stats = rootgrp.groups['reference'].variables['z'][:]
     # rho_unit = rootgrp.groups['reference'].variables['rho0'].units
     rootgrp.close()
+    print('')
+    print('z-arrays:')
+    print('z_half:', z_half[:20])
+    print('z_half_stats:', zhalf_stats[:20])
+    print('')
 
 
-    # reference PE
-    dTh_ref = 3
-    rstar_ref = 1000
-    zstar_ref = 1000
-    z_max_arr, theta = compute_envelope(dTh_ref, rstar_ref, zstar_ref, Th_g)
-    PE_ref = compute_PE(theta, Th_g, z_max_arr, zstar_ref, rho0_stats, zhalf_stats)
-    PE_ref_approx = compute_PE_density_approx(dTh_ref, zstar_ref, rstar_ref)
+    ''' reference PE '''
+    print('Reference case: ')
+    z_max_arr, theta_z = compute_envelope(dTh_ref, Th_g, rstar_ref, zstar_ref, marg, z_half)
+    PE_ref = compute_PE(theta_z, Th_g, zstar_ref, rho0_stats, zhalf_stats, z_half)
+    PE_ref_approx = compute_PE_density_approx(dTh_ref, zstar_ref, rstar_ref, z_half)
     print('PE_ref: ', PE_ref)
+    # test reference numerically
+    rootgrp_field = nc.Dataset(os.path.join(path_ref, 'fields', '0.nc'))
+    s0 = rootgrp_field.groups['fields'].variables['s'][:,:,:]
+    rootgrp_field.close()
+    ic_ = s0.shape[0] / 2
+    jc_ = s0.shape[1] / 2
+    theta = thetas_c(s0, 0.0)[ic_-nx/2:ic_+nx/2, jc_-ny/2:jc_+ny/2,:nz]
+    PE_ref_num = compute_PE(theta, Th_g, zstar_ref, rho0_stats, zhalf_stats, z_half)
+    del s0
+    print('  (from envel.) PE_ref =        ' + str(PE_ref))
+    print('  (from field)  PE_ref_num =    ' + str(PE_ref_num))
+    print('   difference: '+str((PE_ref-PE_ref_num)/PE_ref))
+    print('')
+    # print('   (upper limit)  PE_up = ' + str(PE_ref_up))
+    # print('   (lower limit)  PE_low = ' + str(PE_ref_low))
+    # print('   difference: '+str((PE_ref-PE_ref_up)/PE_ref))
+    # print('   difference: '+str((PE_ref-PE_ref_low)/PE_ref))
+    print('')
 
 
     for iTh, dTh in enumerate(dTh_range):
@@ -173,8 +237,8 @@ def dump_file(fname, n_zstar, n_rstar, zstar_range, rstar_range, PE, PE_ref, pat
 
 
 
-#_______________________________
-def compute_envelope(dTh, rstar, zstar, th_g):
+# -----------------------------------------
+def compute_envelope(dTh, th_g, rstar, zstar, marg, z_half):
     # k_max_arr = (-1) * np.ones((2, nlg[0], nlg[1]), dtype=np.double)
     z_max_arr = np.zeros((2, nlg[0], nlg[1]), dtype=np.double)
     # theta = th_g * np.ones(shape=(nlg[0], nlg[1], nlg[2]))
@@ -224,11 +288,9 @@ def compute_PE_density_approx(dTh, zstar, rstar):
 
 
 
-def compute_PE(theta_z, th_g, z_max_arr, z_max, rho0_stats, zhalf_stats):
+def compute_PE(theta_z, th_g, z_max, rho0_stats, zhalf_stats):
     g = 9.80665
     dV = dx * dy * dz
-
-
 
     # p0 = np.log(Pg)
     # # Perform the integration at integration points z_half

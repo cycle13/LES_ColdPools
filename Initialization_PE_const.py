@@ -19,76 +19,105 @@ def main():
     cm_rep = plt.cm.get_cmap('prism')
     cm = cm_rain
 
+    parser = argparse.ArgumentParser(prog='LES_CP')
+    parser.add_argument("--dx")
+    parser.add_argument("--dTh_min")
+    parser.add_argument("--dTh_max")
+    args = parser.parse_args()
+
     path_out = './figs_Initialization/'
 
+    'surface values'
     Th_g = 300.0  # temperature for neutrally stratified background (value from Soares Surface)
-    dx_ = 50
+    if args.dx:
+        dx_ = np.int(args.dx)
+    else:
+        dx_ = 50
     marg = 200.
-    define_geometry(dx_, marg)
+    z_half = define_geometry(dx_, marg)
     set_parameters()
+    print('dx: '+str(dx_))
 
-    # reference PE
-    dTh_ref = 3
-    rstar_ref = 1000
-    zstar_ref = 1000
 
-    # parameter range
-    dTh_min = 3
-    dTh_max = 3#10
-    # dTh_max = 2
+    ''' Parameter range '''
+    if args.dTh_min:
+        dTh_min = np.int(args.dTh_min)
+    else:
+        dTh_min = 2
+    if args.dTh_max:
+        dTh_max = np.int(args.dTh_max)
+    else:
+        dTh_max = 4
     dTh_range = np.arange(dTh_min, dTh_max+1)
-    rstar_min = 200
     # for dx=100m, no matches for r*>4200m;
     # for dx=50m, matches for r*=..., 3600, 4900, 5000; no matches for r<400m
-    rstar_max = 5e3
-    zstar_min = 4e2
-    zstar_max = 3e3
+    rstar_min = 5e2
+    rstar_max = 25e2
+    zstar_min = 5e2
+    zstar_max = 25e2
     rstar_range = np.arange(rstar_min, rstar_max+100, 100)
-    zstar_range = np.arange(zstar_min, zstar_max+100, 2e2)
-    # zstar_range = [zstar_ref]
+    zstar_range = np.arange(zstar_min, zstar_max+100, 1e2)
     n_thermo = len(dTh_range)
     n_geom_z = len(zstar_range)
     n_geom_r = len(rstar_range)
-    print('zstar', zstar_range)
-    print('rstar', rstar_range)
-    print('n_geom_r', n_geom_r)
-    print('n_geom_z', n_geom_z)
+    print('dTh: ' + str(dTh_range))
+    print('zstar: ' + str(zstar_range))
+    print('rstar: ' + str(rstar_range))
+    print('n_geom_z: ' + str(n_geom_z))
+    print('n_geom_r: ' + str(n_geom_r))
 
-    # scaling-range
+    ''' PE scaling-range '''
     # scaling = [2**(-1), 2**0, 2**1, 2**2, 2**3]
-    scaling = [2**(-1), 2**0, 2**1]
+    scaling = [2**0]
     print('scaling: ' + str(scaling))
     print('')
 
-    # path to reference PE
+    ''' Reference case '''
+    dTh_ref = 3
+    rstar_ref = 1000
+    zstar_ref = 1000
     if dx_== 100:
-        path = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2_dx100m/dTh3_z1000_r1000/'
+        path_ref = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2_dx100m/dTh3_z1000_r1000/'
     elif dx_==50:
-        path = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run3_dx50m/dTh3_z1000_r1000/'
+        path_ref = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run3_dx50m/dTh3_z1000_r1000_nz240/'
     case_name = 'ColdPoolDry_single_3D'
-    rootgrp = nc.Dataset(os.path.join(path, 'stats', 'Stats.' + case_name + '.nc'))
+    print('Reference case: ' + path_ref)
+    rootgrp = nc.Dataset(os.path.join(path_ref, 'stats', 'Stats.' + case_name + '.nc'))
     rho0_stats = rootgrp.groups['reference'].variables['rho0'][:]
     # alpha0_stats = rootgrp.groups['reference'].variables['alpha0'][:]
     zhalf_stats = rootgrp.groups['reference'].variables['z'][:]
     rootgrp.close()
+    print('')
+    print('z-arrays:')
+    print('z_half:', z_half[:20])
+    print('z_half_stats:', zhalf_stats[:20])
+    print('')
 
 
     ''' reference PE '''
-    # reference PE
-    z_max_arr, theta_z = compute_envelope(dTh_ref, rstar_ref, zstar_ref, Th_g, marg)
-    PE_ref = compute_PE(theta_z, Th_g, zstar_ref, rho0_stats, zhalf_stats)
-    PE_ref_approx = compute_PE_density_approx(dTh_ref, zstar_ref, rstar_ref)
-    #
-    # # test reference numerically
-    # rootgrp_field = nc.Dataset(os.path.join(path, 'fields', '0.nc'))
-    # s0 = rootgrp_field.groups['fields'].variables['s'][:,:,:]
-    # rootgrp_field.close()
-    # ic_ = s0.shape[0] / 2
-    # jc_ = s0.shape[1] / 2
-    # theta = thetas_c(s0, 0.0)[ic_-nx/2:ic_+nx/2, jc_-ny/2:jc_+ny/2,:nz]
-    # PE_ref_num = compute_PE(theta, Th_g, zstar_ref, rho0_stats, zhalf_stats)
-    # del s0
-    #
+    print('Reference case: ')
+    z_max_arr, theta_z = compute_envelope(dTh_ref, Th_g, rstar_ref, zstar_ref, marg, z_half)
+    PE_ref = compute_PE(theta_z, Th_g, zstar_ref, rho0_stats, zhalf_stats, z_half)
+    PE_ref_up, PE_ref_low = compute_PE_density_approx(dTh_ref, zstar_ref, rstar_ref, rho0_stats[0])     # upper limit
+    # test reference numerically
+    rootgrp_field = nc.Dataset(os.path.join(path_ref, 'fields', '0.nc'))
+    s0 = rootgrp_field.groups['fields'].variables['s'][:,:,:]
+    rootgrp_field.close()
+    ic_ = s0.shape[0] / 2
+    jc_ = s0.shape[1] / 2
+    theta = thetas_c(s0, 0.0)[ic_-nx/2:ic_+nx/2, jc_-ny/2:jc_+ny/2,:nz]
+    PE_ref_num = compute_PE(theta, Th_g, zstar_ref, rho0_stats, zhalf_stats, z_half)
+    del s0
+    print('  (from envel.) PE_ref =        ' + str(PE_ref))
+    print('  (from field)  PE_ref_num =    ' + str(PE_ref_num))
+    print('   difference: '+str((PE_ref-PE_ref_num)/PE_ref))
+    print('')
+    print('   (upper limit)  PE_up = ' + str(PE_ref_up))
+    print('   (lower limit)  PE_low = ' + str(PE_ref_low))
+    print('   difference: '+str((PE_ref-PE_ref_up)/PE_ref))
+    print('   difference: '+str((PE_ref-PE_ref_low)/PE_ref))
+    print('')
+
     # theta_diff = theta_z - theta
     # PE_ref_diff = compute_PE(theta_diff+Th_g, Th_g, zstar_ref, rho0_stats, zhalf_stats)
     # print('theta noise: ', np.mean(theta))
@@ -134,10 +163,12 @@ def main():
         PE_range = np.zeros(len(scaling), dtype=np.single)
         fig1, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(20, 10))
         fig2, (ax1_, ax2_, ax3_) = plt.subplots(1, 3, figsize=(20, 10))
+        fig3, (a1, a2) = plt.subplots(1, 2, figsize=(20, 10))
         ax1.plot(zstar_range, PE_ref * np.ones(n_geom_z), 'k-', linewidth=3)
         ax2.plot(zstar_range, np.ones(n_geom_z), 'k-', linewidth=3)
         ax1_.plot(rstar_range, PE_ref * np.ones(n_geom_r), 'k-', linewidth=3)
         ax2_.plot(rstar_range, PE_ref * np.ones(n_geom_r), 'k-', linewidth=3)
+        a2.plot(rstar_range, PE_ref * np.ones(n_geom_r), 'k-', linewidth=3)
 
         PE = np.zeros((n_geom_z, n_geom_r))
         # params = np.zeros(4)  # PE[dTh,r*], dTh, r*, res
@@ -163,6 +194,7 @@ def main():
                              color='gray', alpha=0.4, label=r'$\pm$ 0.1 PE_ref')
             ax1_.plot(rstar_range, PE_range[i] * np.ones(n_geom_r), 'k-', linewidth=1.5)
             ax2_.plot(rstar_range, PE_range[i] * np.ones(n_geom_r) / PE_ref, 'k-', linewidth=1.5)
+            a2.plot(rstar_range, PE_range[i] * np.ones(n_geom_r) / PE_ref, 'k-', linewidth=1.5)
             ax1_.fill_between([rstar_range[0], rstar_range[-1]],
                              scaling[i] * PE_ref * 0.9, scaling[i] * PE_ref * 1.1,
                              color='gray', alpha=0.2, label=r'$\pm 10$%$')
@@ -175,29 +207,40 @@ def main():
             ax3_.fill_between([rstar_range[0], rstar_range[-1]],
                              scaling[i] - 0.1, scaling[i] + 0.1,
                              color='gray', alpha=0.4, label=r'$\pm$ 0.1 PE_ref')
+            a2.fill_between([rstar_range[0], rstar_range[-1]],
+                            scaling[i] - 0.1, scaling[i] + 0.1,
+                            color='gray', alpha=0.4, label=r'$\pm$ 0.1 PE_ref')
             if s == scaling[-1]:
                 ax2.fill_between([zstar_range[0], zstar_range[-1]],
                                  scaling[i] - 0.25, scaling[i] + 0.25,
                                  color='gray', alpha=0.2, label=r'$\pm$ 0.25 PE_ref')
                 ax2_.fill_between([rstar_range[0], rstar_range[-1]],
-                                 scaling[i] - 0.25, scaling[i] + 0.25,
-                                 color='gray', alpha=0.2, label=r'$\pm$ 0.25 PE_ref')
+                                  scaling[i] - 0.25, scaling[i] + 0.25,
+                                  color='gray', alpha=0.2, label=r'$\pm$ 0.25 PE_ref')
+                a2.fill_between([rstar_range[0], rstar_range[-1]],
+                                scaling[i] - 0.25, scaling[i] + 0.25,
+                                color='gray', alpha=0.2, label=r'$\pm$ 0.25 PE_ref')
+        ''' compute PE '''
+        print('compute PE for: ')
         for ir, rstar in enumerate(rstar_range):
+        # while (ir<n_geom_r) and (PE[iz, ir] - PE_range[0])<0:
+            rstar = rstar_range[ir]
             icol = np.double(np.mod(ir, np.double(n_geom_r) / 3)) / (np.double(n_geom_r) / 3)
-            print('icol', ir, n_geom_r, icol)
-            for iz, zstar in enumerate(zstar_range):
+            # for iz, zstar in enumerate(zstar_range):
+            iz = 0
+            while (iz<n_geom_z) and (PE[iz, ir]-PE_ref)<=0:
+                zstar = zstar_range[iz]
                 print('r*='+str(rstar)+', z*='+str(zstar))
-                z_max_arr, theta = compute_envelope(dTh, rstar, zstar, Th_g, marg)
-                print('shapes: ', z_max_arr.shape, theta.shape, zstar, np.double(zstar)/dx_)
-                PE[iz, ir] = compute_PE(theta, Th_g, zstar, rho0_stats, zhalf_stats)
+                z_max_arr, theta = compute_envelope(dTh, Th_g, rstar, zstar, marg, z_half)
+                PE[iz, ir] = compute_PE(theta, Th_g, zstar, rho0_stats, zhalf_stats, z_half)
+                print('PE-PE_ref: ' + str(PE[iz, ir]-PE_ref))
                 for i, s in enumerate(scaling):
                     res = np.abs(PE[iz, ir] - PE_range[i])/PE_range[i]
-                    if res < 0.05:
+                    if res < 0.08:
                         count[i] += 1
                         params_dict[str(s)] = np.append(params_dict[str(s)], [PE[iz, ir], zstar, rstar, res]).reshape(count[i], 4)
-        #         if PE[iz, ir] > np.amax(scaling)*1.1*PE_ref:
-        #             PE[iz+1:, ir] = 20*PE_ref
-        #             break
+                iz += 1
+
             ax1.plot(zstar_range, PE[:, ir], '-o', color=cm(icol))
             ax2.plot(zstar_range, PE[:, ir] / PE_ref, '-o', color=cm(icol),
                      label='r*=' + str(np.int(rstar)))
@@ -206,21 +249,26 @@ def main():
             icol2 = np.double(iz) / n_geom_z
             ax1_.plot(rstar_range, PE[iz, :], '-o', color=cm(icol2))
             ax2_.plot(rstar_range, PE[iz, :] / PE_ref, '-o', color=cm(icol2),
-                     label='z*=' + str(np.int(zstar)))
+                      label='z*=' + str(np.int(zstar)))
             ax3_.plot(rstar_range, PE[iz, :] / PE_ref, '-', color='gray')
+            a2.plot(rstar_range, PE[iz, :] / PE_ref, '-o', color=cm(icol2), label='z*=' + str(np.int(zstar)))
 
+        print('plotting')
         for i, s in enumerate(scaling):
             for j in range(1,np.int(count[i])):
-                pe  = params_dict[str(s)][j, 0]
+                pe = params_dict[str(s)][j, 0]
                 zs = params_dict[str(s)][j, 1]
                 rs = params_dict[str(s)][j, 2]
                 res = params_dict[str(s)][j, 3]
                 ax3.plot(zs, pe/PE_ref, 'o', color=cm(res * 10),
-                     label='s=' + str(np.round(s, 1)) + ', r*=' + str(np.int(rs))
-                           + ', z*=' + str(np.int(zs)) + ', res=' + str(np.round(res, 2)))
+                         label='s=' + str(np.round(s, 1)) + ', r*=' + str(np.int(rs))
+                               + ', z*=' + str(np.int(zs)) + ', res=' + str(np.round(res, 2)))
                 ax3_.plot(rs, pe/PE_ref, 'o', color=cm(res * 10),
-                      label='s=' + str(np.round(s, 1)) + ', r*=' + str(np.int(rs))
-                            + ', z*=' + str(np.int(zs)) + ', res=' + str(np.round(res, 2)))
+                          label='s=' + str(np.round(s, 1)) + ', r*=' + str(np.int(rs))
+                                + ', z*=' + str(np.int(zs)) + ', res=' + str(np.round(res, 2)))
+                print('........', zs, rs)
+                a1.plot(rs, zs, 'o', color=cm(res*10), label='s=' + str(np.round(s, 1)) + ', r*=' + str(np.int(rs))
+                                                             + ', z*=' + str(np.int(zs)) + ', res=' + str(np.round(res, 2)))
 
         fsize = 15
         ax1.set_xlabel('z*   [m]', fontsize=fsize)
@@ -229,12 +277,12 @@ def main():
         ax1.set_ylabel('PE(z*)   [J]', fontsize=fsize)
         ax2.set_ylabel('PE(z*)/PE_ref', fontsize=fsize)
         ax3.set_ylabel('PE(z*)/PE_ref', fontsize=fsize)
-        ax1.set_ylim(0, np.amax(scaling)*1.15*PE_ref)
-        ax2.set_ylim(0, np.amax(scaling)+1)
-        ax3.set_ylim(0, np.amax(scaling)+1)
-        ax1.set_xlim(0, np.amax(zstar_range))
-        ax2.set_xlim(0, np.amax(zstar_range))
-        ax3.set_xlim(0, np.amax(zstar_range))
+        ax1.set_ylim(np.amin(scaling)*.8*PE_ref, np.amax(scaling)*1.15*PE_ref)
+        ax2.set_ylim(np.amin(scaling)*.8, np.amax(scaling)+1)
+        ax3.set_ylim(np.amin(scaling)*.8, np.amax(scaling)+1)
+        ax1.set_xlim(zstar_min*.9, zstar_max)
+        ax2.set_xlim(zstar_min*.9, zstar_max)
+        ax3.set_xlim(zstar_min*.9, zstar_max)
         ax1.set_xticks(zstar_range, minor=True)
         ax2.set_xticks(zstar_range, minor=True)
         ax2.set_yticks(np.arange(0, np.amax(scaling)+1), minor=True)
@@ -253,10 +301,11 @@ def main():
         ax3.legend(loc='center left', bbox_to_anchor=(1., .5), fontsize=9)#, ncol=2)
         ax1.set_title('error bars: 5%, 10%')
         ax2.set_title('error bars: 0.1*PE_ref')
-        fig1.suptitle('z*=' + str(zstar_ref) + 'm, marg=' + str(marg) + 'm (dx='+str(dx)+'m)', fontsize=15)
+        ax3.set_title('error bars: 0.1*PE_ref')
+        fig1.suptitle('PE_ref=PE(z*='+str(zstar_ref)+',r*='+str(rstar_ref)+'), marg=' + str(marg) + 'm (dx=' + str(dx) + 'm)', fontsize=15)
         fig1.subplots_adjust(bottom=0.12, right=.85, left=0.1, top=0.9, wspace=0.2)
         fig1.savefig(os.path.join(path_out, 'PE_const_initialization_dTh'+str(dTh)+'_marg'
-                                  + str(np.int(marg)) + 'm_dx' + str(dx) + 'm.png'))
+                                  + str(np.int(marg)) + 'm_dx' + str(dx) + 'm_zstar.pdf'))
         plt.close(fig1)
 
         ax1_.set_xlabel('r*   [m]', fontsize=fsize)
@@ -265,12 +314,12 @@ def main():
         ax1_.set_ylabel('PE(dTh)   [J]', fontsize=fsize)
         ax2_.set_ylabel('PE(dTh)/PE_ref', fontsize=fsize)
         ax3_.set_ylabel('PE(dTh)/PE_ref', fontsize=fsize)
-        ax1_.set_ylim(0, np.amax(scaling) * 1.15 * PE_ref)
-        ax2_.set_ylim(0, np.amax(scaling) + 1)
-        ax3_.set_ylim(0, np.amax(scaling) + 1)
-        ax1_.set_xlim(0, rstar_max)
-        ax2_.set_xlim(0, rstar_max)
-        ax3_.set_xlim(0, rstar_max)
+        ax1_.set_ylim(np.amin(scaling)*.8, np.amax(scaling) * 1.15 * PE_ref)
+        ax2_.set_ylim(np.amin(scaling)*.8, np.amax(scaling) + 1)
+        ax3_.set_ylim(np.amin(scaling)*.8, np.amax(scaling) + 1)
+        ax1_.set_xlim(rstar_min*.9, rstar_max)
+        ax2_.set_xlim(rstar_min*.9, rstar_max)
+        ax3_.set_xlim(rstar_min*.9, rstar_max)
         ax1_.set_xticks(rstar_range, minor=True)
         ax2_.set_xticks(rstar_range, minor=True)
         ax2_.set_yticks(np.arange(0, np.amax(scaling) + 1), minor=True)
@@ -289,78 +338,117 @@ def main():
         ax3_.legend(loc='center left', bbox_to_anchor=(1., .5), fontsize=9)  # , ncol=2)
         ax1_.set_title('error bars: 5%, 10%')
         ax2_.set_title('error bars: 0.1*PE_ref')
-        fig2.suptitle('z*=' + str(zstar_ref) + 'm, marg=' + str(marg) + 'm (dx='+str(dx)+'m)', fontsize=15)
+        ax3_.set_title('error bars: 0.1*PE_ref')
+        fig2.suptitle('PE_ref=PE(z*='+str(zstar_ref)+',r*='+str(rstar_ref)+'), marg=' + str(marg) + 'm (dx=' + str(dx) + 'm)', fontsize=15)
         fig2.subplots_adjust(bottom=0.12, right=.8, left=0.1, top=0.9, wspace=0.2)
         fig2.savefig(os.path.join(path_out, 'PE_const_initialization_dTh'+str(dTh)+'_marg'
-                                  + str(np.int(marg)) + 'm_dx' + str(dx) +'m_rstar.png'))
+                                  + str(np.int(marg)) + 'm_dx' + str(dx) +'m_rstar.pdf'))
         plt.close(fig2)
 
-#     file_name = 'PE_scaling_marg'+str(np.int(marg))+'m_dx'+str(dx)+'m.nc'
-#     dump_file(file_name, dTh_range, zstar_range, rstar_range, PE_ref, scaling, PE_range, PE,
-#               params_dict, count, path_out)
-#
-#
-#
-#     # print('')
-#     # for iTh, dTh in enumerate(dTh_range):
-#     #     print('dTh='+str(dTh) + ': z*='+str(zstar_range))
-#     #     print('r*=' +str(diff[1, iTh, :]))
-#     #     print('PE_ref - PE=' +str(diff[2, iTh, :]))
-#     #     print('PE/PE_ref = '+str(diff[2, iTh, :]/PE_ref))
-#
-#     return
-#
-#
-#
-#
-# #_______________________________
-#
-# def dump_file(fname, dTh_range, zstar_range, rstar_range,
-#               PE_ref, scaling, PE_ref_range, PE_numerical,
-#               params_dict, count, path_out):
-#     rootgrp = nc.Dataset(os.path.join(path_out, fname), 'w', format='NETCDF4')
-#     rootgrp.createDimension('n_zstar', len(zstar_range))
-#     rootgrp.createDimension('n_rstar', len(rstar_range))
-#     rootgrp.createDimension('n_dTh', len(dTh_range))
-#     rootgrp.createDimension('n_scal', len(scaling))
-#     rootgrp.createDimension('n', np.amax(count))
-#     rootgrp.createDimension('params', 3)
-#     var = rootgrp.createVariable('zstar', 'f8', ('n_zstar'))
-#     var[:] = zstar_range[:]
-#     var = rootgrp.createVariable('rstar', 'f8', ('n_rstar'))
-#     var[:] = rstar_range[:]
-#     var = rootgrp.createVariable('dTh', 'f8', ('n_dTh'))
-#     var[:] = dTh_range[:]
-#     var = rootgrp.createVariable('scaling', 'f8', ('n_scal'))
-#     var[:] = scaling[:]
-#     var = rootgrp.createVariable('PE_ref', 'f8', )
-#     var[:] = PE_ref
-#     var = rootgrp.createVariable('PE_ref_scaled', 'f8', ('n_scal'))
-#     var[:] = PE_ref_range[:]
-#     var = rootgrp.createVariable('PE_numerical', 'f8', ('n_dTh', 'n_rstar'))
-#     var[:,:] = PE_numerical[:,:]
-#
-#     for i, s in enumerate(scaling):
-#         var = rootgrp.createVariable('parameters_s'+str(s), 'f8', ('n', 'params'))
-#         n = params_dict[str(s)].shape[0]-1
-#         print('s', s, params_dict[str(s)].shape)
-#         if n > 0:
-#             var[:n,:] = params_dict[str(s)][1:,1:]
-#     rootgrp.close()
-#     return
-#
-#
-#
+        a1.set_xlim(rstar_min * .9, rstar_max*1.1)
+        a1.set_ylim(zstar_min * .9, zstar_max*1.1)
+        a2.set_xlim(rstar_min * .9, rstar_max)
+        a2.set_ylim(np.amin(scaling) * .5, np.amax(scaling)*1.5)
+        a1.set_xlabel('r*   [m]', fontsize=fsize)
+        a1.set_ylabel('z*   [m]', fontsize=fsize)
+        a2.set_xlabel('r*   [m]', fontsize=fsize)
+        a2.set_ylabel('PE(dTh)/PE_ref', fontsize=fsize)
+        a1.grid(which='major', axis='x', linestyle='-', alpha=0.6)
+        a1.grid(which='minor', axis='x', linestyle='-', alpha=0.2)
+        a1.grid(which='both', axis='y', linestyle='-', alpha=0.6)
+        a2.grid(which='major', axis='x', linestyle='-', alpha=0.6)
+        a2.grid(which='minor', axis='x', linestyle='-', alpha=0.2)
+        a2.grid(which='both', axis='y', linestyle='-', alpha=0.6)
+        a1.legend(loc='center left', bbox_to_anchor=(-.6, 0.5), fontsize=9)
+        a2.legend(loc='center left', bbox_to_anchor=(1.06, 0.5), fontsize=9)
+        fig3.subplots_adjust(bottom=0.12, right=.87, left=0.2, top=0.9, wspace=0.2)
+        fig3.savefig(os.path.join(path_out, 'PE_const_initialization_dTh' + str(dTh) + '_marg'
+                                  + str(np.int(marg)) + 'm_dx' + str(dx) + 'm.pdf'))
+        plt.close(fig3)
+
+        print('')
+        print('scaling: ', scaling)
+        s=1
+        i=np.where(np.asarray(scaling)==s)[0][0]
+        print('s='+str(s)+' (i='+str(i)+')')
+        for j in range(1, np.int(count[i])):
+            pe = params_dict[str(s)][j, 0]
+            zs = params_dict[str(s)][j, 1]
+            rs = params_dict[str(s)][j, 2]
+            res = params_dict[str(s)][j, 3]
+            print('r*=' + str(np.int(rs))
+                  + ', z*=' + str(np.int(zs)) + ', res=' + str(np.round(res, 2)))
+
+        file_name = 'PE_scaling_dTh'+str(dTh)+'_marg'+str(np.int(marg))+'m_dx'+str(dx)+'m.nc'
+        dump_file(file_name, dTh_range, zstar_range, rstar_range, PE_ref, scaling, PE_range, PE,
+                  params_dict, count, path_out)
+
+    # print('')
+    # for iTh, dTh in enumerate(dTh_range):
+    #     print('dTh='+str(dTh) + ': z*='+str(zstar_range))
+    #     print('r*=' +str(diff[1, iTh, :]))
+    #     print('PE_ref - PE=' +str(diff[2, iTh, :]))
+    #     print('PE/PE_ref = '+str(diff[2, iTh, :]/PE_ref))
+
+    return
+
+
+
+
 #_______________________________
-def compute_envelope(dTh, rstar, zstar, th_g, marg):
+
+def dump_file(fname, dTh_range, zstar_range, rstar_range,
+              PE_ref, scaling, PE_ref_range, PE_numerical,
+              params_dict, count, path_out):
+    print('output file: '+os.path.join(path_out, fname))
+    rootgrp = nc.Dataset(os.path.join(path_out, fname), 'w', format='NETCDF4')
+    rootgrp.createDimension('n_zstar', len(zstar_range))
+    rootgrp.createDimension('n_rstar', len(rstar_range))
+    rootgrp.createDimension('n_dTh', len(dTh_range))
+    rootgrp.createDimension('n_scal', len(scaling))
+    rootgrp.createDimension('n', np.amax(count))
+    rootgrp.createDimension('params', 3)
+    var = rootgrp.createVariable('zstar', 'f8', ('n_zstar'))
+    var[:] = zstar_range[:]
+    var = rootgrp.createVariable('rstar', 'f8', ('n_rstar'))
+    var[:] = rstar_range[:]
+    var = rootgrp.createVariable('dTh', 'f8', ('n_dTh'))
+    var[:] = dTh_range[:]
+    var = rootgrp.createVariable('scaling', 'f8', ('n_scal'))
+    var[:] = scaling[:]
+    var = rootgrp.createVariable('PE_ref', 'f8', )
+    var[:] = PE_ref
+    var = rootgrp.createVariable('PE_ref_scaled', 'f8', ('n_scal'))
+    var[:] = PE_ref_range[:]
+    var = rootgrp.createVariable('PE_numerical', 'f8', ('n_zstar', 'n_rstar'))
+    try:
+        var[:,:] = PE_numerical[:,:]
+    except:
+        print('!!!! wrong shape PE_numerical')
+        print(var.shape, PE_numerical.shape)
+        pass
+
+    for i, s in enumerate(scaling):
+        var = rootgrp.createVariable('parameters_s'+str(s), 'f8', ('n', 'params'))
+        n = params_dict[str(s)].shape[0]-1
+        print('s', s, params_dict[str(s)].shape)
+        if n > 0:
+            var[:n,:] = params_dict[str(s)][1:,1:]
+    rootgrp.close()
+    return
+
+
+
+# -----------------------------------------
+def compute_envelope(dTh, th_g, rstar, zstar, marg, z_half):
     z_max_arr = np.zeros((2, nx, ny), dtype=np.double)
     theta_z = th_g * np.ones(shape=(nx, ny, nz))
     theta_pert = np.random.random_sample(npg)
     # entropy = np.empty((npl), dtype=np.double, order='c')
 
-    for i in xrange(nx):
+    for i in range(nx):
         ishift = i * ny * nz
-        for j in xrange(ny):
+        for j in range(ny):
             jshift = j * nz
             r = np.sqrt((x_half[i] - xc) ** 2 +
                         (y_half[j] - yc) ** 2)
@@ -371,7 +459,7 @@ def compute_envelope(dTh, rstar, zstar, th_g, marg):
                 z_max = (zstar + marg) * (np.cos(r / (rstar + marg) * np.pi / 2) ** 2)
                 z_max_arr[1, i, j] = z_max
 
-            for k in xrange(nz):
+            for k in range(nz):
                 # ijk = ishift + jshift + k
                 if z_half[k] <= z_max_arr[0, i, j]:
                     theta_z[i, j, k] = th_g - dTh
@@ -388,17 +476,22 @@ def compute_envelope(dTh, rstar, zstar, th_g, marg):
     return z_max_arr, theta_z
 
 
+# -----------------------------------------
 
-def compute_PE_density_approx(dTh, zstar, rstar):
+def compute_PE_density_approx(dTh, zstar, rstar, rho0):
+    g = 9.80665
+    PE_up = dTh * zstar**2 * rstar**2
+    PE_low = dTh * (zstar/4)**2 * rstar**2
+    return PE_up, PE_low
+    # return g*rho0*np.pi/2* dTh * zstar**2 * rstar**2
 
-    return dTh * zstar**2 * rstar**2
 
 
-
-def compute_PE(theta_z, th_g, z_max, rho0_stats, zhalf_stats):
+def compute_PE(theta_z, th_g, z_max, rho0_stats, zhalf_stats, z_half):
     g = 9.80665
     dV = dx * dy * dz
     [nx,  ny, nz] = theta_z.shape
+    print('compute PE: dx='+str(dx), 'dV='+str(dV))
 
     # p0 = np.log(Pg)
     # # Perform the integration at integration points z_half
@@ -426,26 +519,29 @@ def compute_PE(theta_z, th_g, z_max, rho0_stats, zhalf_stats):
     # plt.legend()
     # plt.show()
     kmax = np.int(z_max/dz) + 20
-    print('shape 2: ', theta_z.shape, kmax, z_max/dz)
+    # print('shape 2: ', theta_z.shape, kmax, z_max/dz)
     if not kmax <= nz:
         print('in PE computation: looping outwards of vertical domain extent')
         sys.exit()
     PE = 0.0
-    PE_av = 0.0
+    PE_stats = 0.0
     theta_av = np.average(np.average(theta_z, axis=0), axis=0)
     for i in range(nx):
         for j in range(ny):
             for k in range(kmax):
                 delta_th = th_g - theta_z[i,j,k]
-                PE += zhalf_stats[k] * delta_th * dV * rho0_stats[k]
-                delta_th_av = theta_av[k] - theta_z[i, j, k]
-                PE_av += z_half[k + gw] * delta_th_av * dV * rho0_stats[k]
+                PE += z_half[k] * delta_th * dV * rho0_stats[k]
+                # delta_th_av = theta_av[k] - theta_z[i, j, k]
+                # PE_stats += zhalf_stats[k] * delta_th_av * dV * rho0_stats[k]
+                PE_stats += zhalf_stats[k] * delta_th * dV * rho0_stats[k]
     PE = g / th_g * PE
-    PE_av = g / th_g * PE_av
-    # print('test: ', PE_test / PE)
+    PE_stats = g / th_g * PE_stats
+
+    print('PE(z_half)/PE(z_half_stats)='+str(PE/PE_stats))
+    print('')
     return PE
 
-#_______________________________
+# -----------------------------------------
 # # compute Temperature from pressure and entropy
 # def eos(pd, s, qt):
 #     ql = np.zeros(pd.shape)
@@ -466,7 +562,7 @@ def compute_PE(theta_z, th_g, z_max, rho0_stats, zhalf_stats):
 #     T, ql, qi = eos(np.exp(p), sg, qtg)
 #     rhs_ = -g / (Rd * T * (1.0 - qtg + eps_vi * (qtg - ql - qi)))
 #     return rhs_
-#_______________________________
+# -----------------------------------------
 
 
 
@@ -508,10 +604,10 @@ def define_geometry(dx_, marg):
     dx = dx_
     dy = dx_
     dz = dx_
-    print''
+    print('')
     print('resolution: dx=dz='+str(dx))
     print('margin: marg='+str(marg))
-    print''
+    print('')
     global gw, nl, nlg, npl, npg
     gw = 5
     # gw = 1
@@ -531,7 +627,7 @@ def define_geometry(dx_, marg):
     # Gr.dims.indx_lo[i]
     indx_lo = np.zeros(3, dtype=np.int)
 
-    global x_half, y_half, z_half
+    global x_half, y_half
     x_half = np.empty((nx), dtype=np.double, order='c')
     y_half = np.empty((ny), dtype=np.double, order='c')
     z_half = np.empty((nz), dtype=np.double, order='c')
@@ -547,6 +643,20 @@ def define_geometry(dx_, marg):
     for i in xrange(nz):
         z_half[count] = (i + 0.5) * dz
         count += 1
+    # x_half = np.empty((nx+2*gw), dtype=np.double, order='c')
+    # y_half = np.empty((ny+2*gw), dtype=np.double, order='c')
+    # z_half = np.empty((nz+2*gw), dtype=np.double, order='c')
+    # for i in xrange(-gw, nx+gw):
+    #     x_half[count] = (i + 0.5) * dx
+    #     count += 1
+    # count = 0
+    # for j in xrange(-gw, ny+gw):
+    #     y_half[count] = (j + 0.5) * dy
+    #     count += 1
+    # count = 0
+    # for i in xrange(-gw, nz+gw):
+    #     z_half[count] = (i + 0.5) * dz
+    #     count += 1
 
     global ic, jc, xc, yc, marg_i, marg_k
     # zstar_range = [4000, 2000, 1500, 1000, 670, 500, 250]
@@ -560,7 +670,7 @@ def define_geometry(dx_, marg):
     marg_i = np.int(np.round( marg / dx ))
     marg_k = np.int(np.round( marg / dz))  # width of margin
 
-    return
+    return z_half
 
 if __name__ == '__main__':
     main()

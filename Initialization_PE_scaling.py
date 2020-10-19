@@ -19,70 +19,102 @@ def main():
     cm_rep = plt.cm.get_cmap('prism')
     cm = cm_rain
 
+    parser = argparse.ArgumentParser(prog='LES_CP')
+    parser.add_argument("--dx")
+    parser.add_argument("--dTh_min")
+    parser.add_argument("--dTh_max")
+    args = parser.parse_args()
+
     path_out = './figs_Initialization/'
 
+    'surface values'
     Th_g = 300.0  # temperature for neutrally stratified background (value from Soares Surface)
-    dx_ = 50
-    define_geometry(dx_)
+    if args.dx:
+        dx_ = np.int(args.dx)
+    else:
+        dx_ = 50
+    marg = 200.
+    z_half = define_geometry(dx_, marg)
     set_parameters()
+    print('dx: '+str(dx_))
 
-    # reference PE
-    dTh_ref = 3
-    rstar_ref = 1000
-    zstar_ref = 1000
 
-    # parameter range
-    dTh_min = 1
-    dTh_max = 10
-    # dTh_max = 2
+    ''' Parameter range '''
+    if args.dTh_min:
+        dTh_min = np.int(args.dTh_min)
+    else:
+        dTh_min = 2
+    if args.dTh_max:
+        dTh_max = np.int(args.dTh_max)
+    else:
+        dTh_max = 4
     dTh_range = np.arange(dTh_min, dTh_max+1)
-    rstar_min = 200
     # for dx=100m, no matches for r*>4200m;
     # for dx=50m, matches for r*=..., 3600, 4900, 5000; no matches for r<400m
-    rstar_max = 5e3
-    # rstar_min = 1e3
-    # rstar_max = 3e3
+    rstar_min = 5e2
+    rstar_max = 25e2
     rstar_range = np.arange(rstar_min, rstar_max+100, 100)
-    # rstar_range = np.arange(rstar_min, rstar_max+100, 1e3)
     zstar_range = [zstar_ref]
     n_thermo = len(dTh_range)
     n_geom_z = len(zstar_range)
     n_geom_r = len(rstar_range)
-    print('zstar', zstar_ref)
-    print('rstar', rstar_range)
-    print('n_geom_r', n_geom_r)
+    print('dTh: ' + str(dTh_range))
+    print('zstar: ' + str(zstar_range))
+    print('rstar: ' + str(rstar_range))
+    print('n_geom_z: ' + str(n_geom_z))
+    print('n_geom_r: ' + str(n_geom_r))
 
-    # scaling-range
-    scaling = [2**(-1), 2**0, 2**1, 2**2, 2**3, 10]
+    ''' PE scaling-range '''
+    scaling = [2**(-1), 2**0, 2**1, 2**2, 2**3]
     print('scaling: ' + str(scaling))
     print('')
 
-    # path to reference PE
-    path = '/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2/dTh3_z1000_r1000/'
+    ''' Reference case '''
+    dTh_ref = 3
+    rstar_ref = 1000
+    zstar_ref = 1000
+    if dx_== 100:
+        path_ref = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run2_dx100m/dTh3_z1000_r1000/'
+    elif dx_==50:
+        path_ref = '/nbi/ac/cond1/meyerbe/ColdPools/3D_sfc_fluxes_off/single_3D_noise/run3_dx50m/dTh3_z1000_r1000_nz240/'
     case_name = 'ColdPoolDry_single_3D'
-    rootgrp = nc.Dataset(os.path.join(path, 'stats', 'Stats.' + case_name + '.nc'))
+    print('Reference case: ' + path_ref)
+    rootgrp = nc.Dataset(os.path.join(path_ref, 'stats', 'Stats.' + case_name + '.nc'))
     rho0_stats = rootgrp.groups['reference'].variables['rho0'][:]
     # alpha0_stats = rootgrp.groups['reference'].variables['alpha0'][:]
     zhalf_stats = rootgrp.groups['reference'].variables['z'][:]
     rootgrp.close()
+    print('')
+    print('z-arrays:')
+    print('z_half:', z_half[:20])
+    print('z_half_stats:', zhalf_stats[:20])
+    print('')
 
 
     ''' reference PE '''
-    # reference PE
-    z_max_arr, theta_z = compute_envelope(dTh_ref, rstar_ref, zstar_ref, Th_g)
-    PE_ref = compute_PE(theta_z, Th_g, zstar_ref, rho0_stats, zhalf_stats)
-    PE_ref_approx = compute_PE_density_approx(dTh_ref, zstar_ref, rstar_ref)
-    #
-    # # test reference numerically
-    # rootgrp_field = nc.Dataset(os.path.join(path, 'fields', '0.nc'))
-    # s0 = rootgrp_field.groups['fields'].variables['s'][:,:,:]
-    # rootgrp_field.close()
-    # ic_ = s0.shape[0] / 2
-    # jc_ = s0.shape[1] / 2
-    # theta = thetas_c(s0, 0.0)[ic_-nx/2:ic_+nx/2, jc_-ny/2:jc_+ny/2,:nz]
-    # PE_ref_num = compute_PE(theta, Th_g, zstar_ref, rho0_stats, zhalf_stats)
-    # del s0
-    #
+    print('Reference case: ')
+    z_max_arr, theta_z = compute_envelope(dTh_ref, Th_g, rstar_ref, zstar_ref, marg, z_half)
+    PE_ref = compute_PE(theta_z, Th_g, zstar_ref, rho0_stats, zhalf_stats, z_half)
+    PE_ref_up, PE_ref_low = compute_PE_density_approx(dTh_ref, zstar_ref, rstar_ref, rho0_stats[0])     # upper limit
+    # test reference numerically
+    rootgrp_field = nc.Dataset(os.path.join(path_ref, 'fields', '0.nc'))
+    s0 = rootgrp_field.groups['fields'].variables['s'][:,:,:]
+    rootgrp_field.close()
+    ic_ = s0.shape[0] / 2
+    jc_ = s0.shape[1] / 2
+    theta = thetas_c(s0, 0.0)[ic_-nx/2:ic_+nx/2, jc_-ny/2:jc_+ny/2,:nz]
+    PE_ref_num = compute_PE(theta, Th_g, zstar_ref, rho0_stats, zhalf_stats, z_half)
+    del s0
+    print('  (from envel.) PE_ref =        ' + str(PE_ref))
+    print('  (from field)  PE_ref_num =    ' + str(PE_ref_num))
+    print('   difference: '+str((PE_ref-PE_ref_num)/PE_ref))
+    print('')
+    print('   (upper limit)  PE_up = ' + str(PE_ref_up))
+    print('   (lower limit)  PE_low = ' + str(PE_ref_low))
+    print('   difference: '+str((PE_ref-PE_ref_up)/PE_ref))
+    print('   difference: '+str((PE_ref-PE_ref_low)/PE_ref))
+    print('')
+
     # theta_diff = theta_z - theta
     # PE_ref_diff = compute_PE(theta_diff+Th_g, Th_g, zstar_ref, rho0_stats, zhalf_stats)
     # print('theta noise: ', np.mean(theta))
@@ -179,7 +211,7 @@ def main():
         print('icol', ir, n_geom_r, icol)
         for idTh, dTh in enumerate(dTh_range):
             print('r*='+str(rstar)+', dTh='+str(dTh))
-            z_max_arr, theta = compute_envelope(dTh, rstar, zstar_ref, Th_g)
+            z_max_arr, theta = compute_envelope(dTh, Th_g, rstar, zstar_ref, marg)
             PE[idTh, ir] = compute_PE(theta, Th_g, zstar_ref, rho0_stats, zhalf_stats)
             for i, s in enumerate(scaling):
                 res = np.abs(PE[idTh, ir] - PE_range[i])/PE_range[i]
@@ -290,8 +322,6 @@ def main():
     dump_file(file_name, dTh_range, zstar_range, rstar_range, PE_ref, scaling, PE_range, PE,
               params_dict, count, path_out)
 
-
-
     # print('')
     # for iTh, dTh in enumerate(dTh_range):
     #     print('dTh='+str(dTh) + ': z*='+str(zstar_range))
@@ -342,16 +372,16 @@ def dump_file(fname, dTh_range, zstar_range, rstar_range,
 
 
 
-#_______________________________
-def compute_envelope(dTh, rstar, zstar, th_g):
+# -----------------------------------------
+def compute_envelope(dTh, th_g, rstar, zstar, marg, z_half):
     z_max_arr = np.zeros((2, nx, ny), dtype=np.double)
     theta_z = th_g * np.ones(shape=(nx, ny, nz))
     theta_pert = np.random.random_sample(npg)
     # entropy = np.empty((npl), dtype=np.double, order='c')
 
-    for i in xrange(nx):
+    for i in range(nx):
         ishift = i * ny * nz
-        for j in xrange(ny):
+        for j in range(ny):
             jshift = j * nz
             r = np.sqrt((x_half[i] - xc) ** 2 +
                         (y_half[j] - yc) ** 2)
@@ -362,7 +392,7 @@ def compute_envelope(dTh, rstar, zstar, th_g):
                 z_max = (zstar + marg) * (np.cos(r / (rstar + marg) * np.pi / 2) ** 2)
                 z_max_arr[1, i, j] = z_max
 
-            for k in xrange(nz):
+            for k in range(nz):
                 # ijk = ishift + jshift + k
                 if z_half[k] <= z_max_arr[0, i, j]:
                     theta_z[i, j, k] = th_g - dTh
@@ -379,14 +409,18 @@ def compute_envelope(dTh, rstar, zstar, th_g):
     return z_max_arr, theta_z
 
 
+# -----------------------------------------
 
-def compute_PE_density_approx(dTh, zstar, rstar):
+def compute_PE_density_approx(dTh, zstar, rstar, rho0):
+    g = 9.80665
+    PE_up = dTh * zstar**2 * rstar**2
+    PE_low = dTh * (zstar/4)**2 * rstar**2
+    return PE_up, PE_low
+    # return g*rho0*np.pi/2* dTh * zstar**2 * rstar**2
 
-    return dTh * zstar**2 * rstar**2
 
 
-
-def compute_PE(theta_z, th_g, z_max, rho0_stats, zhalf_stats):
+def compute_PE(theta_z, th_g, z_max, rho0_stats, zhalf_stats, z_half):
     g = 9.80665
     dV = dx * dy * dz
     [nx,  ny, nz] = theta_z.shape
@@ -422,21 +456,23 @@ def compute_PE(theta_z, th_g, z_max, rho0_stats, zhalf_stats):
         print('in PE computation: looping outwards of vertical domain extent')
         sys.exit()
     PE = 0.0
-    PE_av = 0.0
+    PE_stats = 0.0
     theta_av = np.average(np.average(theta_z, axis=0), axis=0)
     for i in range(nx):
         for j in range(ny):
             for k in range(kmax):
                 delta_th = th_g - theta_z[i,j,k]
-                PE += zhalf_stats[k] * delta_th * dV * rho0_stats[k]
+                PE += z_half[k] * delta_th * dV * rho0_stats[k]
                 delta_th_av = theta_av[k] - theta_z[i, j, k]
-                PE_av += z_half[k + gw] * delta_th_av * dV * rho0_stats[k]
+                PE_stats += zhalf_stats[k] * delta_th_av * dV * rho0_stats[k]
     PE = g / th_g * PE
-    PE_av = g / th_g * PE_av
-    # print('test: ', PE_test / PE)
+    PE_stats = g / th_g * PE_stats
+
+    print('PE(z_half)/PE(z_half_stats)='+str(PE/PE_stats))
+    print('')
     return PE
 
-#_______________________________
+# -----------------------------------------
 # compute Temperature from pressure and entropy
 def eos(pd, s, qt):
     ql = np.zeros(pd.shape)
@@ -457,7 +493,7 @@ def rhs(p, z):
     T, ql, qi = eos(np.exp(p), sg, qtg)
     rhs_ = -g / (Rd * T * (1.0 - qtg + eps_vi * (qtg - ql - qi)))
     return rhs_
-#_______________________________
+# -----------------------------------------
 
 
 
@@ -490,18 +526,19 @@ def set_parameters():
 
 
 
-def define_geometry(dx_):
+def define_geometry(dx_, marg):
 
     global nx, ny, nz, dx, dy, dz
     nx = 80
     ny = 80
-    nz = 60
+    nz = 100
     dx = dx_
     dy = dx_
     dz = dx_
-    print''
+    print('')
     print('resolution: dx=dz='+str(dx))
-    print''
+    print('margin: marg='+str(marg))
+    print('')
     global gw, nl, nlg, npl, npg
     gw = 5
     # gw = 1
@@ -521,11 +558,11 @@ def define_geometry(dx_):
     # Gr.dims.indx_lo[i]
     indx_lo = np.zeros(3, dtype=np.int)
 
-    global x_half, y_half, z_half
+    global x_half, y_half
+    count = 0
     x_half = np.empty((nx), dtype=np.double, order='c')
     y_half = np.empty((ny), dtype=np.double, order='c')
     z_half = np.empty((nz), dtype=np.double, order='c')
-    count = 0
     for i in xrange(nx):
         x_half[count] = (i + 0.5) * dx
         count += 1
@@ -538,7 +575,7 @@ def define_geometry(dx_):
         z_half[count] = (i + 0.5) * dz
         count += 1
 
-    global ic, jc, xc, yc, marg_i, marg_k, marg
+    global ic, jc, xc, yc, marg_i, marg_k
     # zstar_range = [4000, 2000, 1500, 1000, 670, 500, 250]
     # rstar_range = [250, 500, 670, 1000, 1500, 2000, 4000]
     # rstar_range = [2000]
@@ -547,12 +584,10 @@ def define_geometry(dx_):
     jc = np.int(ny / 2)
     xc = x_half[ic]  # center of cold-pool !!!
     yc = y_half[jc]  # center of cold-pool !!!
-    marg = 200.
     marg_i = np.int(np.round( marg / dx ))
     marg_k = np.int(np.round( marg / dz))  # width of margin
 
-
-    return
+    return z_half
 
 if __name__ == '__main__':
     main()
