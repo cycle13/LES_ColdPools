@@ -100,7 +100,7 @@ def main():
         for i, ID in enumerate(id_list):
             fullpath_in = os.path.join(path_root, ID, path_data, stats_file_name)
             root = nc.Dataset(fullpath_in, 'r')
-            var[i, :,:,:] = root.groups['stats'].variables[var_name][:nt,:,:]
+            var[i, :,:,:] = root.groups['stats'].variables[var_name][:nt,:nr,:nk]
             root.close()
         var_max_arr = np.amax(var, axis=3)
         var_min_arr = np.amin(var, axis=3)
@@ -249,6 +249,7 @@ def plot_minmax_domain(dTh, z_params, r_params,
 
         print('FILE: ', os.path.join(path_root, ID, 'data_analysis', filename))
         minmax_file = nc.Dataset(os.path.join(path_root, ID, 'data_analysis', filename), 'r', format='NETCDF4')
+        #minmax_file = nc.Dataset(os.path.join(path_root, ID+'_dz2000_run2', 'data_analysis', filename), 'r', format='NETCDF4')
         ts_grp = minmax_file.groups['timeseries']
 
         minmax[ID] = {}
