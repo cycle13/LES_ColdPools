@@ -32,7 +32,6 @@ def main():
 
     # path_out_figs = '/nbi/home/meyerbe/paper_CP/figs_collisions_stable/'
     path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP/figs_collisions_stable/'
-    # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP/figs_collisions_stable/'
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
     print('path figs: ' + path_out_figs)
