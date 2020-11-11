@@ -99,6 +99,7 @@ def main():
         var = np.zeros((n_id, nt, nr, nk))
         for i, ID in enumerate(id_list):
             fullpath_in = os.path.join(path_root, ID, path_data, stats_file_name)
+            print(fullpath_in)
             root = nc.Dataset(fullpath_in, 'r')
             var[i, :,:,:] = root.groups['stats'].variables[var_name][:nt,:nr,:nk]
             root.close()

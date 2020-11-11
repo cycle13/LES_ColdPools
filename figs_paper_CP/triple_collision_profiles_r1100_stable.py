@@ -23,7 +23,7 @@ plt.rcParams['text.usetex'] = 'true'
 
 
 def main():
-    path_single = '/nbi/ac/conv4/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/single_3D_noise/run8_stable/'
+    path_single = '/nbi/ac/conv4/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/single_3D/run8_stable/'
     path_double = '/nbi/ac/coag/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/double_3D_stable/'
     path_triple = '/nbi/ac/coag/rawdata/ColdPools_PyCLES/3D_sfc_fluxes_off/triple_3D_stable'
     case_name_single = 'ColdPoolDry_single_3D_stable'
@@ -32,6 +32,7 @@ def main():
 
     # path_out_figs = '/nbi/home/meyerbe/paper_CP/figs_collisions_stable/'
     path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP/figs_collisions_stable/'
+    # path_out_figs = '/nbi/ac/cond1/meyerbe/paper_CP/figs_collisions_stable/'
     if not os.path.exists(path_out_figs):
         os.mkdir(path_out_figs)
     print('path figs: ' + path_out_figs)
