@@ -693,9 +693,8 @@ def define_geometry(path_root, args):
         jc3 = jc1 + np.int(np.round(d / 2))
         ic_arr = [ic1, ic2, ic3]
         jc_arr = [jc1, jc2, jc3]
-    elif case_name[:21] == 'ColdPool_single_contforcing':
+    elif case_name == 'ColdPool_single_contforcing':
         rstar = nml['init']['r']
-        irstar = np.int(np.round(rstar / dx[0]))
         # zstar = nml['init']['h']
         ic = nml['init']['ic']
         jc = nml['init']['jc']
@@ -730,6 +729,11 @@ def define_geometry(path_root, args):
         i0_center = ic_arr[2]
         j0_center = jc_arr[2]
         # domain boundaries for plotting
+    elif case_name == 'ColdPool_single_contforcing':
+        i0_coll = np.int(np.round(nx / 2))
+        j0_coll = np.int(np.round(ny / 2))
+        i0_center = ic_arr[0]
+        j0_center = jc_arr[0]
 
     print('')
     print('CP center: ', i0_center, j0_center)
