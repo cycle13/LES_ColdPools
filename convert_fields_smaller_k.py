@@ -80,12 +80,12 @@ def main():
     ## var_list = ['u', 'v', 'w', 's', 'temperature']# , 'phi'
     var_list = ['u', 'v', 'w', 's', 'temperature', 'phi']
     ## convert_file_for_varlist(var_list, times, files, path_fields, path_out, k_min, k_max)
-    if args.vert == 'True' or args.vert == 'true':
-        print '-- vertical crosssection --'
+    if args.vert in ['True', 'true']:
+        print('-- vertical crosssection --')
         path_out_ = os.path.join(path_root, 'fields_merged')
         if not os.path.exists(path_out_):
             os.mkdir(path_out_)
-        print''
+        print('')
         print('vertical xz-crossection at CP center: j0='+str(j0_center))
         # convert_file_for_varlist_vertsection_xz(var_list, times, files, path_fields, path_out_, j0_center)
         convert_file_for_varlist_vertsection_xz_transposed(var_list, times, files, k_max, path_fields, path_out_, j0_center)
@@ -95,9 +95,9 @@ def main():
                                                                k_max, path_fields, path_out_, j0_coll)
         # print('vertical yz-crossection at 2-CP collision: x0='+str(i0_center))
         # convert_file_for_varlist_vertsection_yz(var_list, times, files, path_fields, path_out_, i0_center)
-        print''
+        print('')
     if args.hor == 'True' or args.hor == 'true':
-        print '-- horizontal crosssection: k0 = '+str(k0) +' --'
+        print('-- horizontal crosssection: k0 = '+str(k0) +' --')
         path_out_ = os.path.join(path_root, 'fields_merged')
         if not os.path.exists(path_out_):
             os.mkdir(path_out_)
@@ -423,7 +423,7 @@ def convert_file_for_varlist_horsection(var_list, times, files, path_fields, pat
             data_th = theta_s(data)
             del data
             var_out = rootgrp_out.variables[var]
-            var_out[it, :,:] = data_th
+            var_out[it, :, :] = data_th
 
         rootgrp_out.close()
     return
@@ -671,8 +671,6 @@ def define_geometry(path_root, args):
         except:
             ic1 = np.int(nx/2)
             jc1 = np.int(ny/2)
-            # ic1 = np.int(np.round((nx + 2 * gw) / 3)) - gw
-            # jc1 = np.int(np.round((ny + 2 * gw) / 2)) - gw
         ic2 = ic1 + isep
         jc2 = jc1 + jsep
         ic_arr = [ic1, ic2]
@@ -695,6 +693,16 @@ def define_geometry(path_root, args):
         jc3 = jc1 + np.int(np.round(d / 2))
         ic_arr = [ic1, ic2, ic3]
         jc_arr = [jc1, jc2, jc3]
+    elif case_name[:21] == 'ColdPool_single_contforcing':
+        rstar = nml['init']['r']
+        irstar = np.int(np.round(rstar / dx[0]))
+        # zstar = nml['init']['h']
+        ic = nml['init']['ic']
+        jc = nml['init']['jc']
+        ic_arr = np.zeros(1)
+        jc_arr = np.zeros(1)
+        ic_arr[0] = ic
+        jc_arr[0] = jc
 
 
 
@@ -723,10 +731,10 @@ def define_geometry(path_root, args):
         j0_center = jc_arr[2]
         # domain boundaries for plotting
 
-    print''
+    print('')
     print('CP center: ', i0_center, j0_center)
     print('CP collision: ', i0_coll, j0_coll)
-    print''
+    print('')
 
     return i0_center, j0_center, i0_coll, j0_coll
 
